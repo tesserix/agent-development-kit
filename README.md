@@ -1,0 +1,91 @@
+# Agent Development Kit
+
+**A reusable Python toolkit for building production AI agents on the fly.**
+
+Every Tesserix product that needs an agent currently re-solves the same problems: wiring a
+model provider, defining tools, threading tenant and auth context, tracking token cost,
+persisting session state, retrying a flaky provider, and proving the thing works. This kit
+exists so that work is done once, correctly, and imported.
+
+The design goal is a **thin, composable, typed** library — not a framework that owns your
+process. You should be able to build a useful agent in twenty lines, and a durable
+multi-agent system without abandoning the same primitives.
+
+## Design principles
+
+1. **Composable over configurable.** Small primitives that combine, not one god-object with
+   fifty keyword arguments.
+2. **Typed and predictable.** Pydantic models at every boundary. Structured output is the
+   default, not an add-on.
+3. **Provider-agnostic.** Models, memory stores, vector stores, queues and graph databases
+   sit behind protocols. Swapping OpenAI for Anthropic, or pgvector for a graph store, is a
+   config change — never a rewrite.
+4. **Deterministic where it matters.** Agents reason; code transacts. Money, state
+   transitions and side effects run through explicit, idempotent, testable paths.
+5. **Observable by default.** Every agent run, tool call and model call is a span with token
+   and cost attributes, with no per-project wiring.
+6. **Testable without a network.** Fakes and recorded fixtures ship as a first-class
+   package, so agent logic is unit-testable in CI.
+7. **Async-first**, with sync wrappers where they genuinely help.
+
+## Packages
+
+One distribution, `tesserix-adk`, with optional extras per integration so a small agent
+stays a small dependency.
+
+| Subpackage | Responsibility |
+|---|---|
+| `core` | Agent and message primitives, protocols, errors, config |
+| `runtime` | Run loop, lifecycle, cancellation, retries, streaming |
+| `models` | Provider-agnostic LLM client, routing, structured output, fallback |
+| `tools` | Tool definition, schema generation, validation, registry, allowlists |
+| `mcp` | MCP client and server integration |
+| `a2a` | Agent-to-agent cards, discovery, invocation |
+| `memory` | Working, profile, episodic and semantic memory behind one interface |
+| `rag` | Chunking, embedding, hybrid retrieval, reranking |
+| `workflows` | Durable orchestration (Temporal), checkpointing, sagas |
+| `guardrails` | Prompt-injection defence, PII redaction, output validation |
+| `evals` | Golden sets, judges, regression harness, CI gating |
+| `observability` | OpenTelemetry tracing, token and cost accounting |
+| `cli` | Scaffolding, run, inspect, eval |
+| `testing` | Fakes, recorded fixtures, deterministic replay |
+| `adapters` | Redis, PostgreSQL, NATS, graph stores, framework interop |
+
+```python
+from tesserix_adk import Agent, tool
+
+@tool
+def get_weather(city: str) -> str:
+    """Return the current weather for a city."""
+    ...
+
+agent = Agent(model="anthropic:claude-sonnet-5", tools=[get_weather])
+result = await agent.run("What should I pack for Kyoto tomorrow?")
+```
+
+## Status
+
+Planning repository. The implementation plan lives as GitHub issues on the project board;
+code lands here as the kit is built.
+
+| Resource | Where |
+|---|---|
+| Design brief & architecture | [`docs/design-brief.md`](docs/design-brief.md) |
+| Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
+| Issue template | [`.github/ISSUE_TEMPLATE/engineering-story.md`](.github/ISSUE_TEMPLATE/engineering-story.md) |
+
+## A note on the name
+
+Google publishes its own "Agent Development Kit" and owns `google-adk` on PyPI, so **"ADK"
+is not a distinctive name**. This repository keeps `agent-development-kit` as the internal
+repo name, but the published distribution is `tesserix-adk` (verified available) with the
+import namespace `tesserix_adk`. If the kit is ever open-sourced or promoted externally, it
+should be given a distinct product name rather than competing on a generic acronym.
+
+## Intended stack
+
+Python 3.12+ · Pydantic v2 · `asyncio` · `httpx` · OpenTelemetry · `uv` for dependency
+management · `ruff` + `mypy --strict` · `pytest` + `pytest-asyncio`.
+
+Integrations are optional extras: Temporal, NATS JetStream, Redis, PostgreSQL/pgvector,
+MCP, and a graph store for episodic memory.

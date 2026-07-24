@@ -1,0 +1,5 @@
+# Code owners — auto-requested for review on every pull request.
+# The main-branch ruleset requires code-owner approval before merging;
+# only the owners below may bypass the PR requirement and push directly.
+
+* @sam123ben @mahesh-sangawar
