@@ -106,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        extra: [none, all]
+        extra: [none, mcp, temporal, graphiti, redis, postgres, all]
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7

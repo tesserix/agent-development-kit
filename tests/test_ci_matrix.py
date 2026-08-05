@@ -54,7 +54,8 @@ def test_the_full_matrix_does_not_run_on_every_pull_request() -> None:
 
 def test_every_declared_extra_has_a_standalone_matrix_leg() -> None:
     """Proves optional imports are genuinely optional, one extra at a time."""
-    declared = set(pyproject()["project"].get("optional-dependencies", {}))
+    # `all` is the union and gets a leg of its own; this test is about the parts.
+    declared = set(pyproject()["project"].get("optional-dependencies", {})) - {"all"}
     legs = set(_matrix(EXTRAS)["extra"]) - {"none", "all"}
     assert legs == declared
 

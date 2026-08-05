@@ -10,6 +10,11 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Optional extras per integration (`mcp`, `temporal`, `graphiti`, `redis`, `postgres`,
+  and `all` as their union), with `tesserix_adk.core.require_extra` and
+  `MissingExtraError` naming the extra and its install command. Base requirements are
+  `pydantic`, `httpx` and `opentelemetry-api` only, held there by a transitive package
+  ceiling and a per-extra CI leg.
 - Public API surface snapshot (`docs/api-surface.txt`) with a CI gate, a leak check
   rejecting vendor and concrete implementation types in public signatures, and an
   explicit allowlist for third-party re-exports.

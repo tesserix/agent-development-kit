@@ -77,6 +77,60 @@ Two further checks run over the same collection:
 promise, and pinning it would imply one. Promoting a symbol out of it is a changelog
 entry plus a stability statement.
 
+## Extras and the base footprint
+
+**A provider or store SDK may only ever appear in an extra, never in `[project]
+dependencies.`** The base install is `pydantic`, `httpx` and `opentelemetry-api` and
+nothing else, because every package in it lands in every consumer's image whether they
+use it or not. A kit that drags in temporalio, redis and psycopg to run a two-tool agent
+is a kit teams copy snippets out of instead of installing.
+
+| Extra | Installs | Import name |
+|---|---|---|
+| `mcp` | `mcp` | `mcp` |
+| `temporal` | `temporalio` | `temporalio` |
+| `graphiti` | `graphiti-core` | `graphiti_core` |
+| `redis` | `redis` | `redis` |
+| `postgres` | `psycopg[binary,pool]` | `psycopg` |
+| `all` | the five above, as a self-reference | — |
+
+`tests/test_extras.py` enforces the rule from both ends: the base requirement set is
+exactly those three, the locked base graph stays under a transitive package ceiling, and
+importing every module in the kit in a fresh interpreter must leave `sys.modules` free of
+all five SDKs — asserted that way so it holds in the `all` leg too, where the wheels are
+installed but must still go untouched.
+
+Each extra also gets its own CI leg, so an accidental unconditional import of `redis`
+fails in the `mcp` leg rather than after release.
+
+Reach an optional dependency through `require_extra`, never a bare import:
+
+```python
+from tesserix_adk.core import require_extra
+
+redis = require_extra("redis", "redis.asyncio")
+```
+
+A consumer who has not installed the extra gets `MissingExtraError` naming the extra and
+the exact command (`uv add 'tesserix-adk[redis]'`), rather than an `ImportError` about a
+transitive module they have never heard of. `MissingExtraError` is also an `ImportError`,
+so existing `except ImportError` guards keep working. An SDK that *is* installed but
+fails its own import raises through unchanged: that is the SDK's bug, and telling the
+consumer to install something they already have would waste their afternoon.
+
+Two rules the tests hold that are easy to reason past:
+
+- `all` is a pure union (`tesserix-adk[graphiti,mcp,postgres,redis,temporal]`). Listing
+  the packages directly lets `all` quietly become the only tested combination.
+- Extras gate *integrations*. They may never gate anything the kit promises
+  unconditionally — redaction and budget enforcement are not opt-in, so `core`,
+  `runtime`, `guardrails` and `observability` contain no `require_extra` call at all.
+
+Two extras that need incompatible versions of a shared transitive dependency is a
+resolution the consumer must see and decide on. Do not pin the shared package in the base
+requirements to make the conflict disappear; that pushes it onto everyone who installed
+neither extra.
+
 ## The test matrix
 
 | Lane | When | What |

@@ -6,7 +6,9 @@ kit's failures without catching `Exception` and swallowing its own bugs alongsid
 
 from __future__ import annotations
 
-__all__ = ["AdkError", "ConfigurationError", "ProtocolConformanceError"]
+__all__ = ["AdkError", "ConfigurationError", "MissingExtraError", "ProtocolConformanceError"]
+
+_DISTRIBUTION = "tesserix-adk"
 
 
 class AdkError(Exception):
@@ -19,6 +21,28 @@ class ConfigurationError(AdkError):
     Configuration failures are raised during construction, never on the first call
     that happens to exercise the broken setting.
     """
+
+
+class MissingExtraError(AdkError, ImportError):
+    """Raised when an optional integration is used without installing its extra.
+
+    Also an `ImportError`, so existing `except ImportError` guards around an optional
+    import keep working.
+
+    Args:
+        extra: The extra that installs the dependency, e.g. `redis`.
+        module: The module that could not be imported.
+    """
+
+    def __init__(self, extra: str, module: str) -> None:
+        self.extra = extra
+        self.module = module
+        self.install_command = f"uv add '{_DISTRIBUTION}[{extra}]'"
+        super().__init__(
+            f"{module} needs the optional '{extra}' extra, which is not installed. "
+            f"Install it with: {self.install_command}",
+            name=module,
+        )
 
 
 class ProtocolConformanceError(ConfigurationError):

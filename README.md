@@ -33,6 +33,16 @@ multi-agent system without abandoning the same primitives.
 One distribution, `tesserix-adk`, with optional extras per integration so a small agent
 stays a small dependency.
 
+```bash
+uv add tesserix-adk                    # pydantic, httpx, opentelemetry-api — nothing else
+uv add 'tesserix-adk[redis,postgres]'  # add only the integrations you use
+```
+
+Extras: `mcp`, `temporal`, `graphiti`, `redis`, `postgres`, and `all` as their union.
+Reaching an integration you have not installed raises `MissingExtraError` naming the extra
+and the install command. The rule and its tests are in
+[`docs/contributing.md`](docs/contributing.md#extras-and-the-base-footprint).
+
 | Subpackage | Responsibility |
 |---|---|
 | `core` | Agent and message primitives, protocols, errors, config |
