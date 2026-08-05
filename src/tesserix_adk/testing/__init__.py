@@ -14,6 +14,7 @@ from tesserix_adk.testing.fakes import (
     FakeTracer,
     RecordedEvent,
 )
+from tesserix_adk.testing.pytest_plugin import NetworkAccessInTestError, QuarantineError
 
 __all__ = [
     "BudgetExceededError",
@@ -24,6 +25,8 @@ __all__ = [
     "FakeMemoryStore",
     "FakeTracer",
     "MemoryStoreConformance",
+    "NetworkAccessInTestError",
+    "QuarantineError",
     "RecordedEvent",
     "TracerConformance",
 ]

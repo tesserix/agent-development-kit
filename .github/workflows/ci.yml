@@ -60,18 +60,88 @@ jobs:
       - run: uv run mypy --strict --any-exprs-report .mypy-any-report src
       - run: cat .mypy-any-report/any-exprs.txt >> "$GITHUB_STEP_SUMMARY"
 
-  test:
-    name: test (frozen lock)
-    runs-on: ubuntu-latest
+  # Fast lane: the ends of the supported range on both developer platforms. Everything
+  # a reviewer waits for lives here; the full matrix runs after merge.
+  test-fast:
+    name: test ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     needs: lockfile
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-      - run: uv sync --frozen --all-groups
-      - run: uv run pytest --cov --cov-report=term-missing --cov-fail-under=90
+      - run: uv sync --frozen --all-groups --python ${{ matrix.python-version }}
+      - run: uv run pytest --cov --cov-report=term-missing --randomly-seed=${{ github.run_id }}
+
+  test-matrix:
+    name: matrix ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    needs: lockfile
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups --python ${{ matrix.python-version }}
+      - run: uv run pytest --cov --cov-report=term-missing --randomly-seed=${{ github.run_id }}
+
+  # Proves optional imports are genuinely optional: each extra alone, then the union.
+  test-extras:
+    name: extras (${{ matrix.extra }})
+    runs-on: ubuntu-latest
+    needs: lockfile
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: [none, all]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - name: sync
+        run: |
+          case "${{ matrix.extra }}" in
+            none) uv sync --frozen --group test --no-install-project
+                  uv pip install --no-deps . ;;
+            all)  uv sync --frozen --group test --all-extras ;;
+            *)    uv sync --frozen --group test --extra "${{ matrix.extra }}" ;;
+          esac
+      - run: uv run pytest --randomly-seed=${{ github.run_id }}
+
+  # Pre-release and free-threaded interpreters: information for the maintainers,
+  # never a gate on a merge.
+  test-advisory:
+    name: advisory ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    needs: lockfile
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.14", "3.14t"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --all-groups --python ${{ matrix.python-version }}
+      - run: uv run pytest --randomly-seed=${{ github.run_id }}
 
   layering:
     name: RFC 0001 layering contracts

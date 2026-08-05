@@ -30,7 +30,7 @@ def _ci_run_steps(job: str) -> list[str]:
     return [step["run"] for step in _ci_jobs()[job]["steps"] if "run" in step]
 
 
-@pytest.mark.parametrize("job", ["lint", "typecheck", "test", "layering", "lockfile"])
+@pytest.mark.parametrize("job", ["lint", "typecheck", "test-fast", "layering", "lockfile"])
 def test_ci_runs_every_gate(job: str) -> None:
     assert job in _ci_jobs()
 

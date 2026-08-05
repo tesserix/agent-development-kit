@@ -29,7 +29,7 @@ test: ## Run the test suite
 	uv run pytest
 
 cov: ## Run the test suite with coverage enforcement
-	uv run pytest --cov --cov-report=term-missing --cov-fail-under=90
+	uv run pytest --cov --cov-report=term-missing
 
 check: lint typecheck cov ## Everything CI runs
 

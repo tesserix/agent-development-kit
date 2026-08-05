@@ -45,6 +45,7 @@ test = [
   "hypothesis>=6.112,<7",
   "pyyaml>=6.0.2,<7",
   "types-pyyaml>=6,<7",
+  "pytest-randomly>=3.15,<4",
 ]
 docs = ["mkdocs-material>=9.5,<10"]
 
@@ -99,6 +100,9 @@ ignore = [
 # asserts are the mechanism, and each case name states the behaviour it checks.
 "src/tesserix_adk/testing/conformance.py" = ["S101", "D102", "ANN401"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["tesserix_adk", "tests"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
@@ -111,15 +115,21 @@ files = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = "-q --strict-markers --strict-config"
 xfail_strict = true
+# A warning the kit emits and nobody sees is a breakage already scheduled for a consumer.
+filterwarnings = ["error"]
 
 [tool.coverage.run]
 source = ["src/tesserix_adk"]
 branch = true
 
 [tool.coverage.report]
+# The floor lives here alone; a workflow that repeats it can lower it without review.
+fail_under = 90
 show_missing = true
 skip_covered = true
 exclude_lines = [
