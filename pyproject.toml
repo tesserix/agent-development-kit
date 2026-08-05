@@ -43,7 +43,7 @@ test = [
   "pytest-asyncio>=0.24,<0.25",
   "pytest-cov>=6,<7",
   "hypothesis>=6.112,<7",
-  "pyyaml>=6,<7",
+  "pyyaml>=6.0.2,<7",
   "types-pyyaml>=6,<7",
 ]
 docs = ["mkdocs-material>=9.5,<10"]
