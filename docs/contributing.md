@@ -150,6 +150,14 @@ pushing `v0.3.0` to `main` is the whole release. The guard, the gates, the mirro
 per-extra smoke install are described in [releasing.md](releasing.md), along with what to
 do when the two indexes disagree — the one failure that needs a human.
 
+If your change is consumer-visible, write a change fragment in `changes/` in the same
+pull request — `changes/<issue>.<kind>.md`, described in
+[`changes/README.md`](../changes/README.md). A conventional commit subject is enough on
+its own for most changes; a fragment is required for anything breaking, because that is
+where the migration note lives. The `release-notes` CI job fails on a change with
+neither, and renders the notes into the run summary so you can read the wording a
+consumer will read.
+
 The example the smoke job runs is `examples/getting_started.py`. Every example in that
 directory is executed by `tests/test_examples.py`, so one that stops working fails at
 review rather than after the release.

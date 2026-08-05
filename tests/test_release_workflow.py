@@ -14,6 +14,7 @@ GATES = "gates"
 BUILD = "build"
 PUBLISH = "publish"
 MIRROR = "mirror"
+NOTES = "notes"
 SMOKE = "smoke"
 DIVERGENCE = "divergence"
 
@@ -79,6 +80,24 @@ def test_a_divergence_between_the_two_indexes_fails_the_release() -> None:
     assert f"needs.{PUBLISH}.result" in condition
     assert f"needs.{MIRROR}.result" in condition
     assert "docs/releasing.md" in " ".join(release_run_steps(DIVERGENCE))
+
+
+def test_the_release_body_is_assembled_rather_than_written_by_hand() -> None:
+    """Hand-written notes leave out the breaking entries; that is the whole point."""
+    steps = " ".join(release_run_steps(NOTES))
+    assert "tools.release_notes" in steps
+    assert "--output" in steps
+
+
+def test_the_notes_are_assembled_before_anything_is_published() -> None:
+    """An undocumented change must block the release, not be discovered after it."""
+    assert NOTES in _needs(PUBLISH)
+
+
+def test_the_release_uses_the_assembled_notes() -> None:
+    steps = " ".join(release_run_steps(MIRROR))
+    assert "--notes-file" in steps
+    assert "--generate-notes" not in steps
 
 
 def test_the_smoke_job_installs_from_the_index() -> None:

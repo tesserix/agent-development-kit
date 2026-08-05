@@ -10,6 +10,12 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Release notes assembled from the repository (`tools/release_notes.py`): change
+  fragments in `changes/`, conventional commit subjects, the public API snapshot diff and
+  the live deprecation records. A change with neither a fragment nor a readable subject
+  blocks the release, as does a breaking change with no migration note. The
+  `release-notes` CI job renders the notes on every pull request, and the release body is
+  the assembled notes rather than generated commit titles.
 - Release path (`docs/releasing.md`): the git tag is the sole source of the version
   (`hatch-vcs` derives it, `tesserix_adk.__version__` reads it back from the installed
   distribution), a guard refuses a tag off `main`, in the wrong format, or naming a

@@ -176,6 +176,30 @@ jobs:
       - run: uv run python -m tools.deprecations
       - run: uv run python -m tools.release_check
 
+  release-notes:
+    name: release notes assemble
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+        # The notes cover the range since the last tag, which a shallow clone does not have.
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Fails on a change with no fragment and no readable subject, and shows reviewers
+      # the consumer-facing wording before the tag rather than after it.
+      - run: |
+          uv run python -m tools.release_notes --version next --dry-run > notes.md
+          {
+            echo "## Release notes as they would be assembled"
+            echo
+            cat notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
   layering:
     name: RFC 0001 layering contracts
     runs-on: ubuntu-latest

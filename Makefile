@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -46,7 +46,16 @@ deprecations-check: ## Fail if the deprecations page is out of date or a removal
 release-check: ## Fail if this release breaks the versioning policy against the last tag
 	uv run python -m tools.release_check
 
-check: lint typecheck api-check deprecations-check release-check cov ## Everything CI runs
+# The version only labels a preview; the real one comes from the tag at release time.
+VERSION ?= next
+
+notes: ## Preview the release notes assembled from the change fragments
+	uv run python -m tools.release_notes --version $(VERSION) --dry-run
+
+notes-check: ## Fail if a change since the last tag has no note fragment or readable subject
+	uv run python -m tools.release_notes --version $(VERSION) --dry-run > /dev/null
+
+check: lint typecheck api-check deprecations-check release-check notes-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov

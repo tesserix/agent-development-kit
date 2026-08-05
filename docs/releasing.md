@@ -22,14 +22,21 @@ Tags are `v<major>.<minor>.<patch>`, optionally with an `a`/`b`/`rc` suffix:
 
 ## Cutting a release
 
-1. Make sure `main` is green and `CHANGELOG.md` has an `Unreleased` section describing
-   what is going out.
+1. Make sure `main` is green.
 2. Run the local gates: `make check`. The `release-check` target compares the public API
    snapshot at the last tag against the working tree and tells you which release channel
-   the change requires — take that answer rather than guessing.
-3. Move the `Unreleased` entries under the new version heading, commit, and push to
-   `main` through the normal review path.
-4. Tag the reviewed commit and push the tag:
+   the change requires — take that answer rather than guessing. `notes-check` fails if
+   any change in the range would ship undocumented.
+3. Read what the release will say: `make notes VERSION=0.3.0`.
+4. Fold the notes into the changelog and clear the consumed fragments, then push through
+   the normal review path:
+
+   ```bash
+   uv run python -m tools.release_notes --version 0.3.0 --release
+   git commit -am "chore(release): notes for 0.3.0"
+   ```
+
+5. Tag the reviewed commit and push the tag:
 
    ```bash
    git tag v0.3.0
@@ -46,9 +53,10 @@ The tag push is the only trigger. Pushing to `main` never publishes.
 |-----|---------------------|
 | `guard` | The tag matches the documented format, points at a commit on `main`, and names a version the index does not already hold. Nothing irreversible has happened yet. |
 | `gates` | The full CI workflow — the same one pull requests run, called rather than copied. |
+| `notes` | Assembles the release body from the repository, and fails if any change in the range has nothing describing it to a consumer. |
 | `build` | `uv build`, `twine check --strict` on the metadata, and an assertion that the artefact filename carries the tag's version. |
 | `publish` | Trusted publishing to PyPI via workflow identity, behind the `pypi` environment. |
-| `mirror` | The same artefacts attached to a GitHub Release. |
+| `mirror` | The same artefacts attached to a GitHub Release, with the assembled notes as its body. |
 | `divergence` | Fails the release if PyPI succeeded and the mirror did not. |
 | `smoke` | Installs the *published* wheel from PyPI in a clean virtualenv, once per extra, and runs `examples/getting_started.py`. |
 
@@ -65,6 +73,44 @@ path nobody has tested by the time it matters.
 - PyPI: a trusted publisher for `tesserix/agent-development-kit`, workflow
   `release.yml`, environment `pypi`.
 - GitHub: a `pypi` environment with the reviewers who are allowed to approve a publish.
+
+## Release notes
+
+Notes are derived, not written at release time. Hand-written notes are always incomplete,
+and the entries that get left out are the breaking ones — the consumer then meets the
+change as a failing test instead of as a line in the notes.
+
+Four sources feed them:
+
+- **Change fragments** in `changes/`, one file per change, written in the pull request
+  that makes it. Format and kinds: [`changes/README.md`](../changes/README.md).
+- **Conventional commit subjects** since the last tag. `feat` / `fix` / `refactor` /
+  `perf` / `revert` become entries; `docs` / `chore` / `test` / `ci` / `build` / `style`
+  are housekeeping and produce none. An unrecognised type is treated as an unreadable
+  subject, not as housekeeping, so `core: tidy up` does not slip through the gate.
+- **The public API snapshot diff** against the last tag, attached verbatim.
+- **The live `@deprecate` records**, with the version each is promised to be removed in.
+
+Two things block a release outright:
+
+1. A change with **neither** a fragment **nor** a readable subject. Nothing would
+   describe it to a consumer, so it cannot ship silently.
+2. A **breaking** change with no migration note. A breaking entry without instructions is
+   the failure this whole mechanism exists to prevent.
+
+Both are checked on every pull request by the `release-notes` job, which also renders the
+notes into the run summary so reviewers see the consumer-facing wording before the tag —
+not after it. `make notes` does the same locally.
+
+A change spanning several subpackages appears once, attributed to the surface named in
+its fragment, rather than once per commit. Changes under `tesserix_adk.experimental` are
+rendered in their own section, because the stability promises do not apply to them.
+Reverts get a section too: silently reverting a feature is itself a breaking change for
+anyone who adopted it.
+
+A hotfix runs this same path. There is no emergency route that skips the documentation,
+because an emergency is exactly when notes get skipped and exactly when consumers need
+them.
 
 ## The internal mirror
 

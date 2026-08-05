@@ -14,6 +14,7 @@ FAST_LANE = "test-fast"
 FULL_MATRIX = "test-matrix"
 EXTRAS = "test-extras"
 ADVISORY = "test-advisory"
+NOTES = "release-notes"
 
 
 def _matrix(job: str) -> dict[str, list[str]]:
@@ -96,3 +97,16 @@ def test_the_coverage_floor_lives_in_one_reviewed_place() -> None:
         if "--cov-fail-under" in step
     ]
     assert hardcoded == []
+
+
+def test_a_pull_request_renders_the_release_notes_it_would_produce() -> None:
+    """Reviewers see the consumer-facing wording before the tag, not after it."""
+    steps = " ".join(ci_run_steps(NOTES))
+    assert "tools.release_notes" in steps
+    assert "GITHUB_STEP_SUMMARY" in steps
+
+
+def test_the_notes_job_reads_the_history_it_is_summarising() -> None:
+    """A shallow clone has no range since the last tag, so the check would pass emptily."""
+    checkout = next(s for s in ci_jobs()[NOTES]["steps"] if "checkout" in str(s.get("uses", "")))
+    assert checkout["with"]["fetch-depth"] == 0
