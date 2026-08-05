@@ -1,0 +1,49 @@
+tesserix_adk.__version__ :: __version__: str
+tesserix_adk.core.AdkError :: class AdkError(Exception)
+tesserix_adk.core.BudgetPolicy :: class BudgetPolicy(Protocol) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
+tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
+tesserix_adk.core.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.core.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'Any') -> 'Any'; stream(self, request: 'Any') -> 'Any'}
+tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
+tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
+tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
+tesserix_adk.core.errors.AdkError :: class AdkError(Exception)
+tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError)
+tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
+tesserix_adk.core.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
+tesserix_adk.core.protocols.BudgetPolicy :: class BudgetPolicy(Protocol) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.protocols.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.core.protocols.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
+tesserix_adk.core.protocols.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.core.protocols.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'Any') -> 'Any'; stream(self, request: 'Any') -> 'Any'}
+tesserix_adk.core.protocols.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
+tesserix_adk.core.protocols.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
+tesserix_adk.core.protocols.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
+tesserix_adk.core.protocols.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
+tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
+tesserix_adk.testing.BudgetExceededError :: class BudgetExceededError(AdkError)
+tesserix_adk.testing.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'Any'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
+tesserix_adk.testing.ClockConformance :: class ClockConformance(ABC) {make_clock(self) -> 'Any'; test_now_does_not_go_backwards(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_sleep_does_not_move_time_backwards(self) -> 'None'}
+tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.testing.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.testing.FakeTracer :: class FakeTracer(object) {event(self, name: 'str', **attributes: 'object') -> 'None'; names(self) -> 'list[str]'; span(self, name: 'str', **attributes: 'object') -> 'Iterator[None]'}
+tesserix_adk.testing.MemoryStoreConformance :: class MemoryStoreConformance(ABC) {make_store(self) -> 'Any'; test_delete_removes_the_key(self) -> 'None'; test_deleting_an_absent_key_is_not_an_error(self) -> 'None'; test_get_returns_none_for_an_absent_key(self) -> 'None'; test_keys_do_not_collide_across_distinct_values(self) -> 'None'; test_put_replaces_rather_than_merges(self) -> 'None'; test_put_then_get_round_trips(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
+tesserix_adk.testing.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
+tesserix_adk.testing.QuarantineError :: class QuarantineError(AdkError)
+tesserix_adk.testing.RecordedEvent :: class RecordedEvent(object)
+tesserix_adk.testing.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Any'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
+tesserix_adk.testing.conformance.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'Any'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
+tesserix_adk.testing.conformance.ClockConformance :: class ClockConformance(ABC) {make_clock(self) -> 'Any'; test_now_does_not_go_backwards(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_sleep_does_not_move_time_backwards(self) -> 'None'}
+tesserix_adk.testing.conformance.MemoryStoreConformance :: class MemoryStoreConformance(ABC) {make_store(self) -> 'Any'; test_delete_removes_the_key(self) -> 'None'; test_deleting_an_absent_key_is_not_an_error(self) -> 'None'; test_get_returns_none_for_an_absent_key(self) -> 'None'; test_keys_do_not_collide_across_distinct_values(self) -> 'None'; test_put_replaces_rather_than_merges(self) -> 'None'; test_put_then_get_round_trips(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
+tesserix_adk.testing.conformance.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Any'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
+tesserix_adk.testing.fakes.BudgetExceededError :: class BudgetExceededError(AdkError)
+tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.testing.fakes.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.testing.fakes.FakeTracer :: class FakeTracer(object) {event(self, name: 'str', **attributes: 'object') -> 'None'; names(self) -> 'list[str]'; span(self, name: 'str', **attributes: 'object') -> 'Iterator[None]'}
+tesserix_adk.testing.fakes.RecordedEvent :: class RecordedEvent(object)
+tesserix_adk.testing.pytest_plugin.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
+tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkError)

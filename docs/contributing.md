@@ -45,6 +45,38 @@ The `typecheck` job also publishes an annotation-coverage table
 (`mypy --any-exprs-report`) to the run summary. `Any` is sometimes the honest type,
 but an `Any` count nobody measures only ever grows.
 
+## The public API surface
+
+Everything a consumer may import is declared: every public module has `__all__`, and
+`docs/api-surface.txt` records each exported symbol with its signature, one sorted
+line each. The `api-surface` job regenerates that collection and fails on any
+difference, printing the added, removed and changed symbols.
+
+```bash
+make api-check      # what CI runs
+make api-snapshot   # regenerate after a deliberate change
+```
+
+**A snapshot change is never incidental.** If the diff surprises you, the change is a
+bug; if it does not, it needs a `CHANGELOG.md` entry and a stability decision in the
+same pull request. Removing an accidentally-public helper still counts as breaking and
+follows the deprecation policy.
+
+Two further checks run over the same collection:
+
+- **Leak check.** A public signature naming a vendor type (`redis`, `httpx`, `openai`,
+  …) or a concrete `Fake*` outside `tesserix_adk.testing` fails the job naming the
+  symbol. Returning `MemoryStore` keeps every implementation substitutable; returning
+  a Redis-backed store couples every consumer to Redis.
+- **Re-export allowlist.** Any exported name defined outside `tesserix_adk` must be
+  listed in `RE_EXPORT_ALLOWLIST`. Re-exporting a third-party type adopts that
+  project's release cadence as our compatibility problem, so the list is short and
+  reviewed. It is currently empty.
+
+`tesserix_adk.experimental` is excluded from the snapshot: it carries no stability
+promise, and pinning it would imply one. Promoting a symbol out of it is a changelog
+entry plus a stability statement.
+
 ## The test matrix
 
 | Lane | When | What |

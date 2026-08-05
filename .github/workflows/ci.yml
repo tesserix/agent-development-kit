@@ -55,7 +55,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
       - run: uv sync --frozen --all-groups
-      - run: uv run mypy --strict src tests
+      - run: uv run mypy --strict src tests tools
       # Annotation coverage of the public surface: an `Any` count nobody measures only grows.
       - run: uv run mypy --strict --any-exprs-report .mypy-any-report src
       - run: cat .mypy-any-report/any-exprs.txt >> "$GITHUB_STEP_SUMMARY"
@@ -142,6 +142,20 @@ jobs:
           enable-cache: true
       - run: uv sync --all-groups --python ${{ matrix.python-version }}
       - run: uv run pytest --randomly-seed=${{ github.run_id }}
+
+  api-surface:
+    name: public API surface unchanged
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Prints the added, removed and changed symbols; stays red until the snapshot moves.
+      - run: uv run python -m tools.api_surface
 
   layering:
     name: RFC 0001 layering contracts

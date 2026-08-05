@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock lint format typecheck test cov check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -23,7 +23,7 @@ format: ## Apply formatting and safe lint fixes
 	uv run ruff check --fix .
 
 typecheck: ## Run mypy in strict mode
-	uv run mypy --strict src tests
+	uv run mypy --strict src tests tools
 
 test: ## Run the test suite
 	uv run pytest
@@ -31,7 +31,13 @@ test: ## Run the test suite
 cov: ## Run the test suite with coverage enforcement
 	uv run pytest --cov --cov-report=term-missing
 
-check: lint typecheck cov ## Everything CI runs
+api-snapshot: ## Regenerate docs/api-surface.txt after a deliberate surface change
+	uv run python -m tools.api_surface --write
+
+api-check: ## Fail if the public surface differs from the committed snapshot
+	uv run python -m tools.api_surface
+
+check: lint typecheck api-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov

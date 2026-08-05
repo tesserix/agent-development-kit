@@ -111,7 +111,7 @@ python_version = "3.12"
 strict = true
 warn_unreachable = true
 enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code"]
-files = ["src", "tests"]
+files = ["src", "tests", "tools"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -124,7 +124,7 @@ xfail_strict = true
 filterwarnings = ["error"]
 
 [tool.coverage.run]
-source = ["src/tesserix_adk"]
+source = ["src/tesserix_adk", "tools"]
 branch = true
 
 [tool.coverage.report]
@@ -138,4 +138,5 @@ exclude_lines = [
   "raise NotImplementedError",
   "^\\s*\\.\\.\\.$",       # Protocol method stubs are declarations, not code
   "@(abc\\.)?abstractmethod",
+  "if __name__ == .__main__.:",
 ]
