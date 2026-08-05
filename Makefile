@@ -10,9 +10,10 @@ sync: ## Install the frozen dependency set
 lock: ## Regenerate uv.lock after editing pyproject.toml
 	uv lock
 
-lint: ## Lint and check formatting
+lint: ## Lint, check formatting and enforce the RFC 0001 layering contracts
 	uv run ruff check .
 	uv run ruff format --check .
+	uv run lint-imports
 
 format: ## Apply formatting and safe lint fixes
 	uv run ruff format .

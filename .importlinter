@@ -1,0 +1,70 @@
+[importlinter]
+root_package = tesserix_adk
+include_external_packages = True
+
+[importlinter:contract:layers]
+name = Kit layers depend inwards only
+type = layers
+layers =
+    tesserix_adk.cli
+    tesserix_adk.testing
+    tesserix_adk.adapters
+    tesserix_adk.evals
+    tesserix_adk.workflows
+    tesserix_adk.a2a | tesserix_adk.mcp | tesserix_adk.rag | tesserix_adk.memory | tesserix_adk.guardrails | tesserix_adk.observability | tesserix_adk.tools | tesserix_adk.models
+    tesserix_adk.runtime
+    tesserix_adk.core
+
+[importlinter:contract:core-is-independent]
+name = core imports nothing else in the kit
+type = forbidden
+source_modules =
+    tesserix_adk.core
+forbidden_modules =
+    tesserix_adk.runtime
+    tesserix_adk.models
+    tesserix_adk.tools
+    tesserix_adk.mcp
+    tesserix_adk.a2a
+    tesserix_adk.memory
+    tesserix_adk.rag
+    tesserix_adk.workflows
+    tesserix_adk.guardrails
+    tesserix_adk.evals
+    tesserix_adk.observability
+    tesserix_adk.cli
+    tesserix_adk.testing
+    tesserix_adk.adapters
+    tesserix_adk.experimental
+
+[importlinter:contract:leaves-are-not-imported]
+name = Nothing imports cli, testing or adapters
+type = forbidden
+source_modules =
+    tesserix_adk.core
+    tesserix_adk.runtime
+    tesserix_adk.models
+    tesserix_adk.tools
+    tesserix_adk.mcp
+    tesserix_adk.a2a
+    tesserix_adk.memory
+    tesserix_adk.rag
+    tesserix_adk.workflows
+    tesserix_adk.guardrails
+    tesserix_adk.evals
+    tesserix_adk.observability
+forbidden_modules =
+    tesserix_adk.cli
+    tesserix_adk.testing
+    tesserix_adk.adapters
+
+[importlinter:contract:no-vendor-types-inward]
+name = Vendor SDKs stay behind their integration package
+type = forbidden
+source_modules =
+    tesserix_adk.core
+    tesserix_adk.runtime
+forbidden_modules =
+    httpx
+    openai
+    anthropic
