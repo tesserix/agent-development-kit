@@ -73,6 +73,10 @@ agent = Agent(model="anthropic:claude-sonnet-5", tools=[get_weather])
 result = await agent.run("What should I pack for Kyoto tomorrow?")
 ```
 
+A runnable version of the seams above, needing no network and no credentials, is
+[`examples/getting_started.py`](examples/getting_started.py) — the same file every
+release installs from the index and runs, once per extra.
+
 ## Status
 
 Planning repository. The implementation plan lives as GitHub issues on the project board;
@@ -83,6 +87,7 @@ code lands here as the kit is built.
 | Design brief & architecture | [`docs/design-brief.md`](docs/design-brief.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |
+| Releasing & index policy | [`docs/releasing.md`](docs/releasing.md) |
 | Issue template | [`.github/ISSUE_TEMPLATE/engineering-story.md`](.github/ISSUE_TEMPLATE/engineering-story.md) |
 
 ## A note on the name

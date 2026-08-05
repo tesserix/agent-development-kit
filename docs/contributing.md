@@ -143,6 +143,17 @@ break. Full policy, including what counts as breaking and the security exception
 the ones about to ship and refuses a removal nobody was warned about, a removal earlier
 than promised, or a version bump too small for what changed.
 
+## Releasing
+
+You do not set a version number anywhere: `hatch-vcs` derives it from the git tag, so
+pushing `v0.3.0` to `main` is the whole release. The guard, the gates, the mirror and the
+per-extra smoke install are described in [releasing.md](releasing.md), along with what to
+do when the two indexes disagree — the one failure that needs a human.
+
+The example the smoke job runs is `examples/getting_started.py`. Every example in that
+directory is executed by `tests/test_examples.py`, so one that stops working fails at
+review rather than after the release.
+
 ## Configuration
 
 One resolution, at startup, into one frozen `AdkConfig`. There is no reload and no second

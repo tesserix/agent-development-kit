@@ -255,14 +255,15 @@ def test_a_release_identical_to_the_last_one_passes(monkeypatch: pytest.MonkeyPa
     assert release_check.main([]) == 0
 
 
-def test_the_released_version_is_read_from_the_tagged_source() -> None:
-    """A tag can be renamed; the version in the tagged tree is the fact."""
-    assert release_check.version_in('x = 1\n__version__ = "1.2.3"\n') == "1.2.3"
+def test_the_baseline_version_is_the_tag_itself() -> None:
+    """The tag is the version, so nothing in the tagged tree can contradict it."""
+    assert release_check._released_version("v1.2.3") == "1.2.3"
 
 
-def test_a_source_without_a_version_is_a_failure() -> None:
-    with pytest.raises(release_check.ReleaseCheckError, match="__version__"):
-        release_check.version_in("x = 1\n")
+def test_comparing_against_something_that_is_not_a_release_tag_is_a_failure() -> None:
+    """A branch name names no version, and guessing one would compare against nothing."""
+    with pytest.raises(release_check.ReleaseCheckError, match="names no version"):
+        release_check._released_version("main")
 
 
 def test_the_latest_tag_comes_from_git() -> None:

@@ -1922,7 +1922,6 @@ wheels = [
 
 [[package]]
 name = "tesserix-adk"
-version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
@@ -1977,17 +1976,21 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "graphiti-core", marker = "extra == 'all'", specifier = ">=0.14,<1" },
     { name = "graphiti-core", marker = "extra == 'graphiti'", specifier = ">=0.14,<1" },
     { name = "httpx", specifier = ">=0.27,<1" },
+    { name = "mcp", marker = "extra == 'all'", specifier = ">=1.9,<2" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.9,<2" },
     { name = "opentelemetry-api", specifier = ">=1.27,<2" },
+    { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'all'", specifier = ">=3.2,<4" },
     { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'postgres'", specifier = ">=3.2,<4" },
     { name = "pydantic", specifier = ">=2.9,<3" },
+    { name = "redis", marker = "extra == 'all'", specifier = ">=5.2,<7" },
     { name = "redis", marker = "extra == 'redis'", specifier = ">=5.2,<7" },
+    { name = "temporalio", marker = "extra == 'all'", specifier = ">=1.9,<2" },
     { name = "temporalio", marker = "extra == 'temporal'", specifier = ">=1.9,<2" },
-    { name = "tesserix-adk", extras = ["graphiti", "mcp", "postgres", "redis", "temporal"], marker = "extra == 'all'" },
 ]
-provides-extras = ["mcp", "temporal", "graphiti", "redis", "postgres", "all"]
+provides-extras = ["all", "graphiti", "mcp", "postgres", "redis", "temporal"]
 
 [package.metadata.requires-dev]
 dev = [

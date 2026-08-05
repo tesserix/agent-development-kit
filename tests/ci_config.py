@@ -9,11 +9,19 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"
 CI = ROOT / ".github" / "workflows" / "ci.yml"
+RELEASE = ROOT / ".github" / "workflows" / "release.yml"
 PRE_COMMIT = ROOT / ".pre-commit-config.yaml"
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
     loaded: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return loaded
+
+
+def triggers(path: Path) -> dict[str, Any]:
+    """A workflow's `on:` block, which YAML 1.1 loads under the key `True`, not `"on"`."""
+    workflow: dict[Any, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
+    loaded: dict[str, Any] = workflow[True]
     return loaded
 
 
@@ -30,6 +38,16 @@ def ci_jobs() -> dict[str, Any]:
 
 def ci_run_steps(job: str) -> list[str]:
     return [step["run"] for step in ci_jobs()[job]["steps"] if "run" in step]
+
+
+def release_jobs() -> dict[str, Any]:
+    jobs: dict[str, Any] = load_yaml(RELEASE)["jobs"]
+    return jobs
+
+
+def release_run_steps(job: str) -> list[str]:
+    """A job that delegates with `uses:` has no steps of its own."""
+    return [step["run"] for step in release_jobs()[job].get("steps", []) if "run" in step]
 
 
 def supported_minors() -> list[str]:

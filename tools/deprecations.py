@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from tesserix_adk import __version__ as VERSION  # noqa: N812 — patched in tests
 from tesserix_adk.core.deprecation import Deprecation, deprecations
 from tools.api_surface import public_modules
+from tools.versions import parts
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -76,12 +77,12 @@ def parse(page: str) -> tuple[Deprecation, ...]:
 
 def stale(records: Sequence[Deprecation], version: str) -> list[str]:
     """Return one message per deprecation whose promised removal has already shipped."""
-    shipped = tuple(int(part) for part in version.split("."))
+    shipped = parts(version)
     return [
         f"{r.name} promised removal in {r.removal} but {version} has shipped: remove it, "
         f"or move the removal out and say why in the changelog"
         for r in records
-        if tuple(int(part) for part in r.removal.split(".")) <= shipped
+        if parts(r.removal) <= shipped
     ]
 
 

@@ -9,7 +9,6 @@ otherwise the breakage reaches consumers as a patch upgrade. See docs/versioning
 from __future__ import annotations
 
 import argparse
-import re
 import subprocess
 import sys
 from typing import TYPE_CHECKING
@@ -17,6 +16,8 @@ from typing import TYPE_CHECKING
 from tesserix_adk import __version__ as VERSION  # noqa: N812 — patched in tests
 from tools.api_surface import collect_surface
 from tools.deprecations import parse as parse_deprecations
+from tools.release_guard import version_of
+from tools.versions import parts as _parts
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -25,21 +26,10 @@ if TYPE_CHECKING:
 
 SURFACE_PATH = "docs/api-surface.txt"
 DEPRECATIONS_PATH = "docs/deprecations.md"
-VERSION_PATH = "src/tesserix_adk/__init__.py"
-
-_VERSION_LINE = re.compile(r'^__version__ = "([^"]+)"', re.MULTILINE)
 
 
 class ReleaseCheckError(Exception):
     """Raised when the released tree cannot be read well enough to check against."""
-
-
-def version_in(source: str) -> str:
-    """Read `__version__` out of a tagged copy of the package root."""
-    found = _VERSION_LINE.search(source)
-    if found is None:
-        raise ReleaseCheckError(f"no __version__ found in {VERSION_PATH}")
-    return found.group(1)
 
 
 def parse_surface(snapshot: str) -> dict[str, str]:
@@ -69,10 +59,6 @@ def read_at(ref: str, path: str) -> str:
     if result.returncode:
         raise ReleaseCheckError(f"cannot read {path} at {ref}: {result.stderr.strip()}")
     return result.stdout
-
-
-def _parts(version: str) -> tuple[int, ...]:
-    return tuple(int(part) for part in version.split("."))
 
 
 def _breaking_release(old: tuple[int, ...], new: tuple[int, ...]) -> bool:
@@ -123,6 +109,14 @@ def check(
     return problems
 
 
+def _released_version(ref: str) -> str:
+    """The version a ref released. A tag is the version; anything else has to say so."""
+    try:
+        return version_of(ref)
+    except ValueError as err:
+        raise ReleaseCheckError(f"{ref} is not a release tag, so it names no version") from err
+
+
 def main(argv: list[str] | None = None) -> int:
     """Check the working tree against the last release, or an explicit `--ref`."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -138,7 +132,7 @@ def main(argv: list[str] | None = None) -> int:
         baseline=parse_surface(read_at(ref, SURFACE_PATH)),
         current=collect_surface(),
         records=parse_deprecations(read_at(ref, DEPRECATIONS_PATH)),
-        baseline_version=version_in(read_at(ref, VERSION_PATH)),
+        baseline_version=_released_version(ref),
         version=VERSION,
     )
     if problems:

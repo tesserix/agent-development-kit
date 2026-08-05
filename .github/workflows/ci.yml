@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # The release calls this workflow rather than copying it: a second set of gates drifts.
+  workflow_call:
 
 permissions:
   contents: read

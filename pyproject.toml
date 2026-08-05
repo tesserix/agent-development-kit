@@ -1,6 +1,6 @@
 [project]
 name = "tesserix-adk"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Agent development kit: typed primitives, a substitutable runtime, and CPU-first inference."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -36,8 +36,14 @@ Homepage = "https://github.com/tesserix/agent-development-kit"
 Issues = "https://github.com/tesserix/agent-development-kit/issues"
 
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling>=1.25", "hatch-vcs>=0.4"]
 build-backend = "hatchling.build"
+
+# The tag is the version. Deriving it anywhere else lets the artefact disagree with the
+# release it claims to be; see docs/releasing.md.
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tesserix_adk"]

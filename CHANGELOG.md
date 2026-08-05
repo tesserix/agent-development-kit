@@ -10,6 +10,13 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Release path (`docs/releasing.md`): the git tag is the sole source of the version
+  (`hatch-vcs` derives it, `tesserix_adk.__version__` reads it back from the installed
+  distribution), a guard refuses a tag off `main`, in the wrong format, or naming a
+  version already on the index, and publishing goes to PyPI by trusted publishing with
+  no upload token in existence. Artefacts are mirrored to GitHub Release assets, a
+  divergence between the two fails the release, and a per-extra smoke job installs the
+  published wheel from the index and runs `examples/getting_started.py`.
 - Versioning and deprecation policy (`docs/versioning.md`), with `@deprecate` recording
   the alternative and removal version, `AdkDeprecationWarning` warned once per call site
   and attributed to the caller's frame, `TESSERIX_ADK_DEPRECATIONS_AS_ERRORS` for consumers
