@@ -23,7 +23,7 @@ class NotAStore:
 
 
 class HalfAStore:
-    async def get(self, key: str) -> str | None:
+    async def get(self, key: str) -> str | None:  # noqa: ARG002
         return None
 
 

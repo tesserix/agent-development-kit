@@ -36,12 +36,15 @@ dev = [
   "ruff>=0.14,<0.15",
   "mypy>=1.18,<2",
   "import-linter>=2.3,<3",
+  "pre-commit>=4,<5",
 ]
 test = [
   "pytest>=8.3,<9",
   "pytest-asyncio>=0.24,<0.25",
   "pytest-cov>=6,<7",
   "hypothesis>=6.112,<7",
+  "pyyaml>=6,<7",
+  "types-pyyaml>=6,<7",
 ]
 docs = ["mkdocs-material>=9.5,<10"]
 
@@ -68,6 +71,10 @@ select = [
   "S",           # bandit
   "ANN",         # missing annotations
   "D",           # docstrings
+  "T20",         # no stray print
+  "PGH",         # no bare type: ignore or noqa
+  "ARG",         # unused arguments
+  "RET",         # return simplification
 ]
 ignore = [
   "D107",  # __init__ docstring — the class docstring covers it
@@ -75,14 +82,21 @@ ignore = [
   "D213",  # incompatible with D212
 ]
 
+# Relaxation allowlist. Every entry needs the owner and the reason on the line above,
+# enforced by tests/test_lint_policy.py. This list is meant to shrink; adding to it is
+# a reviewed change, not a way to get a red build green.
 [tool.ruff.lint.per-file-ignores]
+# owner: @sam123ben — reason: asserts are the mechanism of a test suite, and test
+# bodies document themselves through their names.
 "tests/*" = ["S101", "D", "ANN"]
-# Payload types are owned by the stories that introduce them (models, tools, memory);
-# until then a protocol placeholder is honestly Any rather than falsely narrow. RFC 0001.
+# owner: @sam123ben — reason: payload types are owned by the stories that introduce
+# them (models, tools, memory); until then a protocol placeholder is honestly Any
+# rather than falsely narrow. Removed when those stories land. RFC 0001.
 "src/tesserix_adk/core/protocols.py" = ["ANN401"]
+# owner: @sam123ben — reason: mirrors the protocol placeholders above.
 "src/tesserix_adk/testing/fakes.py" = ["ANN401"]
-# Conformance suites are test code that ships in src: asserts are the point, and each
-# case name states the behaviour it checks.
+# owner: @sam123ben — reason: conformance suites are test code that ships in src, so
+# asserts are the mechanism, and each case name states the behaviour it checks.
 "src/tesserix_adk/testing/conformance.py" = ["S101", "D102", "ANN401"]
 
 [tool.ruff.lint.pydocstyle]

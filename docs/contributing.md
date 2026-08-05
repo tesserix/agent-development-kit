@@ -17,6 +17,34 @@ make check       # lint, typecheck, coverage — everything CI runs
 Individual targets: `make lint`, `make format`, `make typecheck`, `make test`,
 `make cov`. Run `make` with no arguments to list them.
 
+## The static gates
+
+Four gates run on every change, in `make check`, in CI, and — after `make hooks` —
+on every commit:
+
+| Gate | Command | What it protects |
+|------|---------|------------------|
+| Rules | `ruff check` | Correctness, security (`S`), async misuse (`ASYNC`), annotations (`ANN`), docstrings (`D`) |
+| Formatting | `ruff format --check` | One canonical layout, so diffs show intent |
+| Types | `mypy --strict` | Signature conformance at every protocol seam |
+| Layering | `lint-imports` | The RFC 0001 dependency direction |
+
+`.pre-commit-config.yaml` contains only `local` hooks that shell out through
+`uv run`. A `rev`-pinned mirror would pin ruff and mypy a second time, independently
+of `uv.lock`, and the first symptom of the drift is a branch that is green locally
+and red in CI. `tests/test_gate_parity.py` asserts the two stay identical.
+
+Two suppression rules are enabled deliberately. `PGH003` rejects a bare
+`# type: ignore` — use `# type: ignore[code]` so the suppression stops applying when
+the underlying error changes. `PGH004` rejects a bare `# noqa` for the same reason.
+Relaxations in `[tool.ruff.lint.per-file-ignores]` each require an owner and a reason
+on the line above, enforced by `tests/test_lint_policy.py`; that list is meant to
+shrink.
+
+The `typecheck` job also publishes an annotation-coverage table
+(`mypy --any-exprs-report`) to the run summary. `Any` is sometimes the honest type,
+but an `Any` count nobody measures only ever grows.
+
 ## Dependency changes
 
 `uv.lock` is committed and CI runs `uv lock --check`, which fails when

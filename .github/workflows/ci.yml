@@ -29,6 +29,37 @@ jobs:
       # Fails when pyproject.toml changed without regenerating uv.lock in the same commit.
       - run: uv lock --check
 
+  lint:
+    name: ruff rules and formatting
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # GitHub format puts each finding on the diff line that caused it.
+      - run: uv run ruff check --output-format=github .
+      - run: uv run ruff format --check .
+
+  typecheck:
+    name: mypy --strict
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: uv run mypy --strict src tests
+      # Annotation coverage of the public surface: an `Any` count nobody measures only grows.
+      - run: uv run mypy --strict --any-exprs-report .mypy-any-report src
+      - run: cat .mypy-any-report/any-exprs.txt >> "$GITHUB_STEP_SUMMARY"
+
   test:
     name: test (frozen lock)
     runs-on: ubuntu-latest

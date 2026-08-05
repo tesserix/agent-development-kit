@@ -10,6 +10,9 @@ sync: ## Install the frozen dependency set
 lock: ## Regenerate uv.lock after editing pyproject.toml
 	uv lock
 
+hooks: ## Install the git pre-commit hooks (same tools as CI, via uv run)
+	uv run pre-commit install
+
 lint: ## Lint, check formatting and enforce the RFC 0001 layering contracts
 	uv run ruff check .
 	uv run ruff format --check .
