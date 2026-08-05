@@ -80,6 +80,10 @@ def public_modules() -> list[ModuleType]:
 
 
 def _describe(name: str, obj: object) -> str:
+    # A typing alias is callable, so it must be recognised before the callable branch or it
+    # renders as `def Layer(*args, **kwargs)` and the snapshot stops describing the contract.
+    if getattr(obj, "__module__", "") == "typing":
+        return f"{name} = {obj}"
     if inspect.isclass(obj):
         bases = ", ".join(b.__name__ for b in obj.__bases__)
         members = [
@@ -125,14 +129,18 @@ def find_leaks(surface: dict[str, str]) -> list[str]:
 
 
 def third_party_re_exports(modules: Sequence[ModuleType] | None = None) -> set[str]:
-    """Return exported names whose definition lives outside the kit."""
+    """Return exported names whose definition lives outside the kit.
+
+    A type alias built from `typing` is defined here, not re-exported: `typing` is not a
+    vendor whose release cadence we would be adopting.
+    """
     outside = set()
     for module in public_modules() if modules is None else modules:
         module_name = module.__name__
         for name in getattr(module, "__all__", []):
             obj = getattr(module, name, None)
             origin = getattr(obj, "__module__", "tesserix_adk")
-            if not origin.startswith("tesserix_adk"):
+            if not origin.startswith("tesserix_adk") and origin != "typing":
                 outside.add(f"{module_name}.{name}")
     return outside
 

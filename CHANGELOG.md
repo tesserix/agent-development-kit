@@ -10,6 +10,12 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `tesserix_adk.core.config`: one frozen `AdkConfig` resolved once at startup from code,
+  `TESSERIX_ADK_*` environment variables, `adk.toml` or `[tool.tesserix-adk]`, in that
+  precedence. `resolve_config` additionally returns per-key provenance and `explain()`;
+  `ConfigError` reports every problem at once with the layer that supplied each. Secrets
+  are environment-only and masked everywhere they could be rendered. Adding a key is a
+  minor release; renaming or removing one goes through the deprecation policy.
 - Optional extras per integration (`mcp`, `temporal`, `graphiti`, `redis`, `postgres`,
   and `all` as their union), with `tesserix_adk.core.require_extra` and
   `MissingExtraError` naming the extra and its install command. Base requirements are

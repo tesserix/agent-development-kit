@@ -9,6 +9,7 @@ commit.
 import pkgutil
 from pathlib import Path
 from types import ModuleType
+from typing import Literal
 
 import pytest
 from pydantic import BaseModel
@@ -110,6 +111,20 @@ def test_every_re_exported_third_party_name_is_listed_deliberately() -> None:
 def test_a_re_exported_foreign_symbol_is_detected() -> None:
     module = _module("tesserix_adk.memory", __all__=["BaseModel"], BaseModel=BaseModel)
     assert third_party_re_exports([module]) == {"tesserix_adk.memory.BaseModel"}
+
+
+def test_a_type_alias_is_not_a_re_export() -> None:
+    """`Layer = Literal[...]` is defined here; typing is not a vendor we take releases from."""
+    alias = Literal["a", "b"]
+    module = _module("tesserix_adk.memory", __all__=["Kind"], Kind=alias)
+    assert third_party_re_exports([module]) == set()
+
+
+def test_a_type_alias_is_described_by_its_members_not_as_a_function() -> None:
+    """`Layer` is a closed set of strings; the snapshot has to show which strings."""
+    module = _module("tesserix_adk.memory", __all__=["Kind"], Kind=Literal["a", "b"])
+    described = "Kind = typing.Literal['a', 'b']"
+    assert collect_surface([module]) == {"tesserix_adk.memory.Kind": described}
 
 
 def test_a_name_promised_but_absent_is_not_recorded_as_surface() -> None:

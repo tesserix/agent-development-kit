@@ -131,6 +131,41 @@ resolution the consumer must see and decide on. Do not pin the shared package in
 requirements to make the conflict disappear; that pushes it onto everyone who installed
 neither extra.
 
+## Configuration
+
+One resolution, at startup, into one frozen `AdkConfig`. There is no reload and no second
+place a setting can come from, because a setting that can change under a running agent
+turns a reproduction into a guess.
+
+| Layer | Written as | Wins over |
+|---|---|---|
+| code | `resolve_config({"budget.max_tokens_per_run": 5000})` | everything |
+| env | `TESSERIX_ADK_BUDGET__MAX_TOKENS_PER_RUN=5000` | file, default |
+| file | `adk.toml`, or `[tool.tesserix-adk]` in `pyproject.toml` | default |
+| default | the field default on the model | — |
+
+Environment keys are the dotted key upper-cased, prefixed `TESSERIX_ADK_`, with `__`
+between levels — a single underscore is ambiguous the moment a field name contains one.
+The file is discovered by walking upward from the working directory, so a nested service
+in a monorepo picks up the repository's file without being told where it is.
+
+Three rules the tests hold:
+
+- **Secrets are environment-only.** A `SecretStr` field supplied by a config file is a
+  hard error, not a warning: config files get committed. Secret values are masked in
+  `repr`, `str`, both dump forms, provenance and error messages.
+- **Every problem is reported at once.** `ConfigError` carries a `ConfigProblem` per
+  failure, each naming the key, the layer that supplied it and the offending literal.
+  Fixing one, restarting and discovering the next is how ten minutes becomes an afternoon.
+- **Every resolved key is attributable.** `resolve_config(...).explain()` prints the
+  winning layer per key and what it overrode. An operator who cannot see which layer won
+  cannot debug a wrong value.
+
+Adding a key is a minor release. Renaming or removing one goes through the deprecation
+policy — the old key keeps working for the deprecation window and warns, because a
+configuration key is as public as a function signature and breaks at start-up in
+production rather than in CI.
+
 ## The test matrix
 
 | Lane | When | What |

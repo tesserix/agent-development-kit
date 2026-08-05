@@ -1,20 +1,47 @@
 tesserix_adk.__version__ :: __version__: str
+tesserix_adk.core.AdkConfig :: class AdkConfig(BaseModel)
 tesserix_adk.core.AdkError :: class AdkError(Exception)
+tesserix_adk.core.BudgetConfig :: class BudgetConfig(BaseModel)
 tesserix_adk.core.BudgetPolicy :: class BudgetPolicy(Protocol) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.core.ConfigError :: class ConfigError(ConfigurationError)
+tesserix_adk.core.ConfigProblem :: class ConfigProblem(object)
+tesserix_adk.core.ConfigResolution :: class ConfigResolution(object) {explain(self) -> 'str'}
 tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.core.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.core.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
 tesserix_adk.core.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'Any') -> 'Any'; stream(self, request: 'Any') -> 'Any'}
 tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
+tesserix_adk.core.Provenance :: class Provenance(object)
+tesserix_adk.core.ProviderConfig :: class ProviderConfig(BaseModel)
+tesserix_adk.core.RedactionConfig :: class RedactionConfig(BaseModel)
+tesserix_adk.core.StoreConfig :: class StoreConfig(BaseModel)
+tesserix_adk.core.TelemetryConfig :: class TelemetryConfig(BaseModel)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
+tesserix_adk.core.config.AdkConfig :: class AdkConfig(BaseModel)
+tesserix_adk.core.config.BudgetConfig :: class BudgetConfig(BaseModel)
+tesserix_adk.core.config.ConfigError :: class ConfigError(ConfigurationError)
+tesserix_adk.core.config.ConfigProblem :: class ConfigProblem(object)
+tesserix_adk.core.config.ConfigResolution :: class ConfigResolution(object) {explain(self) -> 'str'}
+tesserix_adk.core.config.ENV_PREFIX :: ENV_PREFIX: str
+tesserix_adk.core.config.Layer :: Layer = typing.Literal['code', 'env', 'file', 'default']
+tesserix_adk.core.config.Provenance :: class Provenance(object)
+tesserix_adk.core.config.ProviderConfig :: class ProviderConfig(BaseModel)
+tesserix_adk.core.config.RedactionConfig :: class RedactionConfig(BaseModel)
+tesserix_adk.core.config.StoreConfig :: class StoreConfig(BaseModel)
+tesserix_adk.core.config.TelemetryConfig :: class TelemetryConfig(BaseModel)
+tesserix_adk.core.config.leaf_keys :: def leaf_keys(model: 'type[BaseModel]', prefix: 'str' = '') -> 'dict[str, Any]'
+tesserix_adk.core.config.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
+tesserix_adk.core.config.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
+tesserix_adk.core.config.secret_keys :: def secret_keys(model: 'type[BaseModel]') -> 'set[str]'
 tesserix_adk.core.errors.AdkError :: class AdkError(Exception)
 tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
+tesserix_adk.core.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
 tesserix_adk.core.protocols.BudgetPolicy :: class BudgetPolicy(Protocol) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.protocols.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
@@ -26,6 +53,7 @@ tesserix_adk.core.protocols.Tracer :: class Tracer(Protocol) {event(self, name: 
 tesserix_adk.core.protocols.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
 tesserix_adk.core.protocols.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
+tesserix_adk.core.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.testing.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'Any'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
