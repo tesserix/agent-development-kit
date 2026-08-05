@@ -14,6 +14,13 @@ from tesserix_adk.core.config import (
     load_config,
     resolve_config,
 )
+from tesserix_adk.core.deprecation import (
+    AdkDeprecationWarning,
+    Deprecation,
+    DeprecationPolicyError,
+    deprecate,
+    deprecations,
+)
 from tesserix_adk.core.errors import (
     AdkError,
     ConfigurationError,
@@ -35,6 +42,7 @@ from tesserix_adk.core.protocols import (
 
 __all__ = [
     "AdkConfig",
+    "AdkDeprecationWarning",
     "AdkError",
     "BudgetConfig",
     "BudgetPolicy",
@@ -43,6 +51,8 @@ __all__ = [
     "ConfigProblem",
     "ConfigResolution",
     "ConfigurationError",
+    "Deprecation",
+    "DeprecationPolicyError",
     "Guardrail",
     "MemoryStore",
     "MissingExtraError",
@@ -55,6 +65,8 @@ __all__ = [
     "TelemetryConfig",
     "ToolRegistry",
     "Tracer",
+    "deprecate",
+    "deprecations",
     "load_config",
     "members_of",
     "require_extra",

@@ -157,6 +157,23 @@ jobs:
       # Prints the added, removed and changed symbols; stays red until the snapshot moves.
       - run: uv run python -m tools.api_surface
 
+  versioning-policy:
+    name: versioning and deprecation policy
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+        # Tags are the published releases the surface is compared against.
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: uv run python -m tools.deprecations
+      - run: uv run python -m tools.release_check
+
   layering:
     name: RFC 0001 layering contracts
     runs-on: ubuntu-latest

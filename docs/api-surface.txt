@@ -1,5 +1,6 @@
 tesserix_adk.__version__ :: __version__: str
 tesserix_adk.core.AdkConfig :: class AdkConfig(BaseModel)
+tesserix_adk.core.AdkDeprecationWarning :: class AdkDeprecationWarning(DeprecationWarning)
 tesserix_adk.core.AdkError :: class AdkError(Exception)
 tesserix_adk.core.BudgetConfig :: class BudgetConfig(BaseModel)
 tesserix_adk.core.BudgetPolicy :: class BudgetPolicy(Protocol) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
@@ -8,6 +9,8 @@ tesserix_adk.core.ConfigError :: class ConfigError(ConfigurationError)
 tesserix_adk.core.ConfigProblem :: class ConfigProblem(object)
 tesserix_adk.core.ConfigResolution :: class ConfigResolution(object) {explain(self) -> 'str'}
 tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
+tesserix_adk.core.Deprecation :: class Deprecation(object)
+tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
 tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.core.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.core.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
@@ -36,6 +39,14 @@ tesserix_adk.core.config.leaf_keys :: def leaf_keys(model: 'type[BaseModel]', pr
 tesserix_adk.core.config.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.config.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
 tesserix_adk.core.config.secret_keys :: def secret_keys(model: 'type[BaseModel]') -> 'set[str]'
+tesserix_adk.core.deprecate :: def deprecate(*, since: 'str', removal: 'str', alternative: 'str', reason: 'str | None' = None) -> 'Callable[[_T], _T]'
+tesserix_adk.core.deprecation.AdkDeprecationWarning :: class AdkDeprecationWarning(DeprecationWarning)
+tesserix_adk.core.deprecation.Deprecation :: class Deprecation(object)
+tesserix_adk.core.deprecation.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
+tesserix_adk.core.deprecation.WARNINGS_AS_ERRORS_ENV :: WARNINGS_AS_ERRORS_ENV: str
+tesserix_adk.core.deprecation.deprecate :: def deprecate(*, since: 'str', removal: 'str', alternative: 'str', reason: 'str | None' = None) -> 'Callable[[_T], _T]'
+tesserix_adk.core.deprecation.deprecations :: def deprecations() -> 'tuple[Deprecation, ...]'
+tesserix_adk.core.deprecations :: def deprecations() -> 'tuple[Deprecation, ...]'
 tesserix_adk.core.errors.AdkError :: class AdkError(Exception)
 tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, ImportError)

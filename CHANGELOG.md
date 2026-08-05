@@ -10,6 +10,11 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Versioning and deprecation policy (`docs/versioning.md`), with `@deprecate` recording
+  the alternative and removal version, `AdkDeprecationWarning` warned once per call site
+  and attributed to the caller's frame, `TESSERIX_ADK_DEPRECATIONS_AS_ERRORS` for consumers
+  preparing an upgrade, a generated `docs/deprecations.md`, and a release check that
+  refuses a removal with no deprecation record or a version bump too small for it.
 - `tesserix_adk.core.config`: one frozen `AdkConfig` resolved once at startup from code,
   `TESSERIX_ADK_*` environment variables, `adk.toml` or `[tool.tesserix-adk]`, in that
   precedence. `resolve_config` additionally returns per-key provenance and `explain()`;

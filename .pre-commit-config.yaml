@@ -36,6 +36,14 @@ repos:
         pass_filenames: false
         require_serial: true
 
+      - id: deprecations
+        name: deprecations page matches the decorators
+        entry: uv run python -m tools.deprecations
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true
+
       - id: import-linter
         name: RFC 0001 layering contracts
         entry: uv run lint-imports

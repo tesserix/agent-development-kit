@@ -82,6 +82,7 @@ code lands here as the kit is built.
 |---|---|
 | Design brief & architecture | [`docs/design-brief.md`](docs/design-brief.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
+| Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |
 | Issue template | [`.github/ISSUE_TEMPLATE/engineering-story.md`](.github/ISSUE_TEMPLATE/engineering-story.md) |
 
 ## A note on the name

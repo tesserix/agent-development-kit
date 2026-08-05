@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -37,7 +37,16 @@ api-snapshot: ## Regenerate docs/api-surface.txt after a deliberate surface chan
 api-check: ## Fail if the public surface differs from the committed snapshot
 	uv run python -m tools.api_surface
 
-check: lint typecheck api-check cov ## Everything CI runs
+deprecations: ## Regenerate docs/deprecations.md from the @deprecate records
+	uv run python -m tools.deprecations --write
+
+deprecations-check: ## Fail if the deprecations page is out of date or a removal is overdue
+	uv run python -m tools.deprecations
+
+release-check: ## Fail if this release breaks the versioning policy against the last tag
+	uv run python -m tools.release_check
+
+check: lint typecheck api-check deprecations-check release-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov
