@@ -1,0 +1,34 @@
+.DEFAULT_GOAL := help
+.PHONY: help sync lock lint format typecheck test cov check clean
+
+help: ## Show available targets
+	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
+
+sync: ## Install the frozen dependency set
+	uv sync --frozen --all-groups
+
+lock: ## Regenerate uv.lock after editing pyproject.toml
+	uv lock
+
+lint: ## Lint and check formatting
+	uv run ruff check .
+	uv run ruff format --check .
+
+format: ## Apply formatting and safe lint fixes
+	uv run ruff format .
+	uv run ruff check --fix .
+
+typecheck: ## Run mypy in strict mode
+	uv run mypy --strict src tests
+
+test: ## Run the test suite
+	uv run pytest
+
+cov: ## Run the test suite with coverage enforcement
+	uv run pytest --cov --cov-report=term-missing --cov-fail-under=90
+
+check: lint typecheck cov ## Everything CI runs
+
+clean: ## Remove build and cache artefacts
+	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov
+	find . -name __pycache__ -type d -prune -exec rm -rf {} +
