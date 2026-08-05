@@ -59,12 +59,20 @@ forbidden_modules =
     tesserix_adk.adapters
 
 [importlinter:contract:no-vendor-types-inward]
-name = Vendor SDKs stay behind their integration package
+name = Vendor SDKs and transports stay behind their integration package
 type = forbidden
 source_modules =
     tesserix_adk.core
     tesserix_adk.runtime
 forbidden_modules =
     httpx
+    requests
+    aiohttp
+    socket
     openai
     anthropic
+    boto3
+    redis
+    asyncpg
+    psycopg
+    sqlalchemy

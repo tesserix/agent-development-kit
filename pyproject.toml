@@ -77,6 +77,13 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "D", "ANN"]
+# Payload types are owned by the stories that introduce them (models, tools, memory);
+# until then a protocol placeholder is honestly Any rather than falsely narrow. RFC 0001.
+"src/tesserix_adk/core/protocols.py" = ["ANN401"]
+"src/tesserix_adk/testing/fakes.py" = ["ANN401"]
+# Conformance suites are test code that ships in src: asserts are the point, and each
+# case name states the behaviour it checks.
+"src/tesserix_adk/testing/conformance.py" = ["S101", "D102", "ANN401"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -101,4 +108,10 @@ branch = true
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError"]
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "^\\s*\\.\\.\\.$",       # Protocol method stubs are declarations, not code
+  "@(abc\\.)?abstractmethod",
+]
