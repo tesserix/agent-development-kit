@@ -277,7 +277,8 @@ class TestWhenTheEndpointIsNotThere:
         with pytest.raises(ProviderError) as refused:
             await provider(transport).complete(asked())
         assert refused.value.retryable is False
-        assert "maximum context length" in refused.value.details["body"]
+        assert refused.value.details["status"] == "400"
+        assert "maximum context length" not in str(refused.value.details)
 
 
 class TestAnErrorDressedAsAnAnswer:

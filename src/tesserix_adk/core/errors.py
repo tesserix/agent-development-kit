@@ -16,16 +16,19 @@ __all__ = [
     "AdkError",
     "ApprovalDeniedError",
     "ApprovalExpiredError",
+    "AuthenticationError",
     "BudgetExceededError",
     "CancelledError",
     "CapabilityError",
     "ConfigurationError",
+    "ContentFilteredError",
     "ContextWindowExceededError",
     "FanOutLimitError",
     "GuardrailViolationError",
     "HookEvaluationError",
     "HookRefusedError",
     "HookRegistrationError",
+    "InvalidRequestError",
     "LoopLimitError",
     "MaxIterationsError",
     "MissingExtraError",
@@ -34,6 +37,7 @@ __all__ = [
     "ProviderError",
     "ProviderTimeoutError",
     "ProviderUnavailableError",
+    "RateLimitError",
     "RecursionLimitError",
     "RepeatedCallError",
     "SchemaGenerationError",
@@ -178,15 +182,17 @@ class ContextWindowExceededError(CapabilityError):
     kit refuses instead, against the declared window, before the request goes out.
 
     Args:
-        counted: Tokens in the prompt, as the provider itself counted them.
-        limit: The window the provider declared.
+        counted: Tokens in the prompt, as the provider itself counted them. Zero where
+            the vendor reported the overflow without saying by how much, which is what
+            every vendor's own 400 for it does.
+        limit: The window the provider declared. Zero where nothing declares one.
     """
 
     def __init__(
         self,
         *args: object,
-        counted: int,
-        limit: int,
+        counted: int = 0,
+        limit: int = 0,
         provider: str | None = None,
         model: str | None = None,
         run_id: str | None = None,
@@ -244,6 +250,11 @@ class ProviderError(AdkError):
         retry_after: Seconds the provider asked the caller to wait, from its own
             `Retry-After` header. Believed in preference to any computed backoff, up to
             the policy's ceiling.
+        provider: Who failed. A run that routes across vendors cannot tell from the
+            message which one this was.
+        model: Which of that provider's models was asked.
+        request_id: The provider's own id for the call, which is what a support ticket
+            is answered against.
     """
 
     def __init__(
@@ -251,12 +262,18 @@ class ProviderError(AdkError):
         *args: object,
         status: int | None = None,
         retry_after: float | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        request_id: str | None = None,
         run_id: str | None = None,
         tenant: str | None = None,
         details: Mapping[str, str] | None = None,
     ) -> None:
         self.status = status
         self.retry_after = retry_after
+        self.provider = provider
+        self.model = model
+        self.request_id = request_id
         super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
 
     @property
@@ -276,6 +293,88 @@ class ProviderTimeoutError(ProviderError):
     def retryable(self) -> bool:
         """Always. A timeout says nothing about the request, only about this attempt."""
         return True
+
+
+class RateLimitError(ProviderError):
+    """Raised when a provider refused the call because too many were made.
+
+    Args:
+        quota: Whether the limit is an exhausted allowance rather than a rate. A rate
+            clears by waiting and a quota clears when somebody buys more, so retrying an
+            exhausted quota is the same rejection at the same price until the attempts
+            run out.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        quota: bool = False,
+        status: int | None = None,
+        retry_after: float | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        request_id: str | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.quota = quota
+        super().__init__(
+            *args,
+            status=status,
+            retry_after=retry_after,
+            provider=provider,
+            model=model,
+            request_id=request_id,
+            run_id=run_id,
+            tenant=tenant,
+            details=details,
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """A rate is worth waiting out. An allowance nobody has topped up is not."""
+        return not self.quota
+
+
+class AuthenticationError(ProviderError):
+    """Raised when a provider rejected the credential, or what it is allowed to reach.
+
+    Never retryable: a key that is wrong is wrong on every attempt, and retrying turns
+    one broken deployment into a burst that looks like an attack from the vendor's side.
+    """
+
+    @property
+    def retryable(self) -> bool:
+        """No. The next attempt sends the same key."""
+        return False
+
+
+class ContentFilteredError(ProviderError):
+    """Raised when a provider refused to process or to return content on policy grounds.
+
+    An answer rather than a fault, so it is not retried — but its own type, because the
+    caller's response to it is different from the response to a malformed request.
+    """
+
+    @property
+    def retryable(self) -> bool:
+        """No. The same content is refused the same way."""
+        return False
+
+
+class InvalidRequestError(ProviderError):
+    """Raised when a provider rejected the request itself.
+
+    A bad argument, a missing model, a shape it does not accept. Never retryable:
+    amplifying a broken configuration into hundreds of identical calls is how a deployment
+    mistake becomes a bill.
+    """
+
+    @property
+    def retryable(self) -> bool:
+        """No. Nothing about waiting makes the request valid."""
+        return False
 
 
 class ProviderUnavailableError(ProviderError):

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from contextlib import aclosing
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, Self, cast
 
 import httpx
@@ -19,7 +20,6 @@ from tesserix_adk.core.capabilities import ModelCapabilities
 from tesserix_adk.core.errors import (
     ConfigurationError,
     ModelResponseError,
-    ProviderError,
     ProviderTimeoutError,
     ProviderUnavailableError,
     StreamInterruptedError,
@@ -28,21 +28,61 @@ from tesserix_adk.core.primitives import TextPart
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.models.catalogue import model_card, priced
 from tesserix_adk.models.credentials import Credential
+from tesserix_adk.models.providers._failures import failure_for
 from tesserix_adk.models.providers._normalise import normalised_tool_calls
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Mapping, Sequence
 
+    from tesserix_adk.core.errors import ProviderError
     from tesserix_adk.core.primitives import Message, Usage
     from tesserix_adk.core.protocols import SecretProvider
     from tesserix_adk.core.provider import ModelRequest, ModelResponse, StopReason
     from tesserix_adk.core.streaming import StreamEvent
     from tesserix_adk.models.catalogue import ModelCard
+    from tesserix_adk.runtime.rate_limit import RateLimiter
 
-__all__ = ["HttpProvider", "VendorStream"]
+__all__ = ["PHASE_DEFAULTS", "HttpProvider", "PhaseTimeouts", "VendorStream"]
 
 _CHARS_PER_TOKEN = 4
 _BODY_IN_ERRORS = 500
+
+
+@dataclass(frozen=True, slots=True)
+class PhaseTimeouts:
+    """Seconds allowed for each phase of one provider call.
+
+    One number for the whole call has to be long enough for the slowest generation, which
+    is also how long a host that will never accept a connection is waited on. Splitting
+    them lets a dead endpoint fail in seconds while a long answer still finishes.
+
+    Attributes:
+        connect: Opening the connection. Short: a host either accepts or it does not.
+        read: Waiting for the answer, or for the next frame of a stream. Long, because
+            this is the model thinking.
+        write: Sending the request body.
+        pool: Waiting for a free connection from the pool.
+    """
+
+    connect: float = 10.0
+    read: float = 60.0
+    write: float = 30.0
+    pool: float = 10.0
+
+
+PHASE_DEFAULTS = PhaseTimeouts()
+
+_TIMEOUT_PHASES: tuple[tuple[type[httpx.TimeoutException], str], ...] = (
+    (httpx.ConnectTimeout, "connect"),
+    (httpx.ReadTimeout, "read"),
+    (httpx.WriteTimeout, "write"),
+    (httpx.PoolTimeout, "pool"),
+)
+
+
+def _phase_of(timeout: httpx.TimeoutException) -> str:
+    """Which wait ran out. A dead host and a slow model are one exception in httpx."""
+    return next((phase for kind, phase in _TIMEOUT_PHASES if isinstance(timeout, kind)), "request")
 
 
 class VendorStream(ABC):
@@ -81,9 +121,18 @@ class HttpProvider:
             so a rotation lands without a restart.
         api_key_variable: Which variable holds it. Defaults to the vendor's usual name.
         base_url: The endpoint, overridable for a gateway or a regional host.
-        timeout: Seconds for one request.
+        timeout: Seconds to wait for the answer, or for the next frame of a stream. This
+            is the generating budget, not the whole call's.
+        connect_timeout: Seconds to wait for the connection to open.
         transport: An injected `httpx` transport. This is how the recorded tests run with
             no network, and how a consumer supplies its own proxy or retry layer.
+        limiter: A shared allowance to spend before each call. One limiter across every
+            provider holding one key is the point: separate limiters each believe they
+            have the whole allowance.
+        redact_vendor_messages: Whether to drop the vendor's free-text message from the
+            errors this raises. On, because a rejection quotes the request that caused it
+            and the request is the prompt. Off is for an operator debugging against a
+            deployment whose prompts they are already entitled to read.
     """
 
     provider_name = ""
@@ -98,10 +147,16 @@ class HttpProvider:
         secrets: SecretProvider | None = None,
         api_key_variable: str | None = None,
         base_url: str | None = None,
-        timeout: float = 60.0,
+        timeout: float = PHASE_DEFAULTS.read,
+        connect_timeout: float = PHASE_DEFAULTS.connect,
         transport: httpx.AsyncBaseTransport | None = None,
+        limiter: RateLimiter | None = None,
+        redact_vendor_messages: bool = True,
     ) -> None:
         self.model = model
+        self.timeouts = replace(PHASE_DEFAULTS, read=timeout, connect=connect_timeout)
+        self._limiter = limiter
+        self._redact = redact_vendor_messages
         self._card = _card_for(self.provider_name, model)
         self._capabilities = capabilities or _declared(self._card)
         self._credential = Credential(
@@ -109,7 +164,12 @@ class HttpProvider:
         )
         self._client = httpx.AsyncClient(
             base_url=base_url or self.default_base_url,
-            timeout=timeout,
+            timeout=httpx.Timeout(
+                connect=self.timeouts.connect,
+                read=self.timeouts.read,
+                write=self.timeouts.write,
+                pool=self.timeouts.pool,
+            ),
             transport=transport,
         )
 
@@ -150,20 +210,30 @@ class HttpProvider:
         """Close the pool."""
         await self.aclose()
 
-    async def _post(self, path: str, payload: Mapping[str, Any]) -> dict[str, Any]:
-        """POST `payload` and return the parsed body, in the kit's error vocabulary."""
+    async def _post(
+        self, path: str, payload: Mapping[str, Any], *, cost: int = 0
+    ) -> dict[str, Any]:
+        """POST `payload` and return the parsed body, in the kit's error vocabulary.
+
+        Args:
+            path: The endpoint, relative to the base URL.
+            payload: The body to send.
+            cost: What the call is estimated to cost in tokens, for the shared allowance.
+        """
+        await self._shaped(cost)
         try:
             response = await self._client.post(path, json=dict(payload), headers=self._headers())
         except httpx.TimeoutException as timeout:
             raise ProviderTimeoutError(
-                f"{self.provider_name} did not answer in time", details={"path": path}
+                f"{self.provider_name} did not answer in time",
+                details={"path": path, "phase": _phase_of(timeout)},
             ) from timeout
         except httpx.TransportError as unreachable:
             raise ProviderUnavailableError(
                 f"{self.provider_name} could not be reached: {unreachable}",
                 details={"path": path},
             ) from unreachable
-        _refuse_a_failure(response, self.provider_name, response.text)
+        self._refuse(response)
         return _object(response, self.provider_name)
 
     async def _post_sse(
@@ -183,7 +253,8 @@ class HttpProvider:
             response = await self._client.send(request, stream=True)
         except httpx.TimeoutException as timeout:
             raise ProviderTimeoutError(
-                f"{self.provider_name} did not answer in time", details={"path": path}
+                f"{self.provider_name} did not answer in time",
+                details={"path": path, "phase": _phase_of(timeout)},
             ) from timeout
         except httpx.TransportError as unreachable:
             raise ProviderUnavailableError(
@@ -193,7 +264,7 @@ class HttpProvider:
         try:
             if response.status_code >= httpx.codes.BAD_REQUEST:
                 await response.aread()
-                _refuse_a_failure(response, self.provider_name, response.text)
+                self._refuse(response)
             async with aclosing(_frames(response, self.provider_name)) as frames:
                 async for frame in frames:
                     yield frame
@@ -216,6 +287,7 @@ class HttpProvider:
                 stopped, which is the shape a truncated answer arrives in.
         """
         accumulator = StreamAccumulator()
+        await self._shaped(self.count_tokens(request.messages))
         async with aclosing(self._post_sse(path, payload)) as frames:
             async for frame in frames:
                 for event in state.read(frame):
@@ -250,6 +322,29 @@ class HttpProvider:
             }
         )
 
+    async def _shaped(self, cost: int) -> None:
+        """Wait for the shared allowance, where one is in front of this provider."""
+        if self._limiter is not None:
+            await self._limiter.acquire(cost)
+
+    def _refuse(self, response: httpx.Response) -> None:
+        """Raise the kit's error for a failed response, or return where it did not fail.
+
+        Raises:
+            AdkError: The taxonomy member the vendor's status and code map onto.
+        """
+        if response.status_code < httpx.codes.BAD_REQUEST:
+            return
+        raise failure_for(
+            response,
+            provider=self.provider_name,
+            model=self.model,
+            window=self._capabilities.context_window_tokens or 0,
+            retry_after=_retry_after(response),
+            request_id=_request_id(response),
+            redact=self._redact,
+        )
+
     def _headers(self) -> dict[str, str]:
         """Return the request headers, resolving the key at the moment it is used."""
         raise NotImplementedError
@@ -264,7 +359,6 @@ class HttpProvider:
 
 
 _DEFAULT_MAX_OUTPUT = 4096
-_NOT_THERE = frozenset({502, 503, 504})
 
 
 def _card_for(provider: str, model: str) -> ModelCard | None:
@@ -276,20 +370,6 @@ def _card_for(provider: str, model: str) -> ModelCard | None:
 
 def _declared(card: ModelCard | None) -> ModelCapabilities:
     return ModelCapabilities() if card is None else card.capabilities
-
-
-def _refuse_a_failure(response: httpx.Response, provider: str, body: str) -> None:
-    if response.status_code < httpx.codes.BAD_REQUEST:
-        return
-    # A gateway status is nothing to do with the request: something upstream is not there
-    # yet. Its own type, so a caller waits rather than rewriting a request that was fine.
-    failure = ProviderUnavailableError if response.status_code in _NOT_THERE else ProviderError
-    raise failure(
-        f"{provider} answered {response.status_code}",
-        status=response.status_code,
-        retry_after=_retry_after(response),
-        details={"body": body[:_BODY_IN_ERRORS], "request_id": _request_id(response)},
-    )
 
 
 def _retry_after(response: httpx.Response) -> float | None:

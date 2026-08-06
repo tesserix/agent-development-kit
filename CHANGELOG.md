@@ -34,6 +34,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- One error taxonomy over every vendor, and the two things now done in front of a call
+  rather than after it. `RateLimitError`, `AuthenticationError`, `ContentFilteredError`
+  and `InvalidRequestError` join the existing provider errors, and each adapter classifies
+  a failure into them from the vendor's own code and status: a rate limit is
+  `rate_limit_error` at Anthropic, `rate_limit_exceeded` at OpenAI and `RESOURCE_EXHAUSTED`
+  at Google, and `RetryPlan` now reads the type rather than the body. A code nobody has
+  mapped becomes a plain `ProviderError` whose retryability follows its status. A spent
+  quota is `RateLimitError(quota=True)` and is **not** retried — a rate clears by waiting,
+  an allowance clears when somebody pays. Every failure carries `provider`, `model`,
+  `request_id`, `status`, `retry_after` and the vendor's `details["code"]`; it no longer
+  carries the vendor's free-text message, because a 400 body quotes the request that caused
+  it and the request body is the prompt. `redact_vendor_messages=False` restores it for an
+  operator already entitled to read those prompts. Connecting and generating get separate
+  budgets, documented as `PhaseTimeouts` / `PHASE_DEFAULTS` and settable per provider with
+  `timeout` and `connect_timeout`, with whichever wait ran out named as `details["phase"]`.
+  `RateLimiter` meters requests and tokens across every provider sharing one key, so
+  concurrent runs space their calls instead of each believing they have the whole
+  allowance. Additive: every new error subclasses `ProviderError` and every new argument
+  defaults to today's behaviour, except the redaction, which is the one intended change.
+  See `docs/resilience.md`.
 - `OpenAICompatibleProvider`, so an endpoint you run yourself — vLLM, Ollama, TGI — is
   routable, costed and capability-checked like any vendor, with presets `VLLM`, `OLLAMA`
   and `TGI` carrying each server's deviations from the format it claims to speak. Two

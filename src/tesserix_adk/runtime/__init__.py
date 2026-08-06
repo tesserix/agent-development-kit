@@ -9,6 +9,7 @@ from tesserix_adk.runtime.prompt import (
     assemble_prompt,
     wrap_untrusted,
 )
+from tesserix_adk.runtime.rate_limit import RateLimiter
 from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
@@ -20,6 +21,7 @@ __all__ = [
     "ModelResponse",
     "OutputContract",
     "Prompt",
+    "RateLimiter",
     "RetryPlan",
     "RunFingerprint",
     "SystemClock",

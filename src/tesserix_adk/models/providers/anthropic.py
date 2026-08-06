@@ -65,7 +65,8 @@ class AnthropicProvider(HttpProvider):
             ModelResponseError: If the body cannot be read as a message.
         """
         payload = self._payload(request)
-        return self._settled(_read(await self._post(_MESSAGES, payload)), request)
+        body = await self._post(_MESSAGES, payload, cost=self.count_tokens(request.messages))
+        return self._settled(_read(body), request)
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
         """Send one request and return its events as they arrive.

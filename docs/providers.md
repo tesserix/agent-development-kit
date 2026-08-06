@@ -263,4 +263,8 @@ A connection that never landed, and 502/503/504, raise `ProviderUnavailableError
 computed backoff: retrying a model that is still loading its weights as fast as the policy
 allows is how it never finishes loading.
 
+What every other vendor failure arrives as, what it carries and what it deliberately does
+not, and the timeouts and rate limiting in front of the call, are in
+[resilience.md](resilience.md).
+
 Runnable: [`examples/self_hosted_provider.py`](../examples/self_hosted_provider.py).

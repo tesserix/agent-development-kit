@@ -150,7 +150,9 @@ class OpenAICompatibleProvider(OpenAIProvider):
                 server returned under a 200.
             ModelResponseError: If the body cannot be read as a completion.
         """
-        body = await self._post(COMPLETIONS_PATH, self._payload(request))
+        body = await self._post(
+            COMPLETIONS_PATH, self._payload(request), cost=self.count_tokens(request.messages)
+        )
         _refuse_an_error_in_the_body(body, self.provider_name)
         answered = self._settled(self._completion(body), request)
         return self._reconciled(answered, request)

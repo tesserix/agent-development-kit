@@ -25,7 +25,7 @@ from tesserix_adk.core import (
     StreamInterruptedError,
     TextPart,
 )
-from tesserix_adk.models.providers import AnthropicProvider
+from tesserix_adk.models.providers import PHASE_DEFAULTS, AnthropicProvider
 from tesserix_adk.testing import FakeSecrets
 
 if TYPE_CHECKING:
@@ -34,11 +34,18 @@ if TYPE_CHECKING:
 MODEL = "claude-sonnet-4-5"
 
 
-def provider(handler: Callable[[httpx.Request], httpx.Response]) -> AnthropicProvider:
+def provider(
+    handler: Callable[[httpx.Request], httpx.Response],
+    *,
+    timeout: float = PHASE_DEFAULTS.read,
+    connect_timeout: float = PHASE_DEFAULTS.connect,
+) -> AnthropicProvider:
     return AnthropicProvider(
         MODEL,
         secrets=FakeSecrets({"ANTHROPIC_API_KEY": "test-key"}),
         transport=httpx.MockTransport(handler),
+        timeout=timeout,
+        connect_timeout=connect_timeout,
     )
 
 
@@ -89,6 +96,52 @@ class TestWhenTheCallNeverLands:
             [event async for event in events]
 
 
+class TestWhichWaitRanOut:
+    """A host that will not accept a connection and a model that is thinking slowly are
+    the same exception in httpx and different operational events. The phase is carried so
+    an operator reads one graph rather than one counter."""
+
+    async def test_a_connect_timeout_names_the_connect_phase(self) -> None:
+        with pytest.raises(ProviderTimeoutError) as refused:
+            await provider(raising(httpx.ConnectTimeout("no answer"))).complete(asked())
+        assert refused.value.details["phase"] == "connect"
+
+    async def test_a_read_timeout_names_the_read_phase(self) -> None:
+        with pytest.raises(ProviderTimeoutError) as refused:
+            await provider(raising(httpx.ReadTimeout("still thinking"))).complete(asked())
+        assert refused.value.details["phase"] == "read"
+
+    async def test_a_timeout_that_names_no_phase_is_still_a_timeout(self) -> None:
+        with pytest.raises(ProviderTimeoutError) as refused:
+            await provider(raising(httpx.TimeoutException("slow"))).complete(asked())
+        assert refused.value.details["phase"] == "request"
+
+    async def test_the_phase_survives_the_stream_path_too(self) -> None:
+        events = await provider(raising(httpx.ConnectTimeout("no answer"))).stream(asked())
+        with pytest.raises(ProviderTimeoutError) as refused:
+            [event async for event in events]
+        assert refused.value.details["phase"] == "connect"
+
+
+class TestHowLongEachPhaseIsGiven:
+    """Connecting and generating are given separate budgets. One number for both means
+    either a dead host is waited on for a minute or a long answer is cut off."""
+
+    async def test_connecting_is_given_far_less_than_generating_by_default(self) -> None:
+        async with provider(answering(httpx.Response(200))) as default:
+            assert default.timeouts.connect < default.timeouts.read
+
+    async def test_each_phase_can_be_set_on_its_own(self) -> None:
+        async with provider(answering(httpx.Response(200)), connect_timeout=2.5) as set_up:
+            assert set_up.timeouts.connect == 2.5
+            assert set_up.timeouts.read == PHASE_DEFAULTS.read
+
+    async def test_the_overall_timeout_still_moves_the_generating_budget(self) -> None:
+        async with provider(answering(httpx.Response(200)), timeout=5.0) as set_up:
+            assert set_up.timeouts.read == 5.0
+            assert set_up.timeouts.connect == PHASE_DEFAULTS.connect
+
+
 class TestWhenTheAnswerIsNotAnAnswer:
     async def test_a_body_that_is_not_json_is_refused(self) -> None:
         """An HTML error page from a proxy is not a completion, and never was."""
@@ -117,7 +170,7 @@ class TestWhenTheVendorRefuses:
         with pytest.raises(ProviderError) as refused:
             [event async for event in events]
         assert refused.value.status == 429
-        assert "slow" in refused.value.details["body"]
+        assert "slow" not in str(refused.value.details)
 
     async def test_the_vendors_own_wait_is_believed(self) -> None:
         failing = provider(answering(httpx.Response(429, headers={"retry-after": "30"}, json={})))

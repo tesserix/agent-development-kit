@@ -70,7 +70,11 @@ class GeminiProvider(HttpProvider):
             ProviderError: On any transport or upstream failure, after translation.
             ModelResponseError: If the body cannot be read as a candidate.
         """
-        body = await self._post(_generate(request.model), self._payload(request))
+        body = await self._post(
+            _generate(request.model),
+            self._payload(request),
+            cost=self.count_tokens(request.messages),
+        )
         return self._settled(_read(body), request)
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
