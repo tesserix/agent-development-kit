@@ -10,9 +10,13 @@ from tesserix_adk.testing.fakes import (
     BudgetExceededError,
     FakeBudgetPolicy,
     FakeClock,
+    FakeGuardrail,
     FakeMemoryStore,
+    FakeToolRegistry,
     FakeTracer,
     RecordedEvent,
+    ScriptedProvider,
+    ToolExecutionError,
 )
 from tesserix_adk.testing.pytest_plugin import NetworkAccessInTestError, QuarantineError
 
@@ -22,11 +26,15 @@ __all__ = [
     "ClockConformance",
     "FakeBudgetPolicy",
     "FakeClock",
+    "FakeGuardrail",
     "FakeMemoryStore",
+    "FakeToolRegistry",
     "FakeTracer",
     "MemoryStoreConformance",
     "NetworkAccessInTestError",
     "QuarantineError",
     "RecordedEvent",
+    "ScriptedProvider",
+    "ToolExecutionError",
     "TracerConformance",
 ]

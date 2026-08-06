@@ -5,6 +5,7 @@ If a suite cannot be inherited and run here, no third party can run it either.
 
 import pytest
 
+from tesserix_adk.runtime import SystemClock
 from tesserix_adk.testing import (
     BudgetExceededError,
     BudgetPolicyConformance,
@@ -26,6 +27,13 @@ class TestFakeMemoryStore(MemoryStoreConformance):
 class TestFakeClock(ClockConformance):
     def make_clock(self) -> FakeClock:
         return FakeClock()
+
+
+class TestSystemClock(ClockConformance):
+    """The kit's own wall clock is held to the same suite as anyone else's."""
+
+    def make_clock(self) -> SystemClock:
+        return SystemClock()
 
 
 class TestFakeBudgetPolicy(BudgetPolicyConformance):

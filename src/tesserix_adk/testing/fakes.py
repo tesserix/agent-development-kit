@@ -8,21 +8,28 @@ control and becomes a second thing to debug.
 from __future__ import annotations
 
 import contextlib
+import inspect
+from collections import deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from tesserix_adk.core.errors import BudgetExceededError
+from tesserix_adk.core.errors import BudgetExceededError, ToolExecutionError
+from tesserix_adk.runtime import ModelRequest, ModelResponse, ToolDeclaration
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator, Mapping
 
 __all__ = [
     "BudgetExceededError",
     "FakeBudgetPolicy",
     "FakeClock",
+    "FakeGuardrail",
     "FakeMemoryStore",
+    "FakeToolRegistry",
     "FakeTracer",
     "RecordedEvent",
+    "ScriptedProvider",
+    "ToolExecutionError",
 ]
 
 
@@ -129,3 +136,116 @@ class FakeBudgetPolicy:
         """Record `actual` consumption and release the outstanding reservation."""
         self.spent += actual
         self.reserved = 0
+
+
+class ScriptedProvider:
+    """A provider that replays a fixed script, so a loop test needs no network.
+
+    An entry that is an exception is raised rather than returned, which is how a test
+    exercises a provider failure without a transport.
+
+    Args:
+        responses: What to return, in order.
+        name: The provider name recorded on the run.
+    """
+
+    def __init__(self, *responses: ModelResponse | BaseException, name: str = "scripted") -> None:
+        self._responses = deque(responses)
+        self._name = name
+        self.requests: list[ModelRequest] = []
+
+    @property
+    def name(self) -> str:
+        """The provider name."""
+        return self._name
+
+    async def complete(self, request: Any) -> Any:
+        """Return the next scripted response, or raise the next scripted exception.
+
+        Raises:
+            AssertionError: If the loop called more times than the script allows, which
+                is a runaway loop and must fail the test rather than hang it.
+        """
+        self.requests.append(request)
+        if not self._responses:
+            raise AssertionError(
+                f"{self._name} was called {len(self.requests)} times; the script has "
+                f"{len(self.requests) - 1} responses"
+            )
+        nxt = self._responses.popleft()
+        if isinstance(nxt, BaseException):
+            raise nxt
+        return nxt
+
+    async def stream(self, request: Any) -> Any:
+        """Not scripted. Streaming has its own epic (#38)."""
+        raise NotImplementedError("ScriptedProvider does not stream; see #38")
+
+
+class FakeToolRegistry:
+    """An in-memory `ToolRegistry` backed by plain callables.
+
+    Args:
+        tools: Callables by tool name. A callable that raises is how a test exercises a
+            tool failure.
+        declarations: Declarations by tool name, where a test cares about the schema.
+    """
+
+    def __init__(
+        self,
+        tools: Mapping[str, Callable[..., Any]] | None = None,
+        declarations: Mapping[str, ToolDeclaration] | None = None,
+    ) -> None:
+        self._tools = dict(tools or {})
+        self._declarations = dict(declarations or {})
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    def declarations(self) -> tuple[ToolDeclaration, ...]:
+        """Return declarations in registration order, which is the cacheable order."""
+        return tuple(
+            self._declarations.get(name, ToolDeclaration(name=name)) for name in self._tools
+        )
+
+    async def invoke(self, name: str, arguments: Any) -> Any:
+        """Invoke tool `name`.
+
+        Raises:
+            ToolExecutionError: If no tool is registered under `name`.
+        """
+        self.calls.append((name, dict(arguments)))
+        if name not in self._tools:
+            raise ToolExecutionError(f"no tool named {name!r} is registered")
+        result = self._tools[name](**arguments)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+
+class FakeGuardrail:
+    """A guardrail with a fixed verdict.
+
+    Args:
+        name: Its recorded name.
+        allow: Whether it permits what it is shown.
+        raises: An exception to raise instead of deciding, for the fail-closed path.
+    """
+
+    def __init__(
+        self, name: str = "fake", *, allow: bool = True, raises: Exception | None = None
+    ) -> None:
+        self._name = name
+        self._allow = allow
+        self._raises = raises
+        self.checked: list[Any] = []
+
+    @property
+    def name(self) -> str:
+        """The guardrail name."""
+        return self._name
+
+    async def check(self, subject: Any) -> Any:
+        """Return the fixed verdict, or raise the configured failure."""
+        self.checked.append(subject)
+        if self._raises is not None:
+            raise self._raises
+        return self._allow

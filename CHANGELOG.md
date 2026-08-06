@@ -10,6 +10,25 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `AgentRunner` — the run loop, from prompt assembly to exactly one terminal state.
+  `runtime` gains `assemble_prompt`, `Prompt`, `ToolDeclaration`, `wrap_untrusted`,
+  `ModelRequest`, `ModelResponse` and `SystemClock`; `core` gains `RunEvent`,
+  `RunEventKind`, `Run.events`, `Run.output`, `Run.record_event`, `Run.with_output` and
+  `ToolFailurePolicy` with `Agent.on_tool_error`. Assembly is deterministic and ordered
+  (instructions, memory, history, input), content the agent did not author is fenced as
+  untrusted data, and `Prompt.version` digests the cacheable prefix onto
+  `Run.prompt_version`. The loop dispatches tools against the agent's allowlist, records
+  every step on `Run.events` with its `Usage`, and always returns the run — a provider
+  error, guardrail refusal, schema violation, budget ceiling, iteration cap or empty
+  response is a terminal state rather than an escaped exception, and a tool failure is
+  wrapped in `ToolExecutionError` and either shown to the model or made terminal per
+  `on_tool_error`, never replaced with an invented result. An agent declaring a guardrail,
+  budget or tool registry the runner was not given is refused before the run starts.
+  `tesserix_adk.testing` gains `ScriptedProvider`, `FakeToolRegistry` and `FakeGuardrail`,
+  so the whole loop runs without a network. **Stability:** additive — every name is new
+  and semver-governed from this release; `docs/api-surface.txt` only grows. Documented in
+  `docs/run-loop.md` and exercised by `examples/run_loop.py`.
+
 - The core primitives every other layer speaks — `Agent`, `Message`, `TextPart`,
   `BinaryPart`, `ToolCall`, `Usage`, `Run`, `RunState`, `TenantContext`, `RunContext`,
   `deduplicate`, `legal_transitions` — and a typed error hierarchy under `AdkError`

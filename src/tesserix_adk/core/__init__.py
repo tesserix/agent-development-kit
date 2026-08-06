@@ -1,6 +1,6 @@
 """Frozen primitives, protocols and error types. The vocabulary every other layer speaks."""
 
-from tesserix_adk.core.agent import Agent
+from tesserix_adk.core.agent import Agent, ToolFailurePolicy
 from tesserix_adk.core.config import (
     AdkConfig,
     BudgetConfig,
@@ -62,6 +62,8 @@ from tesserix_adk.core.protocols import (
 from tesserix_adk.core.run import (
     Run,
     RunContext,
+    RunEvent,
+    RunEventKind,
     RunState,
     TenantContext,
     legal_transitions,
@@ -102,6 +104,8 @@ __all__ = [
     "Role",
     "Run",
     "RunContext",
+    "RunEvent",
+    "RunEventKind",
     "RunState",
     "SchemaViolationError",
     "StoreConfig",
@@ -110,6 +114,7 @@ __all__ = [
     "TextPart",
     "ToolCall",
     "ToolExecutionError",
+    "ToolFailurePolicy",
     "ToolRegistry",
     "Tracer",
     "Usage",

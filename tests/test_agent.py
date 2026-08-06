@@ -26,6 +26,7 @@ from tesserix_adk.core import (
     ProviderTimeoutError,
     SchemaViolationError,
     ToolExecutionError,
+    ToolFailurePolicy,
 )
 
 ERRORS = [
@@ -125,6 +126,31 @@ class TestAgent:
             guardrails=("redact", "export_check"),
         )
         assert list(agent.guardrails) == ["redact", "export_check"]
+
+    def test_a_failing_tool_is_shown_to_the_model_by_default(self) -> None:
+        """A model that is told its tool failed can choose another route; a run that dies
+        on the first failure cannot."""
+        agent = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+        assert agent.on_tool_error is ToolFailurePolicy.SURFACE_TO_MODEL
+
+    def test_an_agent_may_declare_that_a_failing_tool_ends_the_run(self) -> None:
+        """Where a tool failure means the answer would be wrong, continuing is worse."""
+        agent = Agent(
+            name="planner",
+            instructions="Plan trips.",
+            model="claude-sonnet-5",
+            on_tool_error=ToolFailurePolicy.FAIL_RUN,
+        )
+        assert agent.on_tool_error is ToolFailurePolicy.FAIL_RUN
+
+    def test_a_policy_the_kit_does_not_model_is_refused(self) -> None:
+        with pytest.raises(ValidationError, match="on_tool_error"):
+            Agent(
+                name="planner",
+                instructions="Plan trips.",
+                model="claude-sonnet-5",
+                on_tool_error="retry_forever",  # type: ignore[arg-type]
+            )
 
     def test_an_agent_holds_no_provider_client(self) -> None:
         """Construction-time config only: a declaration with a socket cannot be reused."""

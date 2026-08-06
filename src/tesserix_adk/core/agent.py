@@ -15,12 +15,26 @@ decisions behind these types are in `docs/primitives.md`.
 
 from __future__ import annotations
 
+from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
 from tesserix_adk.core.config import BudgetConfig  # noqa: TC001
 
-__all__ = ["Agent"]
+__all__ = ["Agent", "ToolFailurePolicy"]
+
+
+class ToolFailurePolicy(StrEnum):
+    """What a run does when a tool it called fails.
+
+    Neither answer is right everywhere: a model told its search failed can try another
+    route, but where the tool was the source of truth, continuing produces a confident
+    wrong answer. The agent declares which case it is.
+    """
+
+    SURFACE_TO_MODEL = "surface_to_model"
+    FAIL_RUN = "fail_run"
 
 
 class Agent(BaseModel):
@@ -40,6 +54,8 @@ class Agent(BaseModel):
             excluded from serialisation rather than rendered as a string that cannot be
             read back.
         budget: The ceiling for one run.
+        on_tool_error: What happens when a tool fails. Surfaced to the model by default,
+            so a run does not die on the first recoverable failure.
         guardrails: Guardrail names, applied in order.
         metadata: Consumer-owned annotations. The kit reads nothing from it.
 
@@ -58,6 +74,7 @@ class Agent(BaseModel):
     tools: tuple[str, ...] = ()
     output_type: type[BaseModel] | None = Field(default=None, exclude=True)
     budget: BudgetConfig | None = None
+    on_tool_error: ToolFailurePolicy = ToolFailurePolicy.SURFACE_TO_MODEL
     guardrails: tuple[str, ...] = ()
     metadata: dict[str, str] = Field(default_factory=dict)
 

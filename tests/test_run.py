@@ -14,6 +14,8 @@ from tesserix_adk.core import (
     Message,
     Run,
     RunContext,
+    RunEvent,
+    RunEventKind,
     RunState,
     TenantContext,
     TextPart,
@@ -124,6 +126,64 @@ class TestTheRunItself:
         """Cost attribution and isolation both key off it; there is no default tenant."""
         with pytest.raises(ValidationError, match="tenant"):
             run(tenant="")
+
+
+class TestEvents:
+    def test_a_run_starts_with_no_events(self) -> None:
+        assert run().events == []
+
+    def test_recording_an_event_appends_it(self) -> None:
+        recorded = run().record_event(RunEvent(kind=RunEventKind.MODEL_CALL, name="sonnet"))
+        assert [event.kind for event in recorded.events] == [RunEventKind.MODEL_CALL]
+
+    def test_events_keep_the_order_they_happened_in(self) -> None:
+        """The event list is the record of what happened; out of order it is fiction."""
+        recorded = (
+            run()
+            .record_event(RunEvent(kind=RunEventKind.PROMPT_ASSEMBLED))
+            .record_event(RunEvent(kind=RunEventKind.MODEL_CALL))
+            .record_event(RunEvent(kind=RunEventKind.TOOL_CALL, name="search"))
+        )
+        assert [event.kind for event in recorded.events] == [
+            RunEventKind.PROMPT_ASSEMBLED,
+            RunEventKind.MODEL_CALL,
+            RunEventKind.TOOL_CALL,
+        ]
+
+    def test_recording_an_event_leaves_the_original_run_alone(self) -> None:
+        original = run()
+        original.record_event(RunEvent(kind=RunEventKind.MODEL_CALL))
+        assert original.events == []
+
+    def test_an_event_is_frozen(self) -> None:
+        event = RunEvent(kind=RunEventKind.MODEL_CALL)
+        with pytest.raises(ValidationError):
+            event.kind = RunEventKind.TOOL_CALL
+
+    def test_an_event_carries_what_it_cost_where_there_is_a_cost(self) -> None:
+        """Cost attribution reads the events, not a per-project wiring of its own."""
+        event = RunEvent(
+            kind=RunEventKind.MODEL_RESPONSE, usage=Usage(input_tokens=9, output_tokens=1)
+        )
+        assert event.usage is not None
+        assert event.usage.input_tokens == 9
+
+    def test_a_run_with_events_round_trips(self) -> None:
+        recorded = run().record_event(
+            RunEvent(kind=RunEventKind.TOOL_RESULT, name="search", detail="3 rows")
+        )
+        assert Run.model_validate_json(recorded.model_dump_json()) == recorded
+
+
+class TestOutput:
+    def test_a_run_has_no_output_until_one_is_validated(self) -> None:
+        assert run().output is None
+
+    def test_the_output_is_data_rather_than_an_instance(self) -> None:
+        """A checkpoint is JSON; an arbitrary model instance would not survive it."""
+        finished = run().with_output({"destination": "Kyoto", "nights": 3})
+        assert finished.output == {"destination": "Kyoto", "nights": 3}
+        assert Run.model_validate_json(finished.model_dump_json()) == finished
 
 
 class TestContext:
