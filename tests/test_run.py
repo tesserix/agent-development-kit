@@ -8,7 +8,7 @@ the run ended, and a transition nobody declared legal is refused rather than log
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from tesserix_adk.core import (
     Message,
@@ -23,16 +23,29 @@ from tesserix_adk.core import (
     legal_transitions,
 )
 
+_FIELDS: dict[str, object] = {
+    "id": "run_1",
+    "tenant": "acme",
+    "agent_name": "planner",
+    "agent_version": "1.0.0",
+    "model": "claude-sonnet-5",
+}
+
+
+class TripPlan(BaseModel):
+    """A trip the model proposes.
+
+    Args:
+        destination: Where the traveller goes.
+        nights: How long they stay.
+    """
+
+    destination: str
+    nights: int
+
 
 def run(**overrides: object) -> Run:
-    fields: dict[str, object] = {
-        "id": "run_1",
-        "tenant": "acme",
-        "agent_name": "planner",
-        "agent_version": "1.0.0",
-        "model": "claude-sonnet-5",
-    }
-    return Run(**{**fields, **overrides})  # type: ignore[arg-type]
+    return Run(**{**_FIELDS, **overrides})  # type: ignore[arg-type]
 
 
 class TestRunState:
@@ -180,11 +193,12 @@ class TestOutput:
     def test_a_run_has_no_output_until_one_is_validated(self) -> None:
         assert run().output is None
 
-    def test_the_output_is_data_rather_than_an_instance(self) -> None:
-        """A checkpoint is JSON; an arbitrary model instance would not survive it."""
-        finished = run().with_output({"destination": "Kyoto", "nights": 3})
-        assert finished.output == {"destination": "Kyoto", "nights": 3}
-        assert Run.model_validate_json(finished.model_dump_json()) == finished
+    def test_the_output_is_the_declared_type_and_still_survives_a_checkpoint(self) -> None:
+        """The type parameter is what rehydrates JSON as that type rather than as a dict."""
+        started = Run[TripPlan](**_FIELDS)  # type: ignore[arg-type]
+        finished = started.with_output(TripPlan(destination="Kyoto", nights=3))
+        assert finished.output == TripPlan(destination="Kyoto", nights=3)
+        assert Run[TripPlan].model_validate_json(finished.model_dump_json()) == finished
 
 
 class TestContext:

@@ -305,8 +305,10 @@ a loop wedges.
   model would attribute the run to one that never ran it.
 - **`ModelRequest`, `ModelResponse` and `ToolDeclaration` are provisional**, owned by the
   runtime until the provider protocol (#49) and the tool registry (#130) land theirs.
-- **`Run.output` is a dict, not a typed instance.** `Agent[TripPlan]` returning `TripPlan`
-  is #36; a checkpoint is JSON, so the payload is stored and re-parsed.
+- **A rehydrated run needs its type parameter named.** Nothing on the wire says which type
+  the answer was, so `Run[TripPlan].model_validate_json` rehydrates it and a bare `Run` is
+  refused rather than handed back with the answer dropped. See
+  [`docs/typing.md`](typing.md).
 - **The budget estimate is characters over four**, not a tokeniser. Normalised accounting
   is #55.
 - **The token is not threaded into tool or provider signatures.** `ToolRegistry.invoke`

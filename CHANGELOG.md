@@ -345,6 +345,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Changed
 
+- Typed run results. `Agent[TripPlan]` runs to a `Run[TripPlan]`, and `run.output` is a
+  `TripPlan` rather than a dict. `Agent` and `Run` take one type parameter bound to
+  `BaseModel`, `AgentRunner.run` and `run_sync` carry it through, and `Run.with_output`
+  takes the instance. The parameter defaults to the new `NoOutput`, a model with no
+  fields, so an agent declaring `free_text=True` needs no annotation and every existing
+  bare `Agent` or `Run` annotation still reads unchanged. A run built by the loop is
+  parameterised at runtime as well, because a bare `Run` serialises a typed answer away to
+  `{}` and the checkpoint of a typed run would otherwise lose it; rehydration names the
+  type, and an unparameterised `Run.model_validate_json` is refused rather than dropping
+  the answer, since nothing on the wire says which type it was. **Stability:** breaking —
+  a caller reading `run.output["nights"]` reads `run.output.nights` instead. The
+  serialised form of a run is unchanged, and the parameter's default keeps every
+  unannotated use valid. Documented in `docs/typing.md` and exercised by
+  `examples/typed_results.py`.
+
 - `BudgetConfig.max_tool_calls_per_run` moved to `LoopConfig`, where it is enforced. It
   was declared on the budget and never checked, and a count of tool calls is loop shape
   rather than spend: `BudgetConfig` now carries only what is denominated in tokens and

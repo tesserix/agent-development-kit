@@ -24,9 +24,9 @@ import json
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from tesserix_adk.core import (
     AdkError,
@@ -239,9 +239,9 @@ class AgentRunner:
         self._max_tool_result_chars = max_tool_result_chars
         self._orphans: set[asyncio.Task[Any]] = set()
 
-    def run_sync(
+    def run_sync[OutputT: BaseModel](
         self,
-        agent: Agent,
+        agent: Agent[OutputT],
         user_input: str,
         *,
         tenant: str,
@@ -252,7 +252,7 @@ class AgentRunner:
         cancellation: CancellationToken | None = None,
         deadline: Deadline | None = None,
         parent: RunContext | None = None,
-    ) -> Run:
+    ) -> Run[OutputT]:
         """Run `agent` from a synchronous caller. Arguments are `run`'s.
 
         A deliberate wrapper, not an afterthought: not every consumer is async. It drives
@@ -285,9 +285,9 @@ class AgentRunner:
                 loop.close()
         raise RuntimeError("run_sync cannot be called from a running event loop; await run")
 
-    async def run(
+    async def run[OutputT: BaseModel](
         self,
-        agent: Agent,
+        agent: Agent[OutputT],
         user_input: str,
         *,
         tenant: str,
@@ -298,7 +298,7 @@ class AgentRunner:
         cancellation: CancellationToken | None = None,
         deadline: Deadline | None = None,
         parent: RunContext | None = None,
-    ) -> Run:
+    ) -> Run[OutputT]:
         """Drive `agent` until it reaches a terminal state, and return the run.
 
         Args:
@@ -334,7 +334,7 @@ class AgentRunner:
                 agent, depth, bounds, tenant=tenant, user=user, run_id=run_id
             )
         model = agent.model or ""
-        run = Run(
+        run: Run[Any] = _carrier_for(agent.output_type)(
             id=run_id or self._ids(),
             tenant=tenant,
             user=user,
@@ -393,8 +393,8 @@ class AgentRunner:
         )
 
     async def _asked(
-        self, run: Run, agent: Agent, user_input: str, bounds: _Bounds
-    ) -> tuple[Run, str]:
+        self, run: Run[Any], agent: Agent[Any], user_input: str, bounds: _Bounds
+    ) -> tuple[Run[Any], str]:
         """What is actually asked, after policy has had its say about it."""
         run, asked, decision, _ = await self._ask_hooks(
             run, agent, HookPoint.BEFORE_PROMPT_ASSEMBLY, bounds, content=user_input
@@ -403,8 +403,8 @@ class AgentRunner:
         return run, asked
 
     async def _before_the_call(
-        self, run: Run, agent: Agent, messages: list[Message], bounds: _Bounds
-    ) -> tuple[Run, list[Message]]:
+        self, run: Run[Any], agent: Agent[Any], messages: list[Message], bounds: _Bounds
+    ) -> tuple[Run[Any], list[Message]]:
         """Policy sees what is about to go upstream, and may redact it before it does."""
         run, rewritten, decision, _ = await self._ask_hooks(
             run, agent, HookPoint.BEFORE_MODEL_CALL, bounds, content=_text_of(messages[-1])
@@ -415,8 +415,8 @@ class AgentRunner:
         return run, messages
 
     async def _after_the_response(
-        self, run: Run, agent: Agent, response: ModelResponse, bounds: _Bounds
-    ) -> tuple[Run, ModelResponse]:
+        self, run: Run[Any], agent: Agent[Any], response: ModelResponse, bounds: _Bounds
+    ) -> tuple[Run[Any], ModelResponse]:
         run, rewritten, decision, _ = await self._ask_hooks(
             run, agent, HookPoint.AFTER_MODEL_RESPONSE, bounds, content=response.content
         )
@@ -427,15 +427,15 @@ class AgentRunner:
 
     async def _ask_hooks(
         self,
-        run: Run,
-        agent: Agent,
+        run: Run[Any],
+        agent: Agent[Any],
         point: HookPoint,
         bounds: _Bounds,
         *,
         content: str = "",
         tool_name: str | None = None,
         tool_arguments: Mapping[str, Any] | None = None,
-    ) -> tuple[Run, str, HookDecision, str]:
+    ) -> tuple[Run[Any], str, HookDecision, str]:
         """Ask every hook at `point`, in declaration order, and resolve what they said.
 
         Every hook is asked even after one refuses: stopping at the first refusal hides
@@ -474,7 +474,7 @@ class AgentRunner:
         return run, content, held, by
 
     async def _ask(
-        self, run: Run, hook: Hook, subject: HookSubject, bounds: _Bounds
+        self, run: Run[Any], hook: Hook, subject: HookSubject, bounds: _Bounds
     ) -> HookDecision:
         """One hook, bounded and fail-closed: a check that did not finish did not pass."""
         try:
@@ -501,7 +501,7 @@ class AgentRunner:
         else:
             return decision
 
-    def _stop_on_refusal(self, run: Run, decision: HookDecision) -> None:
+    def _stop_on_refusal(self, run: Run[Any], decision: HookDecision) -> None:
         """Refuse the step, or read a request for approval as the refusal it amounts to.
 
         Anywhere but a tool dispatch there is no call to hold.
@@ -509,7 +509,7 @@ class AgentRunner:
         if decision.action in (HookAction.REFUSE, HookAction.REQUIRE_APPROVAL):
             raise _Terminal(run, RunState.FAILED, _named(HookRefusedError(decision.reason)))
 
-    def _refuse_incomplete_wiring(self, agent: Agent) -> None:
+    def _refuse_incomplete_wiring(self, agent: Agent[Any]) -> None:
         if agent.task_class:
             raise ConfigurationError(
                 f"agent {agent.name!r} selects its model by task_class "
@@ -541,7 +541,7 @@ class AgentRunner:
             )
 
     def _bounds_for(
-        self, agent: Agent, token: CancellationToken | None, caller: Deadline | None
+        self, agent: Agent[Any], token: CancellationToken | None, caller: Deadline | None
     ) -> _Bounds:
         deadlines = agent.deadlines or self._deadlines
         ceiling = (
@@ -557,7 +557,7 @@ class AgentRunner:
             loop=self._loop.narrowed_to(agent.loop),
         )
 
-    def _stop_if_over(self, run: Run, bounds: _Bounds) -> None:
+    def _stop_if_over(self, run: Run[Any], bounds: _Bounds) -> None:
         """Refuse to start a step nobody is waiting for the answer to.
 
         Raises:
@@ -648,7 +648,7 @@ class AgentRunner:
         task.add_done_callback(self._orphans.discard)
         return False
 
-    def _cancelled(self, run: Run, abort: _Aborted, *, name: str | None = None) -> _Terminal:
+    def _cancelled(self, run: Run[Any], abort: _Aborted, *, name: str | None = None) -> _Terminal:
         """Turn an aborted step into the one terminal state a cancelled run ends in."""
         requested = RunEventKind.CANCELLATION_REQUESTED
         kind = RunEventKind.DEADLINE_EXCEEDED if abort.deadline else requested
@@ -663,7 +663,7 @@ class AgentRunner:
             )
         return _Terminal(run, RunState.CANCELLED, abort.reason)
 
-    def _declarations_for(self, agent: Agent) -> tuple[ToolDeclaration, ...]:
+    def _declarations_for(self, agent: Agent[Any]) -> tuple[ToolDeclaration, ...]:
         """Only the allowlist is declared: a tool never named cannot be called for."""
         if self._tools is None or not agent.tools:
             return ()
@@ -681,13 +681,15 @@ class AgentRunner:
         return RunEvent(kind=kind, at=self._clock.now(), name=name, detail=detail, usage=usage)
 
     async def _terminate(
-        self, run: Run, agent: Agent, state: RunState, detail: str | None, bounds: _Bounds
-    ) -> Run:
+        self, run: Run[Any], agent: Agent[Any], state: RunState, detail: str | None, bounds: _Bounds
+    ) -> Run[Any]:
         run = await self._notify(run, agent, state, bounds)
         recorded = run.record_event(self._event(RunEventKind.TERMINATED, detail=detail))
         return recorded.transition_to(state, at=self._clock.now())
 
-    async def _notify(self, run: Run, agent: Agent, state: RunState, bounds: _Bounds) -> Run:
+    async def _notify(
+        self, run: Run[Any], agent: Agent[Any], state: RunState, bounds: _Bounds
+    ) -> Run[Any]:
         """Tell the terminal hooks how it ended.
 
         The only point where a hook is not fail-closed, because there is nothing left to
@@ -721,8 +723,8 @@ class AgentRunner:
         return run
 
     async def _call_model(
-        self, run: Run, request: ModelRequest, bounds: _Bounds
-    ) -> tuple[Run, ModelResponse]:
+        self, run: Run[Any], request: ModelRequest, bounds: _Bounds
+    ) -> tuple[Run[Any], ModelResponse]:
         estimate = sum(_length(message) for message in request.messages) // _CHARS_PER_TOKEN
         plan = RetryPlan(bounds.retry, random=self._jitter)
         attempt = 1
@@ -756,13 +758,13 @@ class AgentRunner:
 
     def _after_failure(
         self,
-        run: Run,
+        run: Run[Any],
         plan: RetryPlan,
         attempt: int,
         failure: Exception,
         bounds: _Bounds,
         name: str,
-    ) -> tuple[Run, float | None]:
+    ) -> tuple[Run[Any], float | None]:
         """Record the failed attempt, and say how long to wait or why there is no next one."""
         if not plan.retryable(failure):
             delay, why = None, "not retryable, so the same request is not sent again"
@@ -786,7 +788,7 @@ class AgentRunner:
         """A backoff that would land past the deadline is not a backoff, it is a stall."""
         return bounds.deadline is None or delay <= bounds.deadline.remaining(self._clock.now())
 
-    async def _backoff(self, run: Run, delay: float, bounds: _Bounds, *, name: str) -> None:
+    async def _backoff(self, run: Run[Any], delay: float, bounds: _Bounds, *, name: str) -> None:
         try:
             await self._bounded(
                 self._clock.sleep(delay), limit=None, bounds=bounds, what="retry backoff"
@@ -796,12 +798,12 @@ class AgentRunner:
 
     async def _settle(
         self,
-        run: Run,
-        agent: Agent,
+        run: Run[Any],
+        agent: Agent[Any],
         response: ModelResponse,
         messages: list[Message],
         bounds: _Bounds,
-    ) -> Run:
+    ) -> Run[Any]:
         """Record what the response cost, and stop if it said nothing at all."""
         run = run.record(response.usage).record_event(
             self._event(
@@ -832,8 +834,8 @@ class AgentRunner:
         return _carrying(run, messages)
 
     async def _check_guardrails(
-        self, run: Run, agent: Agent, response: ModelResponse, bounds: _Bounds
-    ) -> Run:
+        self, run: Run[Any], agent: Agent[Any], response: ModelResponse, bounds: _Bounds
+    ) -> Run[Any]:
         """Guardrails fail closed: a check that did not run is not a check that passed."""
         for name in agent.guardrails:
             guardrail = self._guardrails[name]
@@ -868,12 +870,12 @@ class AgentRunner:
 
     async def _advance(
         self,
-        run: Run,
-        agent: Agent,
+        run: Run[Any],
+        agent: Agent[Any],
         response: ModelResponse,
         messages: list[Message],
         bounds: _Bounds,
-    ) -> tuple[Run, bool]:
+    ) -> tuple[Run[Any], bool]:
         """Dispatch any tool calls, or finish. Returns the run and whether it is over."""
         if response.tool_calls:
             return await self._dispatch(run, agent, response, messages, bounds), False
@@ -881,12 +883,12 @@ class AgentRunner:
 
     async def _dispatch(
         self,
-        run: Run,
-        agent: Agent,
+        run: Run[Any],
+        agent: Agent[Any],
         response: ModelResponse,
         messages: list[Message],
         bounds: _Bounds,
-    ) -> Run:
+    ) -> Run[Any]:
         calls = deduplicate(list(response.tool_calls))
         self._refuse_a_turn_that_would_break_a_cap(run, agent, calls, bounds)
         for call in calls:
@@ -921,7 +923,7 @@ class AgentRunner:
         return run
 
     def _refuse_a_turn_that_would_break_a_cap(
-        self, run: Run, agent: Agent, calls: Sequence[ToolCall], bounds: _Bounds
+        self, run: Run[Any], agent: Agent[Any], calls: Sequence[ToolCall], bounds: _Bounds
     ) -> None:
         """Check the whole turn before dispatching any of it.
 
@@ -973,14 +975,14 @@ class AgentRunner:
 
     async def _too_deep(
         self,
-        agent: Agent,
+        agent: Agent[Any],
         depth: int,
         bounds: _Bounds,
         *,
         tenant: str,
         user: str | None,
         run_id: str | None,
-    ) -> Run:
+    ) -> Run[Any]:
         """End a run that was called from too deep a chain, before it calls anything itself."""
         detail = (
             f"run would sit at depth {depth}, past the ceiling of {bounds.loop.max_depth}; "
@@ -1001,8 +1003,8 @@ class AgentRunner:
         )
 
     async def _cleared_to_dispatch(
-        self, run: Run, agent: Agent, call: ToolCall, bounds: _Bounds
-    ) -> Run:
+        self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
+    ) -> Run[Any]:
         """Policy and, where it is required, a human, before anything goes out."""
         run, _, decision, _ = await self._ask_hooks(
             run,
@@ -1025,8 +1027,8 @@ class AgentRunner:
         return await self._approved(run, agent, call, reason, bounds)
 
     async def _approved(
-        self, run: Run, agent: Agent, call: ToolCall, reason: str, bounds: _Bounds
-    ) -> Run:
+        self, run: Run[Any], agent: Agent[Any], call: ToolCall, reason: str, bounds: _Bounds
+    ) -> Run[Any]:
         """Hold the call until a human decides, and record what they decided.
 
         The record carries a digest of the arguments rather than the arguments: an
@@ -1067,8 +1069,8 @@ class AgentRunner:
         return self._honoured(run, record, decision, call)
 
     def _honoured(
-        self, run: Run, record: ApprovalRecord, decision: ApprovalDecision, call: ToolCall
-    ) -> Run:
+        self, run: Run[Any], record: ApprovalRecord, decision: ApprovalDecision, call: ToolCall
+    ) -> Run[Any]:
         """An answer only clears the call it answers, and only while it is current."""
         if decision.record_id != record.id:
             raise _Terminal(
@@ -1101,14 +1103,14 @@ class AgentRunner:
             )
         )
 
-    def _denied(self, run: Run, call: ToolCall, why: str) -> Run:
+    def _denied(self, run: Run[Any], call: ToolCall, why: str) -> Run[Any]:
         return run.record_event(
             self._event(RunEventKind.APPROVAL_DENIED, name=call.name, detail=why)
         )
 
     async def _invoke(
-        self, run: Run, agent: Agent, call: ToolCall, bounds: _Bounds
-    ) -> tuple[Run, str, str]:
+        self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
+    ) -> tuple[Run[Any], str, str]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
         await self._reserve(run, len(_signature(call)) // _CHARS_PER_TOKEN)
         plan = RetryPlan(bounds.retry, random=self._jitter)
@@ -1158,7 +1160,7 @@ class AgentRunner:
             "tool_result",
         )
 
-    async def _reserve(self, run: Run, estimate: int) -> None:
+    async def _reserve(self, run: Run[Any], estimate: int) -> None:
         """Spend is checked before it is incurred; reported after, it is a bill."""
         if self._budget is None:
             return
@@ -1168,7 +1170,7 @@ class AgentRunner:
             raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
 
     def _tool_backoff(
-        self, agent: Agent, call: ToolCall, plan: RetryPlan, attempt: int, bounds: _Bounds
+        self, agent: Agent[Any], call: ToolCall, plan: RetryPlan, attempt: int, bounds: _Bounds
     ) -> float | None:
         """A tool is retried on its declaration, not on the shape of its exception.
 
@@ -1181,8 +1183,8 @@ class AgentRunner:
         return delay if delay is not None and self._fits(delay, bounds) else None
 
     def _tool_failed(
-        self, run: Run, agent: Agent, call: ToolCall, failure: Exception, bounds: _Bounds
-    ) -> tuple[Run, str, str]:
+        self, run: Run[Any], agent: Agent[Any], call: ToolCall, failure: Exception, bounds: _Bounds
+    ) -> tuple[Run[Any], str, str]:
         wrapped = ToolExecutionError(
             f"tool {call.name!r} failed: {failure}", run_id=run.id, tenant=run.tenant
         )
@@ -1198,7 +1200,7 @@ class AgentRunner:
             raise _Terminal(run, RunState.FAILED, str(wrapped)) from failure
         return run, f"error: {failure}", "tool_error"
 
-    def _indeterminacy(self, agent: Agent, call: ToolCall) -> RunEvent:
+    def _indeterminacy(self, agent: Agent[Any], call: ToolCall) -> RunEvent:
         """A tool stopped mid-flight is unknown, not undone — unless it said it is safe to retry."""
         if call.name in agent.idempotent_tools:
             return self._event(
@@ -1212,7 +1214,7 @@ class AgentRunner:
             detail="stopped after dispatch; whether its effect landed cannot be known",
         )
 
-    def _contract_for(self, agent: Agent) -> OutputContract | None:
+    def _contract_for(self, agent: Agent[Any]) -> OutputContract | None:
         """The shape of the answer, and whether this provider enforces it itself.
 
         A provider that has not declared the capability does not have it: assuming it does
@@ -1225,12 +1227,12 @@ class AgentRunner:
 
     async def _finish(
         self,
-        run: Run,
-        agent: Agent,
+        run: Run[Any],
+        agent: Agent[Any],
         response: ModelResponse,
         messages: list[Message],
         bounds: _Bounds,
-    ) -> tuple[Run, bool]:
+    ) -> tuple[Run[Any], bool]:
         """Validate the answer. Returns the run and whether it is over, so a repair goes on."""
         run, content, decision, _ = await self._ask_hooks(
             run, agent, HookPoint.BEFORE_OUTPUT_VALIDATION, bounds, content=response.content
@@ -1251,20 +1253,20 @@ class AgentRunner:
             validated = contract.parse(answer)
         except SchemaViolationError as violation:
             return await self._repair_or_fail(run, agent, contract, violation, messages, bounds)
-        finished = run.with_output(validated.model_dump(mode="json")).record_event(
+        finished = run.with_output(validated).record_event(
             self._event(RunEventKind.OUTPUT_VALIDATED, name=contract.output_type.__name__)
         )
         return await self._terminate(finished, agent, RunState.COMPLETED, None, bounds), True
 
     async def _repair_or_fail(
         self,
-        run: Run,
-        agent: Agent,
+        run: Run[Any],
+        agent: Agent[Any],
         contract: OutputContract,
         violation: SchemaViolationError,
         messages: list[Message],
         bounds: _Bounds,
-    ) -> tuple[Run, bool]:
+    ) -> tuple[Run[Any], bool]:
         """Send the failure back where that is allowed and still worth doing, else stop."""
         recorded = self._violation_event(contract, violation)
         repeated = recorded.detail is not None and recorded.detail == self._last_violation(run)
@@ -1310,7 +1312,7 @@ class AgentRunner:
         )
         return _carrying(run, messages), False
 
-    def _last_violation(self, run: Run) -> str | None:
+    def _last_violation(self, run: Run[Any]) -> str | None:
         """The detail of the previous violation, which is what a stalled repair repeats."""
         details = [e.detail for e in run.events if e.kind is RunEventKind.SCHEMA_VIOLATION]
         return details[-1] if details else None
@@ -1346,7 +1348,7 @@ class _Aborted(Exception):  # noqa: N818 — control flow, not an error the call
 class _Terminal(Exception):  # noqa: N818 — control flow, not an error the caller sees
     """Unwinds the loop to one terminal state, carrying the run recorded so far."""
 
-    def __init__(self, run: Run, state: RunState, detail: str | None = None) -> None:
+    def __init__(self, run: Run[Any], state: RunState, detail: str | None = None) -> None:
         super().__init__(detail or state)
         self.run = run
         self.state = state
@@ -1382,7 +1384,14 @@ def _short(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:12]
 
 
-def _carrying(run: Run, messages: list[Message]) -> Run:
+def _carrier_for(output_type: type[BaseModel] | None) -> type[Run[Any]]:
+    """The run class to build, parameterised: a bare `Run` serialises a typed answer to `{}`."""
+    if output_type is None:
+        return Run
+    return cast("type[Run[Any]]", Run.__class_getitem__(output_type))
+
+
+def _carrying[OutputT: BaseModel](run: Run[OutputT], messages: list[Message]) -> Run[OutputT]:
     """The conversation belongs on the run: a checkpoint without it cannot be resumed."""
     return run.model_copy(update={"messages": list(messages)})
 

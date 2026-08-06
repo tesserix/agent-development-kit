@@ -22,7 +22,9 @@ from tests.ci_config import pyproject
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "tesserix_adk"
 
-BASE_REQUIREMENTS = {"pydantic", "httpx", "opentelemetry-api"}
+# typing-extensions is pure Python, already present transitively, and removable when the
+# floor reaches 3.13 — see security/admissions/typing-extensions.toml.
+BASE_REQUIREMENTS = {"pydantic", "httpx", "opentelemetry-api", "typing-extensions"}
 
 INTEGRATION_EXTRAS = {"mcp", "temporal", "graphiti", "redis", "postgres"}
 
@@ -59,7 +61,7 @@ def _names(requirements: list[str]) -> set[str]:
 
 
 def test_the_base_install_names_only_the_agreed_requirements() -> None:
-    """Anything beyond these three is a cost every consumer pays, whether they use it or not."""
+    """Anything beyond these is a cost every consumer pays, whether they use it or not."""
     assert _names(pyproject()["project"]["dependencies"]) == BASE_REQUIREMENTS
 
 

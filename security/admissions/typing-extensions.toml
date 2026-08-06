@@ -1,0 +1,21 @@
+package = "typing-extensions"
+profile = "base"
+decided = 2026-08-07
+owner = "@sam123ben"
+need = "Typed results: `Agent[TripPlan]` runs to `Run[TripPlan]`, and the type parameter carries a default so an agent that declares no answer type needs no annotation. Type-parameter defaults are PEP 696, whose inline syntax is 3.13; the supported floor is 3.12."
+alternatives = '''
+Three were tried and measured against the existing test suite. A parameter with no default
+makes every bare `Run` annotation an error under `--strict` and every free-text `Agent(...)`
+a "need type annotation" — a breaking change to code that declares nothing about types.
+Overloads on `AgentRunner.run` do not help, because the default is needed on the class, not
+the call. Raising the floor to 3.13 buys the inline syntax at the cost of the version most
+consumers are on. The dependency is the cheapest of the four, and it is removable: when the
+floor moves to 3.13 the import becomes `typing` and the dependency is dropped.
+'''
+maintenance = "Active: maintained by the Python typing council, released alongside each typing PEP."
+licence = "PSF-2.0"
+transitive = 0
+native_build = false
+security_history = "No advisories. Pure Python, no runtime behaviour beyond typing constructs."
+review_by = 2027-08-07
+notes = "Already present transitively via pydantic; declaring it makes the direct use visible and pins a floor rather than inheriting whatever pydantic resolves. Drop when the Python floor reaches 3.13."

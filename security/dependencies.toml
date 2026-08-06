@@ -28,6 +28,15 @@ attribute the kit sets requires it.
 """
 
 [[floor]]
+package = "typing-extensions"
+floor = "4.12"
+reason = """
+Oldest release with the PEP 696 `TypeVar(default=...)` the generic run result depends on.
+Removable rather than permanent: when the Python floor reaches 3.13 the import moves to
+`typing` and the requirement goes with it.
+"""
+
+[[floor]]
 package = "mcp"
 floor = "1.9"
 reason = "Oldest release with the 1.x server and client surface the mcp extra targets."

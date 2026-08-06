@@ -17,11 +17,11 @@ decisions behind these types are in `docs/primitives.md`.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Generic, Self
 
 from pydantic import Field
 
-from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.models import AdkModel, OutputT
 from tesserix_adk.core.primitives import Message, ToolCall, Usage
 
 __all__ = [
@@ -167,7 +167,7 @@ class RunContext(AdkModel):
     depth: int = Field(default=0, ge=0)
 
 
-class Run(AdkModel):
+class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot carry the parameter's default before 3.13
     """One execution of an agent, from prompt assembly to a terminal state.
 
     Args:
@@ -186,9 +186,9 @@ class Run(AdkModel):
         tool_calls: Calls the model requested, deduplicated by id.
         events: What happened, in order. The record the run loop writes and cost
             attribution, tracing and audit all read.
-        output: The validated structured answer, as data. A rehydrated run cannot carry
-            an arbitrary model instance, so the payload is stored and re-parsed against
-            the agent's declared type by the caller.
+        output: The validated answer, as an instance of the type the agent declared. A
+            checkpoint rehydrates through `Run[TripPlan].model_validate_json`, which is
+            where the parameter earns its keep: the wrong payload does not fit.
         usage: What the run has consumed so far.
         started_at: Unix seconds at the transition into `RUNNING`.
         ended_at: Unix seconds at the transition into a terminal state.
@@ -206,7 +206,7 @@ class Run(AdkModel):
     messages: list[Message] = Field(default_factory=list)
     tool_calls: list[ToolCall] = Field(default_factory=list)
     events: list[RunEvent] = Field(default_factory=list)
-    output: dict[str, Any] | None = None
+    output: OutputT | None = None
     usage: Usage = Field(default_factory=lambda: Usage(input_tokens=0, output_tokens=0))
     started_at: float | None = None
     ended_at: float | None = None
@@ -225,7 +225,7 @@ class Run(AdkModel):
         """Input tokens consumed so far. A convenience over `usage`, for budget checks."""
         return self.usage.input_tokens
 
-    def transition_to(self, state: RunState, *, at: float | None = None) -> Run:
+    def transition_to(self, state: RunState, *, at: float | None = None) -> Self:
         """Return this run in `state`.
 
         Args:
@@ -267,14 +267,14 @@ class Run(AdkModel):
         )
         return self.model_copy(update={"state": state, **timings})
 
-    def record(self, usage: Usage) -> Run:
+    def record(self, usage: Usage) -> Self:
         """Return this run with `usage` added to its total."""
         return self.model_copy(update={"usage": self.usage + usage})
 
-    def record_event(self, event: RunEvent) -> Run:
+    def record_event(self, event: RunEvent) -> Self:
         """Return this run with `event` appended. Order is the record; nothing reorders."""
         return self.model_copy(update={"events": [*self.events, event]})
 
-    def with_output(self, output: dict[str, Any]) -> Run:
-        """Return this run carrying `output` as its validated structured answer."""
+    def with_output(self, output: OutputT) -> Self:
+        """Return this run carrying `output` as its validated answer, typed as declared."""
         return self.model_copy(update={"output": output})

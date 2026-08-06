@@ -11,6 +11,7 @@ times, and running out is a loud failure rather than a best-effort object.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -45,7 +46,7 @@ class TripPlan(BaseModel):
     nights: int
 
 
-def agent(**overrides: object) -> Agent:
+def agent(**overrides: object) -> Agent[TripPlan]:
     fields: dict[str, object] = {
         "name": "planner",
         "instructions": "Plan trips.",
@@ -68,11 +69,11 @@ def runner(*responses: ModelResponse, **overrides: object) -> AgentRunner:
     return AgentRunner(**{**fields, **overrides})  # type: ignore[arg-type]
 
 
-async def start(runner_: AgentRunner, agent_: Agent) -> Run:
+async def start[OutputT: BaseModel](runner_: AgentRunner, agent_: Agent[OutputT]) -> Run[OutputT]:
     return await runner_.run(agent_, "plan a trip", tenant="acme", run_id="run_1")
 
 
-def kinds(run: Run, kind: RunEventKind) -> list[str]:
+def kinds(run: Run[Any], kind: RunEventKind) -> list[str]:
     return [record.detail or "" for record in run.events if record.kind is kind]
 
 
@@ -113,7 +114,7 @@ class TestTheFailureItselfGoesBack:
     async def test_a_correctable_answer_is_corrected_and_the_run_completes(self) -> None:
         run = await start(runner(answer(BAD), answer(GOOD)), agent())
         assert run.state is RunState.COMPLETED
-        assert run.output == PLAN
+        assert run.output == TripPlan.model_validate(PLAN)
 
     async def test_exactly_one_repair_is_recorded(self) -> None:
         run = await start(runner(answer(BAD), answer(GOOD)), agent())
@@ -240,7 +241,7 @@ class TestAConstraintNothingCanSatisfy:
             agent(repair=RepairConfig(max_attempts=3)),
         )
         assert run.state is RunState.COMPLETED
-        assert run.output == PLAN
+        assert run.output == TripPlan.model_validate(PLAN)
 
 
 class TestNothingIsCoerced:
@@ -254,6 +255,8 @@ class TestNothingIsCoerced:
         assert run.state is RunState.FAILED
         assert run.output is None
 
-    async def test_a_repaired_answer_is_the_models_own_and_is_carried_as_data(self) -> None:
+    async def test_a_repaired_answer_is_the_models_own_and_is_carried_as_the_declared_type(
+        self,
+    ) -> None:
         run = await start(runner(answer(BAD), answer(f"```json\n{GOOD}\n```")), agent())
-        assert run.output == PLAN
+        assert run.output == TripPlan.model_validate(PLAN)

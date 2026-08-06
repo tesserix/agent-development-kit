@@ -16,8 +16,9 @@ decisions behind these types are in `docs/primitives.md`.
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Generic, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from tesserix_adk.core.config import (  # noqa: TC001
     BudgetConfig,
@@ -28,7 +29,7 @@ from tesserix_adk.core.config import (  # noqa: TC001
 )
 
 # Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
-from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.models import AdkModel, OutputT
 
 __all__ = ["Agent", "ToolFailurePolicy"]
 
@@ -45,7 +46,7 @@ class ToolFailurePolicy(StrEnum):
     FAIL_RUN = "fail_run"
 
 
-class Agent(AdkModel):
+class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot carry the parameter's default before 3.13
     """A declarative description of an agent.
 
     Args:
@@ -104,7 +105,7 @@ class Agent(AdkModel):
     tools: tuple[str, ...] = ()
     idempotent_tools: tuple[str, ...] = ()
     approval_required_tools: tuple[str, ...] = ()
-    output_type: type[BaseModel] | None = Field(default=None, exclude=True)
+    output_type: type[OutputT] | None = Field(default=None, exclude=True)
     free_text: bool = False
     budget: BudgetConfig | None = None
     deadlines: DeadlineConfig | None = None
@@ -116,7 +117,7 @@ class Agent(AdkModel):
     metadata: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def _exactly_one_way_to_choose_a_model(self) -> Agent:
+    def _exactly_one_way_to_choose_a_model(self) -> Self:
         if bool(self.model) == bool(self.task_class):
             raise ValueError(
                 "declare exactly one of model or task_class: two answers to which model "
@@ -125,7 +126,7 @@ class Agent(AdkModel):
         return self
 
     @model_validator(mode="after")
-    def _the_shape_of_the_answer_is_declared(self) -> Agent:
+    def _the_shape_of_the_answer_is_declared(self) -> Self:
         if (self.output_type is None) == (not self.free_text):
             raise ValueError(
                 "declare exactly one of output_type or free_text: an answer whose shape "
@@ -134,7 +135,7 @@ class Agent(AdkModel):
         return self
 
     @model_validator(mode="after")
-    def _approval_is_required_of_a_declared_tool(self) -> Agent:
+    def _approval_is_required_of_a_declared_tool(self) -> Self:
         stray = sorted(set(self.approval_required_tools) - set(self.tools))
         if stray:
             raise ValueError(
@@ -144,7 +145,7 @@ class Agent(AdkModel):
         return self
 
     @model_validator(mode="after")
-    def _tools_are_named_once(self) -> Agent:
+    def _tools_are_named_once(self) -> Self:
         seen = {name for name in self.tools if self.tools.count(name) > 1}
         if seen:
             raise ValueError(
@@ -154,7 +155,7 @@ class Agent(AdkModel):
         return self
 
     @model_validator(mode="after")
-    def _idempotency_is_declared_of_a_declared_tool(self) -> Agent:
+    def _idempotency_is_declared_of_a_declared_tool(self) -> Self:
         stray = sorted(set(self.idempotent_tools) - set(self.tools))
         if stray:
             raise ValueError(

@@ -94,7 +94,9 @@ class Prompt(AdkModel):
     version: str = Field(min_length=1)
 
 
-def _digest(agent: Agent, tools: Sequence[ToolDeclaration], output: OutputContract | None) -> str:
+def _digest(
+    agent: Agent[Any], tools: Sequence[ToolDeclaration], output: OutputContract | None
+) -> str:
     prefix = json.dumps(
         {
             "instructions": agent.instructions,
@@ -107,7 +109,7 @@ def _digest(agent: Agent, tools: Sequence[ToolDeclaration], output: OutputContra
 
 
 def assemble_prompt(
-    agent: Agent,
+    agent: Agent[Any],
     user_input: str,
     *,
     history: Iterable[Message] = (),

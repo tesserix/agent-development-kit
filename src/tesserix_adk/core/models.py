@@ -20,11 +20,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, SecretStr, TypeAdapter, ValidationError
+from typing_extensions import TypeVar
 
 from tesserix_adk.core.errors import SchemaViolationError
 
 __all__ = [
     "AdkModel",
+    "NoOutput",
+    "OutputT",
     "Sensitive",
     "parsed_from_strings",
     "telemetry_dump",
@@ -54,6 +57,21 @@ class AdkModel(BaseModel):
     """
 
     model_config = ConfigDict(frozen=True, strict=True, extra="forbid")
+
+
+class NoOutput(AdkModel):
+    """The answer type of an agent that answers in prose: there is not one.
+
+    It is a type rather than `None` so that `Agent` and `Run` have one type parameter with
+    one bound. A free-text run carries `output=None` typed as `NoOutput | None`, which a
+    checker refuses to hand to anything expecting a real answer type.
+    """
+
+
+# PEP 696 defaults, so an agent that declares no answer type needs no annotation and every
+# existing bare `Run` annotation still reads. Inline syntax for this is 3.13; the floor is
+# 3.12, so it comes from typing_extensions until that moves. See docs/typing.md.
+OutputT = TypeVar("OutputT", bound=BaseModel, default=NoOutput)
 
 
 def validated[Model: BaseModel](model: type[Model], payload: object) -> Model:

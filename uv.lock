@@ -2128,6 +2128,7 @@ dependencies = [
     { name = "httpx" },
     { name = "opentelemetry-api" },
     { name = "pydantic" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -2195,6 +2196,7 @@ requires-dist = [
     { name = "redis", marker = "extra == 'redis'", specifier = ">=5.2" },
     { name = "temporalio", marker = "extra == 'all'", specifier = ">=1.9" },
     { name = "temporalio", marker = "extra == 'temporal'", specifier = ">=1.9" },
+    { name = "typing-extensions", specifier = ">=4.12" },
 ]
 provides-extras = ["all", "graphiti", "mcp", "postgres", "redis", "temporal"]
 
