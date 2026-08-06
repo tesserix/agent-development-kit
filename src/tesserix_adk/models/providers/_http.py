@@ -21,6 +21,7 @@ from tesserix_adk.core.errors import (
     ModelResponseError,
     ProviderError,
     ProviderTimeoutError,
+    ProviderUnavailableError,
     StreamInterruptedError,
 )
 from tesserix_adk.core.primitives import TextPart
@@ -158,7 +159,7 @@ class HttpProvider:
                 f"{self.provider_name} did not answer in time", details={"path": path}
             ) from timeout
         except httpx.TransportError as unreachable:
-            raise ProviderError(
+            raise ProviderUnavailableError(
                 f"{self.provider_name} could not be reached: {unreachable}",
                 details={"path": path},
             ) from unreachable
@@ -185,7 +186,7 @@ class HttpProvider:
                 f"{self.provider_name} did not answer in time", details={"path": path}
             ) from timeout
         except httpx.TransportError as unreachable:
-            raise ProviderError(
+            raise ProviderUnavailableError(
                 f"{self.provider_name} could not be reached: {unreachable}",
                 details={"path": path},
             ) from unreachable
@@ -263,6 +264,7 @@ class HttpProvider:
 
 
 _DEFAULT_MAX_OUTPUT = 4096
+_NOT_THERE = frozenset({502, 503, 504})
 
 
 def _card_for(provider: str, model: str) -> ModelCard | None:
@@ -279,7 +281,10 @@ def _declared(card: ModelCard | None) -> ModelCapabilities:
 def _refuse_a_failure(response: httpx.Response, provider: str, body: str) -> None:
     if response.status_code < httpx.codes.BAD_REQUEST:
         return
-    raise ProviderError(
+    # A gateway status is nothing to do with the request: something upstream is not there
+    # yet. Its own type, so a caller waits rather than rewriting a request that was fine.
+    failure = ProviderUnavailableError if response.status_code in _NOT_THERE else ProviderError
+    raise failure(
         f"{provider} answered {response.status_code}",
         status=response.status_code,
         retry_after=_retry_after(response),

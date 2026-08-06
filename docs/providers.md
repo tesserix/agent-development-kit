@@ -196,3 +196,71 @@ dropped system prompt or a mis-shaped tool result is caught — a provider-level
 cannot see any of it, because by then the translation has already happened.
 
 Runnable: [`examples/vendor_providers.py`](../examples/vendor_providers.py).
+
+## Endpoints you run yourself
+
+vLLM, Ollama and TGI serve the same wire format, so they go through the same adapter:
+
+```python
+from tesserix_adk.core import ModelCapabilities
+from tesserix_adk.models.providers import VLLM, OpenAICompatibleProvider
+
+provider = OpenAICompatibleProvider(
+    "qwen2.5-7b-instruct",
+    base_url="http://vllm.models.svc.cluster.local:8000",
+    capabilities=ModelCapabilities(
+        tool_calling=True, structured_output=True, streaming=True, context_window_tokens=32768
+    ),
+    preset=VLLM,
+)
+```
+
+Two arguments have no default. `base_url`, because there is no host to guess for a service
+only you have named — in-cluster service DNS is the expected form, and no egress is needed
+for it. And `capabilities`, because the deployment's own flags decide them: whether tool
+calling was enabled, what `--max-model-len` was set to. Nothing the endpoint reports says.
+
+The provider is named for the server rather than for OpenAI, so a run against a box in the
+cluster is not recorded against the vendor's bill. `name=` distinguishes two deployments.
+
+`api_key_variable` is optional. Leave it out and no `Authorization` header is sent at all,
+which is the in-cluster case; name a variable and it is read per call like any other key.
+
+### What the presets absorb
+
+| | vLLM | Ollama | TGI |
+|---|---|---|---|
+| `strict` on `response_format` | Not claimed | Not claimed | Not claimed |
+| `stream_options.include_usage` | Sent | Not sent | Not sent |
+| Tool-call ids | Sent by the server | **Minted** by the adapter | Sent by the server |
+| Default timeout | 120s | 300s | 120s |
+
+Three deviations are handled for every preset, because every one of them is a wrong answer
+rather than an error if it is passed on:
+
+- **An error under a 200.** Several compatible servers answer `{"error": ...}` with a 200
+  and mean it. It raises `ProviderError`; no response is assembled from a failure.
+- **A missing stop reason.** `unknown` on a turn that asked for a tool ends the run with
+  the call never made, so the reason is read off what actually came back.
+- **Missing usage.** Zero tokens reads as a free call, and a call on a GPU somebody is
+  paying for is not free. The counts are estimated and `Usage.estimated` is `True`, so a
+  ledger can tell a count from a guess. The cost stays `None` — the kit does not know what
+  your GPU hour is worth, and zero would be a false statement.
+
+### Nothing is emulated unless you ask
+
+Where a model cannot enforce a schema itself, the kit can ask for JSON in the prompt and
+validate the reply. Against a small self-hosted model that is a schema enforced by nobody,
+so `OpenAICompatibleProvider` refuses instead: an agent with an `output_type` against an
+endpoint that has not declared `structured_output` raises `CapabilityError` naming it,
+before the run starts. Pass `emulates=True` to have the old behaviour anyway.
+
+### When it is not there
+
+A connection that never landed, and 502/503/504, raise `ProviderUnavailableError` — a
+`ProviderError`, so existing handling still catches it, and always `retryable`. Any
+`Retry-After` the endpoint sent is on the error and is believed in preference to a
+computed backoff: retrying a model that is still loading its weights as fast as the policy
+allows is how it never finishes loading.
+
+Runnable: [`examples/self_hosted_provider.py`](../examples/self_hosted_provider.py).

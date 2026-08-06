@@ -34,6 +34,36 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `OpenAICompatibleProvider`, so an endpoint you run yourself — vLLM, Ollama, TGI — is
+  routable, costed and capability-checked like any vendor, with presets `VLLM`, `OLLAMA`
+  and `TGI` carrying each server's deviations from the format it claims to speak. Two
+  arguments have no default: `base_url`, because there is no host to guess for a service
+  only the operator has named, and `capabilities`, because the deployment's flags decide
+  them and no endpoint reports them honestly. The provider is named for the server rather
+  than for OpenAI, so a call to a box in the cluster is not recorded against the vendor's
+  bill, and `api_key_variable` is optional — omit it and no `Authorization` header is sent,
+  which is the in-cluster case. Four deviations are reconciled rather than passed on,
+  because each is a wrong answer instead of an error: an error object under a 200 raises
+  `ProviderError` rather than being assembled into a response; a stop reason the server
+  omitted is read off the answer, since `unknown` on a turn that asked for a tool ends a
+  run with the call never made; tool calls arriving without ids are given positional ones,
+  so a result has something to match back to and a recorded run stays replayable; and usage
+  nobody reported is estimated from the provider's own token count and marked
+  `Usage.estimated`, because zero tokens reads as a free call and a call on a GPU somebody
+  pays for is not free — the cost stays `None`, the kit not knowing what that GPU hour is
+  worth. `ProviderUnavailableError` is new, raised for a connection that never landed and
+  for 502/503/504 by every HTTP provider, always `retryable`, believing any `Retry-After`
+  the endpoint sent in preference to a computed backoff, since retrying a model still
+  loading as fast as the policy allows is how it never finishes loading. And nothing is
+  emulated unless asked for: an agent with an `output_type` against an endpoint that has
+  not declared `structured_output` now raises `CapabilityError` before the run starts,
+  rather than prompting a small model for JSON and calling the result a schema. Providers
+  say which they are through the new `DeclaresEmulation` protocol. **Stability:** additive
+  — `Usage.estimated` defaults to `False`, `ProviderUnavailableError` subclasses
+  `ProviderError`, and `DeclaresEmulation` is opt-in, so no existing provider or consumer
+  changes behaviour. Documented in `docs/providers.md`, exercised by
+  `examples/self_hosted_provider.py`.
+
 - Providers for Anthropic, OpenAI and Gemini, behind the one protocol. `AnthropicProvider`,
   `OpenAIProvider` and `GeminiProvider` take a model id as the vendor spells it, read their
   capabilities and prices from the model catalogue, and resolve their key on every call

@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 __all__ = [
     "BudgetPolicy",
     "Clock",
+    "DeclaresEmulation",
     "Guardrail",
     "IdFactory",
     "MemoryStore",
@@ -129,6 +130,24 @@ class ModelProvider(Protocol):
         Every vendor counts differently, so the answer belongs to the provider. It is
         what the declared context window is checked against.
         """
+        ...
+
+
+@runtime_checkable
+class DeclaresEmulation(Protocol):
+    """A provider with an opinion about being stood in for.
+
+    Where a model cannot enforce a schema itself, the kit can ask for JSON in the prompt
+    and validate what comes back. That is worth having against a vendor model that is
+    good at following the instruction, and it is a trap against a small self-hosted one:
+    the schema is enforced by nothing, and the failure is an answer in the wrong shape
+    rather than an error. A provider that knows which it is says so here; one that says
+    nothing is emulated, which is what every provider did before this existed.
+    """
+
+    @property
+    def emulates(self) -> bool:
+        """Whether the kit may stand in for a capability this provider has not declared."""
         ...
 
 

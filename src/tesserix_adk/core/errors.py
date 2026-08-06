@@ -33,6 +33,7 @@ __all__ = [
     "ProtocolConformanceError",
     "ProviderError",
     "ProviderTimeoutError",
+    "ProviderUnavailableError",
     "RecursionLimitError",
     "RepeatedCallError",
     "SchemaGenerationError",
@@ -274,6 +275,22 @@ class ProviderTimeoutError(ProviderError):
     @property
     def retryable(self) -> bool:
         """Always. A timeout says nothing about the request, only about this attempt."""
+        return True
+
+
+class ProviderUnavailableError(ProviderError):
+    """Raised when a provider could not be reached, or was reached and was not ready.
+
+    Its own type because the answer to it is to wait rather than to change the request:
+    a connection that never landed, a gateway with nothing behind it yet, a self-hosted
+    model still loading its weights. Any wait the endpoint asked for is on `retry_after`,
+    and it is believed in preference to a computed backoff — retrying a cold model as
+    fast as the policy allows is how it never finishes starting.
+    """
+
+    @property
+    def retryable(self) -> bool:
+        """Always. Nothing about the request was refused, only about this moment."""
         return True
 
 

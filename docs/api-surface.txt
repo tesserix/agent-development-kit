@@ -24,6 +24,7 @@ tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.core.primitives.TextPart | tesserix_adk.core.primitives.BinaryPart, FieldInfo(annotation=NoneType, required=True, discriminator='kind')]
 tesserix_adk.core.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
 tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(AdkModel)
+tesserix_adk.core.DeclaresEmulation :: class DeclaresEmulation(Protocol)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
 tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
 tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
@@ -62,6 +63,7 @@ tesserix_adk.core.Provenance :: class Provenance(object)
 tesserix_adk.core.ProviderConfig :: class ProviderConfig(AdkModel)
 tesserix_adk.core.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
+tesserix_adk.core.ProviderUnavailableError :: class ProviderUnavailableError(ProviderError)
 tesserix_adk.core.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.core.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.RedactionConfig :: class RedactionConfig(AdkModel)
@@ -156,6 +158,7 @@ tesserix_adk.core.errors.ModelResponseError :: class ModelResponseError(AdkError
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.errors.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.errors.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
+tesserix_adk.core.errors.ProviderUnavailableError :: class ProviderUnavailableError(ProviderError)
 tesserix_adk.core.errors.RETRYABLE_STATUS :: RETRYABLE_STATUS: frozenset
 tesserix_adk.core.errors.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.errors.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
@@ -196,6 +199,7 @@ tesserix_adk.core.primitives.Usage :: class Usage(AdkModel)
 tesserix_adk.core.primitives.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
 tesserix_adk.core.protocols.BudgetPolicy :: class BudgetPolicy(Protocol) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.protocols.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.core.protocols.DeclaresEmulation :: class DeclaresEmulation(Protocol)
 tesserix_adk.core.protocols.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.core.protocols.IdFactory :: class IdFactory(Protocol)
 tesserix_adk.core.protocols.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
@@ -279,9 +283,19 @@ tesserix_adk.models.known_models :: def known_models(provider: 'str | None' = No
 tesserix_adk.models.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
 tesserix_adk.models.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
 tesserix_adk.models.providers.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.CompatibilityPreset :: class CompatibilityPreset(object)
 tesserix_adk.models.providers.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.OLLAMA :: OLLAMA: CompatibilityPreset
+tesserix_adk.models.providers.OpenAICompatibleProvider :: class OpenAICompatibleProvider(OpenAIProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.TGI :: TGI: CompatibilityPreset
+tesserix_adk.models.providers.VLLM :: VLLM: CompatibilityPreset
 tesserix_adk.models.providers.anthropic.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.compatible.CompatibilityPreset :: class CompatibilityPreset(object)
+tesserix_adk.models.providers.compatible.OLLAMA :: OLLAMA: CompatibilityPreset
+tesserix_adk.models.providers.compatible.OpenAICompatibleProvider :: class OpenAICompatibleProvider(OpenAIProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.compatible.TGI :: TGI: CompatibilityPreset
+tesserix_adk.models.providers.compatible.VLLM :: VLLM: CompatibilityPreset
 tesserix_adk.models.providers.gemini.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.normalised_tool_calls :: def normalised_tool_calls(calls: 'Sequence[ToolCall]', *, request: 'ModelRequest', capabilities: 'ModelCapabilities', provider: 'str') -> 'tuple[ToolCall, ...]'
 tesserix_adk.models.providers.openai.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}

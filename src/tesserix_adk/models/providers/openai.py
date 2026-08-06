@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 __all__ = ["OpenAIProvider"]
 
-_COMPLETIONS = "/v1/chat/completions"
+COMPLETIONS_PATH = "/v1/chat/completions"
 _STRUCTURED_NAME = "structured_output"
 
 _STOP_REASONS = {
@@ -68,8 +68,8 @@ class OpenAIProvider(HttpProvider):
             ProviderError: On any transport or upstream failure, after translation.
             ModelResponseError: If the body cannot be read as a completion.
         """
-        body = await self._post(_COMPLETIONS, self._payload(request))
-        return self._settled(_read(body), request)
+        body = await self._post(COMPLETIONS_PATH, self._payload(request))
+        return self._settled(self._completion(body), request)
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
         """Send one request and return its events as they arrive.
@@ -88,7 +88,13 @@ class OpenAIProvider(HttpProvider):
             # spend rather than an unknown one.
             "stream_options": {"include_usage": True},
         }
-        return self._streamed(_COMPLETIONS, payload, request=request, state=_Stream())
+        return self._streamed(
+            COMPLETIONS_PATH, payload, request=request, state=_Stream(self.provider_name)
+        )
+
+    def _completion(self, body: Mapping[str, Any]) -> ModelResponse:
+        """Read one body as a response. Overridden where a compatible server deviates."""
+        return _read(body, self.provider_name)
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -135,8 +141,9 @@ class OpenAIProvider(HttpProvider):
 class _Stream(VendorStream):
     """Chat Completions streams one choice's deltas, and the usage after the last of them."""
 
-    def __init__(self) -> None:
+    def __init__(self, provider: str = "openai") -> None:
         super().__init__()
+        self._provider = provider
         self._usage = Usage(input_tokens=0, output_tokens=0)
 
     def read(self, frame: Mapping[str, Any]) -> list[StreamEvent]:
@@ -144,7 +151,7 @@ class _Stream(VendorStream):
         self.frames += 1
         if frame.get("error"):
             self.failure = ProviderError(
-                f"openai sent {_error(frame)}",
+                f"{self._provider} sent {_error(frame)}",
                 details={"type": str(_dict(frame.get("error")).get("type", ""))},
             )
             return []
@@ -184,20 +191,20 @@ def _fragment(call: Mapping[str, Any]) -> ToolCallDelta:
     )
 
 
-def _read(body: Mapping[str, Any]) -> ModelResponse:
+def _read(body: Mapping[str, Any], provider: str) -> ModelResponse:
     choices = body.get("choices")
     if not isinstance(choices, list) or not choices:
         raise ModelResponseError(
-            "openai answered with no choice to read",
+            f"{provider} answered with no choice to read",
             payload=body.get("choices"),
-            provider="openai",
+            provider=provider,
             request_id=str(body.get("id", "")),
         )
     choice = _dict(choices[0])
     message = _dict(choice.get("message"))
     refusal = message.get("refusal")
     calls = tuple(
-        _call(_dict(call), request_id=str(body.get("id", "")))
+        _call(_dict(call), request_id=str(body.get("id", "")), provider=provider)
         for call in message.get("tool_calls") or []
     )
     return ModelResponse(
@@ -209,7 +216,7 @@ def _read(body: Mapping[str, Any]) -> ModelResponse:
     )
 
 
-def _call(call: Mapping[str, Any], *, request_id: str) -> ToolCall:
+def _call(call: Mapping[str, Any], *, request_id: str, provider: str) -> ToolCall:
     function = _dict(call.get("function"))
     identity, name = str(call.get("id", "")), str(function.get("name", ""))
     if not identity or not name:
@@ -217,15 +224,17 @@ def _call(call: Mapping[str, Any], *, request_id: str) -> ToolCall:
             f"a tool call arrived with no id or no name (id {identity!r}, name {name!r}); "
             f"a result cannot be matched back to it",
             payload=dict(call),
-            provider="openai",
+            provider=provider,
             request_id=request_id,
         )
     return ToolCall(
-        id=identity, name=name, arguments=_arguments(str(function.get("arguments", "")), name)
+        id=identity,
+        name=name,
+        arguments=_arguments(str(function.get("arguments", "")), name, provider=provider),
     )
 
 
-def _arguments(raw: str, tool: str) -> dict[str, Any]:
+def _arguments(raw: str, tool: str, *, provider: str) -> dict[str, Any]:
     """Arguments arrive as JSON text, and half an object is not most of an argument."""
     if not raw.strip():
         return {}
@@ -233,13 +242,13 @@ def _arguments(raw: str, tool: str) -> dict[str, Any]:
         parsed = json.loads(raw)
     except json.JSONDecodeError as broken:
         raise ModelResponseError(
-            f"arguments for {tool} are not JSON: {broken}", payload=raw, provider="openai"
+            f"arguments for {tool} are not JSON: {broken}", payload=raw, provider=provider
         ) from broken
     if not isinstance(parsed, dict):
         raise ModelResponseError(
             f"arguments for {tool} are {type(parsed).__name__}, not an object",
             payload=raw,
-            provider="openai",
+            provider=provider,
         )
     return parsed
 

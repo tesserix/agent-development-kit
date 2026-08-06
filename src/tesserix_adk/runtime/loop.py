@@ -39,6 +39,7 @@ from tesserix_adk.core import (
     ConfigurationError,
     ContextWindowExceededError,
     DeadlineConfig,
+    DeclaresEmulation,
     FanOutLimitError,
     HookAction,
     HookChain,
@@ -1260,6 +1261,8 @@ class AgentRunner:
         if agent.output_type is None:
             return None
         native = self._provider.capabilities.supports(Capability.STRUCTURED_OUTPUT)
+        if not native and not _emulation_allowed(self._provider):
+            self._require(Capability.STRUCTURED_OUTPUT, model=agent.model or "")
         return OutputContract.of(agent.output_type, native=native)
 
     async def _finish(
@@ -1431,6 +1434,11 @@ def _carrier_for(output_type: type[BaseModel] | None) -> type[Run[Any]]:
 def _carrying[OutputT: BaseModel](run: Run[OutputT], messages: list[Message]) -> Run[OutputT]:
     """The conversation belongs on the run: a checkpoint without it cannot be resumed."""
     return run.model_copy(update={"messages": list(messages)})
+
+
+def _emulation_allowed(provider: ModelProvider) -> bool:
+    """Whether the kit may stand in for what this provider has not declared."""
+    return provider.emulates if isinstance(provider, DeclaresEmulation) else True
 
 
 def _retry_after(failure: Exception) -> float | None:

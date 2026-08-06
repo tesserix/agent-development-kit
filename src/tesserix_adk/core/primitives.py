@@ -94,6 +94,9 @@ class Usage(AdkModel):
         currency: ISO 4217 code. Required whenever `cost` is set.
         extras: Usage fields a provider reports that the kit does not model, kept rather
             than dropped. Nothing in the kit reads them; they are evidence.
+        estimated: Whether the counts were worked out by the kit rather than reported by
+            the provider. Self-hosted endpoints often report none, and a ledger that
+            cannot tell a count from a guess presents a guess as a count.
     """
 
     input_tokens: int = Field(ge=0)
@@ -102,6 +105,7 @@ class Usage(AdkModel):
     cost: float | None = Field(default=None, ge=0)
     currency: str | None = None
     extras: dict[str, int] = Field(default_factory=dict)
+    estimated: bool = False
 
     @model_validator(mode="after")
     def _cost_needs_a_currency(self) -> Usage:
@@ -153,6 +157,9 @@ class Usage(AdkModel):
             cost=(self.cost or 0) + (other.cost or 0) if priced else None,
             currency=self.currency if priced else None,
             extras={**self.extras, **other.extras},
+            # One guessed step makes the total a guess; reporting it as counted would
+            # hide the one part of the bill nobody measured.
+            estimated=self.estimated or other.estimated,
         )
 
 
