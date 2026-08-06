@@ -55,11 +55,14 @@ The tag push is the only trigger. Pushing to `main` never publishes.
 | `gates` | The full CI workflow — the same one pull requests run, called rather than copied. |
 | `sbom` | Checks every licence in the graph against the policy, then builds `sbom.cdx.json` from the lock at this tag and diffs it against the previous release. See [`security.md`](security.md). |
 | `notes` | Assembles the release body from the repository, appends the dependency diff, and fails if any change in the range has nothing describing it to a consumer. |
-| `build` | `uv build`, `twine check --strict` on the metadata, and an assertion that the artefact filename carries the tag's version. |
+| `build` | `uv build`, `twine check --strict` on the metadata, an assertion that the artefact filename carries the tag's version, and keyless signing with a build provenance attestation over `dist/*`. See [`verifying.md`](verifying.md). |
 | `publish` | Trusted publishing to PyPI via workflow identity, behind the `pypi` environment. |
-| `mirror` | The same artefacts plus `sbom.cdx.json` attached to a GitHub Release, with the assembled notes as its body. |
+| `mirror` | The same artefacts, `sbom.cdx.json` and the attestation bundles attached to a GitHub Release, with the assembled notes as its body. A mirrored install has no attestation store to reach, so the bundles travel with the artefacts. |
 | `divergence` | Fails the release if PyPI succeeded and the mirror did not. |
-| `smoke` | Installs the *published* wheel from PyPI in a clean virtualenv, once per extra, and runs `examples/getting_started.py`. |
+| `smoke` | Downloads the *published* wheel from PyPI, verifies its attestation against this repository and `release.yml` before installing anything, then installs it in a clean virtualenv once per extra and runs `examples/getting_started.py`. |
+
+There is no signing key either, and none of these jobs holds a credential that outlives
+the run: signing is keyless against the workflow's own identity.
 
 There is no upload token. Trusted publishing mints a credential for the single workflow
 run and it expires with it, so there is nothing to leak, rotate or revoke — a property

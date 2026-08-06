@@ -121,3 +121,21 @@ class TestInjection:
         workflow that can publish."""
         for job in alpha_jobs():
             assert not any("${{" in step for step in run_steps(job))
+
+
+class TestProvenance:
+    """An unattested channel is the one an attacker publishes through."""
+
+    def test_an_alpha_is_attested_like_a_release(self) -> None:
+        assert any(
+            "attest-build-provenance" in str(step.get("uses", "")) for step in steps("build")
+        )
+
+    def test_the_alpha_upload_carries_its_own_attestation(self) -> None:
+        publish = next(
+            step for step in steps("publish") if "gh-action-pypi-publish" in str(step.get("uses"))
+        )
+        assert publish["with"]["attestations"] is True
+
+    def test_the_consumer_verifies_the_alpha_before_installing_it(self) -> None:
+        assert "attestation verify" in " ".join(run_steps("downstream"))

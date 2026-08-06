@@ -27,6 +27,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+    permissions:
+      contents: read
+      # Keyless signing by workflow identity: an unattested channel is the one an
+      # attacker publishes through, so the alpha is signed exactly like a release.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v5
         # hatch-vcs derives the version from the tag, so the history has to be there.
@@ -49,6 +55,9 @@ jobs:
       - run: ls dist | grep -q "tesserix_adk-$VERSION"
         env:
           VERSION: ${{ steps.version.outputs.version }}
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/*
       - uses: actions/upload-artifact@v4
         with:
           name: alpha-dist
@@ -69,17 +78,32 @@ jobs:
         with:
           name: alpha-dist
           path: dist/
-      # Trusted publishing: the token is minted for this run and expires with it.
+      # Trusted publishing: the token is minted for this run and expires with it, and
+      # the PEP 740 attestation goes to the index with the artefact.
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true
 
   downstream:
     name: earliest consumer
     needs: [build, publish]
     if: vars.DOWNSTREAM_REPO != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: read
     env:
       VERSION: ${{ needs.build.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      KIT: ${{ github.repository }}
     steps:
+      # The consumer pipeline refuses an unattested artefact rather than warning about
+      # it: a warning in someone else's pipeline is not protection.
+      - run: |
+          python -m pip download --no-deps --dest downloaded "tesserix-adk==$VERSION"
+          gh attestation verify downloaded/*.whl --repo "$KIT" \
+            --signer-workflow "$KIT/.github/workflows/alpha.yml"
+
       - uses: actions/checkout@v5
         with:
           repository: ${{ vars.DOWNSTREAM_REPO }}

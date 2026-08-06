@@ -10,6 +10,13 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Signed releases with build provenance (`docs/verifying.md`): every artefact, on the
+  release and alpha channels alike, is signed keyless by workflow identity and carries a
+  SLSA provenance attestation naming the repository, workflow, commit and build inputs.
+  `sbom.cdx.json` is attested by the same run, uploads carry a PEP 740 attestation to
+  PyPI, and the bundles are attached to the GitHub Release so a mirrored or air-gapped
+  install can verify offline. Both the release smoke job and the downstream consumer job
+  verify before installing and fail closed. There is no signing key to steal or rotate.
 - A bill of materials published with every release (`tools/sbom.py`): a CycloneDX 1.6
   document built from `uv.lock` inside the release job, so it describes the graph that was
   published rather than a later re-resolution, attached to the GitHub Release as

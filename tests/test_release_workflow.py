@@ -7,6 +7,8 @@ index itself — are asserted here rather than reviewed once and assumed after.
 
 from __future__ import annotations
 
+from typing import Any
+
 from tests.ci_config import RELEASE, load_yaml, pyproject, release_jobs, release_run_steps, triggers
 
 GUARD = "guard"
@@ -168,3 +170,70 @@ def test_the_bill_of_materials_is_published_with_the_release() -> None:
 def test_the_dependency_diff_reaches_the_release_notes() -> None:
     assert any("--diff" in step for step in release_run_steps(SBOM))
     assert "sbom-diff.md" in " ".join(release_run_steps(NOTES))
+
+
+def _steps(job: str) -> list[dict[str, Any]]:
+    listed: list[dict[str, Any]] = release_jobs()[job].get("steps", [])
+    return listed
+
+
+def _uses(job: str) -> list[str]:
+    return [str(step["uses"]) for step in _steps(job) if "uses" in step]
+
+
+def _step_using(job: str, action: str) -> dict[str, Any]:
+    return next(step for step in _steps(job) if action in str(step.get("uses", "")))
+
+
+class TestProvenance:
+    """A consumer cannot tell a workflow's artefact from anyone's upload without this."""
+
+    def test_the_built_artefacts_are_attested(self) -> None:
+        assert any("attest-build-provenance" in step for step in _uses(BUILD))
+
+    def test_the_attestation_covers_every_artefact_that_is_published(self) -> None:
+        attest = _step_using(BUILD, "attest-build-provenance")
+        assert attest["with"]["subject-path"] == "dist/*"
+
+    def test_the_bill_of_materials_is_attested_too(self) -> None:
+        """An unattested component list is a list an attacker can edit after the fact."""
+        assert any("attest-build-provenance" in step for step in _uses(SBOM))
+
+    def test_signing_needs_no_stored_key(self) -> None:
+        """Keyless: workflow identity, so there is no signing key to steal or rotate."""
+        assert release_jobs()[BUILD]["permissions"]["id-token"] == "write"
+        assert release_jobs()[BUILD]["permissions"]["attestations"] == "write"
+
+    def test_the_index_upload_carries_its_own_attestation(self) -> None:
+        publish = _step_using(PUBLISH, "gh-action-pypi-publish")
+        assert publish["with"]["attestations"] is True
+
+    def test_the_attestation_is_mirrored_with_the_release(self) -> None:
+        """A mirrored or air-gapped install has no attestation store to reach."""
+        assert "attestation download" in " ".join(release_run_steps(MIRROR))
+
+    def test_the_published_artefact_is_verified_before_it_is_installed(self) -> None:
+        """Verification that runs after the install protects nothing."""
+        assert "attestation verify" in " ".join(release_run_steps(SMOKE))
+
+    def test_verification_names_the_workflow_that_may_sign(self) -> None:
+        """Without it, any workflow in the repository is an acceptable signer."""
+        assert "--signer-workflow" in " ".join(release_run_steps(SMOKE))
+
+
+class TestVerificationDocumentation:
+    """A verification command a consumer cannot copy is a command nobody runs."""
+
+    DOC = RELEASE.parents[2] / "docs" / "verifying.md"
+
+    def test_the_documented_command_names_the_signing_workflow(self) -> None:
+        """A workflow or repository rename breaks every consumer's verification at once."""
+        assert "tesserix/agent-development-kit/.github/workflows/release.yml" in self.DOC.read_text(
+            encoding="utf-8"
+        )
+
+    def test_the_alpha_channel_is_documented_as_verifiable_too(self) -> None:
+        assert "alpha.yml" in self.DOC.read_text(encoding="utf-8")
+
+    def test_the_mirrored_bundle_is_documented_for_an_offline_check(self) -> None:
+        assert "--bundle" in self.DOC.read_text(encoding="utf-8")

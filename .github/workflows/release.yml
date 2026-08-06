@@ -40,6 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+    permissions:
+      contents: read
+      # Keyless signing by workflow identity: there is no signing key to steal or rotate.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v5
         # hatch-vcs reads the version from the tag, so the history has to be there.
@@ -57,6 +62,11 @@ jobs:
       - run: ls dist | grep -q "tesserix_adk-$VERSION"
         env:
           VERSION: ${{ steps.version.outputs.version }}
+      # Records repository, workflow, commit and build inputs against each artefact's
+      # digest, so an install can be traced back to this run. See docs/verifying.md.
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/*
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -66,6 +76,10 @@ jobs:
     name: bill of materials
     needs: gates
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -89,6 +103,10 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ github.token }}
+      # An unattested component list is one an attacker can edit after the fact.
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: sbom.cdx.json
       - uses: actions/upload-artifact@v4
         with:
           name: sbom
@@ -134,8 +152,11 @@ jobs:
         with:
           name: dist
           path: dist/
-      # Trusted publishing: the token is minted for this run and expires with it.
+      # Trusted publishing: the token is minted for this run and expires with it, and
+      # the PEP 740 attestation goes to the index with the artefact.
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true
 
   mirror:
     name: mirror to the internal index
@@ -143,6 +164,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      attestations: read
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
@@ -155,9 +177,21 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: sbom
+      # A mirrored or air-gapped install has no attestation store to reach, so the
+      # bundles travel with the artefacts they cover. See docs/verifying.md.
+      - run: |
+          mkdir -p attestations
+          for artefact in dist/* sbom.cdx.json; do
+            gh attestation download "$artefact" --repo "$GITHUB_REPOSITORY" --format jsonl
+          done
+          mv ./*.jsonl attestations/
+        env:
+          GH_TOKEN: ${{ github.token }}
       # GitHub Packages has no Python registry, so the release assets are the mirror
       # consumers point --find-links at. See docs/releasing.md.
-      - run: gh release create "${GITHUB_REF_NAME}" dist/* sbom.cdx.json --notes-file notes.md --verify-tag
+      - run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* sbom.cdx.json attestations/*.jsonl \
+            --notes-file notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -182,9 +216,13 @@ jobs:
       fail-fast: false
       matrix:
         extra: [none, mcp, temporal, graphiti, redis, postgres, all]
+    permissions:
+      contents: read
+      attestations: read
     env:
       VERSION: ${{ needs.build.outputs.version }}
       EXTRA: ${{ matrix.extra }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -195,13 +233,22 @@ jobs:
       - run: |
           python -m venv .smoke
           for attempt in 1 2 3 4 5; do
-            if [ "$EXTRA" = "none" ]; then
-              target="tesserix-adk==$VERSION"
-            else
-              target="tesserix-adk[$EXTRA]==$VERSION"
-            fi
-            .smoke/bin/python -m pip install "$target" && break
+            .smoke/bin/python -m pip download --no-deps --dest downloaded \
+              "tesserix-adk==$VERSION" && break
             echo "index has not caught up yet; retrying in 30s"
             sleep 30
           done
+      # Fails closed and before the install: verification that runs afterwards protects
+      # nothing, and without --signer-workflow any workflow in the repository would do.
+      - run: |
+          gh attestation verify downloaded/*.whl \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
+      - run: |
+          if [ "$EXTRA" = "none" ]; then
+            target="tesserix-adk==$VERSION"
+          else
+            target="tesserix-adk[$EXTRA]==$VERSION"
+          fi
+          .smoke/bin/python -m pip install "$target"
       - run: .smoke/bin/python examples/getting_started.py

@@ -90,6 +90,7 @@ code lands here as the kit is built.
 | Releasing & index policy | [`docs/releasing.md`](docs/releasing.md) |
 | Stability & the alpha channel | [`docs/stability.md`](docs/stability.md) |
 | Security scanning, licences & SBOM | [`docs/security.md`](docs/security.md) |
+| Verifying a release | [`docs/verifying.md`](docs/verifying.md) |
 | Issue template | [`.github/ISSUE_TEMPLATE/engineering-story.md`](.github/ISSUE_TEMPLATE/engineering-story.md) |
 
 ## A note on the name
