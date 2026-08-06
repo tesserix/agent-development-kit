@@ -10,6 +10,28 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Structured output by default. An `Agent` declares exactly one of `output_type` and the
+  new `free_text`; declaring neither is refused where the agent is built, so an answer
+  whose shape nobody declared is a configuration error rather than a string the caller
+  parses by guessing. Where a type is declared, the runtime derives its schema through
+  `schema_for` in the closed dialect and sends it as `ModelRequest.output_schema` beside
+  the new `output_schema_hash`, both folded into `Prompt.version` — a changed answer type
+  is a changed prompt, so it neither reuses a cached prefix nor replays a cassette recorded
+  against the old shape. A provider exposing a truthy `supports_structured_output` enforces
+  the schema itself; one that does not is given the schema in the prompt and its answer is
+  validated identically, because an undeclared capability is treated as absent. Validation
+  happens before the run can reach `completed`: an enclosing code fence is stripped
+  explicitly and recorded as the new `output_unwrapped` event, prose around JSON is never
+  scraped, and truncation mid-object is a violation rather than something to repair by
+  guessing closing braces. `runtime` gains `OutputContract` and `unwrap_fenced`; a
+  violation raises `SchemaViolationError` carrying the raw output, every failing dotted
+  path, the refusing type and the schema hash, which the loop records before ending the run
+  `failed`. Content echoed into the next turn of a structured run is wrapped as untrusted
+  data, so an instruction that arrived inside a field cannot become the next turn's prompt.
+  **Stability:** breaking — an agent that declared neither now needs `free_text=True`, and
+  `assemble_prompt` gains an `output` keyword. Documented in `docs/structured-output.md`
+  and exercised by `examples/structured_output.py`.
+
 - JSON Schema derived from the Python type, so the shape the model is told and the shape
   the code parses cannot drift apart. `core` gains `schema_for`, which accepts a pydantic
   model, a dataclass, a `TypedDict` or an annotated callable and returns normalised Draft

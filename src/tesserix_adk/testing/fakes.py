@@ -207,11 +207,20 @@ class ScriptedProvider:
     Args:
         responses: What to return, in order.
         name: The provider name recorded on the run.
+        structured: Whether this provider declares it enforces an output schema itself.
+            False by default, which is the case the prompt-side fallback has to be
+            tested against.
     """
 
-    def __init__(self, *responses: ModelResponse | BaseException, name: str = "scripted") -> None:
+    def __init__(
+        self,
+        *responses: ModelResponse | BaseException,
+        name: str = "scripted",
+        structured: bool = False,
+    ) -> None:
         self._responses = deque(responses)
         self._name = name
+        self.supports_structured_output = structured
         self.requests: list[ModelRequest] = []
 
     @property

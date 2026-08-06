@@ -44,6 +44,7 @@ def agent(**overrides: object) -> Agent:
     fields: dict[str, object] = {
         "name": "planner",
         "instructions": "Plan trips.",
+        "free_text": True,
         "model": "claude-sonnet-5",
     }
     return Agent(**{**fields, **overrides})  # type: ignore[arg-type]
@@ -105,7 +106,7 @@ class TestTheHappyPath:
         response = next(e for e in run.events if e.kind is RunEventKind.MODEL_RESPONSE)
         assert response.usage == Usage(input_tokens=10, output_tokens=5)
 
-    async def test_an_empty_registry_and_no_output_type_still_finishes(self) -> None:
+    async def test_an_empty_registry_and_a_free_text_agent_still_finishes(self) -> None:
         """The floor case: the first response already satisfies everything asked of it."""
         run = await start(runner(answer()), agent())
         assert run.state is RunState.COMPLETED
@@ -285,33 +286,6 @@ class TestToolFailure:
             RunEventKind.MODEL_RESPONSE,
         ]
         assert run.usage.input_tokens == 1
-
-
-class TestStructuredOutput:
-    async def test_a_valid_answer_is_parsed_onto_the_run(self) -> None:
-        run = await start(
-            runner(answer('{"destination": "Kyoto", "nights": 4}')),
-            agent(output_type=TripPlan),
-        )
-        assert run.output == {"destination": "Kyoto", "nights": 4}
-        assert run.state is RunState.COMPLETED
-
-    async def test_the_validation_is_recorded(self) -> None:
-        run = await start(
-            runner(answer('{"destination": "Kyoto", "nights": 4}')),
-            agent(output_type=TripPlan),
-        )
-        assert any(event.kind is RunEventKind.OUTPUT_VALIDATED for event in run.events)
-
-    async def test_an_answer_of_the_wrong_shape_fails_the_run(self) -> None:
-        """A half-parsed plan handed on as if it were whole is the bug this prevents."""
-        run = await start(runner(answer('{"destination": "Kyoto"}')), agent(output_type=TripPlan))
-        assert run.state is RunState.FAILED
-        assert any(event.kind is RunEventKind.SCHEMA_VIOLATION for event in run.events)
-
-    async def test_an_answer_that_is_not_json_fails_the_run(self) -> None:
-        run = await start(runner(answer("Kyoto, four nights.")), agent(output_type=TripPlan))
-        assert run.state is RunState.FAILED
 
 
 class TestTerminalStates:

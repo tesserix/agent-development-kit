@@ -30,6 +30,7 @@ def agent(**overrides: object) -> Agent:
     fields: dict[str, object] = {
         "name": "researcher",
         "instructions": "Answer from sources. Cite the page.",
+        "free_text": True,
         "model": "claude-sonnet-5",
         "tools": ("search",),
     }

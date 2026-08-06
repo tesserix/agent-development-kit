@@ -238,7 +238,7 @@ class TestEveryBoundaryModelRoundTrips:
             ToolCall(id="call_1", name="search", arguments={"q": "kyoto"}),
             Usage(input_tokens=1, output_tokens=2, cost=0.5, currency="USD"),
             AdkConfig(provider=ProviderConfig(endpoint="http://x")),
-            Agent(name="a", instructions="do", model="claude-sonnet-5"),
+            Agent(name="a", instructions="do", model="claude-sonnet-5", free_text=True),
         ],
         ids=lambda instance: type(instance).__name__,
     )

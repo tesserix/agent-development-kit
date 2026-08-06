@@ -98,6 +98,7 @@ class TestDeclaringARetryPolicy:
             name="planner",
             instructions="Plan trips.",
             model="claude-sonnet-5",
+            free_text=True,
             retry=RetryConfig(max_attempts=3),
         )
         assert declared.retry is not None
@@ -155,6 +156,7 @@ def agent(**overrides: object) -> Agent:
     fields: dict[str, object] = {
         "name": "planner",
         "instructions": "Plan trips.",
+        "free_text": True,
         "model": "claude-sonnet-5",
     }
     return Agent(**{**fields, **overrides})  # type: ignore[arg-type]

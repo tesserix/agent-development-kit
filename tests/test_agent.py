@@ -48,22 +48,30 @@ class TripPlan(BaseModel):
 
 class TestAgent:
     def test_an_agent_is_a_declaration(self) -> None:
-        agent = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+        agent = Agent(
+            name="planner", instructions="Plan trips.", model="claude-sonnet-5", free_text=True
+        )
         assert agent.name == "planner"
 
     def test_an_agent_is_frozen(self) -> None:
-        agent = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+        agent = Agent(
+            name="planner", instructions="Plan trips.", model="claude-sonnet-5", free_text=True
+        )
         with pytest.raises(ValidationError):
             agent.name = "other"
 
     def test_an_agent_round_trips_without_its_output_type(self) -> None:
         """A declaration is diffed in review and stored in config, so it must serialise."""
-        agent = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+        agent = Agent(
+            name="planner", instructions="Plan trips.", model="claude-sonnet-5", free_text=True
+        )
         assert Agent.model_validate_json(agent.model_dump_json()) == agent
 
     def test_an_agent_may_declare_a_task_class_instead_of_a_model(self) -> None:
         """Naming the job rather than the model is what lets a router choose."""
-        agent = Agent(name="planner", instructions="Plan trips.", task_class="reasoning")
+        agent = Agent(
+            name="planner", instructions="Plan trips.", task_class="reasoning", free_text=True
+        )
         assert agent.task_class == "reasoning"
 
     def test_an_agent_with_neither_a_model_nor_a_task_class_is_refused(self) -> None:
@@ -82,7 +90,9 @@ class TestAgent:
 
     def test_the_tool_allowlist_is_empty_by_default(self) -> None:
         """A tool a consumer did not name is a tool the agent may not call."""
-        agent = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+        agent = Agent(
+            name="planner", instructions="Plan trips.", model="claude-sonnet-5", free_text=True
+        )
         assert agent.tools == ()
 
     def test_an_agent_carries_its_output_type(self) -> None:
@@ -101,6 +111,7 @@ class TestAgent:
                 name="planner",
                 instructions="Plan trips.",
                 model="claude-sonnet-5",
+                free_text=True,
                 tools=("search", "search"),
             )
 
@@ -110,6 +121,7 @@ class TestAgent:
             name="planner",
             instructions="Plan trips.",
             model="claude-sonnet-5",
+            free_text=True,
             budget=BudgetConfig(max_tokens_per_run=1000),
             guardrails=("no_pii", "no_prompt_leak"),
         )
@@ -123,6 +135,7 @@ class TestAgent:
             name="planner",
             instructions="Plan trips.",
             model="claude-sonnet-5",
+            free_text=True,
             guardrails=("redact", "export_check"),
         )
         assert list(agent.guardrails) == ["redact", "export_check"]
@@ -130,7 +143,9 @@ class TestAgent:
     def test_a_failing_tool_is_shown_to_the_model_by_default(self) -> None:
         """A model that is told its tool failed can choose another route; a run that dies
         on the first failure cannot."""
-        agent = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+        agent = Agent(
+            name="planner", instructions="Plan trips.", model="claude-sonnet-5", free_text=True
+        )
         assert agent.on_tool_error is ToolFailurePolicy.SURFACE_TO_MODEL
 
     def test_an_agent_may_declare_that_a_failing_tool_ends_the_run(self) -> None:
@@ -139,6 +154,7 @@ class TestAgent:
             name="planner",
             instructions="Plan trips.",
             model="claude-sonnet-5",
+            free_text=True,
             on_tool_error=ToolFailurePolicy.FAIL_RUN,
         )
         assert agent.on_tool_error is ToolFailurePolicy.FAIL_RUN

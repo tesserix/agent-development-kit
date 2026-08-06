@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from tesserix_adk.core import Agent
+    from tesserix_adk.runtime.structured import OutputContract
 
 __all__ = ["Prompt", "ToolDeclaration", "assemble_prompt", "wrap_untrusted"]
 
@@ -93,11 +94,12 @@ class Prompt(AdkModel):
     version: str = Field(min_length=1)
 
 
-def _digest(agent: Agent, tools: Sequence[ToolDeclaration]) -> str:
+def _digest(agent: Agent, tools: Sequence[ToolDeclaration], output: OutputContract | None) -> str:
     prefix = json.dumps(
         {
             "instructions": agent.instructions,
             "tools": [tool.model_dump(mode="json") for tool in tools],
+            "output": None if output is None else [output.hash, output.native],
         },
         sort_keys=True,
     )
@@ -111,6 +113,7 @@ def assemble_prompt(
     history: Iterable[Message] = (),
     memory: Iterable[str] = (),
     tools: Iterable[ToolDeclaration] = (),
+    output: OutputContract | None = None,
 ) -> Prompt:
     """Compose one turn's prompt in the documented order.
 
@@ -120,6 +123,9 @@ def assemble_prompt(
         history: The conversation so far, in order.
         memory: Recalled text, wrapped as untrusted data.
         tools: Tool declarations, in the registry's order.
+        output: The answer's declared shape. Where the provider does not enforce a schema
+            itself, it is stated in the prompt instead; either way it is part of the
+            version, because a changed schema is a changed prompt.
 
     Returns:
         The assembled `Prompt`.
@@ -130,7 +136,12 @@ def assemble_prompt(
 
     Example:
         >>> from tesserix_adk.core import Agent
-        >>> agent = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+        >>> agent = Agent(
+        ...     name="planner",
+        ...     instructions="Plan trips.",
+        ...     model="claude-sonnet-5",
+        ...     free_text=True,
+        ... )
         >>> [m.role for m in assemble_prompt(agent, "plan a trip").messages]
         ['system', 'user']
     """
@@ -139,6 +150,8 @@ def assemble_prompt(
 
     declared = tuple(tools)
     messages: list[Message] = [Message(role="system", content=[TextPart(text=agent.instructions)])]
+    if output is not None and not output.native:
+        messages.append(Message(role="system", content=[TextPart(text=output.instruction)]))
     recalled = tuple(memory)
     if recalled:
         messages.append(
@@ -152,4 +165,6 @@ def assemble_prompt(
     messages.extend(history)
     messages.append(Message(role="user", content=[TextPart(text=user_input)]))
 
-    return Prompt(messages=tuple(messages), tools=declared, version=_digest(agent, declared))
+    return Prompt(
+        messages=tuple(messages), tools=declared, version=_digest(agent, declared, output)
+    )

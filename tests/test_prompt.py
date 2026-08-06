@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from tesserix_adk.core import Agent, Message, TextPart
 from tesserix_adk.runtime import Prompt, ToolDeclaration, assemble_prompt, wrap_untrusted
 
-AGENT = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5")
+AGENT = Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5", free_text=True)
 
 SEARCH = ToolDeclaration(
     name="search",

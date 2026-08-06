@@ -10,6 +10,7 @@ from tesserix_adk.runtime.prompt import (
     wrap_untrusted,
 )
 from tesserix_adk.runtime.retry import RetryPlan
+from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
 __all__ = [
     "AgentRunner",
@@ -17,6 +18,7 @@ __all__ = [
     "Deadline",
     "ModelRequest",
     "ModelResponse",
+    "OutputContract",
     "Prompt",
     "RetryPlan",
     "RunFingerprint",
@@ -25,5 +27,6 @@ __all__ = [
     "assemble_prompt",
     "canonical_digest",
     "fingerprint_of",
+    "unwrap_fenced",
     "wrap_untrusted",
 ]

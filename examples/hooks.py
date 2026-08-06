@@ -95,6 +95,7 @@ def agent(**overrides: object) -> Agent:
     fields: dict[str, object] = {
         "name": "clerk",
         "instructions": "Handle payments. Cite the authorisation.",
+        "free_text": True,
         "model": "claude-sonnet-5",
     }
     return Agent(**{**fields, **overrides})  # type: ignore[arg-type]

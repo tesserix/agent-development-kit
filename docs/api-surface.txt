@@ -200,12 +200,13 @@ tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cance
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.ModelResponse :: class ModelResponse(AdkModel)
+tesserix_adk.runtime.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'}
 tesserix_adk.runtime.Prompt :: class Prompt(AdkModel)
 tesserix_adk.runtime.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.runtime.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
-tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = ()) -> 'Prompt'
+tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None) -> 'Prompt'
 tesserix_adk.runtime.cancellation.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.cancellation.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.canonical_digest :: def canonical_digest(value: 'Any') -> 'str'
@@ -219,9 +220,12 @@ tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.prompt.Prompt :: class Prompt(AdkModel)
 tesserix_adk.runtime.prompt.ToolDeclaration :: class ToolDeclaration(AdkModel)
-tesserix_adk.runtime.prompt.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = ()) -> 'Prompt'
+tesserix_adk.runtime.prompt.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None) -> 'Prompt'
 tesserix_adk.runtime.prompt.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
 tesserix_adk.runtime.retry.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
+tesserix_adk.runtime.structured.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'}
+tesserix_adk.runtime.structured.unwrap_fenced :: def unwrap_fenced(content: 'str') -> 'tuple[str, bool]'
+tesserix_adk.runtime.unwrap_fenced :: def unwrap_fenced(content: 'str') -> 'tuple[str, bool]'
 tesserix_adk.runtime.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
 tesserix_adk.testing.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'Any'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}

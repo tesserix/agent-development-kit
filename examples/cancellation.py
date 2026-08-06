@@ -19,6 +19,7 @@ AGENT = Agent(
     name="planner",
     instructions="Plan trips. Cite the timetable before recommending a leg.",
     model="claude-sonnet-5",
+    free_text=True,
 )
 
 

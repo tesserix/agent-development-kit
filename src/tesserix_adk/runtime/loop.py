@@ -26,7 +26,7 @@ import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from pydantic import Field, ValidationError
+from pydantic import Field
 
 from tesserix_adk.core import (
     AdkError,
@@ -59,6 +59,7 @@ from tesserix_adk.core import (
     RunEvent,
     RunEventKind,
     RunState,
+    SchemaViolationError,
     TextPart,
     ToolCall,
     ToolExecutionError,
@@ -72,6 +73,7 @@ from tesserix_adk.core.models import AdkModel
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
 from tesserix_adk.runtime.retry import RetryPlan
+from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine, Iterable, Mapping, Sequence
@@ -113,6 +115,7 @@ class ModelRequest(AdkModel):
     messages: tuple[Message, ...]
     tools: tuple[ToolDeclaration, ...] = ()
     output_schema: dict[str, Any] | None = None
+    output_schema_hash: str | None = None
 
 
 class ModelResponse(AdkModel):
@@ -343,12 +346,14 @@ class AgentRunner:
 
         try:
             run, asked = await self._asked(run, agent, user_input, bounds)
+            contract = self._contract_for(agent)
             prompt = assemble_prompt(
                 agent,
                 asked,
                 history=history,
                 memory=memory,
                 tools=self._declarations_for(agent),
+                output=contract,
             )
             run = run.model_copy(update={"prompt_version": prompt.version}).record_event(
                 self._event(RunEventKind.PROMPT_ASSEMBLED, name=prompt.version)
@@ -361,9 +366,8 @@ class AgentRunner:
                     model=model,
                     messages=tuple(messages),
                     tools=prompt.tools,
-                    output_schema=(
-                        agent.output_type.model_json_schema() if agent.output_type else None
-                    ),
+                    output_schema=contract.schema if contract is not None else None,
+                    output_schema_hash=contract.hash if contract is not None else None,
                 )
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
 
@@ -817,7 +821,14 @@ class AgentRunner:
                 bounds,
             )
         if response.content:
-            messages.append(Message(role="assistant", content=[TextPart(text=response.content)]))
+            # A field of a structured answer can hold retrieved text; echoed back bare it
+            # becomes instruction on the next turn, which is the injection this prevents.
+            echoed = (
+                response.content
+                if agent.free_text
+                else wrap_untrusted(response.content, source="model_output")
+            )
+            messages.append(Message(role="assistant", content=[TextPart(text=echoed)]))
         return _carrying(run, messages)
 
     async def _check_guardrails(
@@ -1201,6 +1212,17 @@ class AgentRunner:
             detail="stopped after dispatch; whether its effect landed cannot be known",
         )
 
+    def _contract_for(self, agent: Agent) -> OutputContract | None:
+        """The shape of the answer, and whether this provider enforces it itself.
+
+        A provider that has not declared the capability does not have it: assuming it does
+        means discovering the schema was ignored from a run that already completed.
+        """
+        if agent.output_type is None:
+            return None
+        native = bool(getattr(self._provider, "supports_structured_output", False))
+        return OutputContract.of(agent.output_type, native=native)
+
     async def _finish(
         self, run: Run, agent: Agent, response: ModelResponse, bounds: _Bounds
     ) -> Run:
@@ -1208,25 +1230,42 @@ class AgentRunner:
             run, agent, HookPoint.BEFORE_OUTPUT_VALIDATION, bounds, content=response.content
         )
         self._stop_on_refusal(run, decision)
-        if agent.output_type is None:
+        contract = self._contract_for(agent)
+        if contract is None:
             return await self._terminate(run, agent, RunState.COMPLETED, None, bounds)
-        try:
-            validated = agent.output_type.model_validate(json.loads(content))
-        except (ValidationError, ValueError) as violation:
-            recorded = run.record_event(
-                self._event(RunEventKind.SCHEMA_VIOLATION, detail=str(violation))
+
+        answer, unwrapped = unwrap_fenced(content)
+        if unwrapped:
+            run = run.record_event(
+                self._event(
+                    RunEventKind.OUTPUT_UNWRAPPED, detail="stripped an enclosing code fence"
+                )
             )
+        try:
+            validated = contract.parse(answer)
+        except SchemaViolationError as violation:
             return await self._terminate(
-                recorded,
+                run.record_event(self._violation_event(contract, violation)),
                 agent,
                 RunState.FAILED,
-                f"output did not satisfy {agent.output_type.__name__}",
+                _named(violation),
                 bounds,
             )
         finished = run.with_output(validated.model_dump(mode="json")).record_event(
-            self._event(RunEventKind.OUTPUT_VALIDATED, name=agent.output_type.__name__)
+            self._event(RunEventKind.OUTPUT_VALIDATED, name=contract.output_type.__name__)
         )
         return await self._terminate(finished, agent, RunState.COMPLETED, None, bounds)
+
+    def _violation_event(
+        self, contract: OutputContract, violation: SchemaViolationError
+    ) -> RunEvent:
+        """What failed and against which schema — never the output, which may be anything."""
+        fields = ", ".join(violation.paths) or "whole output"
+        return self._event(
+            RunEventKind.SCHEMA_VIOLATION,
+            name=contract.output_type.__name__,
+            detail=f"{violation} at {fields}; schema {contract.hash}",
+        )
 
 
 class _Aborted(Exception):  # noqa: N818 — control flow, not an error the caller sees

@@ -64,7 +64,10 @@ class Agent(AdkModel):
             human decision. Must be a subset of `tools`.
         output_type: The type the answer must validate against. A Python type, so it is
             excluded from serialisation rather than rendered as a string that cannot be
-            read back.
+            read back. Exactly one of this and `free_text` is declared.
+        free_text: That this agent answers in prose on purpose. Declared, never reached by
+            omission: an agent that forgot to say what shape its answer takes would
+            otherwise hand the caller a string to guess at.
         budget: The ceiling for one run.
         deadlines: Wall-clock ceilings for the run and its steps. Unbounded by default.
         loop: Caps on the shape of the run — depth, fan-out, repetition. Narrows what the
@@ -77,7 +80,12 @@ class Agent(AdkModel):
         metadata: Consumer-owned annotations. The kit reads nothing from it.
 
     Example:
-        >>> Agent(name="planner", instructions="Plan trips.", model="claude-sonnet-5").tools
+        >>> Agent(
+        ...     name="planner",
+        ...     instructions="Plan trips.",
+        ...     model="claude-sonnet-5",
+        ...     free_text=True,
+        ... ).tools
         ()
     """
 
@@ -93,6 +101,7 @@ class Agent(AdkModel):
     idempotent_tools: tuple[str, ...] = ()
     approval_required_tools: tuple[str, ...] = ()
     output_type: type[BaseModel] | None = Field(default=None, exclude=True)
+    free_text: bool = False
     budget: BudgetConfig | None = None
     deadlines: DeadlineConfig | None = None
     loop: LoopConfig | None = None
@@ -107,6 +116,15 @@ class Agent(AdkModel):
             raise ValueError(
                 "declare exactly one of model or task_class: two answers to which model "
                 "runs is a routing decision made twice, and none is a run that cannot start"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _the_shape_of_the_answer_is_declared(self) -> Agent:
+        if (self.output_type is None) == (not self.free_text):
+            raise ValueError(
+                "declare exactly one of output_type or free_text: an answer whose shape "
+                "nobody declared is prose the caller has to parse by guessing"
             )
         return self
 
