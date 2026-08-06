@@ -50,6 +50,7 @@ class RunState(StrEnum):
     CANCELLED = "cancelled"
     BUDGET_EXHAUSTED = "budget_exhausted"
     MAX_ITERATIONS_EXCEEDED = "max_iterations_exceeded"
+    LOOP_LIMIT_EXCEEDED = "loop_limit_exceeded"
 
     @property
     def is_terminal(self) -> bool:
@@ -64,6 +65,7 @@ _TERMINAL = frozenset(
         RunState.CANCELLED,
         RunState.BUDGET_EXHAUSTED,
         RunState.MAX_ITERATIONS_EXCEEDED,
+        RunState.LOOP_LIMIT_EXCEEDED,
     }
 )
 
@@ -103,6 +105,9 @@ class RunEventKind(StrEnum):
     TOOL_ERROR = "tool_error"
     TOOL_REFUSED = "tool_refused"
     TOOL_INDETERMINATE = "tool_indeterminate"
+    FAN_OUT_REFUSED = "fan_out_refused"
+    REPEAT_DETECTED = "repeat_detected"
+    DEPTH_EXCEEDED = "depth_exceeded"
     GUARDRAIL_REFUSAL = "guardrail_refusal"
     OUTPUT_VALIDATED = "output_validated"
     SCHEMA_VIOLATION = "schema_violation"
@@ -158,6 +163,7 @@ class RunContext(BaseModel):
 
     run_id: str = Field(min_length=1)
     tenant: TenantContext
+    depth: int = Field(default=0, ge=0)
 
 
 class Run(BaseModel):
@@ -172,6 +178,8 @@ class Run(BaseModel):
         agent_version: Which version of it, so a behaviour change is attributable.
         model: The model actually used, not the one requested.
         prompt_version: Which prompt produced this run, where prompts are versioned.
+        depth: How far down a chain of agents calling agents this run sits. Zero is a run
+            nobody called.
         state: Where the run is. See `RunState`.
         messages: The conversation as it stands.
         tool_calls: Calls the model requested, deduplicated by id.
@@ -194,6 +202,7 @@ class Run(BaseModel):
     agent_version: str = Field(min_length=1)
     model: str = Field(min_length=1)
     prompt_version: str | None = None
+    depth: int = Field(default=0, ge=0)
     state: RunState = RunState.PENDING
     messages: list[Message] = Field(default_factory=list)
     tool_calls: list[ToolCall] = Field(default_factory=list)
@@ -206,7 +215,11 @@ class Run(BaseModel):
     @property
     def context(self) -> RunContext:
         """The identity this run threads through every layer."""
-        return RunContext(run_id=self.id, tenant=TenantContext(tenant=self.tenant, user=self.user))
+        return RunContext(
+            run_id=self.id,
+            tenant=TenantContext(tenant=self.tenant, user=self.user),
+            depth=self.depth,
+        )
 
     @property
     def input_tokens_spent(self) -> int:

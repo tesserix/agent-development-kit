@@ -18,9 +18,12 @@ tesserix_adk.core.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.cor
 tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(BaseModel)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
 tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
+tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
 tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(AdkError)
-tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(AdkError)
+tesserix_adk.core.LoopConfig :: class LoopConfig(BaseModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
+tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
+tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
 tesserix_adk.core.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.core.Message :: class Message(BaseModel)
 tesserix_adk.core.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
@@ -30,7 +33,9 @@ tesserix_adk.core.Provenance :: class Provenance(object)
 tesserix_adk.core.ProviderConfig :: class ProviderConfig(BaseModel)
 tesserix_adk.core.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
+tesserix_adk.core.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.RedactionConfig :: class RedactionConfig(BaseModel)
+tesserix_adk.core.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
 tesserix_adk.core.RetryConfig :: class RetryConfig(BaseModel)
 tesserix_adk.core.Role :: Role = typing.Literal['system', 'user', 'assistant', 'tool']
 tesserix_adk.core.Run :: class Run(BaseModel) {record(self, usage: 'Usage') -> 'Run'; record_event(self, event: 'RunEvent') -> 'Run'; transition_to(self, state: 'RunState', *, at: 'float | None' = None) -> 'Run'; with_output(self, output: 'dict[str, Any]') -> 'Run'}
@@ -59,6 +64,7 @@ tesserix_adk.core.config.ConfigResolution :: class ConfigResolution(object) {exp
 tesserix_adk.core.config.DeadlineConfig :: class DeadlineConfig(BaseModel)
 tesserix_adk.core.config.ENV_PREFIX :: ENV_PREFIX: str
 tesserix_adk.core.config.Layer :: Layer = typing.Literal['code', 'env', 'file', 'default']
+tesserix_adk.core.config.LoopConfig :: class LoopConfig(BaseModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
 tesserix_adk.core.config.Provenance :: class Provenance(object)
 tesserix_adk.core.config.ProviderConfig :: class ProviderConfig(BaseModel)
 tesserix_adk.core.config.RedactionConfig :: class RedactionConfig(BaseModel)
@@ -83,13 +89,17 @@ tesserix_adk.core.errors.BudgetExceededError :: class BudgetExceededError(AdkErr
 tesserix_adk.core.errors.CancelledError :: class CancelledError(AdkError)
 tesserix_adk.core.errors.CapabilityError :: class CapabilityError(AdkError)
 tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError)
+tesserix_adk.core.errors.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
 tesserix_adk.core.errors.GuardrailViolationError :: class GuardrailViolationError(AdkError)
-tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(AdkError)
+tesserix_adk.core.errors.LoopLimitError :: class LoopLimitError(AdkError)
+tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
 tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.errors.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.errors.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
 tesserix_adk.core.errors.RETRYABLE_STATUS :: RETRYABLE_STATUS: frozenset
+tesserix_adk.core.errors.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
+tesserix_adk.core.errors.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
@@ -123,7 +133,7 @@ tesserix_adk.core.run.RunState :: class RunState(StrEnum)
 tesserix_adk.core.run.TenantContext :: class TenantContext(BaseModel)
 tesserix_adk.core.run.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
-tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'}
+tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run'}
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.ModelRequest :: class ModelRequest(BaseModel)
@@ -135,7 +145,7 @@ tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(BaseModel)
 tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = ()) -> 'Prompt'
 tesserix_adk.runtime.cancellation.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.cancellation.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
-tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'}
+tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run'}
 tesserix_adk.runtime.loop.ModelRequest :: class ModelRequest(BaseModel)
 tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(BaseModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}

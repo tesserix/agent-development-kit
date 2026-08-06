@@ -45,6 +45,7 @@ class TestRunState:
             RunState.CANCELLED,
             RunState.BUDGET_EXHAUSTED,
             RunState.MAX_ITERATIONS_EXCEEDED,
+            RunState.LOOP_LIMIT_EXCEEDED,
         }
 
     def test_a_terminal_state_goes_nowhere(self) -> None:

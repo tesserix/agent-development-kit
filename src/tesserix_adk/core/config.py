@@ -39,6 +39,7 @@ __all__ = [
     "ConfigResolution",
     "DeadlineConfig",
     "Layer",
+    "LoopConfig",
     "Provenance",
     "ProviderConfig",
     "RedactionConfig",
@@ -90,13 +91,72 @@ class ProviderConfig(BaseModel):
 
 
 class BudgetConfig(BaseModel):
-    """Ceilings enforced per run. Reaching one ends the run; it is never a warning."""
+    """Spend ceilings enforced per run. Reaching one ends the run; it is never a warning."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_tokens_per_run: int = 100_000
-    max_tool_calls_per_run: int = 32
     max_cost_usd_per_run: float = 1.0
+
+
+class LoopConfig(BaseModel):
+    """Caps on the shape of a run: how deep, how wide, and how often the same call.
+
+    Unlike a deadline, these are bounded by default. A ceiling on wall-clock time the kit
+    invented would kill good runs on slow hardware; a ceiling on recursion and repetition
+    only ever stops a run that has stopped making progress — and a run with neither is one
+    nobody can interrupt short of a provider quota.
+
+    Args:
+        max_depth: How deep a chain of agents calling agents may go. A child run cannot
+            raise this: an agent's own config narrows what it was given and never widens
+            it, or a runaway agent could vote itself more rope.
+        max_tool_calls_per_turn: How many tool calls one model response may ask for. The
+            whole turn is refused rather than trimmed, because half a fan-out is a set of
+            side effects nobody chose.
+        max_tool_calls_per_run: How many tool calls the whole run may make.
+        max_repeated_calls: How many times one tool may be called with the same arguments
+            before the run is treated as cycling. Tools declared in
+            `Agent.idempotent_tools` are exempt: polling one endpoint with the same
+            arguments is the design, not a cycle.
+
+    Example:
+        >>> LoopConfig(max_depth=9).narrowed_to(LoopConfig(max_depth=2)).max_depth
+        2
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    max_depth: int = 4
+    max_tool_calls_per_turn: int = 8
+    max_tool_calls_per_run: int = 32
+    max_repeated_calls: int = 3
+
+    @model_validator(mode="after")
+    def _every_cap_permits_something(self) -> LoopConfig:
+        offending = sorted(name for name in _LOOP_CAPS if getattr(self, name) < 1)
+        if offending:
+            raise ValueError(
+                f"cap must be at least 1: {', '.join(offending)}. Zero reads as 'never do "
+                f"this at all', which is not a bound on a run but a run that cannot work"
+            )
+        return self
+
+    def narrowed_to(self, other: LoopConfig | None) -> LoopConfig:
+        """Return the tighter of each cap, so an inherited bound is never loosened."""
+        if other is None:
+            return self
+        return LoopConfig(
+            **{name: min(getattr(self, name), getattr(other, name)) for name in _LOOP_CAPS}
+        )
+
+
+_LOOP_CAPS = (
+    "max_depth",
+    "max_tool_calls_per_turn",
+    "max_tool_calls_per_run",
+    "max_repeated_calls",
+)
 
 
 class DeadlineConfig(BaseModel):
@@ -222,6 +282,7 @@ class AdkConfig(BaseModel):
     provider: ProviderConfig
     budget: BudgetConfig = BudgetConfig()
     deadlines: DeadlineConfig = DeadlineConfig()
+    loop: LoopConfig = LoopConfig()
     retry: RetryConfig = RetryConfig()
     telemetry: TelemetryConfig = TelemetryConfig()
     redaction: RedactionConfig = RedactionConfig()

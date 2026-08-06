@@ -10,6 +10,27 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Caps on the shape of a run, enforced in the loop. `core` gains `LoopConfig` and
+  `Agent.loop`, `RunContext.depth` and `Run.depth`, the `loop_limit_exceeded` terminal
+  state, the `fan_out_refused` / `repeat_detected` / `depth_exceeded` events, and a
+  `LoopLimitError` hierarchy (`RecursionLimitError`, `FanOutLimitError`,
+  `RepeatedCallError`, with `MaxIterationsError` re-parented under it); `AgentRunner` takes
+  `loop`, and `run` / `run_sync` take `parent`. Unlike deadlines and retries, loop shape is
+  bounded by default (depth 4, 8 tool calls per turn, 32 per run, 3 identical repeats): a
+  wall-clock ceiling the kit invented would kill good runs on slow hardware, where a cap on
+  shape only ever stops a run that has stopped making progress, and costs nothing when it
+  does not bind. An agent's own `LoopConfig` narrows the runner's and never widens it —
+  how far a chain of agents may recurse is a property of the deployment paying for it, not
+  of the agent. A turn that would break a cap is refused entire before any dispatch, since
+  trimming a fan-out to fit leaves half a plan executed; depth is checked before a prompt
+  is assembled, so a too-deep run costs nothing; and repeats are counted by request
+  signature, with `Agent.idempotent_tools` exempt so polling one status endpoint is not
+  mistaken for a cycle. Which cap bound is in the error type and named in the `terminated`
+  event, and none of them are retryable: a cap is a decision, not a fault. **Stability:**
+  additive apart from the `BudgetConfig` move noted under Changed; the new `AgentRunner`,
+  `run` and `run_sync` arguments are keyword-only with defaults. Documented in
+  `docs/run-loop.md` and exercised by `examples/loops.py`.
+
 - Retry with full jitter and an explicit retryability policy. `core` gains `RetryConfig`,
   `RETRYABLE_STATUS`, `AdkError.retryable`, `ProviderError.status` / `retry_after` and
   `Agent.retry`; `runtime` gains `RetryPlan`; `AgentRunner` takes `retry` and `jitter`;
@@ -190,6 +211,12 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   conformance suites and fakes in `tesserix_adk.testing`.
 
 ### Changed
+
+- `BudgetConfig.max_tool_calls_per_run` moved to `LoopConfig`, where it is enforced. It
+  was declared on the budget and never checked, and a count of tool calls is loop shape
+  rather than spend: `BudgetConfig` now carries only what is denominated in tokens and
+  money. Pre-0.1.0 removal from the public surface, so there is no deprecation shim; the
+  environment variable becomes `TESSERIX_ADK_LOOP__MAX_TOOL_CALLS_PER_RUN`.
 
 - Published requirements no longer carry speculative upper bounds. `pydantic`, `httpx`,
   `opentelemetry-api`, `mcp`, `temporalio`, `redis` and `psycopg` declare a floor only,

@@ -28,14 +28,21 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from tesserix_adk.core import (
+    AdkError,
     BudgetExceededError,
     CancelledError,
     ConfigurationError,
     DeadlineConfig,
+    FanOutLimitError,
+    LoopConfig,
+    MaxIterationsError,
     Message,
     ModelProvider,
+    RecursionLimitError,
+    RepeatedCallError,
     RetryConfig,
     Run,
+    RunContext,
     RunEvent,
     RunEventKind,
     RunState,
@@ -52,7 +59,7 @@ from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_u
 from tesserix_adk.runtime.retry import RetryPlan
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine, Iterable, Mapping
+    from collections.abc import Coroutine, Iterable, Mapping, Sequence
     from random import Random
 
     from tesserix_adk.core import Agent, BudgetPolicy, Clock, Guardrail, ToolRegistry
@@ -122,6 +129,7 @@ class _Bounds:
     deadline: Deadline | None
     deadlines: DeadlineConfig
     retry: RetryConfig
+    loop: LoopConfig
 
 
 class AgentRunner:
@@ -137,6 +145,8 @@ class AgentRunner:
             declares its own overrides these; nothing is bounded by default.
         retry: Which failures are worth another attempt, and how long to wait first. An
             agent that declares its own overrides this; nothing is retried by default.
+        loop: Caps on the shape of a run — depth, fan-out, repetition. An agent that
+            declares its own narrows these and never widens them.
         jitter: The source the backoff is drawn from. Injected so a test can seed it and
             assert the exact schedule instead of waiting it out.
         clock: Injected time. Defaults to wall-clock.
@@ -159,6 +169,7 @@ class AgentRunner:
         budget: BudgetPolicy | None = None,
         deadlines: DeadlineConfig | None = None,
         retry: RetryConfig | None = None,
+        loop: LoopConfig | None = None,
         jitter: Random | None = None,
         clock: Clock | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
@@ -178,6 +189,7 @@ class AgentRunner:
         self._budget = budget
         self._deadlines = deadlines or DeadlineConfig()
         self._retry = retry or RetryConfig()
+        self._loop = loop or LoopConfig()
         self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
         self._max_iterations = max_iterations
@@ -196,6 +208,7 @@ class AgentRunner:
         memory: Iterable[str] = (),
         cancellation: CancellationToken | None = None,
         deadline: Deadline | None = None,
+        parent: RunContext | None = None,
     ) -> Run:
         """Run `agent` from a synchronous caller. Arguments are `run`'s.
 
@@ -222,6 +235,7 @@ class AgentRunner:
                         memory=memory,
                         cancellation=cancellation,
                         deadline=deadline,
+                        parent=parent,
                     )
                 )
             finally:
@@ -240,6 +254,7 @@ class AgentRunner:
         memory: Iterable[str] = (),
         cancellation: CancellationToken | None = None,
         deadline: Deadline | None = None,
+        parent: RunContext | None = None,
     ) -> Run:
         """Drive `agent` until it reaches a terminal state, and return the run.
 
@@ -255,6 +270,8 @@ class AgentRunner:
                 stops the run, which resolves `cancelled` rather than raising.
             deadline: A ceiling from the caller, typically a parent run's. It narrows the
                 agent's own and never extends it, so a sub-agent cannot outlive its parent.
+            parent: The context of the run that called this one, where one did. It carries
+                the depth, so a chain of agents calling agents cannot outrun its ceiling.
 
         Returns:
             The run, in a terminal state, carrying every event recorded on the way.
@@ -268,6 +285,9 @@ class AgentRunner:
         """
         self._refuse_incomplete_wiring(agent)
         bounds = self._bounds_for(agent, cancellation, deadline)
+        depth = parent.depth + 1 if parent is not None else 0
+        if depth > bounds.loop.max_depth:
+            return self._too_deep(agent, depth, bounds, tenant=tenant, user=user, run_id=run_id)
         declared = self._declarations_for(agent)
         prompt = assemble_prompt(agent, user_input, history=history, memory=memory, tools=declared)
 
@@ -280,6 +300,7 @@ class AgentRunner:
             agent_version=agent.version,
             model=model,
             prompt_version=prompt.version,
+            depth=depth,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
         run = run.record_event(self._event(RunEventKind.PROMPT_ASSEMBLED, name=prompt.version))
 
@@ -312,7 +333,7 @@ class AgentRunner:
         return self._terminate(
             run,
             RunState.MAX_ITERATIONS_EXCEEDED,
-            f"stopped after {self._max_iterations} model calls",
+            _named(MaxIterationsError(f"stopped after {self._max_iterations} model calls")),
         )
 
     def _refuse_incomplete_wiring(self, agent: Agent) -> None:
@@ -354,6 +375,7 @@ class AgentRunner:
             deadline=ceiling.narrowed_to(caller) if ceiling is not None else caller,
             deadlines=deadlines,
             retry=agent.retry or self._retry,
+            loop=self._loop.narrowed_to(agent.loop),
         )
 
     def _stop_if_over(self, run: Run, bounds: _Bounds) -> None:
@@ -632,7 +654,9 @@ class AgentRunner:
         messages: list[Message],
         bounds: _Bounds,
     ) -> Run:
-        for call in deduplicate(list(response.tool_calls)):
+        calls = deduplicate(list(response.tool_calls))
+        self._refuse_a_turn_that_would_break_a_cap(run, agent, calls, bounds)
+        for call in calls:
             if call.name not in agent.tools:
                 raise _Terminal(
                     run.record_event(self._event(RunEventKind.TOOL_REFUSED, name=call.name)),
@@ -651,6 +675,86 @@ class AgentRunner:
             )
             run = _carrying(run, messages)
         return run
+
+    def _refuse_a_turn_that_would_break_a_cap(
+        self, run: Run, agent: Agent, calls: Sequence[ToolCall], bounds: _Bounds
+    ) -> None:
+        """Check the whole turn before dispatching any of it.
+
+        Half a fan-out is a set of side effects nobody chose, so a turn that would break a
+        cap is refused entire rather than trimmed to fit.
+
+        Raises:
+            _Terminal: If the turn is wider than a cap allows, or repeats a call the run
+                has already made past its threshold.
+        """
+        caps = bounds.loop
+        made = len(run.tool_calls)
+        too_wide = (
+            f"turn asked for {len(calls)} tool calls, over the {caps.max_tool_calls_per_turn} "
+            f"allowed in one turn"
+            if len(calls) > caps.max_tool_calls_per_turn
+            else (
+                f"turn would take the run to {made + len(calls)} tool calls, over the "
+                f"{caps.max_tool_calls_per_run} allowed in one run"
+                if made + len(calls) > caps.max_tool_calls_per_run
+                else None
+            )
+        )
+        if too_wide is not None:
+            raise _Terminal(
+                run.record_event(self._event(RunEventKind.FAN_OUT_REFUSED, detail=too_wide)),
+                RunState.LOOP_LIMIT_EXCEEDED,
+                _named(FanOutLimitError(too_wide)),
+            )
+
+        for position, call in enumerate(calls):
+            if call.name in agent.idempotent_tools:
+                continue
+            repeats = _same_call_count(run.tool_calls, call) + _same_call_count(
+                calls[:position], call
+            )
+            if repeats >= caps.max_repeated_calls:
+                detail = (
+                    f"{call.name} asked for with the same arguments {repeats + 1} times; the "
+                    f"run is going round rather than getting anywhere"
+                )
+                raise _Terminal(
+                    run.record_event(
+                        self._event(RunEventKind.REPEAT_DETECTED, name=call.name, detail=detail)
+                    ),
+                    RunState.LOOP_LIMIT_EXCEEDED,
+                    _named(RepeatedCallError(detail)),
+                )
+
+    def _too_deep(
+        self,
+        agent: Agent,
+        depth: int,
+        bounds: _Bounds,
+        *,
+        tenant: str,
+        user: str | None,
+        run_id: str | None,
+    ) -> Run:
+        """End a run that was called from too deep a chain, before it calls anything itself."""
+        detail = (
+            f"run would sit at depth {depth}, past the ceiling of {bounds.loop.max_depth}; "
+            f"agents calling agents have stopped making progress"
+        )
+        run = Run(
+            id=run_id or uuid.uuid4().hex,
+            tenant=tenant,
+            user=user,
+            agent_name=agent.name,
+            agent_version=agent.version,
+            model=agent.model or "",
+            depth=depth,
+        ).transition_to(RunState.RUNNING, at=self._clock.now())
+        run = run.record_event(self._event(RunEventKind.DEPTH_EXCEEDED, detail=detail))
+        return self._terminate(
+            run, RunState.LOOP_LIMIT_EXCEEDED, _named(RecursionLimitError(detail))
+        )
 
     async def _invoke(
         self, run: Run, agent: Agent, call: ToolCall, bounds: _Bounds
@@ -788,6 +892,21 @@ class _Terminal(Exception):  # noqa: N818 — control flow, not an error the cal
         self.run = run
         self.state = state
         self.detail = detail
+
+
+def _named(error: AdkError) -> str:
+    """A terminal detail that says which cap or fault ended the run, not just that one did."""
+    return f"{type(error).__name__}: {error}"
+
+
+def _same_call_count(calls: Iterable[ToolCall], call: ToolCall) -> int:
+    """How many of `calls` are the same request: same tool, same arguments in any order."""
+    signature = _signature(call)
+    return sum(1 for made in calls if _signature(made) == signature)
+
+
+def _signature(call: ToolCall) -> str:
+    return f"{call.name}:{json.dumps(call.arguments, sort_keys=True, default=repr)}"
 
 
 def _carrying(run: Run, messages: list[Message]) -> Run:

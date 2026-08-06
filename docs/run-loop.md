@@ -56,6 +56,7 @@ state, not an escaped exception.
 | `failed` | Provider error, guardrail refusal, schema violation, an allowlist breach, zero content and zero tool calls, or a tool failure under `FAIL_RUN`. |
 | `budget_exhausted` | The budget policy refused a reservation. |
 | `max_iterations_exceeded` | The cap was reached without settling. |
+| `loop_limit_exceeded` | A cap on the run's shape bound: depth, fan-out width, per-run total, or repetition. |
 | `cancelled` | A `CancelledError` from the kit's hierarchy, a cancelled token, or an elapsed deadline. |
 
 `asyncio.CancelledError` is deliberately *not* converted: a cancelled task that returns
@@ -153,12 +154,55 @@ whether the side effect landed — a gateway timeout on `charge_card` is exactly
 where the charge went through. Every failed attempt records `attempt_failed` with what
 failed and either the delay before the next attempt or why there is not one.
 
+## Caps on the shape of a run
+
+```python
+runner = AgentRunner(provider=provider, loop=LoopConfig(max_depth=4, max_tool_calls_per_turn=8))
+agent = Agent(name="planner", …, loop=LoopConfig(max_repeated_calls=2))
+```
+
+Worked end to end, no network: `examples/loops.py`.
+
+**Loop shape *is* bounded by default,** unlike deadlines and retries. `LoopConfig` caps
+depth (4), tool calls per turn (8), tool calls per run (32) and identical repeats (3). A
+wall-clock ceiling the kit invented would kill good runs on slow hardware; a cap on shape
+only ever stops a run that has stopped making progress, and costs nothing when it does not
+bind. A cap of zero is refused at construction — it reads as "never do this at all", which
+is not a bound on a run but a run that cannot work.
+
+**A cap narrows and never widens.** `LoopConfig.narrowed_to` takes the minimum of each
+field, so an agent that declares its own tightens the runner's ceiling and can never vote
+itself more rope. This is the opposite of `DeadlineConfig` and `RetryConfig`, which an
+agent *replaces*: how long to wait and what to retry are properties of the work, but how
+far a chain of agents may recurse is a property of the deployment paying for it.
+
+**A turn that would break a cap is refused entire, before any dispatch.** Fan-out width,
+the per-run total and repetition are all checked against the whole turn first. Trimming a
+fan-out to fit leaves half a plan executed — a set of side effects nobody chose — so the
+run terminates `loop_limit_exceeded` with nothing dispatched.
+
+**Depth is checked before a prompt is assembled.** Pass the caller's `RunContext` as
+`parent` and the depth carries down the chain; a run past the ceiling fails closed without
+a model call. Failing closed at the bottom is the point: a level that invents a substitute
+result keeps the cycle alive one layer up, where nothing can see it.
+
+**Repeats are counted by request, not by tool.** The signature is the tool name plus its
+arguments, order-independent, so paging through results is progress and asking the same
+question five times is not. A tool in `Agent.idempotent_tools` is exempt: polling one
+status endpoint with the same arguments is the design.
+
+Which cap bound is in the type — `RecursionLimitError`, `FanOutLimitError`,
+`RepeatedCallError`, `MaxIterationsError`, all under `LoopLimitError` — and named in the
+`terminated` event, because a run that stops without saying which bound it hit is a run
+nobody can tune. None of them are retryable: a cap is a decision, not a fault.
+
 ## Events
 
 Every step is appended to `Run.events` in the order it happened: `prompt_assembled`,
 `model_call`, `model_response` (carrying its `Usage`), `tool_call`, `tool_result`,
 `tool_result_truncated`, `tool_error`, `tool_refused`, `tool_indeterminate`,
-`attempt_failed`, `guardrail_refusal`, `output_validated`, `schema_violation`,
+`attempt_failed`, `fan_out_refused`, `repeat_detected`, `depth_exceeded`,
+`guardrail_refusal`, `output_validated`, `schema_violation`,
 `cancellation_requested`,
 `deadline_exceeded`, `work_orphaned`, `terminated`. Cost attribution totals the usage on
 those events rather than being wired per project.
@@ -206,6 +250,11 @@ a loop wedges.
 - **A failed attempt's usage is only counted if the provider attached it.** `ProviderError`
   carries no `Usage`, so tokens spent on an attempt that raised are invisible until the
   provider protocol (#49) defines how a failed call reports what it burned.
+- **Depth is only counted where it is passed.** A caller that starts a nested run without
+  handing down the parent `RunContext` starts it at depth 0. Agent-to-agent delegation
+  inside the kit threads it automatically once the workflows epic owns the call.
+- **Repetition is exact-match only.** Two calls that differ by a whitespace-only argument
+  read as different requests. Semantic near-duplicate detection is not planned.
 - **`task_class` is refused.** Routing by task class needs a router (#53); guessing a
   model would attribute the run to one that never ran it.
 - **`ModelRequest`, `ModelResponse` and `ToolDeclaration` are provisional**, owned by the

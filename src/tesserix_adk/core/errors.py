@@ -18,12 +18,16 @@ __all__ = [
     "CancelledError",
     "CapabilityError",
     "ConfigurationError",
+    "FanOutLimitError",
     "GuardrailViolationError",
+    "LoopLimitError",
     "MaxIterationsError",
     "MissingExtraError",
     "ProtocolConformanceError",
     "ProviderError",
     "ProviderTimeoutError",
+    "RecursionLimitError",
+    "RepeatedCallError",
     "SchemaViolationError",
     "ToolExecutionError",
 ]
@@ -206,5 +210,33 @@ class CancelledError(AdkError):
     """Raised when a run was cancelled. In-flight work stops; state becomes `cancelled`."""
 
 
-class MaxIterationsError(AdkError):
+class LoopLimitError(AdkError):
+    """Raised when a run hit one of the caps on its shape: how deep, how wide, how often.
+
+    A cap is a decision, never a fault: the run is over, not unlucky, so it is not
+    retryable. Which cap bound is the subclass.
+    """
+
+
+class MaxIterationsError(LoopLimitError):
     """Raised when a run hit its iteration cap — the loop was bounded, and it hit the bound."""
+
+
+class RecursionLimitError(LoopLimitError):
+    """Raised when a run was called from too deep a chain of agents calling agents.
+
+    Failing closed at the bottom is the point: a level that invents a substitute result
+    keeps the cycle alive one layer up, where nothing can see it.
+    """
+
+
+class FanOutLimitError(LoopLimitError):
+    """Raised when one turn, or one run, asked for more tool calls than its cap allows."""
+
+
+class RepeatedCallError(LoopLimitError):
+    """Raised when the same tool was asked for with the same arguments past the threshold.
+
+    A tool the agent declared idempotent is exempt: polling one status endpoint with the
+    same arguments is the design, not a cycle.
+    """
