@@ -27,6 +27,9 @@ from tesserix_adk.testing import (
     assert_same_run,
 )
 
+# Credential-shaped, credential to nothing: the fixture that proves redaction works.
+FAKE_TOKEN = "sk-live-4eC39H"  # noqa: S105 — a fixture, not a credential; gitleaks:allow
+
 
 class FlakyProvider:
     """Fails once with a 503, then answers — the shape a cassette must keep both halves of."""
@@ -142,7 +145,7 @@ async def a_recorded_failure_replays_with_its_recovery() -> None:
 
 async def a_cassette_carries_no_secrets() -> None:
     """A cassette is a file people commit, and a token in one outlives the run that used it."""
-    leaking = searching(q="kyoto", api_key="sk-live-4eC39H", page=2)
+    leaking = searching(q="kyoto", api_key=FAKE_TOKEN, page=2)
     recorder = RecordingProvider(ScriptedProvider(leaking, answering()), provider="scripted")
     await AgentRunner(provider=recorder, tools=tools()).run(
         agent(tools=("search",)), "Trains to Kyoto?", tenant="acme"
@@ -150,7 +153,7 @@ async def a_cassette_carries_no_secrets() -> None:
 
     recorded = json.dumps(recorder.cassette.model_dump(mode="json"))
     print("\nwhat the cassette kept")  # noqa: T201
-    print(f"  holds the secret: {'sk-live-4eC39H' in recorded}")  # noqa: T201
+    print(f"  holds the secret: {FAKE_TOKEN in recorded}")  # noqa: T201
     print(f"  holds the prompt: {'Trains to Kyoto?' in recorded}")  # noqa: T201
     print(f"  fingerprint: {recorder.cassette.interactions[0].fingerprint.digest[:12]}…")  # noqa: T201
 

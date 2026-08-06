@@ -50,6 +50,9 @@ from tesserix_adk.testing import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+# Credential-shaped, credential to nothing: the fixture that proves redaction works.
+FAKE_TOKEN = "sk-live-4eC39H"  # noqa: S105 — a fixture, not a credential; gitleaks:allow
+
 
 def agent(**overrides: object) -> Agent:
     fields: dict[str, object] = {
@@ -234,7 +237,7 @@ class TestRecording:
 
     async def test_secrets_never_reach_the_cassette(self, tmp_path: Path) -> None:
         """A cassette is a file people commit; a token in it outlives the run that used it."""
-        leaking = calling("search", token="sk-live-4eC39H", q="kyoto")  # noqa: S106
+        leaking = calling("search", token=FAKE_TOKEN, q="kyoto")
         recorder = RecordingProvider(ScriptedProvider(leaking, answering()), provider="scripted")
         await AgentRunner(provider=recorder, tools=tools()).run(
             agent(tools=("search",)), "Trains?", tenant="acme"
@@ -242,7 +245,7 @@ class TestRecording:
         path = tmp_path / "secret.json"
         recorder.cassette.save(path)
 
-        assert "sk-live-4eC39H" not in path.read_text()
+        assert FAKE_TOKEN not in path.read_text()
         assert "[REDACTED]" in path.read_text()
 
     async def test_a_recorded_failure_and_its_retry_both_replay(self) -> None:
@@ -392,7 +395,7 @@ class TestWhatACassetteRefusesToDo:
         assert "cassette is empty" in (run.events[-1].detail or "")
 
     async def test_a_secret_nested_in_an_argument_is_redacted(self, tmp_path: Path) -> None:
-        nested = calling("search", filters={"api_key": "sk-live-4eC39H"}, page=2, deep=True)
+        nested = calling("search", filters={"api_key": FAKE_TOKEN}, page=2, deep=True)
         recorder = RecordingProvider(ScriptedProvider(nested, answering()), provider="scripted")
         await AgentRunner(provider=recorder, tools=tools()).run(
             agent(tools=("search",)), "Trains?", tenant="acme"
@@ -400,7 +403,7 @@ class TestWhatACassetteRefusesToDo:
         path = tmp_path / "nested.json"
         recorder.cassette.save(path)
 
-        assert "sk-live-4eC39H" not in path.read_text()
+        assert FAKE_TOKEN not in path.read_text()
         assert '"page": 2' in path.read_text()
 
 

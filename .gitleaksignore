@@ -1,0 +1,5 @@
+# Fixtures that prove cassette redaction works, credential-shaped by design and credential
+# to nothing. The lines now carry `gitleaks:allow`; these are the commits that predate it.
+e1fbeb5b4701a10ee61e9466b59346e8f2a8444f:examples/determinism.py:generic-api-key:145
+e1fbeb5b4701a10ee61e9466b59346e8f2a8444f:tests/test_determinism.py:generic-api-key:237
+e1fbeb5b4701a10ee61e9466b59346e8f2a8444f:tests/test_determinism.py:generic-api-key:395
