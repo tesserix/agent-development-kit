@@ -157,6 +157,9 @@ convention = "google"
 python_version = "3.12"
 strict = true
 warn_unreachable = true
+# A dependency that ships no stubs fails at the boundary rather than widening a public
+# signature to `Any`: the shim is written here, not inherited from the SDK.
+disallow_any_unimported = true
 enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code"]
 files = ["src", "tests", "tools"]
 

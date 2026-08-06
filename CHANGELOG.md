@@ -10,6 +10,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A conformance gate for the typing guarantee. Every `# type: ignore` in the source and
+  every `Any` in an exported signature is declared in the new `typing-policy.toml` with a
+  reason, an owner and a review date; `make typing-gate` fails on an escape the policy does
+  not list *and* on an entry the code no longer contains, since a record that outlives its
+  code is how an inventory stops describing anything. An entry whose owner the policy does
+  not recognise is flagged for reassignment rather than silently inherited, and one past its
+  review date fails — an exception nobody revisits is a permanent one. An `Any` entry names
+  its kind: `json`, `variadic`, or `provisional`, which must name the issue that removes it.
+  Every exported callable is checked for an unannotated parameter or return. At the
+  third-party boundary `disallow_any_unimported` is on, so a dependency that ships no stubs
+  fails at the import rather than widening a public signature to `Any`, and the two settings
+  that would readmit an SDK's `Any` wholesale are forbidden by test. The checker is pinned
+  in both the dev group and the policy, asserted equal. The gate runs in CI, in `make check`
+  and as a pre-commit hook. **Stability:** additive — a repository gate with no runtime
+  effect and no change to the public surface. Documented in `docs/typing.md`.
+
 - Bounded validation repair, with the failure itself fed back. `core` gains `RepairConfig`
   and `Agent` gains `repair`, undeclared by default: an answer that fails validation stays
   terminal unless a budget was asked for, because a further attempt is a further charge on

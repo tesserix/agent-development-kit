@@ -1,0 +1,306 @@
+# Every escape from the kit's typing guarantee, declared. `make typing-gate` fails on an
+# escape that is not here and on an entry the code no longer contains, so the inventory
+# cannot rot in either direction. Adding an entry is a review decision, not a build fix.
+#
+# The policy this file implements is docs/typing.md.
+
+# Who may own an entry. An entry owned by anyone else fails the gate rather than being
+# inherited by whoever touches the file next.
+owners = ["@sam123ben"]
+
+# The checker this policy speaks for. A new mypy tightens rules and reclassifies ignores,
+# so the version moves on a deliberate upgrade that re-runs the gate — never on a float.
+checker = "mypy>=1.18,<2"
+
+# ---------------------------------------------------------------------------------------
+# `# type: ignore[code]` in src/. Each is a place the checker is wrong or cannot see, not
+# a place the code is.
+# ---------------------------------------------------------------------------------------
+
+[[ignore]]
+path = "src/tesserix_adk/core/deprecation.py"
+code = "misc"
+reason = """
+Reading and reassigning `__init__` on a class the decorator was handed. Assigning to a
+method is exactly what a deprecation shim does, and mypy has no way to express "this
+assignment is the point". Confined to the decorator; nothing it returns is untyped.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[ignore]]
+path = "src/tesserix_adk/testing/pytest_plugin.py"
+code = "method-assign"
+reason = """
+The network guard replaces `socket.socket.connect` for the duration of a test session and
+restores it afterwards. Patching a stdlib method is the mechanism, so the error is the
+checker correctly describing a thing that is deliberate.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[ignore]]
+path = "src/tesserix_adk/testing/pytest_plugin.py"
+code = "assignment"
+reason = """
+Same assignment as above: the guard's signature is broader than `socket.connect`'s so it
+can refuse every call shape, which mypy reads as an incompatible assignment.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+# ---------------------------------------------------------------------------------------
+# `Any` in an exported signature. Three kinds are allowed, and nothing else: `json` for a
+# document that is heterogeneous by definition, `variadic` for a sink that forwards what it
+# is handed, and `provisional` for a placeholder a named story replaces.
+# ---------------------------------------------------------------------------------------
+
+[[any]]
+symbol = "tesserix_adk.core.protocols.ModelProvider"
+kind = "provisional"
+removed_by = "#49"
+reason = """
+`complete` and `stream` take and return `Any` because the request and response types are
+owned by the runtime until the provider protocol story lands them in core. Narrowing them
+here would make `runtime` a dependency of `core` and invert the layering.
+"""
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.core.protocols.ToolRegistry"
+kind = "provisional"
+removed_by = "#130"
+reason = """
+`declarations` and `invoke` are untyped for the same reason: `ToolDeclaration` lives in the
+runtime until the tool registry story owns it. A tool's arguments stay `Any` after that —
+they are a JSON object — but the declaration and result types become real.
+"""
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.core.protocols.Guardrail"
+kind = "provisional"
+removed_by = "#155"
+reason = """
+A guardrail inspects whatever it was pointed at — a prompt, a response, a tool argument —
+so its subject is a union nobody has enumerated yet. The guardrails epic defines it.
+"""
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.core.protocols.MemoryStore"
+kind = "json"
+reason = """
+A memory store holds what the consumer put in it. Typing the value would either force
+every consumer through one model or produce a generic whose parameter no store enforces.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.protocols.Tracer"
+kind = "variadic"
+reason = """
+`**attributes` on a span is an OpenTelemetry attribute bag: strings, numbers, booleans and
+sequences of those. The sink forwards them without reading them.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.schema.SchemaDialect"
+kind = "json"
+reason = "A JSON Schema is a JSON document; `dict[str, Any]` is what it is."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.schema.JsonSchema"
+kind = "json"
+reason = "Implements SchemaDialect over a JSON document."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.schema.StrictSubset"
+kind = "json"
+reason = "Implements SchemaDialect over a JSON document."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.schema.InlineRefs"
+kind = "json"
+reason = "Implements SchemaDialect over a JSON document."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.schema.schema_for"
+kind = "json"
+reason = """
+Returns a JSON Schema. The `Callable[..., Any]` in the parameter is the target being
+described, whose own return the schema does not depend on.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.schema.schema_hash"
+kind = "json"
+reason = "Hashes a JSON Schema, which is a JSON document."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.config.resolve_config"
+kind = "json"
+reason = """
+Overrides arrive as a nested mapping from a file or a caller's own config layer. Typing it
+as the config model would refuse a partial override, which is the only kind there is.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.config.load_config"
+kind = "json"
+reason = "Takes the same override mapping as resolve_config."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.config.leaf_keys"
+kind = "json"
+reason = "Returns the flattened key path to leaf value map of a model, whose values vary by field."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.models.parsed_from_strings"
+kind = "json"
+reason = """
+The annotation parameter is a type object that may be any annotation form — a union, a
+generic alias — none of which `type[T]` accepts. The return is the parsed value, typed.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.models.telemetry_dump"
+kind = "json"
+reason = "Produces a span attribute bag from a model, whose field values vary by model."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.runtime.determinism.canonical_digest"
+kind = "json"
+reason = "Digests an arbitrary JSON-serialisable payload; refusing one would defeat the purpose."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.runtime.prompt.assemble_prompt"
+kind = "provisional"
+removed_by = "#36"
+reason = """
+Takes `Agent[Any]`: prompt assembly happens before an answer is validated, so the run's
+answer type is not established at that point. Kept `Any` deliberately rather than stating a
+guarantee the function cannot make — see docs/typing.md.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.testing.fakes.ScriptedProvider"
+kind = "provisional"
+removed_by = "#49"
+reason = "Mirrors ModelProvider, and gains the real types when that protocol does."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.fakes.StallingProvider"
+kind = "provisional"
+removed_by = "#49"
+reason = "Mirrors ModelProvider, and gains the real types when that protocol does."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.fakes.FakeToolRegistry"
+kind = "provisional"
+removed_by = "#130"
+reason = "Mirrors ToolRegistry, and gains the real types when that protocol does."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.fakes.FakeGuardrail"
+kind = "provisional"
+removed_by = "#155"
+reason = "Mirrors Guardrail, and gains the real subject type when that protocol does."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.fakes.FakeMemoryStore"
+kind = "json"
+reason = "Mirrors MemoryStore, whose value is whatever the consumer stored."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.testing.cassette.RecordingProvider"
+kind = "provisional"
+removed_by = "#49"
+reason = "`stream` returns `Any` until the provider protocol owns the stream type."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.cassette.ReplayingProvider"
+kind = "provisional"
+removed_by = "#49"
+reason = "`stream` returns `Any` until the provider protocol owns the stream type."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.conformance.ClockConformance"
+kind = "provisional"
+removed_by = "#49"
+reason = """
+A conformance suite's `make_*` hook returns whatever implementation the subclass is
+proving, which is the protocol itself — expressible once these suites are generic over it.
+"""
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.conformance.BudgetPolicyConformance"
+kind = "provisional"
+removed_by = "#49"
+reason = "Same `make_*` hook as ClockConformance."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.conformance.MemoryStoreConformance"
+kind = "provisional"
+removed_by = "#49"
+reason = "Same `make_*` hook as ClockConformance."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.conformance.TracerConformance"
+kind = "provisional"
+removed_by = "#49"
+reason = "Same `make_*` hook as ClockConformance."
+owner = "@sam123ben"
+review_by = 2026-11-07

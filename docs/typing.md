@@ -56,6 +56,51 @@ private signatures would state a guarantee the loop cannot make at that point. T
 signatures — `AgentRunner.run`, `run_sync`, `Run.with_output` — are parameterised, and they
 are the ones a consumer's checker sees.
 
+## Every escape hatch is declared
+
+`mypy --strict` proves the code the checker can see. It cannot prove that an exported
+symbol is annotated at all, that an `Any` in a public signature was a decision, or that a
+`# type: ignore` was reviewed. Those three are how a typing guarantee erodes — one
+plausible exception per release — so each one is written down in
+[`typing-policy.toml`](../typing-policy.toml) and `make typing-gate` fails without it.
+
+The gate fails in both directions: an escape the policy does not list, **and** an entry the
+code no longer contains. A record that outlives its code is how an inventory stops
+describing anything, so removing the last ignore in a file is part of the same change that
+removes its entry.
+
+Every entry carries a `reason`, an `owner` drawn from the policy's `owners` list, and a
+`review_by` date. An entry owned by someone the policy does not recognise fails rather than
+being inherited by whoever touches the file next, and an entry past its review date fails
+too: an exception nobody revisits is a permanent one.
+
+An `Any` entry also names its `kind`, and only three are accepted:
+
+| Kind | Means | Also requires |
+|---|---|---|
+| `json` | The value is a JSON document; narrowing it would be a lie | — |
+| `variadic` | A sink that forwards `**kwargs` without reading them | — |
+| `provisional` | A placeholder until a named story lands the real type | `removed_by = "#123"` |
+
+Entries are keyed by where a symbol is *defined*, not where it is exported. `Guardrail` is
+reachable as both `core.Guardrail` and `core.protocols.Guardrail`; that is one decision to
+review, and two records for it would eventually disagree.
+
+The checker itself is pinned — `mypy>=1.18,<2` in both the dev group and the policy's
+`checker` field, asserted equal by the tests. A new mypy tightens rules and reclassifies
+ignores, which is a deliberate upgrade that re-runs the gate, never a float.
+
+## Third-party boundaries
+
+`disallow_any_unimported` is on. A dependency that ships no stubs, or that drops them in an
+upgrade, fails at the import rather than quietly widening a public signature to `Any`; the
+fix is a typed shim written here. `ignore_missing_imports` and `follow_untyped_imports` are
+the two settings that would readmit an SDK's `Any` wholesale, and a test forbids both.
+
+Optional extras are not installed for the gate. Every public module is imported in a
+subprocess, individually and together, so a consumer who installed none of them can still
+run it — and a `TYPE_CHECKING` import promoted to runtime shows up there as a cycle.
+
 ## What is promised, and how it would change
 
 The generic signatures are part of the public API surface: they appear in
@@ -81,5 +126,10 @@ other, with the old shape kept working for one minor release.
 rejecting it — `warn_unused_ignores` fails the build if it stops. Both run under
 `mypy --strict` in `make check`, so a widened signature fails in CI rather than in a
 consumer's editor.
+
+[`tests/test_typing_gate.py`](../tests/test_typing_gate.py) covers the gate itself: that
+every hatch in the tree is declared, that a planted undeclared one fails, that a declared
+one the code lost fails, and that an unowned or overdue entry is flagged for reassignment
+rather than inherited.
 
 `py.typed` ships in the wheel; without it none of the above is visible downstream.

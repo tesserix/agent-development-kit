@@ -31,7 +31,8 @@ def _ci_run_steps(job: str) -> list[str]:
 
 
 @pytest.mark.parametrize(
-    "job", ["lint", "typecheck", "test-fast", "layering", "lockfile", "api-surface"]
+    "job",
+    ["lint", "typecheck", "test-fast", "layering", "lockfile", "api-surface", "typing-gate"],
 )
 def test_ci_runs_every_gate(job: str) -> None:
     assert job in _ci_jobs()
@@ -68,6 +69,8 @@ def test_every_pre_commit_hook_runs_from_the_project_environment() -> None:
         assert hook["entry"].startswith("uv run "), hook["entry"]
 
 
-@pytest.mark.parametrize("hook_id", ["ruff", "ruff-format", "mypy", "import-linter", "api-surface"])
+@pytest.mark.parametrize(
+    "hook_id", ["ruff", "ruff-format", "mypy", "import-linter", "api-surface", "typing-gate"]
+)
 def test_pre_commit_covers_every_static_gate(hook_id: str) -> None:
     assert hook_id in {hook["id"] for hook in _hooks()}

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check typing-gate deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -36,6 +36,9 @@ api-snapshot: ## Regenerate docs/api-surface.txt after a deliberate surface chan
 
 api-check: ## Fail if the public surface differs from the committed snapshot
 	uv run python -m tools.api_surface
+
+typing-gate: ## Fail on an undeclared typing escape hatch, or a policy entry the code lost
+	uv run python -m tools.typing_gate
 
 deprecations: ## Regenerate docs/deprecations.md from the @deprecate records
 	uv run python -m tools.deprecations --write
@@ -88,7 +91,7 @@ admissions: ## Regenerate security/inventory.toml from the lock
 admissions-check: ## Fail if a dependency a consumer inherits has no decision record
 	uv run python -m tools.admissions
 
-check: lint typecheck deps admissions-check disclosure-check api-check deprecations-check release-check notes-check cov ## Everything CI runs
+check: lint typecheck deps admissions-check disclosure-check api-check typing-gate deprecations-check release-check notes-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov

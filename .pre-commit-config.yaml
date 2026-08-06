@@ -36,6 +36,14 @@ repos:
         pass_filenames: false
         require_serial: true
 
+      - id: typing-gate
+        name: typing escape hatches declared
+        entry: uv run python -m tools.typing_gate
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true
+
       - id: deprecations
         name: deprecations page matches the decorators
         entry: uv run python -m tools.deprecations
