@@ -47,6 +47,7 @@ __all__ = [
     "Provenance",
     "ProviderConfig",
     "RedactionConfig",
+    "RepairConfig",
     "RetryConfig",
     "StoreConfig",
     "TelemetryConfig",
@@ -259,6 +260,39 @@ class RetryConfig(AdkModel):
         )
         if offending:
             raise ValueError(f"delay must not be negative: {', '.join(offending)}")
+        return self
+
+
+class RepairConfig(AdkModel):
+    """How many times an answer that did not validate may be sent back with the reason.
+
+    A repair is not a retry: the model is told the exact field paths that failed and what
+    was wrong with each, so a second attempt is informed rather than hopeful. It is also
+    not coercion — running out of attempts fails the run, and no default is ever filled in
+    on the model's behalf.
+
+    Args:
+        enabled: Whether to repair at all. Turning it off here rather than deleting the
+            block is how a high-stakes agent records the decision instead of inheriting it.
+        max_attempts: How many repair attempts follow the first violation. Each one is a
+            further model call, charged to the run's usage and its budget like any other.
+
+    Example:
+        >>> RepairConfig().max_attempts
+        2
+    """
+
+    enabled: bool = True
+    max_attempts: int = 2
+
+    @model_validator(mode="after")
+    def _a_budget_of_zero_says_off_in_the_wrong_field(self) -> RepairConfig:
+        if self.max_attempts < 1:
+            raise ValueError(
+                f"max_attempts must permit at least one repair; got {self.max_attempts}. "
+                f"Repair is turned off with enabled=False, which reads as a decision "
+                f"rather than as a budget somebody forgot to raise"
+            )
         return self
 
 

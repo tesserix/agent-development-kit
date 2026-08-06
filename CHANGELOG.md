@@ -10,6 +10,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Bounded validation repair, with the failure itself fed back. `core` gains `RepairConfig`
+  and `Agent` gains `repair`, undeclared by default: an answer that fails validation stays
+  terminal unless a budget was asked for, because a further attempt is a further charge on
+  someone's account. Where one is declared, the loop sends the violation back through the
+  new `OutputContract.repair_prompt` — every failing dotted path with what was wrong with
+  it, plus the schema, and nothing else. No value is supplied for a failing field, no
+  default is filled, no field is dropped and nothing is cast: a prompt that says what the
+  answer should be is coercion with extra steps. A repair attempt is an ordinary model
+  call, so its tokens land on `run.usage`, it is recorded against the budget policy and it
+  is bounded by the run deadline and the iteration cap — repair can never spend past a
+  ceiling. Attempts are recorded as the new `repair_requested` event naming the type, the
+  failing fields and which attempt of how many, so repair rate is measurable per agent and
+  prompt version. An answer that comes back with the identical failure after being told
+  what it was stops the run with the new `repair_abandoned` event and a configuration
+  error, since a constraint nothing can satisfy is a defect in the declaration rather than
+  a budget to spend proving it. Running out fails the run carrying the last violation,
+  never a best-effort object. **Stability:** additive — `Agent.repair` defaults to `None`,
+  which is what every existing agent already did; `RunEventKind` gains two members.
+  Documented in `docs/repair.md` and exercised by `examples/repair.py`.
+
 - Structured output by default. An `Agent` declares exactly one of `output_type` and the
   new `free_text`; declaring neither is refused where the agent is built, so an answer
   whose shape nobody declared is a configuration error rather than a string the caller

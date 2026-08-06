@@ -102,6 +102,32 @@ class OutputContract:
             f"{json.dumps(self.schema, sort_keys=True, indent=2)}"
         )
 
+    def repair_prompt(self, violation: SchemaViolationError) -> str:
+        """The correction sent back after `violation`, built only from what actually failed.
+
+        It names each failing path and what was wrong with it, and repeats the schema. It
+        never supplies a value for a failing field: a prompt that says what the answer
+        should be is coercion with extra steps, and the answer would be the kit's.
+
+        Args:
+            violation: What the last attempt failed with.
+
+        Returns:
+            The correction text.
+        """
+        faults = (
+            violation.problems
+            or dict.fromkeys(violation.paths, "did not validate")
+            or {"": str(violation)}
+        )
+        listed = "\n".join(f"- {path or 'the whole output'}: {why}" for path, why in faults.items())
+        return (
+            f"That answer did not validate against the schema. What failed:\n{listed}\n\n"
+            "Answer again with one JSON object and nothing else, correcting only what is "
+            "listed above and inventing nothing. It must validate against this JSON "
+            f"Schema:\n{json.dumps(self.schema, sort_keys=True, indent=2)}"
+        )
+
     def parse(self, content: str) -> BaseModel:
         """Return `content` as a validated instance of the declared type.
 

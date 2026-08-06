@@ -23,6 +23,7 @@ from tesserix_adk.core.config import (  # noqa: TC001
     BudgetConfig,
     DeadlineConfig,
     LoopConfig,
+    RepairConfig,
     RetryConfig,
 )
 
@@ -74,6 +75,9 @@ class Agent(AdkModel):
             runner allows and never widens it, so an agent cannot vote itself more rope.
         retry: Which failures are worth a second attempt, and how long to wait first.
             Nothing is retried by default.
+        repair: Whether an answer that failed validation is sent back with the reason, and
+            how many times. Nothing is repaired by default: a further model call is a
+            further charge, so it is asked for rather than assumed.
         on_tool_error: What happens when a tool fails. Surfaced to the model by default,
             so a run does not die on the first recoverable failure.
         guardrails: Guardrail names, applied in order.
@@ -106,6 +110,7 @@ class Agent(AdkModel):
     deadlines: DeadlineConfig | None = None
     loop: LoopConfig | None = None
     retry: RetryConfig | None = None
+    repair: RepairConfig | None = None
     on_tool_error: ToolFailurePolicy = ToolFailurePolicy.SURFACE_TO_MODEL
     guardrails: tuple[str, ...] = ()
     metadata: dict[str, str] = Field(default_factory=dict)

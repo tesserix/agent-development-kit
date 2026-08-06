@@ -877,7 +877,7 @@ class AgentRunner:
         """Dispatch any tool calls, or finish. Returns the run and whether it is over."""
         if response.tool_calls:
             return await self._dispatch(run, agent, response, messages, bounds), False
-        return await self._finish(run, agent, response, bounds), True
+        return await self._finish(run, agent, response, messages, bounds)
 
     async def _dispatch(
         self,
@@ -1224,15 +1224,21 @@ class AgentRunner:
         return OutputContract.of(agent.output_type, native=native)
 
     async def _finish(
-        self, run: Run, agent: Agent, response: ModelResponse, bounds: _Bounds
-    ) -> Run:
+        self,
+        run: Run,
+        agent: Agent,
+        response: ModelResponse,
+        messages: list[Message],
+        bounds: _Bounds,
+    ) -> tuple[Run, bool]:
+        """Validate the answer. Returns the run and whether it is over, so a repair goes on."""
         run, content, decision, _ = await self._ask_hooks(
             run, agent, HookPoint.BEFORE_OUTPUT_VALIDATION, bounds, content=response.content
         )
         self._stop_on_refusal(run, decision)
         contract = self._contract_for(agent)
         if contract is None:
-            return await self._terminate(run, agent, RunState.COMPLETED, None, bounds)
+            return await self._terminate(run, agent, RunState.COMPLETED, None, bounds), True
 
         answer, unwrapped = unwrap_fenced(content)
         if unwrapped:
@@ -1244,17 +1250,70 @@ class AgentRunner:
         try:
             validated = contract.parse(answer)
         except SchemaViolationError as violation:
-            return await self._terminate(
-                run.record_event(self._violation_event(contract, violation)),
-                agent,
-                RunState.FAILED,
-                _named(violation),
-                bounds,
-            )
+            return await self._repair_or_fail(run, agent, contract, violation, messages, bounds)
         finished = run.with_output(validated.model_dump(mode="json")).record_event(
             self._event(RunEventKind.OUTPUT_VALIDATED, name=contract.output_type.__name__)
         )
-        return await self._terminate(finished, agent, RunState.COMPLETED, None, bounds)
+        return await self._terminate(finished, agent, RunState.COMPLETED, None, bounds), True
+
+    async def _repair_or_fail(
+        self,
+        run: Run,
+        agent: Agent,
+        contract: OutputContract,
+        violation: SchemaViolationError,
+        messages: list[Message],
+        bounds: _Bounds,
+    ) -> tuple[Run, bool]:
+        """Send the failure back where that is allowed and still worth doing, else stop."""
+        recorded = self._violation_event(contract, violation)
+        repeated = recorded.detail is not None and recorded.detail == self._last_violation(run)
+        run = run.record_event(recorded)
+        policy = agent.repair
+        attempts = sum(1 for e in run.events if e.kind is RunEventKind.REPAIR_REQUESTED)
+        if policy is None or not policy.enabled or attempts >= policy.max_attempts:
+            stopped = await self._terminate(run, agent, RunState.FAILED, _named(violation), bounds)
+            return stopped, True
+        if repeated:
+            # Told exactly what was wrong and answering identically: the ask is the defect.
+            return await self._terminate(
+                run.record_event(
+                    self._event(
+                        RunEventKind.REPAIR_ABANDONED,
+                        name=contract.output_type.__name__,
+                        detail=(
+                            "the same failure after being told what it was; the declared "
+                            "constraint cannot be satisfied as instructed"
+                        ),
+                    )
+                ),
+                agent,
+                RunState.FAILED,
+                _named(
+                    ConfigurationError(
+                        f"repair made no progress on {contract.output_type.__name__}: the "
+                        f"same fields failed after the failure was fed back"
+                    )
+                ),
+                bounds,
+            ), True
+        messages.append(
+            Message(role="user", content=[TextPart(text=contract.repair_prompt(violation))])
+        )
+        fields = ", ".join(violation.paths) or "whole output"
+        run = run.record_event(
+            self._event(
+                RunEventKind.REPAIR_REQUESTED,
+                name=contract.output_type.__name__,
+                detail=f"attempt {attempts + 1} of {policy.max_attempts} at {fields}",
+            )
+        )
+        return _carrying(run, messages), False
+
+    def _last_violation(self, run: Run) -> str | None:
+        """The detail of the previous violation, which is what a stalled repair repeats."""
+        details = [e.detail for e in run.events if e.kind is RunEventKind.SCHEMA_VIOLATION]
+        return details[-1] if details else None
 
     def _violation_event(
         self, contract: OutputContract, violation: SchemaViolationError

@@ -79,9 +79,9 @@ in `model` and the schema identity in `details["schema_hash"]`. The run loop cat
 records the paths and the hash on the event and ends the run `failed` — a failure is a
 state, never an exception escaping the loop.
 
-Repair retries are deliberately absent. Sending the violation back for another attempt is
-its own story (#35); doing it implicitly would spend a caller's budget on a decision they
-did not make.
+An agent that declares a repair budget gets a bounded chance to correct itself first; see
+[repair.md](repair.md). Nothing is repaired unless it is asked for, because a further
+attempt spends a caller's budget on a decision they did not make.
 
 ## Retrieved content inside a field stays data
 

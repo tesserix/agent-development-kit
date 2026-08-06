@@ -116,6 +116,8 @@ class RunEventKind(StrEnum):
     OUTPUT_UNWRAPPED = "output_unwrapped"
     OUTPUT_VALIDATED = "output_validated"
     SCHEMA_VIOLATION = "schema_violation"
+    REPAIR_REQUESTED = "repair_requested"
+    REPAIR_ABANDONED = "repair_abandoned"
     CANCELLATION_REQUESTED = "cancellation_requested"
     DEADLINE_EXCEEDED = "deadline_exceeded"
     WORK_ORPHANED = "work_orphaned"
