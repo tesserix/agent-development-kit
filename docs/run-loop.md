@@ -196,12 +196,58 @@ Which cap bound is in the type — `RecursionLimitError`, `FanOutLimitError`,
 `terminated` event, because a run that stops without saying which bound it hit is a run
 nobody can tune. None of them are retryable: a cap is a decision, not a fault.
 
+## Hooks, approvals and where policy attaches
+
+```python
+runner = AgentRunner(provider=provider, hooks=HookChain([Redactor(), ModelAllowList()]))
+runner = AgentRunner(provider=provider, tools=tools, approvals=desk, approval_ttl_seconds=900)
+agent = Agent(name="clerk", …, tools=("wire_funds",), approval_required_tools=("wire_funds",))
+```
+
+Worked end to end, no network: `examples/hooks.py`.
+
+**The seven points are the loop's own.** `before_prompt_assembly`, `before_model_call`,
+`after_model_response`, `before_tool_dispatch`, `after_tool_result`,
+`before_output_validation`, `on_terminal`. A check declared once is enforced on every path
+out of a run, which is what stops an agent being safe in one product and unsafe in the next
+because the check lived in application code and the next caller did not write it.
+
+**A hook returns a decision, never a mutation.** Four words and no fifth — `continue`,
+`rewrite`, `require_approval`, `refuse` — and a `HookSubject` of facts rather than handles.
+There is no run, no config and no chain in what a hook is handed, so widening a tenant
+scope, disabling another hook or raising a cap is not a thing it can be talked into.
+
+**The most restrictive answer wins, ties to the first declared.** Two hooks disagreeing is
+not a coin to toss: the same chain resolves the same way on every process, and the tighter
+answer is the one nobody has to justify afterwards.
+
+**Hooks fail closed.** One that raises or outruns `DeadlineConfig.hook_seconds` stops the
+run, because a check that did not run is not a check that passed. The exception is
+`on_terminal`, where the run is already over: a failure there is recorded rather than acted
+on, since there is nothing left to fail closed to.
+
+**The chain is sealed when a runner takes it.** Sealing is one-way and in place, so a hook
+holding the chain it was declared in finds it shut. The chain a run started with is the
+chain it is judged by; otherwise a hook could register a permissive one behind itself.
+
+**A rewrite is logged as digests, not content.** `hook_rewrite` records
+`before → after` as SHA-256 prefixes. A replay recomputes them and knows it assembled the
+same prompt, without the redacted text living on in the log that was supposed to remove it.
+
+**An approval is permission at a moment, not a standing licence.** `ApprovalRecord` carries
+a digest of the arguments and never the arguments, because an approval queue outlives the
+run and is read by people who are not party to it. A decision is honoured only if it echoes
+the record's id and lands inside `approval_ttl_seconds`; a gate that fails or never answers
+is not a grant. `require_approval` with no gate wired is a `ConfigurationError`, not a
+call that goes out unapproved.
+
 ## Events
 
 Every step is appended to `Run.events` in the order it happened: `prompt_assembled`,
 `model_call`, `model_response` (carrying its `Usage`), `tool_call`, `tool_result`,
 `tool_result_truncated`, `tool_error`, `tool_refused`, `tool_indeterminate`,
 `attempt_failed`, `fan_out_refused`, `repeat_detected`, `depth_exceeded`,
+`hook_rewrite`, `hook_refusal`, `approval_required`, `approval_granted`, `approval_denied`,
 `guardrail_refusal`, `output_validated`, `schema_violation`,
 `cancellation_requested`,
 `deadline_exceeded`, `work_orphaned`, `terminated`. Cost attribution totals the usage on
@@ -271,6 +317,14 @@ a loop wedges.
 - **Indeterminacy is a recorded event, not a raised type.** `tool_indeterminate` is on the
   run for a caller to branch on; there is no `ToolIndeterminateError` to catch, because
   the run does not raise.
+- **An approval blocks the run in process.** The gate is awaited, so a run waiting on a
+  human holds its task and its memory. Suspending a run to durable storage and resuming it
+  when the decision arrives is the durable orchestration epic.
+- **Hooks see text, not structure.** `HookSubject.content` is the text of the message or
+  response; non-text parts are passed through untouched and a rewrite replaces the text
+  parts wholesale. Redacting inside an image or a structured part is out of scope here.
+- **`on_terminal` cannot rewrite anything.** It is asked, and its decision is recorded, but
+  a run that has already ended has nothing left to swap and nothing left to refuse.
 - **A per-run `deadline` only narrows.** Passing one later than the runner's
   `run_seconds` ceiling changes nothing, by design — a caller cannot buy more time than
   the deployment allows.

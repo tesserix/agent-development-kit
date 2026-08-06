@@ -10,6 +10,36 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Lifecycle hooks for guardrails, budgets and approval gates, so policy attaches to the
+  loop instead of being remembered at a call site. `core` gains `HookPoint` (seven points,
+  `before_prompt_assembly` through `on_terminal`), `HookAction`, `HookDecision`,
+  `HookSubject`, the `Hook` and `ApprovalGate` protocols, `HookChain`, `resolve_hooks`,
+  `ApprovalRecord` / `ApprovalDecision`, `Agent.approval_required_tools`,
+  `DeadlineConfig.hook_seconds`, the `hook_rewrite` / `hook_refusal` / `approval_required`
+  / `approval_granted` / `approval_denied` events, and the `HookRegistrationError`,
+  `HookEvaluationError`, `HookRefusedError`, `ApprovalDeniedError` and
+  `ApprovalExpiredError` types; `AgentRunner` takes `hooks`, `approvals` and
+  `approval_ttl_seconds`. The failure this closes is an agent that is safe in one product
+  and unsafe in the next because the check lived in application code and the next caller
+  did not write it. A hook returns a decision, never a mutation, and is handed facts rather
+  than handles — no run, no config, no chain — so widening a tenant scope, disabling
+  another hook or raising a cap is not something it can be talked into. The most
+  restrictive decision wins and ties go to the first declared, so a chain resolves the same
+  way on every process. Hooks fail closed: one that raises or outruns `hook_seconds` stops
+  the run, because a check that did not run is not a check that passed — except at
+  `on_terminal`, where the run is already over and there is nothing left to fail closed to,
+  so a failure is recorded instead. The chain is sealed when a runner takes it, so a hook
+  cannot register a permissive one behind itself or drop the one that would have refused
+  it. A rewrite is logged as digests rather than content, so a replay can prove the same
+  prompt was assembled without the redacted text living on in the log that was meant to
+  remove it. An approval record carries a digest of the arguments and never the arguments,
+  because an approval queue outlives the run and is read by people who are not party to it;
+  a decision is honoured only if it echoes the record's id and lands inside
+  `approval_ttl_seconds`, and a gate that fails or never answers is not a grant.
+  **Stability:** additive — every name is new, and the new `AgentRunner` arguments are
+  keyword-only with defaults, so a runner declared without `hooks` behaves exactly as
+  before. Documented in `docs/run-loop.md` and exercised by `examples/hooks.py`.
+
 - Caps on the shape of a run, enforced in the loop. `core` gains `LoopConfig` and
   `Agent.loop`, `RunContext.depth` and `Run.depth`, the `loop_limit_exceeded` terminal
   state, the `fan_out_refused` / `repeat_detected` / `depth_exceeded` events, and a

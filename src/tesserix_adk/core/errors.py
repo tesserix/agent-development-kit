@@ -14,12 +14,17 @@ if TYPE_CHECKING:
 __all__ = [
     "RETRYABLE_STATUS",
     "AdkError",
+    "ApprovalDeniedError",
+    "ApprovalExpiredError",
     "BudgetExceededError",
     "CancelledError",
     "CapabilityError",
     "ConfigurationError",
     "FanOutLimitError",
     "GuardrailViolationError",
+    "HookEvaluationError",
+    "HookRefusedError",
+    "HookRegistrationError",
     "LoopLimitError",
     "MaxIterationsError",
     "MissingExtraError",
@@ -239,4 +244,36 @@ class RepeatedCallError(LoopLimitError):
 
     A tool the agent declared idempotent is exempt: polling one status endpoint with the
     same arguments is the design, not a cycle.
+    """
+
+
+class HookRegistrationError(ConfigurationError):
+    """Raised when a hook cannot be added to a chain.
+
+    A registration failure is a configuration failure: it happens before any run, because
+    a chain assembled wrongly enforces a policy nobody wrote.
+    """
+
+
+class HookEvaluationError(AdkError):
+    """Raised when a hook could not be evaluated, which is a denial rather than a pass.
+
+    Hooks fail closed. A policy service that is down is a policy nobody checked, and
+    carrying on regardless is the failure this kit exists to stop.
+    """
+
+
+class HookRefusedError(AdkError):
+    """Raised when a hook refused the step. The reason is the hook's own."""
+
+
+class ApprovalDeniedError(AdkError):
+    """Raised when a human declined a held tool call."""
+
+
+class ApprovalExpiredError(AdkError):
+    """Raised when a decision arrived past the request's time to live.
+
+    An approval is permission at a moment, not a standing licence: honouring a stale one
+    runs what nobody currently agrees to.
     """

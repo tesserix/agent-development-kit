@@ -58,6 +58,8 @@ class Agent(BaseModel):
         idempotent_tools: Which of those tools are safe to call again. A tool cancelled
             after dispatch is reported indeterminate unless it appears here, because the
             kit cannot know whether its side effect landed. Must be a subset of `tools`.
+        approval_required_tools: Which of those tools may not be dispatched without a
+            human decision. Must be a subset of `tools`.
         output_type: The type the answer must validate against. A Python type, so it is
             excluded from serialisation rather than rendered as a string that cannot be
             read back.
@@ -86,6 +88,7 @@ class Agent(BaseModel):
     task_class: str | None = None
     tools: tuple[str, ...] = ()
     idempotent_tools: tuple[str, ...] = ()
+    approval_required_tools: tuple[str, ...] = ()
     output_type: type[BaseModel] | None = Field(default=None, exclude=True)
     budget: BudgetConfig | None = None
     deadlines: DeadlineConfig | None = None
@@ -101,6 +104,16 @@ class Agent(BaseModel):
             raise ValueError(
                 "declare exactly one of model or task_class: two answers to which model "
                 "runs is a routing decision made twice, and none is a run that cannot start"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _approval_is_required_of_a_declared_tool(self) -> Agent:
+        stray = sorted(set(self.approval_required_tools) - set(self.tools))
+        if stray:
+            raise ValueError(
+                f"approval required but not on the allowlist: {', '.join(stray)}. A gate "
+                f"in front of a tool the agent cannot call gates nothing"
             )
         return self
 

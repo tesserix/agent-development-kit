@@ -158,6 +158,7 @@ class FakeBudgetPolicy:
         self.limit = limit
         self.reserved = 0
         self.spent = 0
+        self.reservations: list[int] = []
 
     async def reserve(self, estimate: int) -> None:
         """Reserve `estimate` units.
@@ -171,6 +172,7 @@ class FakeBudgetPolicy:
                 f"(spent {self.spent}, reserved {self.reserved})"
             )
         self.reserved += estimate
+        self.reservations.append(estimate)
 
     async def record(self, actual: int) -> None:
         """Record `actual` consumption and release the outstanding reservation."""

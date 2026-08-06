@@ -19,6 +19,7 @@ change to it shows up in a pull request's diff and follows `docs/versioning.md`.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import time
 import uuid
@@ -29,11 +30,23 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from tesserix_adk.core import (
     AdkError,
+    ApprovalDecision,
+    ApprovalDeniedError,
+    ApprovalExpiredError,
+    ApprovalGate,
+    ApprovalRecord,
     BudgetExceededError,
     CancelledError,
     ConfigurationError,
     DeadlineConfig,
     FanOutLimitError,
+    HookAction,
+    HookChain,
+    HookDecision,
+    HookEvaluationError,
+    HookPoint,
+    HookRefusedError,
+    HookSubject,
     LoopConfig,
     MaxIterationsError,
     Message,
@@ -52,6 +65,7 @@ from tesserix_adk.core import (
     ToolFailurePolicy,
     Usage,
     deduplicate,
+    resolve_hooks,
     verify_conformance,
 )
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
@@ -62,7 +76,7 @@ if TYPE_CHECKING:
     from collections.abc import Coroutine, Iterable, Mapping, Sequence
     from random import Random
 
-    from tesserix_adk.core import Agent, BudgetPolicy, Clock, Guardrail, ToolRegistry
+    from tesserix_adk.core import Agent, BudgetPolicy, Clock, Guardrail, Hook, ToolRegistry
 
 __all__ = ["AgentRunner", "ModelRequest", "ModelResponse", "SystemClock"]
 
@@ -147,6 +161,13 @@ class AgentRunner:
             agent that declares its own overrides this; nothing is retried by default.
         loop: Caps on the shape of a run — depth, fan-out, repetition. An agent that
             declares its own narrows these and never widens them.
+        hooks: Where policy attaches to the loop. Sealed on the way in: the chain a run
+            starts with is the chain it is judged by.
+        approvals: Where a held tool call waits for a human decision. Required if any
+            agent this runner drives declares `approval_required_tools`.
+        approval_ttl_seconds: How long a request stays answerable. A decision outside the
+            window is refused, because an approval is permission at a moment rather than
+            a standing licence. Unbounded by default.
         jitter: The source the backoff is drawn from. Injected so a test can seed it and
             assert the exact schedule instead of waiting it out.
         clock: Injected time. Defaults to wall-clock.
@@ -170,6 +191,9 @@ class AgentRunner:
         deadlines: DeadlineConfig | None = None,
         retry: RetryConfig | None = None,
         loop: LoopConfig | None = None,
+        hooks: HookChain | Iterable[Hook] | None = None,
+        approvals: ApprovalGate | None = None,
+        approval_ttl_seconds: float | None = None,
         jitter: Random | None = None,
         clock: Clock | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
@@ -190,6 +214,11 @@ class AgentRunner:
         self._deadlines = deadlines or DeadlineConfig()
         self._retry = retry or RetryConfig()
         self._loop = loop or LoopConfig()
+        self._hooks = (
+            hooks.sealed() if isinstance(hooks, HookChain) else HookChain(hooks or ()).sealed()
+        )
+        self._approvals = approvals
+        self._approval_ttl = approval_ttl_seconds
         self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
         self._max_iterations = max_iterations
@@ -287,10 +316,9 @@ class AgentRunner:
         bounds = self._bounds_for(agent, cancellation, deadline)
         depth = parent.depth + 1 if parent is not None else 0
         if depth > bounds.loop.max_depth:
-            return self._too_deep(agent, depth, bounds, tenant=tenant, user=user, run_id=run_id)
-        declared = self._declarations_for(agent)
-        prompt = assemble_prompt(agent, user_input, history=history, memory=memory, tools=declared)
-
+            return await self._too_deep(
+                agent, depth, bounds, tenant=tenant, user=user, run_id=run_id
+            )
         model = agent.model or ""
         run = Run(
             id=run_id or uuid.uuid4().hex,
@@ -299,15 +327,25 @@ class AgentRunner:
             agent_name=agent.name,
             agent_version=agent.version,
             model=model,
-            prompt_version=prompt.version,
             depth=depth,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
-        run = run.record_event(self._event(RunEventKind.PROMPT_ASSEMBLED, name=prompt.version))
 
-        messages = list(prompt.messages)
         try:
+            run, asked = await self._asked(run, agent, user_input, bounds)
+            prompt = assemble_prompt(
+                agent,
+                asked,
+                history=history,
+                memory=memory,
+                tools=self._declarations_for(agent),
+            )
+            run = run.model_copy(update={"prompt_version": prompt.version}).record_event(
+                self._event(RunEventKind.PROMPT_ASSEMBLED, name=prompt.version)
+            )
+            messages = list(prompt.messages)
             for _ in range(self._max_iterations):
                 self._stop_if_over(run, bounds)
+                run, messages = await self._before_the_call(run, agent, messages, bounds)
                 request = ModelRequest(
                     model=model,
                     messages=tuple(messages),
@@ -319,7 +357,8 @@ class AgentRunner:
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
 
                 run, response = await self._call_model(run, request, bounds)
-                run = await self._settle(run, response, messages)
+                run, response = await self._after_the_response(run, agent, response, bounds)
+                run = await self._settle(run, agent, response, messages, bounds)
                 if run.state.is_terminal:
                     return run
 
@@ -328,13 +367,132 @@ class AgentRunner:
                 if done:
                     return run
         except _Terminal as stop:
-            return self._terminate(stop.run, stop.state, stop.detail)
+            return await self._terminate(stop.run, agent, stop.state, stop.detail, bounds)
 
-        return self._terminate(
+        return await self._terminate(
             run,
+            agent,
             RunState.MAX_ITERATIONS_EXCEEDED,
             _named(MaxIterationsError(f"stopped after {self._max_iterations} model calls")),
+            bounds,
         )
+
+    async def _asked(
+        self, run: Run, agent: Agent, user_input: str, bounds: _Bounds
+    ) -> tuple[Run, str]:
+        """What is actually asked, after policy has had its say about it."""
+        run, asked, decision, _ = await self._ask_hooks(
+            run, agent, HookPoint.BEFORE_PROMPT_ASSEMBLY, bounds, content=user_input
+        )
+        self._stop_on_refusal(run, decision)
+        return run, asked
+
+    async def _before_the_call(
+        self, run: Run, agent: Agent, messages: list[Message], bounds: _Bounds
+    ) -> tuple[Run, list[Message]]:
+        """Policy sees what is about to go upstream, and may redact it before it does."""
+        run, rewritten, decision, _ = await self._ask_hooks(
+            run, agent, HookPoint.BEFORE_MODEL_CALL, bounds, content=_text_of(messages[-1])
+        )
+        self._stop_on_refusal(run, decision)
+        if rewritten != _text_of(messages[-1]):
+            messages = [*messages[:-1], _retexted(messages[-1], rewritten)]
+        return run, messages
+
+    async def _after_the_response(
+        self, run: Run, agent: Agent, response: ModelResponse, bounds: _Bounds
+    ) -> tuple[Run, ModelResponse]:
+        run, rewritten, decision, _ = await self._ask_hooks(
+            run, agent, HookPoint.AFTER_MODEL_RESPONSE, bounds, content=response.content
+        )
+        self._stop_on_refusal(run, decision)
+        if rewritten != response.content:
+            response = response.model_copy(update={"content": rewritten})
+        return run, response
+
+    async def _ask_hooks(
+        self,
+        run: Run,
+        agent: Agent,
+        point: HookPoint,
+        bounds: _Bounds,
+        *,
+        content: str = "",
+        tool_name: str | None = None,
+        tool_arguments: Mapping[str, Any] | None = None,
+    ) -> tuple[Run, str, HookDecision, str]:
+        """Ask every hook at `point`, in declaration order, and resolve what they said.
+
+        Every hook is asked even after one refuses: stopping at the first refusal hides
+        the second, and a chain that reports different things on different runs is a
+        policy nobody can audit.
+        """
+        verdicts: list[tuple[str, HookDecision]] = []
+        for hook in self._hooks.at(point):
+            subject = HookSubject(
+                point=point,
+                run_id=run.id,
+                tenant=run.tenant,
+                user=run.user,
+                agent_name=agent.name,
+                content=content,
+                tool_name=tool_name,
+                tool_arguments=dict(tool_arguments or {}),
+            )
+            decision = await self._ask(run, hook, subject, bounds)
+            verdicts.append((hook.name, decision))
+            if decision.action is HookAction.REWRITE and decision.replacement is not None:
+                run = run.record_event(
+                    self._event(
+                        RunEventKind.HOOK_REWRITE,
+                        name=hook.name,
+                        detail=f"{point}: {_short(content)} → {_short(decision.replacement)}",
+                    )
+                )
+                content = decision.replacement
+        held = resolve_hooks(decision for _, decision in verdicts)
+        by = next((name for name, decision in verdicts if decision == held), "")
+        if held.action is not HookAction.CONTINUE and held.action is not HookAction.REWRITE:
+            run = run.record_event(
+                self._event(RunEventKind.HOOK_REFUSAL, name=by, detail=held.reason)
+            )
+        return run, content, held, by
+
+    async def _ask(
+        self, run: Run, hook: Hook, subject: HookSubject, bounds: _Bounds
+    ) -> HookDecision:
+        """One hook, bounded and fail-closed: a check that did not finish did not pass."""
+        try:
+            decision: HookDecision = await self._bounded(
+                hook.on(subject),
+                limit=self._limit(bounds, bounds.deadlines.hook_seconds),
+                bounds=bounds,
+                what=f"hook {hook.name}",
+            )
+        except _Aborted as abort:
+            raise self._cancelled(run, abort, name=hook.name) from None
+        except Exception as failure:
+            raise _Terminal(
+                run.record_event(
+                    self._event(
+                        RunEventKind.HOOK_REFUSAL,
+                        name=hook.name,
+                        detail=f"could not be evaluated: {failure}",
+                    )
+                ),
+                RunState.FAILED,
+                _named(HookEvaluationError(f"hook {hook.name!r} could not be evaluated")),
+            ) from failure
+        else:
+            return decision
+
+    def _stop_on_refusal(self, run: Run, decision: HookDecision) -> None:
+        """Refuse the step, or read a request for approval as the refusal it amounts to.
+
+        Anywhere but a tool dispatch there is no call to hold.
+        """
+        if decision.action in (HookAction.REFUSE, HookAction.REQUIRE_APPROVAL):
+            raise _Terminal(run, RunState.FAILED, _named(HookRefusedError(decision.reason)))
 
     def _refuse_incomplete_wiring(self, agent: Agent) -> None:
         if agent.task_class:
@@ -354,6 +512,12 @@ class AgentRunner:
                 f"agent {agent.name!r} declares guardrails the runner was not given: "
                 f"{', '.join(missing)}. Running without a declared check is worse than "
                 f"not starting"
+            )
+        if agent.approval_required_tools and self._approvals is None:
+            raise ConfigurationError(
+                f"agent {agent.name!r} requires approval for "
+                f"({', '.join(agent.approval_required_tools)}) but the runner was given no "
+                f"approval gate, so the call would go out unapproved"
             )
         if agent.budget is not None and self._budget is None:
             raise ConfigurationError(
@@ -501,9 +665,45 @@ class AgentRunner:
     ) -> RunEvent:
         return RunEvent(kind=kind, at=self._clock.now(), name=name, detail=detail, usage=usage)
 
-    def _terminate(self, run: Run, state: RunState, detail: str | None = None) -> Run:
+    async def _terminate(
+        self, run: Run, agent: Agent, state: RunState, detail: str | None, bounds: _Bounds
+    ) -> Run:
+        run = await self._notify(run, agent, state, bounds)
         recorded = run.record_event(self._event(RunEventKind.TERMINATED, detail=detail))
         return recorded.transition_to(state, at=self._clock.now())
+
+    async def _notify(self, run: Run, agent: Agent, state: RunState, bounds: _Bounds) -> Run:
+        """Tell the terminal hooks how it ended.
+
+        The only point where a hook is not fail-closed, because there is nothing left to
+        close: the run is already over, and a policy that raised here cannot un-run it.
+        The failure is recorded so nobody reads silence as approval.
+        """
+        for hook in self._hooks.at(HookPoint.ON_TERMINAL):
+            subject = HookSubject(
+                point=HookPoint.ON_TERMINAL,
+                run_id=run.id,
+                tenant=run.tenant,
+                user=run.user,
+                agent_name=agent.name,
+                state=state,
+            )
+            try:
+                await self._bounded(
+                    hook.on(subject),
+                    limit=self._limit(bounds, bounds.deadlines.hook_seconds),
+                    bounds=bounds,
+                    what=f"hook {hook.name}",
+                )
+            except (_Aborted, Exception) as failure:
+                run = run.record_event(
+                    self._event(
+                        RunEventKind.HOOK_REFUSAL,
+                        name=hook.name,
+                        detail=f"could not be evaluated after the run ended: {failure}",
+                    )
+                )
+        return run
 
     async def _call_model(
         self, run: Run, request: ModelRequest, bounds: _Bounds
@@ -579,7 +779,14 @@ class AgentRunner:
         except _Aborted as abort:
             raise self._cancelled(run, abort, name=name) from None
 
-    async def _settle(self, run: Run, response: ModelResponse, messages: list[Message]) -> Run:
+    async def _settle(
+        self,
+        run: Run,
+        agent: Agent,
+        response: ModelResponse,
+        messages: list[Message],
+        bounds: _Bounds,
+    ) -> Run:
         """Record what the response cost, and stop if it said nothing at all."""
         run = run.record(response.usage).record_event(
             self._event(
@@ -591,8 +798,12 @@ class AgentRunner:
         if self._budget is not None:
             await self._budget.record(response.usage.input_tokens + response.usage.output_tokens)
         if not response.content and not response.tool_calls:
-            return self._terminate(
-                run, RunState.FAILED, "provider returned no content and no tool calls"
+            return await self._terminate(
+                run,
+                agent,
+                RunState.FAILED,
+                "provider returned no content and no tool calls",
+                bounds,
             )
         if response.content:
             messages.append(Message(role="assistant", content=[TextPart(text=response.content)]))
@@ -644,7 +855,7 @@ class AgentRunner:
         """Dispatch any tool calls, or finish. Returns the run and whether it is over."""
         if response.tool_calls:
             return await self._dispatch(run, agent, response, messages, bounds), False
-        return self._finish(run, agent, response), True
+        return await self._finish(run, agent, response, bounds), True
 
     async def _dispatch(
         self,
@@ -663,9 +874,20 @@ class AgentRunner:
                     RunState.FAILED,
                     f"model called {call.name!r}, which is not on the agent's allowlist",
                 )
+            run = await self._cleared_to_dispatch(run, agent, call, bounds)
             run = run.model_copy(update={"tool_calls": [*run.tool_calls, call]})
             run = run.record_event(self._event(RunEventKind.TOOL_CALL, name=call.name))
             run, text, source = await self._invoke(run, agent, call, bounds)
+            run, text, decision, _ = await self._ask_hooks(
+                run,
+                agent,
+                HookPoint.AFTER_TOOL_RESULT,
+                bounds,
+                content=text,
+                tool_name=call.name,
+                tool_arguments=call.arguments,
+            )
+            self._stop_on_refusal(run, decision)
             messages.append(
                 Message(
                     role="tool",
@@ -727,7 +949,7 @@ class AgentRunner:
                     _named(RepeatedCallError(detail)),
                 )
 
-    def _too_deep(
+    async def _too_deep(
         self,
         agent: Agent,
         depth: int,
@@ -752,14 +974,121 @@ class AgentRunner:
             depth=depth,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
         run = run.record_event(self._event(RunEventKind.DEPTH_EXCEEDED, detail=detail))
-        return self._terminate(
-            run, RunState.LOOP_LIMIT_EXCEEDED, _named(RecursionLimitError(detail))
+        return await self._terminate(
+            run, agent, RunState.LOOP_LIMIT_EXCEEDED, _named(RecursionLimitError(detail)), bounds
+        )
+
+    async def _cleared_to_dispatch(
+        self, run: Run, agent: Agent, call: ToolCall, bounds: _Bounds
+    ) -> Run:
+        """Policy and, where it is required, a human, before anything goes out."""
+        run, _, decision, _ = await self._ask_hooks(
+            run,
+            agent,
+            HookPoint.BEFORE_TOOL_DISPATCH,
+            bounds,
+            tool_name=call.name,
+            tool_arguments=call.arguments,
+        )
+        if decision.action is HookAction.REFUSE:
+            raise _Terminal(run, RunState.FAILED, _named(HookRefusedError(decision.reason)))
+        declared = call.name in agent.approval_required_tools
+        if not declared and decision.action is not HookAction.REQUIRE_APPROVAL:
+            return run
+        reason = (
+            decision.reason
+            if decision.action is HookAction.REQUIRE_APPROVAL
+            else f"{call.name} is declared to require approval"
+        )
+        return await self._approved(run, agent, call, reason, bounds)
+
+    async def _approved(
+        self, run: Run, agent: Agent, call: ToolCall, reason: str, bounds: _Bounds
+    ) -> Run:
+        """Hold the call until a human decides, and record what they decided.
+
+        The record carries a digest of the arguments rather than the arguments: an
+        approval queue outlives the run and is read by people who are not party to it.
+        """
+        if self._approvals is None:
+            raise ConfigurationError(
+                f"a hook required approval for {call.name!r} but the runner was given no "
+                f"approval gate, so the call would go out unapproved"
+            )
+        record = ApprovalRecord.for_call(
+            run_id=run.id,
+            tenant=run.tenant,
+            agent_name=agent.name,
+            tool_name=call.name,
+            arguments=call.arguments,
+            reason=reason,
+            requested_at=self._clock.now(),
+        )
+        run = run.record_event(
+            self._event(RunEventKind.APPROVAL_REQUIRED, name=call.name, detail=reason)
+        )
+        try:
+            decision = await self._bounded(
+                self._approvals.request(record),
+                limit=self._limit(bounds, None),
+                bounds=bounds,
+                what=f"approval for {call.name}",
+            )
+        except _Aborted as abort:
+            raise self._cancelled(run, abort, name=call.name) from None
+        except Exception as failure:
+            raise _Terminal(
+                run,
+                RunState.FAILED,
+                _named(ApprovalDeniedError(f"approval for {call.name!r} could not be obtained")),
+            ) from failure
+        return self._honoured(run, record, decision, call)
+
+    def _honoured(
+        self, run: Run, record: ApprovalRecord, decision: ApprovalDecision, call: ToolCall
+    ) -> Run:
+        """An answer only clears the call it answers, and only while it is current."""
+        if decision.record_id != record.id:
+            raise _Terminal(
+                self._denied(run, call, "the decision answers a different request"),
+                RunState.FAILED,
+                _named(ApprovalDeniedError(f"approval for {call.name!r} was never given")),
+            )
+        if self._approval_ttl is not None and not (
+            record.requested_at <= decision.decided_at <= record.requested_at + self._approval_ttl
+        ):
+            raise _Terminal(
+                self._denied(run, call, "the decision arrived outside the request's window"),
+                RunState.FAILED,
+                _named(
+                    ApprovalExpiredError(
+                        f"approval for {call.name!r} was decided outside its window; permission "
+                        f"at a moment is not a standing licence"
+                    )
+                ),
+            )
+        if not decision.granted:
+            raise _Terminal(
+                self._denied(run, call, decision.reason or f"declined by {decision.decided_by}"),
+                RunState.FAILED,
+                _named(ApprovalDeniedError(f"approval for {call.name!r} was declined")),
+            )
+        return run.record_event(
+            self._event(
+                RunEventKind.APPROVAL_GRANTED, name=call.name, detail=f"by {decision.decided_by}"
+            )
+        )
+
+    def _denied(self, run: Run, call: ToolCall, why: str) -> Run:
+        return run.record_event(
+            self._event(RunEventKind.APPROVAL_DENIED, name=call.name, detail=why)
         )
 
     async def _invoke(
         self, run: Run, agent: Agent, call: ToolCall, bounds: _Bounds
     ) -> tuple[Run, str, str]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
+        await self._reserve(run, len(_signature(call)) // _CHARS_PER_TOKEN)
         plan = RetryPlan(bounds.retry, random=self._jitter)
         attempt = 1
         while True:
@@ -799,11 +1128,22 @@ class AgentRunner:
                 )
             )
             text = text[: self._max_tool_result_chars] + _TRUNCATION_MARKER
+        if self._budget is not None:
+            await self._budget.record(len(text) // _CHARS_PER_TOKEN)
         return (
             run.record_event(self._event(RunEventKind.TOOL_RESULT, name=call.name)),
             text,
             "tool_result",
         )
+
+    async def _reserve(self, run: Run, estimate: int) -> None:
+        """Spend is checked before it is incurred; reported after, it is a bill."""
+        if self._budget is None:
+            return
+        try:
+            await self._budget.reserve(estimate)
+        except BudgetExceededError as exceeded:
+            raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
 
     def _tool_backoff(
         self, agent: Agent, call: ToolCall, plan: RetryPlan, attempt: int, bounds: _Bounds
@@ -850,22 +1190,32 @@ class AgentRunner:
             detail="stopped after dispatch; whether its effect landed cannot be known",
         )
 
-    def _finish(self, run: Run, agent: Agent, response: ModelResponse) -> Run:
+    async def _finish(
+        self, run: Run, agent: Agent, response: ModelResponse, bounds: _Bounds
+    ) -> Run:
+        run, content, decision, _ = await self._ask_hooks(
+            run, agent, HookPoint.BEFORE_OUTPUT_VALIDATION, bounds, content=response.content
+        )
+        self._stop_on_refusal(run, decision)
         if agent.output_type is None:
-            return self._terminate(run, RunState.COMPLETED)
+            return await self._terminate(run, agent, RunState.COMPLETED, None, bounds)
         try:
-            validated = agent.output_type.model_validate(json.loads(response.content))
+            validated = agent.output_type.model_validate(json.loads(content))
         except (ValidationError, ValueError) as violation:
             recorded = run.record_event(
                 self._event(RunEventKind.SCHEMA_VIOLATION, detail=str(violation))
             )
-            return self._terminate(
-                recorded, RunState.FAILED, f"output did not satisfy {agent.output_type.__name__}"
+            return await self._terminate(
+                recorded,
+                agent,
+                RunState.FAILED,
+                f"output did not satisfy {agent.output_type.__name__}",
+                bounds,
             )
         finished = run.with_output(validated.model_dump(mode="json")).record_event(
             self._event(RunEventKind.OUTPUT_VALIDATED, name=agent.output_type.__name__)
         )
-        return self._terminate(finished, RunState.COMPLETED)
+        return await self._terminate(finished, agent, RunState.COMPLETED, None, bounds)
 
 
 class _Aborted(Exception):  # noqa: N818 — control flow, not an error the caller sees
@@ -907,6 +1257,20 @@ def _same_call_count(calls: Iterable[ToolCall], call: ToolCall) -> int:
 
 def _signature(call: ToolCall) -> str:
     return f"{call.name}:{json.dumps(call.arguments, sort_keys=True, default=repr)}"
+
+
+def _text_of(message: Message) -> str:
+    """The text a hook sees and may rewrite; non-text parts are not a hook's business."""
+    return "".join(part.text for part in message.content if isinstance(part, TextPart))
+
+
+def _retexted(message: Message, text: str) -> Message:
+    return message.model_copy(update={"content": [TextPart(text=text)]})
+
+
+def _short(text: str) -> str:
+    """A digest of content, so a rewrite is reproducible without the content in the log."""
+    return hashlib.sha256(text.encode()).hexdigest()[:12]
 
 
 def _carrying(run: Run, messages: list[Message]) -> Run:

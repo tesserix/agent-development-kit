@@ -171,6 +171,8 @@ class DeadlineConfig(BaseModel):
             call and check it makes.
         model_call_seconds: Ceiling for one model call.
         tool_call_seconds: Ceiling for one tool call.
+        hook_seconds: Ceiling for one policy hook. A hook that outruns it stops the run,
+            because a check still running is not a check that passed.
         grace_seconds: How long a cancelled step is given to unwind before the run stops
             waiting for it and reports the work orphaned.
     """
@@ -180,13 +182,14 @@ class DeadlineConfig(BaseModel):
     run_seconds: float | None = None
     model_call_seconds: float | None = None
     tool_call_seconds: float | None = None
+    hook_seconds: float | None = None
     grace_seconds: float = 5.0
 
     @model_validator(mode="after")
     def _every_ceiling_is_positive(self) -> DeadlineConfig:
         offending = sorted(
             name
-            for name in ("run_seconds", "model_call_seconds", "tool_call_seconds", "grace_seconds")
+            for name in _DEADLINE_CEILINGS
             if (value := getattr(self, name)) is not None and value <= 0
         )
         if offending:
@@ -196,6 +199,15 @@ class DeadlineConfig(BaseModel):
                 f"how a layer is left unbounded"
             )
         return self
+
+
+_DEADLINE_CEILINGS = (
+    "run_seconds",
+    "model_call_seconds",
+    "tool_call_seconds",
+    "hook_seconds",
+    "grace_seconds",
+)
 
 
 class RetryConfig(BaseModel):

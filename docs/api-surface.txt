@@ -3,6 +3,11 @@ tesserix_adk.core.AdkConfig :: class AdkConfig(BaseModel)
 tesserix_adk.core.AdkDeprecationWarning :: class AdkDeprecationWarning(DeprecationWarning)
 tesserix_adk.core.AdkError :: class AdkError(Exception)
 tesserix_adk.core.Agent :: class Agent(BaseModel)
+tesserix_adk.core.ApprovalDecision :: class ApprovalDecision(BaseModel)
+tesserix_adk.core.ApprovalDeniedError :: class ApprovalDeniedError(AdkError)
+tesserix_adk.core.ApprovalExpiredError :: class ApprovalExpiredError(AdkError)
+tesserix_adk.core.ApprovalGate :: class ApprovalGate(Protocol) {request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
+tesserix_adk.core.ApprovalRecord :: class ApprovalRecord(BaseModel)
 tesserix_adk.core.BinaryPart :: class BinaryPart(BaseModel)
 tesserix_adk.core.BudgetConfig :: class BudgetConfig(BaseModel)
 tesserix_adk.core.BudgetExceededError :: class BudgetExceededError(AdkError)
@@ -21,6 +26,15 @@ tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkErro
 tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
 tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(AdkError)
+tesserix_adk.core.Hook :: class Hook(Protocol) {on(self, subject: 'HookSubject') -> 'HookDecision'}
+tesserix_adk.core.HookAction :: class HookAction(StrEnum)
+tesserix_adk.core.HookChain :: class HookChain(object) {at(self, point: 'HookPoint') -> 'tuple[Hook, ...]'; register(self, hook: 'Hook') -> 'None'; sealed(self) -> 'HookChain'}
+tesserix_adk.core.HookDecision :: class HookDecision(BaseModel)
+tesserix_adk.core.HookEvaluationError :: class HookEvaluationError(AdkError)
+tesserix_adk.core.HookPoint :: class HookPoint(StrEnum)
+tesserix_adk.core.HookRefusedError :: class HookRefusedError(AdkError)
+tesserix_adk.core.HookRegistrationError :: class HookRegistrationError(ConfigurationError)
+tesserix_adk.core.HookSubject :: class HookSubject(BaseModel)
 tesserix_adk.core.LoopConfig :: class LoopConfig(BaseModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
 tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
@@ -85,12 +99,17 @@ tesserix_adk.core.deprecation.deprecate :: def deprecate(*, since: 'str', remova
 tesserix_adk.core.deprecation.deprecations :: def deprecations() -> 'tuple[Deprecation, ...]'
 tesserix_adk.core.deprecations :: def deprecations() -> 'tuple[Deprecation, ...]'
 tesserix_adk.core.errors.AdkError :: class AdkError(Exception)
+tesserix_adk.core.errors.ApprovalDeniedError :: class ApprovalDeniedError(AdkError)
+tesserix_adk.core.errors.ApprovalExpiredError :: class ApprovalExpiredError(AdkError)
 tesserix_adk.core.errors.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.core.errors.CancelledError :: class CancelledError(AdkError)
 tesserix_adk.core.errors.CapabilityError :: class CapabilityError(AdkError)
 tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.errors.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
 tesserix_adk.core.errors.GuardrailViolationError :: class GuardrailViolationError(AdkError)
+tesserix_adk.core.errors.HookEvaluationError :: class HookEvaluationError(AdkError)
+tesserix_adk.core.errors.HookRefusedError :: class HookRefusedError(AdkError)
+tesserix_adk.core.errors.HookRegistrationError :: class HookRegistrationError(ConfigurationError)
 tesserix_adk.core.errors.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
 tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
@@ -103,6 +122,16 @@ tesserix_adk.core.errors.RepeatedCallError :: class RepeatedCallError(LoopLimitE
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
+tesserix_adk.core.hooks.ApprovalDecision :: class ApprovalDecision(BaseModel)
+tesserix_adk.core.hooks.ApprovalGate :: class ApprovalGate(Protocol) {request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
+tesserix_adk.core.hooks.ApprovalRecord :: class ApprovalRecord(BaseModel)
+tesserix_adk.core.hooks.Hook :: class Hook(Protocol) {on(self, subject: 'HookSubject') -> 'HookDecision'}
+tesserix_adk.core.hooks.HookAction :: class HookAction(StrEnum)
+tesserix_adk.core.hooks.HookChain :: class HookChain(object) {at(self, point: 'HookPoint') -> 'tuple[Hook, ...]'; register(self, hook: 'Hook') -> 'None'; sealed(self) -> 'HookChain'}
+tesserix_adk.core.hooks.HookDecision :: class HookDecision(BaseModel)
+tesserix_adk.core.hooks.HookPoint :: class HookPoint(StrEnum)
+tesserix_adk.core.hooks.HookSubject :: class HookSubject(BaseModel)
+tesserix_adk.core.hooks.resolve_hooks :: def resolve_hooks(decisions: 'Sequence[HookDecision] | Iterable[HookDecision]') -> 'HookDecision'
 tesserix_adk.core.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
 tesserix_adk.core.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
@@ -125,6 +154,7 @@ tesserix_adk.core.protocols.members_of :: def members_of(protocol: 'type') -> 't
 tesserix_adk.core.protocols.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
 tesserix_adk.core.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
+tesserix_adk.core.resolve_hooks :: def resolve_hooks(decisions: 'Sequence[HookDecision] | Iterable[HookDecision]') -> 'HookDecision'
 tesserix_adk.core.run.Run :: class Run(BaseModel) {record(self, usage: 'Usage') -> 'Run'; record_event(self, event: 'RunEvent') -> 'Run'; transition_to(self, state: 'RunState', *, at: 'float | None' = None) -> 'Run'; with_output(self, output: 'dict[str, Any]') -> 'Run'}
 tesserix_adk.core.run.RunContext :: class RunContext(BaseModel)
 tesserix_adk.core.run.RunEvent :: class RunEvent(BaseModel)
