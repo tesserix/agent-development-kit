@@ -17,7 +17,9 @@ from pydantic import BaseModel, ValidationError
 
 from tesserix_adk.core import Agent, NoOutput, Run, RunState, Usage
 from tesserix_adk.runtime import AgentRunner, ModelResponse
-from tesserix_adk.testing import FakeClock, ScriptedProvider
+from tesserix_adk.testing import CAPABLE, FakeClock, ScriptedProvider
+
+NATIVE = CAPABLE.declaring(structured_output=True)
 
 PLAN = {"destination": "Kyoto", "nights": 4}
 
@@ -60,7 +62,7 @@ def chatter() -> Agent[NoOutput]:
 async def go[OutputT: BaseModel](agent: Agent[OutputT], answer: str) -> Run[OutputT]:
     provider = ScriptedProvider(
         ModelResponse(content=answer, usage=Usage(input_tokens=10, output_tokens=5)),
-        structured=True,
+        capabilities=NATIVE,
     )
     runner = AgentRunner(provider=provider, clock=FakeClock())
     return await runner.run(agent, "plan a trip", tenant="acme", run_id="run_1")

@@ -8,6 +8,30 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+### Breaking changes
+
+- One typed provider protocol, with what a model can do declared as data. `ModelProvider`
+  now states `complete`, `stream`, `count_tokens` and `capabilities` over the kit's own
+  request and response types, which moved into `core` so the protocol could be typed over
+  them without inverting the layering; `tesserix_adk.models` re-exports the surface.
+  `ModelCapabilities` carries `structured_output`, `tool_calling`, `parallel_tool_calls`,
+  `vision`, `streaming`, `context_window_tokens` and `max_output_tokens`, every one
+  defaulting to off or unknown — silence is not a claim. The record is read before anything
+  is sent: a tool registry wired to a model that does not call tools fails at construction,
+  an agent naming tools fails before its first request, and an image part or an over-long
+  prompt fails the same way, the second with `ContextWindowExceededError` carrying the count
+  and the limit. A payload that is not a response at all raises `ModelResponseError` with
+  the raw payload and the provider's request id, distinct from a well-formed answer in the
+  wrong shape, which stays repairable. `ModelRef` and `ModelSpec` address a model from
+  configuration with the provider part of its identity; `declaring` and `with_capabilities`
+  narrow a record without a subclass. `ModelProviderConformance` is the suite a third-party
+  provider inherits. **Stability:** breaking for provider implementors, additive for
+  callers — a provider must add `capabilities` and `count_tokens`, and
+  `ScriptedProvider(structured=True)` becomes
+  `ScriptedProvider(capabilities=CAPABLE.declaring(structured_output=True))`. No call site
+  that only uses a runner changes. Documented in `docs/providers.md`, exercised by
+  `examples/providers.py`.
+
 ### Added
 
 - A conformance gate for the typing guarantee. Every `# type: ignore` in the source and

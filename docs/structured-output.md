@@ -31,17 +31,19 @@ The schema comes from `schema_for(output_type, dialect=STRICT_SUBSET)` — see
 [schemas.md](schemas.md) — so descriptions come from the type's docstring and every object
 is closed. Its `schema_hash` travels with it.
 
-| | Provider declares `supports_structured_output` | Provider does not |
+| | Provider declares `structured_output` | Provider does not |
 |---|---|---|
 | Where the schema goes | `ModelRequest.output_schema` | a system message in the prompt |
 | Who enforces it | the provider | nobody, until the answer comes back |
 | How the answer is validated | `output_type.model_validate` | identically |
 
-A provider declares the capability by exposing a truthy `supports_structured_output`.
+A provider declares the capability on its `ModelCapabilities` record — see
+[providers.md](providers.md).
 Silence is not a claim: an undeclared capability is treated as absent, because assuming it
 is present means discovering the schema was ignored from a run that already completed.
 
-Either way `ModelRequest` carries `output_schema` and `output_schema_hash`, and the
+`ModelRequest` carries `output_schema` only where the provider enforces it, and
+`output_schema_hash` either way, and the
 contract is part of `Prompt.version` — a changed answer type is a changed prompt, so it
 does not quietly reuse a cached prefix or replay a cassette recorded against the old shape.
 

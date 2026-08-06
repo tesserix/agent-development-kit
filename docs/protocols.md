@@ -9,7 +9,7 @@ logic with no network by using the fake.
 | Protocol | Remit | Shipped implementations | Fake | Conformance suite |
 |---|---|---|---|---|
 | `Clock` | Time, injected so timeouts are testable | *(pending — `adapters`)* | `FakeClock` | `ClockConformance` |
-| `ModelProvider` | Completions and streaming from one provider | *(pending — `models`)* | *(pending)* | *(pending)* |
+| `ModelProvider` | Completions and streaming from one provider | `models` | `ScriptedProvider` | `ModelProviderConformance` |
 | `ToolRegistry` | Declared tools and their invocation | *(pending — `tools`)* | *(pending)* | *(pending)* |
 | `MemoryStore` | Durable key-scoped record storage | *(pending — `adapters`)* | `FakeMemoryStore` | `MemoryStoreConformance` |
 | `Guardrail` | An inline check on the call path | *(pending — `guardrails`)* | *(pending)* | *(pending)* |

@@ -20,6 +20,7 @@ __all__ = [
     "CancelledError",
     "CapabilityError",
     "ConfigurationError",
+    "ContextWindowExceededError",
     "FanOutLimitError",
     "GuardrailViolationError",
     "HookEvaluationError",
@@ -28,6 +29,7 @@ __all__ = [
     "LoopLimitError",
     "MaxIterationsError",
     "MissingExtraError",
+    "ModelResponseError",
     "ProtocolConformanceError",
     "ProviderError",
     "ProviderTimeoutError",
@@ -141,7 +143,88 @@ class CapabilityError(AdkError):
 
     Raised before the request goes out: discovering a missing capability from a provider
     error message is discovering it after paying for it.
+
+    Args:
+        capability: What was required, named as the kit names it everywhere else.
+        provider: Who lacks it. Two providers serve the same model ids, so the model
+            alone does not say which record was read.
+        model: Which model of that provider's was asked.
     """
+
+    def __init__(
+        self,
+        *args: object,
+        capability: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.capability = capability
+        self.provider = provider
+        self.model = model
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
+
+
+class ContextWindowExceededError(CapabilityError):
+    """Raised when an assembled prompt is longer than the model declares it can read.
+
+    A vendor handed a prompt past its window truncates it and answers anyway, so the
+    first sign of the problem is an answer that ignores the beginning of the case. The
+    kit refuses instead, against the declared window, before the request goes out.
+
+    Args:
+        counted: Tokens in the prompt, as the provider itself counted them.
+        limit: The window the provider declared.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        counted: int,
+        limit: int,
+        provider: str | None = None,
+        model: str | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.counted = counted
+        self.limit = limit
+        super().__init__(
+            *args, provider=provider, model=model, run_id=run_id, tenant=tenant, details=details
+        )
+
+
+class ModelResponseError(AdkError):
+    """Raised when a provider answered with something the kit cannot read as a response.
+
+    Distinct from `SchemaViolationError`, which is a well-formed answer in the wrong
+    shape and can be repaired. This is a payload that is not an answer at all, so it
+    carries the raw body and the provider's request id: without them the report is
+    "the provider returned something odd" and the trail ends there.
+
+    Args:
+        payload: What came back, kept verbatim for a debugger.
+        request_id: The provider's own id for the call, which is what a support ticket
+            is answered against.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        payload: object = None,
+        request_id: str | None = None,
+        provider: str | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.payload = payload
+        self.request_id = request_id
+        self.provider = provider
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
 
 
 class ProviderError(AdkError):

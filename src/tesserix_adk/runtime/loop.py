@@ -9,9 +9,6 @@ Configuration failures are the exception to that, deliberately: an agent that de
 guardrail the runner was never given is refused before the run starts, since starting
 anyway would run it without a check it declared.
 
-`ModelRequest` and `ModelResponse` are owned here until the provider protocol lands its
-own types (#49), and `ToolDeclaration` until the tools epic lands a registry (#130).
-
 Every name exported here is semver-governed: it appears in `docs/api-surface.txt`, so a
 change to it shows up in a pull request's diff and follows `docs/versioning.md`.
 """
@@ -26,7 +23,7 @@ import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from tesserix_adk.core import (
     AdkError,
@@ -35,9 +32,12 @@ from tesserix_adk.core import (
     ApprovalExpiredError,
     ApprovalGate,
     ApprovalRecord,
+    BinaryPart,
     BudgetExceededError,
     CancelledError,
+    Capability,
     ConfigurationError,
+    ContextWindowExceededError,
     DeadlineConfig,
     FanOutLimitError,
     HookAction,
@@ -51,6 +51,7 @@ from tesserix_adk.core import (
     MaxIterationsError,
     Message,
     ModelProvider,
+    ModelResponseError,
     RecursionLimitError,
     RepeatedCallError,
     RetryConfig,
@@ -69,7 +70,7 @@ from tesserix_adk.core import (
     resolve_hooks,
     verify_conformance,
 )
-from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
 from tesserix_adk.runtime.retry import RetryPlan
@@ -102,32 +103,6 @@ _TRUNCATION_MARKER = "\n[truncated]"
 _UNWIND_TURNS = 3
 
 _T = TypeVar("_T")
-
-
-class ModelRequest(AdkModel):
-    """One call to a provider, as data.
-
-    Provisional and owned by the runtime until the provider protocol declares its own
-    request type (#49).
-    """
-
-    model: str = Field(min_length=1)
-    messages: tuple[Message, ...]
-    tools: tuple[ToolDeclaration, ...] = ()
-    output_schema: dict[str, Any] | None = None
-    output_schema_hash: str | None = None
-
-
-class ModelResponse(AdkModel):
-    """What a provider returned for one call.
-
-    A response with neither content nor tool calls is not retried: asking again for the
-    same nothing is how a loop wedges.
-    """
-
-    content: str = ""
-    tool_calls: tuple[ToolCall, ...] = ()
-    usage: Usage = Field(default_factory=lambda: Usage(input_tokens=0, output_tokens=0))
 
 
 def _random_id() -> str:
@@ -214,6 +189,10 @@ class AgentRunner:
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
+        if tools is not None:
+            provider.capabilities.require(
+                Capability.TOOL_CALLING, provider=provider.name, model="<any>"
+            )
         self._tools = tools
         self._guardrails = dict(guardrails or {})
         misfiled = [name for name, guardrail in self._guardrails.items() if guardrail.name != name]
@@ -362,11 +341,14 @@ class AgentRunner:
             for _ in range(self._max_iterations):
                 self._stop_if_over(run, bounds)
                 run, messages = await self._before_the_call(run, agent, messages, bounds)
+                self._refuse_unreadable_prompt(messages, model)
                 request = ModelRequest(
                     model=model,
                     messages=tuple(messages),
                     tools=prompt.tools,
-                    output_schema=contract.schema if contract is not None else None,
+                    output_schema=contract.schema
+                    if contract is not None and contract.native
+                    else None,
                     output_schema_hash=contract.hash if contract is not None else None,
                 )
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
@@ -521,6 +503,8 @@ class AgentRunner:
                 f"agent {agent.name!r} declares tools ({', '.join(agent.tools)}) but the "
                 f"runner was given no registry"
             )
+        if agent.tools:
+            self._require(Capability.TOOL_CALLING, model=agent.model or "")
         missing = [name for name in agent.guardrails if name not in self._guardrails]
         if missing:
             raise ConfigurationError(
@@ -538,6 +522,34 @@ class AgentRunner:
             raise ConfigurationError(
                 f"agent {agent.name!r} declares a budget but the runner was given no "
                 f"budget policy, so the ceiling would not be enforced"
+            )
+
+    def _require(self, capability: Capability, *, model: str) -> None:
+        """Check the provider's own record. Raises `CapabilityError` naming all three."""
+        self._provider.capabilities.require(capability, provider=self._provider.name, model=model)
+
+    def _refuse_unreadable_prompt(self, messages: Sequence[Message], model: str) -> None:
+        """Refuse a prompt past the declared window rather than letting the vendor cut it.
+
+        Raises:
+            CapabilityError: If any message carries an image and the model cannot see.
+            ContextWindowExceededError: If the provider's own count is over its own window.
+        """
+        if any(isinstance(part, BinaryPart) for message in messages for part in message.content):
+            self._require(Capability.VISION, model=model)
+        window = self._provider.capabilities.context_window_tokens
+        if window is None:
+            return
+        counted = self._provider.count_tokens(messages)
+        if counted > window:
+            raise ContextWindowExceededError(
+                f"the prompt counts {counted} tokens against {self._provider.name}:{model}'s "
+                f"declared window of {window}. Sending it would have the vendor truncate it "
+                f"and answer anyway",
+                counted=counted,
+                limit=window,
+                provider=self._provider.name,
+                model=model,
             )
 
     def _bounds_for(
@@ -754,7 +766,25 @@ class AgentRunner:
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=request.model))
                 attempt += 1
             else:
-                return run, response
+                return run, self._readable(response)
+
+    def _readable(self, payload: object) -> ModelResponse:
+        """Refuse an answer that is not one.
+
+        Distinct from a schema violation, which is a well-formed answer in the wrong shape
+        and can be repaired: this is a provider implementation fault, and repairing it
+        would mean guessing what it meant.
+
+        Raises:
+            ModelResponseError: If `payload` is not a `ModelResponse`.
+        """
+        if not isinstance(payload, ModelResponse):
+            raise ModelResponseError(
+                f"{self._provider.name} returned {type(payload).__name__}, not a ModelResponse",
+                payload=payload,
+                provider=self._provider.name,
+            )
+        return payload
 
     def _after_failure(
         self,
@@ -1222,7 +1252,7 @@ class AgentRunner:
         """
         if agent.output_type is None:
             return None
-        native = bool(getattr(self._provider, "supports_structured_output", False))
+        native = self._provider.capabilities.supports(Capability.STRUCTURED_OUTPUT)
         return OutputContract.of(agent.output_type, native=native)
 
     async def _finish(

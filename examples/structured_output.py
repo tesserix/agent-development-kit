@@ -15,7 +15,7 @@ from pydantic import BaseModel, ValidationError
 
 from tesserix_adk.core import Agent, Run, RunEventKind, RunState, Usage
 from tesserix_adk.runtime import AgentRunner, ModelResponse
-from tesserix_adk.testing import FakeClock, ScriptedProvider
+from tesserix_adk.testing import CAPABLE, FakeClock, ScriptedProvider
 
 
 class TripPlan(BaseModel):
@@ -48,7 +48,7 @@ async def run(agent: Agent, content: str, *, native: bool) -> tuple[Run, Scripte
     """Drive one turn against a scripted provider and hand back what it was sent."""
     provider = ScriptedProvider(
         ModelResponse(content=content, usage=Usage(input_tokens=10, output_tokens=5)),
-        structured=native,
+        capabilities=CAPABLE.declaring(structured_output=native),
     )
     runner = AgentRunner(provider=provider, clock=FakeClock())
     return await runner.run(agent, "plan a trip", tenant="acme"), provider

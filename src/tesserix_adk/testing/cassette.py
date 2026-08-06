@@ -23,12 +23,13 @@ from pydantic import Field
 from tesserix_adk.core.errors import AdkError, ProviderError
 from tesserix_adk.core.models import AdkModel
 from tesserix_adk.runtime import ModelResponse, RunFingerprint, fingerprint_of
+from tesserix_adk.testing.fakes import CAPABLE, estimate_tokens
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
     from pathlib import Path
 
-    from tesserix_adk.core import Run
+    from tesserix_adk.core import Message, ModelCapabilities, ModelProvider, Run
     from tesserix_adk.runtime import ModelRequest
 
 __all__ = [
@@ -160,7 +161,7 @@ class RecordingProvider:
 
     def __init__(
         self,
-        inner: Any,
+        inner: ModelProvider,
         *,
         provider: str,
         version: str = "",
@@ -176,6 +177,17 @@ class RecordingProvider:
     def name(self) -> str:
         """The provider being recorded, so a run attributes itself to what it really called."""
         return self._provider
+
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        """The wrapped provider's own record: recording must not widen what it can do."""
+        declared: ModelCapabilities = self._inner.capabilities
+        return declared
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        """The wrapped provider's own count."""
+        counted: int = self._inner.count_tokens(messages)
+        return counted
 
     @property
     def cassette(self) -> Cassette:
@@ -208,7 +220,7 @@ class RecordingProvider:
         )
         return response
 
-    async def stream(self, request: ModelRequest) -> Any:
+    async def stream(self, request: ModelRequest) -> object:
         """Not recorded yet — streaming is #38."""
         raise NotImplementedError("RecordingProvider does not stream; see #38")
 
@@ -221,6 +233,8 @@ class ReplayingProvider:
         expect_provider: The provider the caller believes it is testing against.
         expect_version: The version it believes it is testing against.
         hooks: The hook names in the chain, so the fingerprint covers them.
+        capabilities: What the recorded provider declared. A replay against a wider
+            record passes a check the recording never passed.
 
     Raises:
         CassetteVersionError: If the cassette was recorded against a different provider or
@@ -234,6 +248,7 @@ class ReplayingProvider:
         expect_provider: str | None = None,
         expect_version: str | None = None,
         hooks: Iterable[str] = (),
+        capabilities: ModelCapabilities | None = None,
     ) -> None:
         if expect_provider is not None and cassette.provider != expect_provider:
             raise CassetteVersionError(
@@ -248,12 +263,22 @@ class ReplayingProvider:
             )
         self._cassette = cassette
         self._hooks = tuple(hooks)
+        self._capabilities = capabilities if capabilities is not None else CAPABLE
         self.served: list[Interaction] = []
 
     @property
     def name(self) -> str:
         """The provider the cassette was recorded against, not a fiction of its own."""
         return self._cassette.provider
+
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        """What the recorded provider declared."""
+        return self._capabilities
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        """Estimated, since the recorded provider's tokeniser is not on the cassette."""
+        return estimate_tokens(messages)
 
     async def complete(self, request: ModelRequest) -> ModelResponse:
         """Serve the next recording for this request.
@@ -269,7 +294,7 @@ class ReplayingProvider:
             raise interaction.error.raised()
         return interaction.response or ModelResponse()
 
-    async def stream(self, request: ModelRequest) -> Any:
+    async def stream(self, request: ModelRequest) -> object:
         """Not replayed yet — streaming is #38."""
         raise NotImplementedError("ReplayingProvider does not stream; see #38")
 

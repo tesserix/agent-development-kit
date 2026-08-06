@@ -13,8 +13,18 @@ import asyncio
 import json
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from tesserix_adk.core import Agent, ProviderError, RetryConfig, Run, ToolCall, Usage
+from tesserix_adk.core import (
+    Agent,
+    Message,
+    ModelCapabilities,
+    ProviderError,
+    RetryConfig,
+    Run,
+    ToolCall,
+    Usage,
+)
 from tesserix_adk.runtime import AgentRunner, ModelRequest, ModelResponse
 from tesserix_adk.testing import (
     Cassette,
@@ -25,7 +35,11 @@ from tesserix_adk.testing import (
     ScriptedProvider,
     SequentialIds,
     assert_same_run,
+    estimate_tokens,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # Credential-shaped, credential to nothing: the fixture that proves redaction works.
 FAKE_TOKEN = "sk-live-4eC39H"  # noqa: S105 — a fixture, not a credential; gitleaks:allow
@@ -42,6 +56,15 @@ class FlakyProvider:
     def name(self) -> str:
         """What this provider is called."""
         return "flaky"
+
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        """What it declares it can do; the kit checks this before it calls."""
+        return ModelCapabilities(context_window_tokens=200_000)
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        """Estimated, since this example has no tokeniser to call."""
+        return estimate_tokens(messages)
 
     async def complete(self, request: ModelRequest) -> ModelResponse:  # noqa: ARG002
         """Fail the first call, answer the second."""

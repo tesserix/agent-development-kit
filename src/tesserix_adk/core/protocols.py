@@ -14,9 +14,16 @@ starts. The conformance suite in `tesserix_adk.testing` verifies behaviour.
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from tesserix_adk.core.errors import ProtocolConformanceError
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from tesserix_adk.core.capabilities import ModelCapabilities
+    from tesserix_adk.core.primitives import Message
+    from tesserix_adk.core.provider import ModelRequest, ModelResponse
 
 __all__ = [
     "BudgetPolicy",
@@ -82,19 +89,41 @@ class ModelProvider(Protocol):
         """Stable identifier for this provider, used in records and routing."""
         ...
 
-    async def complete(self, request: Any) -> Any:
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        """What this provider's model can do, as a record the kit checks before calling.
+
+        Read at wiring time and again before each request. A capability discovered from
+        an upstream error is a capability discovered after paying for it.
+        """
+        ...
+
+    async def complete(self, request: ModelRequest) -> ModelResponse:
         """Return a completion for `request`.
 
         Raises:
             ProviderError: On any transport or upstream failure, after translation.
+            ModelResponseError: If the upstream body cannot be read as a response.
         """
         ...
 
-    async def stream(self, request: Any) -> Any:
+    async def stream(self, request: ModelRequest) -> Any:
         """Return an async iterator of incremental completion events.
 
+        The event type is `Any` until the streaming epic (#38) names one.
+
         Raises:
+            CapabilityError: If this provider does not declare `streaming`. Buffering one
+                chunk and calling it a stream is worse than refusing.
             ProviderError: On any transport or upstream failure, after translation.
+        """
+        ...
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        """Return how many tokens `messages` occupy, by this provider's own count.
+
+        Every vendor counts differently, so the answer belongs to the provider. It is
+        what the declared context window is checked against.
         """
         ...
 

@@ -8,18 +8,23 @@ release. Run it with `python examples/getting_started.py`.
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from tesserix_adk import __version__
 from tesserix_adk.core import (
     BudgetPolicy,
     MemoryStore,
+    Message,
+    ModelCapabilities,
     ModelProvider,
     Tracer,
     resolve_config,
     verify_conformance,
 )
-from tesserix_adk.testing import FakeBudgetPolicy, FakeMemoryStore, FakeTracer
+from tesserix_adk.testing import FakeBudgetPolicy, FakeMemoryStore, FakeTracer, estimate_tokens
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class EchoProvider:
@@ -29,6 +34,15 @@ class EchoProvider:
     def name(self) -> str:
         """Identify the provider in traces and audit records."""
         return "echo"
+
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        """What it declares it can do. Nothing here, which is what silence should mean."""
+        return ModelCapabilities()
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        """Estimated, since this example has no tokeniser to call."""
+        return estimate_tokens(messages)
 
     async def complete(self, request: Any) -> str:  # noqa: ANN401 — mirrors the protocol
         """Answer a request without leaving the process."""

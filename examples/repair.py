@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from tesserix_adk.core import Agent, RepairConfig, Run, RunEventKind, RunState, Usage
 from tesserix_adk.runtime import AgentRunner, ModelResponse
-from tesserix_adk.testing import FakeClock, ScriptedProvider
+from tesserix_adk.testing import CAPABLE, FakeClock, ScriptedProvider
 
 BAD = '{"destination": "Kyoto"}'
 HALF = '{"nights": 4}'
@@ -51,7 +51,7 @@ async def run(agent: Agent, *answers: str) -> tuple[Run, ScriptedProvider]:
             ModelResponse(content=text, usage=Usage(input_tokens=10, output_tokens=5))
             for text in answers
         ),
-        structured=True,
+        capabilities=CAPABLE.declaring(structured_output=True),
     )
     runner = AgentRunner(provider=provider, clock=FakeClock())
     return await runner.run(agent, "plan a trip", tenant="acme"), provider

@@ -9,7 +9,7 @@ third case, and no path that quietly falls back into one.
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -17,6 +17,8 @@ from pydantic import BaseModel, ValidationError
 from tesserix_adk.core import (
     STRICT_SUBSET,
     Agent,
+    Message,
+    ModelCapabilities,
     Run,
     RunEventKind,
     RunState,
@@ -33,7 +35,18 @@ from tesserix_adk.runtime import (
     OutputContract,
     unwrap_fenced,
 )
-from tesserix_adk.testing import FakeClock, FakeToolRegistry, ScriptedProvider
+from tesserix_adk.testing import (
+    CAPABLE,
+    FakeClock,
+    FakeToolRegistry,
+    ScriptedProvider,
+    estimate_tokens,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+NATIVE = CAPABLE.declaring(structured_output=True)
 
 
 class TripPlan(BaseModel):
@@ -67,7 +80,7 @@ def answer(text: str) -> ModelResponse:
 
 def runner(*responses: ModelResponse, native: bool = True, **overrides: object) -> AgentRunner:
     fields: dict[str, object] = {
-        "provider": ScriptedProvider(*responses, structured=native),
+        "provider": ScriptedProvider(*responses, capabilities=NATIVE if native else CAPABLE),
         "clock": FakeClock(),
     }
     return AgentRunner(**{**fields, **overrides})  # type: ignore[arg-type]
@@ -102,18 +115,18 @@ class TestAnAgentSaysWhatShapeItsAnswerTakes:
 
 class TestTheModelIsToldTheShape:
     async def test_the_request_carries_the_schema_of_the_declared_type(self) -> None:
-        provider = ScriptedProvider(answer(json.dumps(PLAN)), structured=True)
+        provider = ScriptedProvider(answer(json.dumps(PLAN)), capabilities=NATIVE)
         await start(runner(provider=provider), agent())
         assert provider.requests[0].output_schema == schema_for(TripPlan, dialect=STRICT_SUBSET)
 
     async def test_the_request_carries_the_hash_of_that_schema(self) -> None:
-        provider = ScriptedProvider(answer(json.dumps(PLAN)), structured=True)
+        provider = ScriptedProvider(answer(json.dumps(PLAN)), capabilities=NATIVE)
         await start(runner(provider=provider), agent())
         expected = schema_hash(schema_for(TripPlan, dialect=STRICT_SUBSET))
         assert provider.requests[0].output_schema_hash == expected
 
     async def test_a_free_text_agent_is_sent_no_schema(self) -> None:
-        provider = ScriptedProvider(answer("Kyoto, four nights."), structured=True)
+        provider = ScriptedProvider(answer("Kyoto, four nights."), capabilities=NATIVE)
         free = Agent(name="chatter", instructions="Chat.", model="claude-sonnet-5", free_text=True)
         run = await start(runner(provider=provider), free)
         assert provider.requests[0].output_schema is None
@@ -227,7 +240,7 @@ class TestCodeFencesAreUnwrappedExplicitly:
 
 class TestProvidersWithoutNativeStructuredOutput:
     async def test_the_schema_is_put_in_the_prompt_instead(self) -> None:
-        provider = ScriptedProvider(answer(json.dumps(PLAN)), structured=False)
+        provider = ScriptedProvider(answer(json.dumps(PLAN)), capabilities=CAPABLE)
         await start(runner(provider=provider), agent())
         sent = "\n".join(
             part.text
@@ -239,7 +252,7 @@ class TestProvidersWithoutNativeStructuredOutput:
         assert "JSON" in sent
 
     async def test_a_native_provider_is_not_given_the_fallback_instruction(self) -> None:
-        provider = ScriptedProvider(answer(json.dumps(PLAN)), structured=True)
+        provider = ScriptedProvider(answer(json.dumps(PLAN)), capabilities=NATIVE)
         await start(runner(provider=provider), agent())
         sent = "\n".join(
             part.text
@@ -264,8 +277,13 @@ class TestProvidersWithoutNativeStructuredOutput:
         class Silent:
             name = "silent"
 
+            capabilities = ModelCapabilities()
+
             def __init__(self) -> None:
                 self.requests: list[ModelRequest] = []
+
+            def count_tokens(self, messages: Sequence[Message]) -> int:
+                return estimate_tokens(messages)
 
             async def complete(self, request: ModelRequest) -> ModelResponse:
                 self.requests.append(request)

@@ -24,6 +24,7 @@ from pydantic import Field
 
 from tesserix_adk.core import Message, TextPart
 from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.provider import ToolDeclaration
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -63,19 +64,6 @@ def wrap_untrusted(content: str, *, source: str) -> str:
     for marker, escaped in _ESCAPED.items():
         safe = safe.replace(marker, escaped)
     return f'{_BEGIN} source="{source}">\n{safe}\n{_END}'
-
-
-class ToolDeclaration(AdkModel):
-    """A tool as the model is told about it.
-
-    Provisional and owned by the runtime until the Tools epic lands a registry type
-    (#49). It carries the JSON Schema as data so that a declaration can be hashed into
-    the prompt version and diffed in review.
-    """
-
-    name: str = Field(min_length=1)
-    description: str = ""
-    parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 class Prompt(AdkModel):

@@ -19,6 +19,7 @@ from tesserix_adk.core import (
     HookPoint,
     HookSubject,
     Message,
+    ModelCapabilities,
     ProviderError,
     RetryConfig,
     RunEventKind,
@@ -35,6 +36,7 @@ from tesserix_adk.runtime import (
     fingerprint_of,
 )
 from tesserix_adk.testing import (
+    CAPABLE,
     Cassette,
     CassetteMissError,
     CassetteVersionError,
@@ -45,9 +47,11 @@ from tesserix_adk.testing import (
     ScriptedProvider,
     SequentialIds,
     assert_same_run,
+    estimate_tokens,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
 # Credential-shaped, credential to nothing: the fixture that proves redaction works.
@@ -82,9 +86,18 @@ def tools() -> FakeToolRegistry:
 class FailingOnceProvider:
     """Fails the first call and answers the second, so a retry is on the recording."""
 
+    name = "flaky"
+
     def __init__(self, response: ModelResponse) -> None:
         self._response = response
         self.calls = 0
+
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        return CAPABLE
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        return estimate_tokens(messages)
 
     async def complete(self, request: ModelRequest) -> ModelResponse:  # noqa: ARG002
         self.calls += 1

@@ -14,7 +14,7 @@ from pydantic import BaseModel, ValidationError
 
 from tesserix_adk.core import Agent, NoOutput, Run, Usage
 from tesserix_adk.runtime import AgentRunner, ModelResponse
-from tesserix_adk.testing import FakeClock, ScriptedProvider
+from tesserix_adk.testing import CAPABLE, FakeClock, ScriptedProvider
 
 PLAN = '{"destination": "Kyoto", "nights": 4}'
 
@@ -35,7 +35,7 @@ async def go[OutputT: BaseModel](agent: Agent[OutputT], answer: str) -> Run[Outp
     """Drive one agent against a scripted provider and hand its run back, typed."""
     provider = ScriptedProvider(
         ModelResponse(content=answer, usage=Usage(input_tokens=10, output_tokens=5)),
-        structured=True,
+        capabilities=CAPABLE.declaring(structured_output=True),
     )
     return await AgentRunner(provider=provider, clock=FakeClock()).run(
         agent, "plan a trip", tenant="acme"

@@ -14,13 +14,18 @@ from collections import deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from tesserix_adk.core.capabilities import Capability, ModelCapabilities
 from tesserix_adk.core.errors import BudgetExceededError, ToolExecutionError
+from tesserix_adk.core.primitives import TextPart
 from tesserix_adk.runtime import ModelRequest, ModelResponse, ToolDeclaration
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Mapping
+    from collections.abc import Callable, Iterator, Mapping, Sequence
+
+    from tesserix_adk.core.primitives import Message
 
 __all__ = [
+    "CAPABLE",
     "BudgetExceededError",
     "FakeBudgetPolicy",
     "FakeClock",
@@ -33,10 +38,30 @@ __all__ = [
     "SequentialIds",
     "StallingProvider",
     "ToolExecutionError",
+    "estimate_tokens",
 ]
 
 # A loop turn is free; a test that waits more than this is waiting for the wrong thing.
 _SETTLE_TURNS = 100
+
+_CHARS_PER_TOKEN = 4
+
+# Structured output is off so that the prompt-side fallback is what a default test exercises.
+CAPABLE = ModelCapabilities(
+    tool_calling=True, parallel_tool_calls=True, vision=True, streaming=True
+)
+
+
+def estimate_tokens(messages: Sequence[Message]) -> int:
+    """Estimate tokens by character count, for a provider with no tokeniser to call.
+
+    Four characters to the token is wrong for every model and close enough for all of
+    them; a provider that ships a tokeniser should use it instead.
+    """
+    return (
+        sum(len(part.text) for m in messages for part in m.content if isinstance(part, TextPart))
+        // _CHARS_PER_TOKEN
+    )
 
 
 class SequentialIds:
@@ -207,20 +232,20 @@ class ScriptedProvider:
     Args:
         responses: What to return, in order.
         name: The provider name recorded on the run.
-        structured: Whether this provider declares it enforces an output schema itself.
-            False by default, which is the case the prompt-side fallback has to be
-            tested against.
+        capabilities: What this fake declares it can do. Defaults to `CAPABLE`, which
+            declares everything except structured output — the case the prompt-side
+            fallback has to be tested against.
     """
 
     def __init__(
         self,
         *responses: ModelResponse | BaseException,
         name: str = "scripted",
-        structured: bool = False,
+        capabilities: ModelCapabilities | None = None,
     ) -> None:
         self._responses = deque(responses)
         self._name = name
-        self.supports_structured_output = structured
+        self._capabilities = capabilities if capabilities is not None else CAPABLE
         self.requests: list[ModelRequest] = []
 
     @property
@@ -228,7 +253,16 @@ class ScriptedProvider:
         """The provider name."""
         return self._name
 
-    async def complete(self, request: Any) -> Any:
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        """What this fake declares."""
+        return self._capabilities
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        """Count by characters, the estimate a provider without a tokeniser would give."""
+        return estimate_tokens(messages)
+
+    async def complete(self, request: ModelRequest) -> ModelResponse:
         """Return the next scripted response, or raise the next scripted exception.
 
         Raises:
@@ -246,8 +280,14 @@ class ScriptedProvider:
             raise nxt
         return nxt
 
-    async def stream(self, request: Any) -> Any:
-        """Not scripted. Streaming has its own epic (#38)."""
+    async def stream(self, request: ModelRequest) -> object:  # noqa: ARG002 — nothing is sent yet
+        """Not scripted. Streaming has its own epic (#38).
+
+        Raises:
+            CapabilityError: If this fake does not declare `streaming`.
+            NotImplementedError: Otherwise, until #38.
+        """
+        self._capabilities.require(Capability.STREAMING, provider=self._name, model="scripted")
         raise NotImplementedError("ScriptedProvider does not stream; see #38")
 
 
@@ -264,6 +304,7 @@ class StallingProvider:
         ignores_cancellation: How many cancellations to swallow before stopping. Above
             zero this is the provider that keeps streaming after the caller has gone —
             the case the kit must drop rather than wait for.
+        capabilities: What this fake declares it can do.
     """
 
     def __init__(
@@ -271,9 +312,11 @@ class StallingProvider:
         *responses: ModelResponse,
         name: str = "stalling",
         ignores_cancellation: int = 0,
+        capabilities: ModelCapabilities | None = None,
     ) -> None:
         self._responses = deque(responses)
         self._name = name
+        self._capabilities = capabilities if capabilities is not None else CAPABLE
         self._ignores = ignores_cancellation
         self._released = asyncio.Event()
         self.entered = asyncio.Event()
@@ -284,11 +327,20 @@ class StallingProvider:
         """The provider name."""
         return self._name
 
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        """What this fake declares."""
+        return self._capabilities
+
+    def count_tokens(self, messages: Sequence[Message]) -> int:
+        """Count by characters, the estimate a provider without a tokeniser would give."""
+        return estimate_tokens(messages)
+
     def release(self) -> None:
         """Let a stalled call return, so an abandoned task can finish rather than linger."""
         self._released.set()
 
-    async def complete(self, request: Any) -> Any:  # noqa: ARG002 — the script ignores it
+    async def complete(self, request: ModelRequest) -> ModelResponse:  # noqa: ARG002 — the script ignores it
         """Return the next scripted response, or stall until released or cancelled."""
         self.calls += 1
         if self._responses:
@@ -305,7 +357,7 @@ class StallingProvider:
                 break
         return ModelResponse(content="answered after all")
 
-    async def stream(self, request: Any) -> Any:
+    async def stream(self, request: ModelRequest) -> object:
         """Not scripted. Streaming has its own epic (#38)."""
         raise NotImplementedError("StallingProvider does not stream; see #38")
 

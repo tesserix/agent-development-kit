@@ -26,7 +26,9 @@ from tesserix_adk.core import (
     Usage,
 )
 from tesserix_adk.runtime import AgentRunner, ModelResponse, OutputContract
-from tesserix_adk.testing import FakeBudgetPolicy, FakeClock, ScriptedProvider
+from tesserix_adk.testing import CAPABLE, FakeBudgetPolicy, FakeClock, ScriptedProvider
+
+NATIVE = CAPABLE.declaring(structured_output=True)
 
 BAD = '{"destination": "Kyoto"}'
 HALF = '{"nights": 4}'
@@ -63,7 +65,7 @@ def answer(text: str) -> ModelResponse:
 
 def runner(*responses: ModelResponse, **overrides: object) -> AgentRunner:
     fields: dict[str, object] = {
-        "provider": ScriptedProvider(*responses, structured=True),
+        "provider": ScriptedProvider(*responses, capabilities=NATIVE),
         "clock": FakeClock(),
     }
     return AgentRunner(**{**fields, **overrides})  # type: ignore[arg-type]
@@ -129,17 +131,17 @@ class TestTheFailureItselfGoesBack:
         assert "1 of 2" in kinds(run, RunEventKind.REPAIR_REQUESTED)[0]
 
     async def test_the_failing_path_is_fed_back_to_the_model(self) -> None:
-        provider = ScriptedProvider(answer(BAD), answer(GOOD), structured=True)
+        provider = ScriptedProvider(answer(BAD), answer(GOOD), capabilities=NATIVE)
         await start(runner(provider=provider), agent())
         assert "nights" in sent(provider, 1)
 
     async def test_what_was_wrong_with_it_is_fed_back_to_the_model(self) -> None:
-        provider = ScriptedProvider(answer(BAD), answer(GOOD), structured=True)
+        provider = ScriptedProvider(answer(BAD), answer(GOOD), capabilities=NATIVE)
         await start(runner(provider=provider), agent())
         assert "Field required" in sent(provider, 1)
 
     async def test_the_schema_goes_back_with_it(self) -> None:
-        provider = ScriptedProvider(answer(BAD), answer(GOOD), structured=True)
+        provider = ScriptedProvider(answer(BAD), answer(GOOD), capabilities=NATIVE)
         await start(runner(provider=provider), agent())
         assert "destination" in sent(provider, 1)
 
@@ -161,7 +163,9 @@ class TestRunningOutIsLoud:
         assert run.output is None
 
     async def test_the_budget_bounds_the_attempts(self) -> None:
-        provider = ScriptedProvider(answer(BAD), answer(HALF), answer("still not"), structured=True)
+        provider = ScriptedProvider(
+            answer(BAD), answer(HALF), answer("still not"), capabilities=NATIVE
+        )
         await start(runner(provider=provider), agent())
         assert len(provider.requests) == 3
 

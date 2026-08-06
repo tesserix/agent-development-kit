@@ -88,6 +88,7 @@ code lands here as the kit is built.
 | Core primitives — agents, messages, runs, usage, errors | [`docs/primitives.md`](docs/primitives.md) |
 | Boundary models — strictness, extras, sensitive fields, field changes | [`docs/models.md`](docs/models.md) |
 | Schemas — generation, docstrings, provider dialects, the schema hash | [`docs/schemas.md`](docs/schemas.md) |
+| Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | Structured output — declared answer shapes, provider fallback, violations | [`docs/structured-output.md`](docs/structured-output.md) |
 | Repair — bounded correction, what goes back, what it costs | [`docs/repair.md`](docs/repair.md) |
 | Typing — the answer type, the escape-hatch policy, third-party boundaries | [`docs/typing.md`](docs/typing.md) |

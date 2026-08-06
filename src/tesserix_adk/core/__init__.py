@@ -1,6 +1,12 @@
 """Frozen primitives, protocols and error types. The vocabulary every other layer speaks."""
 
 from tesserix_adk.core.agent import Agent, ToolFailurePolicy
+from tesserix_adk.core.capabilities import (
+    Capability,
+    ModelCapabilities,
+    ModelRef,
+    ModelSpec,
+)
 from tesserix_adk.core.config import (
     AdkConfig,
     BudgetConfig,
@@ -34,6 +40,7 @@ from tesserix_adk.core.errors import (
     CancelledError,
     CapabilityError,
     ConfigurationError,
+    ContextWindowExceededError,
     FanOutLimitError,
     GuardrailViolationError,
     HookEvaluationError,
@@ -42,6 +49,7 @@ from tesserix_adk.core.errors import (
     LoopLimitError,
     MaxIterationsError,
     MissingExtraError,
+    ModelResponseError,
     ProtocolConformanceError,
     ProviderError,
     ProviderTimeoutError,
@@ -94,6 +102,7 @@ from tesserix_adk.core.protocols import (
     members_of,
     verify_conformance,
 )
+from tesserix_adk.core.provider import ModelRequest, ModelResponse, ToolDeclaration
 from tesserix_adk.core.run import (
     Run,
     RunContext,
@@ -134,6 +143,7 @@ __all__ = [
     "BudgetExceededError",
     "BudgetPolicy",
     "CancelledError",
+    "Capability",
     "CapabilityError",
     "Clock",
     "ConfigError",
@@ -141,6 +151,7 @@ __all__ = [
     "ConfigResolution",
     "ConfigurationError",
     "ContentPart",
+    "ContextWindowExceededError",
     "DeadlineConfig",
     "Deprecation",
     "DeprecationPolicyError",
@@ -165,7 +176,13 @@ __all__ = [
     "MemoryStore",
     "Message",
     "MissingExtraError",
+    "ModelCapabilities",
     "ModelProvider",
+    "ModelRef",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelResponseError",
+    "ModelSpec",
     "NoOutput",
     "ProtocolConformanceError",
     "Provenance",
@@ -193,6 +210,7 @@ __all__ = [
     "TenantContext",
     "TextPart",
     "ToolCall",
+    "ToolDeclaration",
     "ToolExecutionError",
     "ToolFailurePolicy",
     "ToolRegistry",

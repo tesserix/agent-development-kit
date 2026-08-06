@@ -21,29 +21,92 @@ every implementation learns about it by failing rather than by drifting.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 
+import pytest
+
+from tesserix_adk.core.capabilities import Capability, ModelCapabilities
+from tesserix_adk.core.errors import CapabilityError
+from tesserix_adk.core.primitives import Message, TextPart
 from tesserix_adk.core.protocols import (
     BudgetPolicy,
     Clock,
     MemoryStore,
+    ModelProvider,
     Tracer,
     verify_conformance,
 )
+from tesserix_adk.core.provider import ModelRequest, ModelResponse
 
 __all__ = [
     "BudgetPolicyConformance",
     "ClockConformance",
     "MemoryStoreConformance",
+    "ModelProviderConformance",
     "TracerConformance",
 ]
+
+
+def _request(*texts: str) -> ModelRequest:
+    """The smallest request a provider can be asked to answer."""
+    return ModelRequest(
+        model="conformance",
+        messages=tuple(Message(role="user", content=[TextPart(text=t)]) for t in texts),
+    )
+
+
+class ModelProviderConformance(ABC):
+    """Behaviour every `ModelProvider` implementation must exhibit.
+
+    A provider is substitutable only if the kit can read its limits before it calls, so
+    most of this suite is about the capability record rather than the completion.
+    """
+
+    @abstractmethod
+    def make_provider(self) -> ModelProvider:
+        """Return a provider under test, able to answer several requests."""
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_provider(), ModelProvider)
+
+    def test_it_is_named(self) -> None:
+        name = self.make_provider().name
+        assert isinstance(name, str)
+        assert name
+
+    def test_it_declares_what_it_can_do(self) -> None:
+        assert isinstance(self.make_provider().capabilities, ModelCapabilities)
+
+    def test_the_declaration_does_not_change_between_reads(self) -> None:
+        """A record that varies is a record nothing can be checked against."""
+        provider = self.make_provider()
+        assert provider.capabilities == provider.capabilities
+
+    async def test_it_answers_with_a_response(self) -> None:
+        assert isinstance(await self.make_provider().complete(_request("hello")), ModelResponse)
+
+    def test_it_counts_tokens_without_going_negative(self) -> None:
+        assert self.make_provider().count_tokens(_request("hello").messages) >= 0
+
+    def test_a_longer_prompt_does_not_count_for_less(self) -> None:
+        provider = self.make_provider()
+        short = provider.count_tokens(_request("hello").messages)
+        long = provider.count_tokens(_request("hello", "hello again at some length").messages)
+        assert long >= short
+
+    async def test_streaming_it_never_declared_is_refused(self) -> None:
+        """A provider that buffers one chunk and calls it a stream is worse than a refusal."""
+        provider = self.make_provider()
+        if provider.capabilities.supports(Capability.STREAMING):
+            return
+        with pytest.raises(CapabilityError):
+            await provider.stream(_request("hello"))
 
 
 class MemoryStoreConformance(ABC):
     """Behaviour every `MemoryStore` implementation must exhibit."""
 
     @abstractmethod
-    def make_store(self) -> Any:
+    def make_store(self) -> MemoryStore:
         """Return a fresh, empty store under test."""
 
     def test_satisfies_the_protocol(self) -> None:
@@ -83,7 +146,7 @@ class ClockConformance(ABC):
     """Behaviour every `Clock` implementation must exhibit."""
 
     @abstractmethod
-    def make_clock(self) -> Any:
+    def make_clock(self) -> Clock:
         """Return a fresh clock under test."""
 
     def test_satisfies_the_protocol(self) -> None:
@@ -104,7 +167,7 @@ class BudgetPolicyConformance(ABC):
     """Behaviour every `BudgetPolicy` implementation must exhibit."""
 
     @abstractmethod
-    def make_policy(self) -> Any:
+    def make_policy(self) -> BudgetPolicy:
         """Return a fresh policy under test."""
 
     def test_satisfies_the_protocol(self) -> None:
@@ -127,7 +190,7 @@ class TracerConformance(ABC):
     """
 
     @abstractmethod
-    def make_tracer(self) -> Any:
+    def make_tracer(self) -> Tracer:
         """Return a fresh tracer under test."""
 
     def test_satisfies_the_protocol(self) -> None:

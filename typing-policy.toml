@@ -56,18 +56,6 @@ review_by = 2027-08-07
 # ---------------------------------------------------------------------------------------
 
 [[any]]
-symbol = "tesserix_adk.core.protocols.ModelProvider"
-kind = "provisional"
-removed_by = "#49"
-reason = """
-`complete` and `stream` take and return `Any` because the request and response types are
-owned by the runtime until the provider protocol story lands them in core. Narrowing them
-here would make `runtime` a dependency of `core` and invert the layering.
-"""
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
 symbol = "tesserix_adk.core.protocols.ToolRegistry"
 kind = "provisional"
 removed_by = "#130"
@@ -216,22 +204,6 @@ owner = "@sam123ben"
 review_by = 2027-08-07
 
 [[any]]
-symbol = "tesserix_adk.testing.fakes.ScriptedProvider"
-kind = "provisional"
-removed_by = "#49"
-reason = "Mirrors ModelProvider, and gains the real types when that protocol does."
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
-symbol = "tesserix_adk.testing.fakes.StallingProvider"
-kind = "provisional"
-removed_by = "#49"
-reason = "Mirrors ModelProvider, and gains the real types when that protocol does."
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
 symbol = "tesserix_adk.testing.fakes.FakeToolRegistry"
 kind = "provisional"
 removed_by = "#130"
@@ -255,52 +227,9 @@ owner = "@sam123ben"
 review_by = 2027-08-07
 
 [[any]]
-symbol = "tesserix_adk.testing.cassette.RecordingProvider"
+symbol = "tesserix_adk.core.protocols.ModelProvider"
 kind = "provisional"
-removed_by = "#49"
-reason = "`stream` returns `Any` until the provider protocol owns the stream type."
+reason = "stream() returns the incremental event type, which #38 defines; naming it now would name it twice"
 owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
-symbol = "tesserix_adk.testing.cassette.ReplayingProvider"
-kind = "provisional"
-removed_by = "#49"
-reason = "`stream` returns `Any` until the provider protocol owns the stream type."
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
-symbol = "tesserix_adk.testing.conformance.ClockConformance"
-kind = "provisional"
-removed_by = "#49"
-reason = """
-A conformance suite's `make_*` hook returns whatever implementation the subclass is
-proving, which is the protocol itself — expressible once these suites are generic over it.
-"""
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
-symbol = "tesserix_adk.testing.conformance.BudgetPolicyConformance"
-kind = "provisional"
-removed_by = "#49"
-reason = "Same `make_*` hook as ClockConformance."
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
-symbol = "tesserix_adk.testing.conformance.MemoryStoreConformance"
-kind = "provisional"
-removed_by = "#49"
-reason = "Same `make_*` hook as ClockConformance."
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
-symbol = "tesserix_adk.testing.conformance.TracerConformance"
-kind = "provisional"
-removed_by = "#49"
-reason = "Same `make_*` hook as ClockConformance."
-owner = "@sam123ben"
-review_by = 2026-11-07
+review_by = "2026-12-31"
+removed_by = "#38"

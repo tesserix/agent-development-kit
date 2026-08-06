@@ -15,9 +15,11 @@ from tesserix_adk.testing.conformance import (
     BudgetPolicyConformance,
     ClockConformance,
     MemoryStoreConformance,
+    ModelProviderConformance,
     TracerConformance,
 )
 from tesserix_adk.testing.fakes import (
+    CAPABLE,
     BudgetExceededError,
     FakeBudgetPolicy,
     FakeClock,
@@ -30,10 +32,12 @@ from tesserix_adk.testing.fakes import (
     SequentialIds,
     StallingProvider,
     ToolExecutionError,
+    estimate_tokens,
 )
 from tesserix_adk.testing.pytest_plugin import NetworkAccessInTestError, QuarantineError
 
 __all__ = [
+    "CAPABLE",
     "BudgetExceededError",
     "BudgetPolicyConformance",
     "Cassette",
@@ -48,6 +52,7 @@ __all__ = [
     "FakeTracer",
     "Interaction",
     "MemoryStoreConformance",
+    "ModelProviderConformance",
     "NetworkAccessInTestError",
     "QuarantineError",
     "RecordedError",
@@ -60,5 +65,6 @@ __all__ = [
     "ToolExecutionError",
     "TracerConformance",
     "assert_same_run",
+    "estimate_tokens",
     "redacted",
 ]
