@@ -94,6 +94,20 @@ one rests on, and — more importantly — what it does **not** defend against a
 [`docs/threat-model.md`](docs/threat-model.md). Read it before treating any of the kit's
 boundaries as a security control in your own product.
 
+## Known limitations
+
+- **GitHub private vulnerability reporting only exists while the repository is public.**
+  It is enabled, but this repository toggles to private between CI runs to conserve
+  Actions minutes, and the reporting form is unavailable during those windows. If the
+  link returns a 404, open a public issue asking for a private channel and nothing else,
+  and a maintainer will open the advisory. This goes away when the kit is published.
+- The gate checks the process against its own records. It cannot tell you a report was
+  never recorded — a flaw handled quietly outside `security/advisories/` is invisible to
+  it, which is why the rota, not the tool, owns the acknowledgement.
+- Severity is assigned by the maintainer rota. Nothing here computes CVSS, and a reporter
+  who disagrees with a severity should say so on the advisory; the target follows the
+  severity, so the disagreement is worth having before the clock is set.
+
 ## Related
 
 - [`docs/security.md`](docs/security.md) — advisory, secret and licence scanning gates.
