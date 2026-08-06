@@ -1,0 +1,17 @@
+package = "psycopg"
+profile = "extra:postgres"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "Async PostgreSQL access for the state and vector adapters."
+alternatives = '''
+asyncpg was the other candidate. psycopg 3 was chosen for a sync and async client behind
+one API, server-side binding, and a maintenance story tied to libpq. psycopg 2 is not a
+candidate: no async support.
+'''
+maintenance = "Active: long-standing project, careful releases."
+licence = "LGPL-3.0-only"
+transitive = 2
+native_build = true
+security_history = "No unfixed advisories."
+review_by = 2027-08-06
+notes = "LGPL, which is why it carries a scoped acceptance in security/licences.toml: dynamically linked, unmodified, inside an optional extra. The binary extra ships a wheel bundling libpq."

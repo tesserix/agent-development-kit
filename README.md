@@ -91,7 +91,7 @@ code lands here as the kit is built.
 | Stability & the alpha channel | [`docs/stability.md`](docs/stability.md) |
 | Reporting a vulnerability | [`SECURITY.md`](SECURITY.md) |
 | Threat model — and what the kit does not defend against | [`docs/threat-model.md`](docs/threat-model.md) |
-| Dependencies & update policy | [`docs/dependencies.md`](docs/dependencies.md) |
+| Dependencies, admission gate & update policy | [`docs/dependencies.md`](docs/dependencies.md) |
 | Security scanning, licences & SBOM | [`docs/security.md`](docs/security.md) |
 | Verifying a release | [`docs/verifying.md`](docs/verifying.md) |
 | Issue template | [`.github/ISSUE_TEMPLATE/engineering-story.md`](.github/ISSUE_TEMPLATE/engineering-story.md) |

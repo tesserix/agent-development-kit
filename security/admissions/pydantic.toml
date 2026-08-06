@@ -1,0 +1,19 @@
+package = "pydantic"
+profile = "base"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "Structured output: the kit's whole type-safety claim is a model validating a provider response against a declared schema."
+alternatives = '''
+dataclasses plus a hand-written validator was the alternative, and it is not close: the
+kit needs JSON Schema generation for tool declarations and provider structured-output
+modes, coercion from provider JSON, and a stable error shape. `typing.TypedDict` with a
+runtime checker covers validation and not schema generation. Writing that layer is a
+project, not a utility.
+'''
+maintenance = "Active: frequent releases, funded team, the de facto standard in this domain."
+licence = "MIT"
+transitive = 10
+native_build = true
+security_history = "No unfixed advisories. pydantic-core is Rust; wheels are published for every supported platform, so no consumer compiles it."
+review_by = 2027-08-06
+notes = "Wheels only in practice; a platform without a pydantic-core wheel would need a Rust toolchain, which is the one native build in the base install."

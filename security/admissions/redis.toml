@@ -1,0 +1,18 @@
+package = "redis"
+profile = "extra:redis"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "An async Redis client for the cache and state adapters."
+alternatives = '''
+Writing RESP over asyncio streams is genuinely small, and vendoring was considered.
+Rejected because connection pooling, cluster support, TLS and reconnection are the part
+that is not small, and a product running Redis in production wants the client it already
+knows.
+'''
+maintenance = "Active: the reference Python client, frequent releases."
+licence = "MIT"
+transitive = 1
+native_build = false
+security_history = "No unfixed advisories."
+review_by = 2027-08-06
+notes = "One package, no transitive weight at all — the cheapest admission here."

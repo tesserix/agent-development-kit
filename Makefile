@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom deps disclosure disclosure-check check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -82,7 +82,13 @@ disclosure-check: ## Fail if a disclosure target was missed or SECURITY.md is ou
 deps: ## Fail if a published requirement carries an unrecorded floor or cap
 	uv run python -m tools.dependency_policy
 
-check: lint typecheck deps disclosure-check api-check deprecations-check release-check notes-check cov ## Everything CI runs
+admissions: ## Regenerate security/inventory.toml from the lock
+	uv run python -m tools.admissions --write
+
+admissions-check: ## Fail if a dependency a consumer inherits has no decision record
+	uv run python -m tools.admissions
+
+check: lint typecheck deps admissions-check disclosure-check api-check deprecations-check release-check notes-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov

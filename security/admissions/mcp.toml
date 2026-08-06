@@ -1,0 +1,18 @@
+package = "mcp"
+profile = "extra:mcp"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "Speak the Model Context Protocol as a client and a server without reimplementing the wire format."
+alternatives = '''
+Implementing the protocol against the specification was considered. Rejected: the
+specification moves, and a divergent implementation is a compatibility bug reported to us
+rather than upstream. It stays behind an extra and behind the kit's own tool protocol, so
+a consumer who does not use MCP installs none of it.
+'''
+maintenance = "Active: reference implementation, released alongside the specification."
+licence = "MIT"
+transitive = 15
+native_build = false
+security_history = "No unfixed advisories."
+review_by = 2027-08-06
+notes = "Fifteen packages, including starlette and uvicorn for the server side. Heavy, which is exactly why it is an extra."

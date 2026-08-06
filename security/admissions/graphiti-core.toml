@@ -1,0 +1,18 @@
+package = "graphiti-core"
+profile = "extra:graphiti"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "Temporal knowledge-graph memory over Neo4j without building graph construction and invalidation from scratch."
+alternatives = '''
+Building it over the kit's own store protocols was the alternative and remains the
+long-term option. It was not taken now because episode ingestion, edge invalidation and
+temporal queries are the bulk of the work. This is the weakest admission in the set and
+the one most likely to be reversed.
+'''
+maintenance = "Pre-1.0: active but with breaking changes inside minor releases, which is why the published requirement caps it below 1.0."
+licence = "Apache-2.0"
+transitive = 15
+native_build = false
+security_history = "No unfixed advisories, but a short history and a small maintainer count."
+review_by = 2027-02-06
+notes = "Drags in openai, numpy, requests, tqdm and posthog — a telemetry SDK a consumer did not ask for. Reviewed early, in six months rather than twelve, because of that."

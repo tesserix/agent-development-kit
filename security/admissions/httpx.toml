@@ -1,0 +1,18 @@
+package = "httpx"
+profile = "base"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "One async HTTP client for every provider transport, with a timeout and retry surface the kit can present consistently."
+alternatives = '''
+`urllib.request` and `http.client` are synchronous, and the kit's transport is async end
+to end; wrapping them in a thread pool per request is worse than a dependency. aiohttp
+was the other candidate and was rejected for a heavier API surface and no sync client for
+the places that need one. Writing an async client over asyncio streams means owning HTTP
+semantics, which is not what this kit is for.
+'''
+maintenance = "Active: regular releases, several maintainers, part of the encode stack."
+licence = "BSD-3-Clause"
+transitive = 10
+native_build = false
+security_history = "No unfixed advisories; past advisories in the h11/httpcore chain were fixed promptly."
+review_by = 2027-08-06

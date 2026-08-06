@@ -1,0 +1,19 @@
+package = "opentelemetry-api"
+profile = "base"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "Emit spans a consuming product's existing collector already understands, without prescribing which one."
+alternatives = '''
+Defining the kit's own tracing protocol and letting products adapt it was the
+alternative. It was rejected because every consumer would then write the same adapter to
+OTel. The API package alone is deliberate: it is a no-op unless the consuming product
+installs and configures an SDK, so nothing is exported by default and nothing is
+prescribed. The SDK is not a dependency of the kit at all.
+'''
+maintenance = "Active: CNCF project, frequent releases, many maintainers."
+licence = "Apache-2.0"
+transitive = 1
+native_build = false
+security_history = "No advisories against the API package."
+review_by = 2027-08-06
+notes = "One transitive package, and only because the API package is deliberately separate from the SDK."

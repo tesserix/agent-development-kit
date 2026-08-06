@@ -1,0 +1,18 @@
+package = "temporalio"
+profile = "extra:temporal"
+decided = 2026-08-06
+owner = "@sam123ben"
+need = "Durable workflow execution for long-running agent runs that must survive a process restart."
+alternatives = '''
+The kit's own persistence over the state adapters was considered and rejected for this
+tier: durable timers, retries and replay determinism are a distributed-systems problem
+that Temporal already solves. Behind an extra and behind the workflow protocol, so the
+in-process runner remains the default and carries none of this.
+'''
+maintenance = "Active: vendor-backed, frequent releases."
+licence = "MIT"
+transitive = 4
+native_build = true
+security_history = "No unfixed advisories."
+review_by = 2027-08-06
+notes = "Ships a Rust core as a wheel; a platform without one needs a toolchain, which is acceptable inside an opt-in extra."

@@ -104,6 +104,54 @@ Some updates are not a version bump:
   replacement or vendoring, recorded as a decision with an owner. Pinning it forever and
   suppressing its advisories is not a third option.
 
+## Adding a dependency
+
+A package added here is added to every product that installs the kit, and none of those
+teams got to review it. So an addition is a decision with an owner, not a line in a
+manifest.
+
+### Prefer, in this order
+
+1. **The standard library.** Slower to write, nothing to inherit.
+2. **An existing dependency.** If `httpx` already ships, a second HTTP client is a
+   liability with no gain.
+3. **An optional extra.** Anything specific to one provider, store or protocol — every
+   integration SDK is here, behind a protocol, so a consumer who wants none installs
+   none. `mcp`, `temporalio`, `graphiti-core`, `redis` and `psycopg` in the base install
+   are a hard failure of the gate, by name.
+4. **Vendor it.** Forty lines copied in with the licence header beats a package every
+   consumer inherits for a function they will never call. This is a recordable outcome:
+   `profile = "vendored"`.
+5. **A base requirement.** Last, and only when the kit's central promises depend on it.
+
+### What the record answers
+
+Each direct requirement has a file in `security/admissions/` answering, in prose a
+reviewer can disagree with:
+
+| Field | The question it answers |
+| --- | --- |
+| `need` | What breaks without it, in terms of what the kit promises. |
+| `alternatives` | What was rejected, and why. A record naming none is refused. |
+| `maintenance` | Release cadence, maintainer count, whether it is pre-1.0. |
+| `licence` | The SPDX identifier, cross-checked by the licence gate. |
+| `transitive` | How many packages it drags in — the number a one-line diff hides. |
+| `native_build` | Whether a consumer without a wheel needs a compiler. |
+| `security_history` | Advisory record, and how fast fixes landed. |
+| `review_by` | When this approval stops being current. |
+
+`review_by` is the field that keeps the set honest. A package that goes unmaintained
+otherwise stays approved forever on the strength of a decision made when it was healthy.
+
+### The resolved graph is committed
+
+`security/inventory.toml` lists all 51 packages a consumer can end up with and the
+profiles that reach each one. It is generated — `make admissions` — and CI fails when the
+lock disagrees with it. That is the point: a routine version bump that quietly adds a new
+transitive package fails until someone regenerates the file, and then the arrival is a
+line in the diff rather than something nobody sees. Development-only packages are absent;
+they are never in a consumer's resolution and carry the maintainer's own bar instead.
+
 ## Review
 
 `pyproject.toml`, `uv.lock`, `security/` and `.github/dependabot.yml` have a named owner
@@ -125,6 +173,14 @@ prevent.
   named in `.github/dependabot.yml` that does not exist is dropped silently, and a
   dependency pull request without the `dependencies` label never starts the full matrix.
   `dependencies` and `actions` exist; adding a third means creating it first.
+- **The admission gate reads records, not judgement.** It fails on a package with no
+  record and on a graph that moved; it cannot tell you a record's `maintenance` claim was
+  true when it was written and is false now. That is what `review_by` is for, and the
+  rota, not the tool, does the reading.
+- **`graphiti-core` brings a telemetry SDK.** The `graphiti` extra resolves `posthog`
+  transitively, along with `openai`, `numpy` and `requests` — fifteen packages for one
+  requirement. Its record says so and its re-review is set six months out rather than
+  twelve. A consumer who does not install that extra inherits none of it.
 - The floor check compares the declared floor against the recorded one as a string. A
   floor written `>=2.9.0` where the policy records `2.9` is reported as a disagreement;
   the fix is to write them identically, which is the point.

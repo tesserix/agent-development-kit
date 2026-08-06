@@ -234,6 +234,20 @@ jobs:
       # Fails on an upper bound nobody recorded, and on a record nothing depends on.
       - run: uv run python -m tools.dependency_policy
 
+  admissions:
+    name: dependency admissions
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Fails on a package the lock grew since the last review, naming what it reaches.
+      - run: uv run python -m tools.admissions
+
   lowest-direct:
     name: lowest declared versions resolve and pass
     runs-on: ubuntu-latest

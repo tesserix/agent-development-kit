@@ -10,6 +10,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- An admission gate for third-party dependencies (`tools/admissions.py`,
+  `security/admissions/`, `security/inventory.toml`), run on every pull request by the
+  `dependency admissions` job. Each published requirement carries a decision record
+  naming the need, the rejected alternative, maintenance, licence, transitive count and a
+  `review_by` date after which the approval is a violation; all eight existing
+  requirements have retrospective records. The resolved graph is committed, so a version
+  bump that adds a transitive package fails until it is regenerated and the arrival shows
+  in the diff. The preference order is documented in `docs/dependencies.md`, and an
+  integration SDK in the base install fails the gate by name.
+
 - A security policy and coordinated disclosure process (`SECURITY.md`,
   `security/disclosure.toml`, `security/advisories/`, `tools/disclosure.py`): a private
   reporting channel, per-severity acknowledgement and fix targets, and a process that
