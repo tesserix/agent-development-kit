@@ -129,7 +129,7 @@ jobs:
       - run: uv sync --frozen --all-groups
       # Blocks on any change that would ship with nothing describing it to a consumer.
       - run: uv run python -m tools.release_notes --version "${GITHUB_REF_NAME#v}" --output notes.md
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sbom
       # Dependency growth is invisible unless somebody puts it in front of a reader.
@@ -148,7 +148,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -167,14 +167,14 @@ jobs:
       attestations: read
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: notes
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sbom
       # A mirrored or air-gapped install has no attestation store to reach, so the
