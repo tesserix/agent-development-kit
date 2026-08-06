@@ -86,7 +86,11 @@ jobs:
     name: matrix ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     needs: lockfile
-    if: github.event_name != 'pull_request'
+    # After merge, and on any pull request that moves a dependency: the fast lane proves
+    # the two ends of the supported range, an update has to prove all of it.
+    if: >-
+      github.event_name != 'pull_request'
+      || contains(github.event.pull_request.labels.*.name, 'dependencies')
     strategy:
       fail-fast: false
       matrix:
@@ -212,6 +216,20 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --all-groups
       - run: uv run lint-imports
+
+  dependency-policy:
+    name: published requirements
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Fails on an upper bound nobody recorded, and on a record nothing depends on.
+      - run: uv run python -m tools.dependency_policy
 
   lowest-direct:
     name: lowest declared versions resolve and pass

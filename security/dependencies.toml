@@ -1,0 +1,73 @@
+# What the kit's published requirements may say to a consumer. Every floor is justified
+# here and proved by the `lowest-direct` CI leg; every cap is an exception with an owner
+# and a trigger for removing it. See docs/dependencies.md.
+
+[[floor]]
+package = "pydantic"
+floor = "2.9"
+reason = """
+Oldest release the lowest-direct leg is green against, and the oldest still receiving
+fixes in the 2.x line. Nothing below it is tested, so claiming it would be a guess.
+"""
+
+[[floor]]
+package = "httpx"
+floor = "0.27"
+reason = """
+Oldest release with the transport and timeout API the client wraps. Earlier 0.2x lines
+are unmaintained and would have to be tested to be claimed.
+"""
+
+[[floor]]
+package = "opentelemetry-api"
+floor = "1.27"
+reason = """
+Oldest release the lowest-direct leg is green against. The API package is deliberately
+the only OTel dependency in the base install, so the floor moves only when a span
+attribute the kit sets requires it.
+"""
+
+[[floor]]
+package = "mcp"
+floor = "1.9"
+reason = "Oldest release with the 1.x server and client surface the mcp extra targets."
+
+[[floor]]
+package = "temporalio"
+floor = "1.9"
+reason = "Oldest release with the worker API the workflows extra targets."
+
+[[floor]]
+package = "graphiti-core"
+floor = "0.14"
+reason = "Oldest release with the episode API the graph memory adapter targets."
+
+[[floor]]
+package = "redis"
+floor = "5.2"
+reason = "Oldest release with the asyncio client surface the redis adapter targets."
+
+[[floor]]
+package = "psycopg"
+floor = "3.2"
+reason = """
+psycopg 3 only. The 2.x driver has a different API and no async support, so the floor is
+the 3.x line rather than a version within it.
+"""
+
+# The only upper bound in the published requirements. Everything else is uncapped on
+# purpose: a speculative cap turns an upgrade the consumer chose into a resolution error
+# they cannot fix without forking the kit.
+[[cap]]
+package = "graphiti-core"
+cap = "1"
+incompatibility = """
+0.x carries no compatibility promise, and graphiti-core has broken its episode API
+within a minor release before. Below 1.0 the version number says nothing about
+compatibility, so the cap is the only signal available.
+"""
+trigger = """
+Remove when 1.0 ships and the graphiti extra's suite is green against it, in a change
+that also states whether the floor moves.
+"""
+owner = "@sam123ben"

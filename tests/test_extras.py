@@ -74,13 +74,16 @@ def test_the_declared_extras_are_the_agreed_set() -> None:
     assert set(_extras()) == INTEGRATION_EXTRAS | {"all"}
 
 
-def test_every_extra_requirement_declares_a_floor_and_a_ceiling() -> None:
-    """A floor without a ceiling ships the next major release to consumers unreviewed."""
+def test_every_extra_requirement_declares_a_floor() -> None:
+    """An unbounded floor is untestable: no resolution proves the oldest still works.
+
+    Ceilings are deliberately not asserted here. Whether one is allowed at all is
+    `tests/test_dependency_policy.py`, which requires a recorded incompatibility for each.
+    """
     for extra in INTEGRATION_EXTRAS:
         for raw in _extras()[extra]:
             specifiers = {s.operator for s in Requirement(raw).specifier}
             assert specifiers & {">=", "=="}, f"{extra}: {raw} has no lower bound"
-            assert specifiers & {"<", "<=", "==", "~="}, f"{extra}: {raw} has no upper bound"
 
 
 def test_the_all_extra_is_a_pure_union() -> None:

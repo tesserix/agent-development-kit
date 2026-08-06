@@ -176,6 +176,7 @@ for credentials, on every pull request and daily. Locally:
 make audit      # advisories against the locked set — needs the network
 make secrets    # credential shapes in the tree — offline
 make licences   # dependency licences against the policy — offline
+make deps       # published requirements against the dependency policy — offline
 ```
 
 Adding a dependency means adding its licence obligations to every consuming product. If

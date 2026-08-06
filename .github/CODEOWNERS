@@ -3,3 +3,10 @@
 # only the owners below may bypass the PR requirement and push directly.
 
 * @sam123ben @mahesh-sangawar
+
+# Dependency changes have a named reviewer, or the weekly update pull requests
+# accumulate until somebody merges the pile. See docs/dependencies.md.
+/pyproject.toml @sam123ben
+/uv.lock @sam123ben
+/security/ @sam123ben
+/.github/dependabot.yml @sam123ben

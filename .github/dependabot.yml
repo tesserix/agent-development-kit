@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  # Routine updates arrive as one change on a fixed day. Forty separate pull requests
+  # are not reviewed, they are approved. Majors are deliberately outside every group: a
+  # provider or store SDK major needs its own change and its own migration note.
+  # Security updates ignore all of this and open immediately. See docs/dependencies.md.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Australia/Sydney
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    reviewers: ["sam123ben"]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      python:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Australia/Sydney
+    open-pull-requests-limit: 5
+    labels: [dependencies, actions]
+    reviewers: ["sam123ben"]
+    commit-message:
+      prefix: chore
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: [minor, patch]

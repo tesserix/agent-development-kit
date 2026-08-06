@@ -10,6 +10,15 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A dependency policy the published requirements are held to
+  (`tools/dependency_policy.py`, `security/dependencies.toml`, `docs/dependencies.md`),
+  checked on every pull request by the `published requirements` job. Builds stay exact
+  through `uv.lock`; what the kit *publishes* now carries justified floors and, with one
+  recorded exception, no upper bound. Every cap names the incompatibility that earned it,
+  the trigger that removes it and its owner, and a record for a package nothing depends
+  on any more fails the job. Weekly grouped updates via `.github/dependabot.yml` with
+  majors outside every group; a pull request labelled `dependencies` runs the full matrix
+  as well as the lowest-direct leg.
 - Signed releases with build provenance (`docs/verifying.md`): every artefact, on the
   release and alpha channels alike, is signed keyless by workflow identity and carries a
   SLSA provenance attestation naming the repository, workflow, commit and build inputs.
@@ -83,6 +92,14 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   quarantine marker requiring owner, expiry and reason.
 - `tesserix_adk.core`: protocols, error hierarchy, `verify_conformance`, and shipped
   conformance suites and fakes in `tesserix_adk.testing`.
+
+### Changed
+
+- Published requirements no longer carry speculative upper bounds. `pydantic`, `httpx`,
+  `opentelemetry-api`, `mcp`, `temporalio`, `redis` and `psycopg` declare a floor only,
+  so a consuming product that moves to a new major is not blocked by a resolution error
+  it cannot fix without forking the kit. The one remaining cap is `graphiti-core<1`,
+  recorded with its incompatibility and removal trigger in `security/dependencies.toml`.
 
 ### Notes
 
