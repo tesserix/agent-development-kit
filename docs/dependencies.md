@@ -173,6 +173,11 @@ prevent.
   named in `.github/dependabot.yml` that does not exist is dropped silently, and a
   dependency pull request without the `dependencies` label never starts the full matrix.
   `dependencies` and `actions` exist; adding a third means creating it first.
+- **The committed inventory describes the committed lock, and nothing else.** The
+  `lowest declared versions resolve and pass` job re-resolves the lock on purpose, so the
+  two graphs differ by design and that job skips the inventory assertions. A floor that
+  drags in a package the pinned resolution does not is therefore not caught there — the
+  gate sees it the moment the lock moves to it.
 - **The admission gate reads records, not judgement.** It fails on a package with no
   record and on a graph that moved; it cannot tell you a record's `maintenance` claim was
   true when it was written and is false now. That is what `review_by` is for, and the

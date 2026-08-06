@@ -248,6 +248,11 @@ class TestTheGate:
         """Checking a stale lock reviews a graph nobody is about to install."""
         assert ci_jobs()[JOB]["needs"] == "lockfile"
 
+    def test_the_lowest_direct_job_does_not_check_the_committed_inventory(self) -> None:
+        """That job re-resolves the lock on purpose, so the two describe different graphs."""
+        steps = " ".join(ci_run_steps("lowest-direct"))
+        assert "--deselect tests/test_admissions.py::TestTheRepositoryItself" in steps
+
 
 class TestCommandLine:
     def test_a_violation_fails_the_job(

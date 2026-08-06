@@ -260,4 +260,6 @@ jobs:
           enable-cache: true
       # Proves the floors declared in pyproject are real, not aspirational.
       - run: uv sync --resolution lowest-direct --all-groups
-      - run: uv run pytest
+      # The sync rewrites the lock, so the committed inventory describes a graph this job
+      # deliberately is not installing. The `dependency admissions` job checks that one.
+      - run: uv run pytest --deselect tests/test_admissions.py::TestTheRepositoryItself
