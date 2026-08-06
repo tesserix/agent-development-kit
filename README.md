@@ -89,6 +89,8 @@ code lands here as the kit is built.
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |
 | Releasing & index policy | [`docs/releasing.md`](docs/releasing.md) |
 | Stability & the alpha channel | [`docs/stability.md`](docs/stability.md) |
+| Reporting a vulnerability | [`SECURITY.md`](SECURITY.md) |
+| Threat model — and what the kit does not defend against | [`docs/threat-model.md`](docs/threat-model.md) |
 | Dependencies & update policy | [`docs/dependencies.md`](docs/dependencies.md) |
 | Security scanning, licences & SBOM | [`docs/security.md`](docs/security.md) |
 | Verifying a release | [`docs/verifying.md`](docs/verifying.md) |

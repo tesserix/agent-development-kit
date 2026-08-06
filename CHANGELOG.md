@@ -10,6 +10,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A security policy and coordinated disclosure process (`SECURITY.md`,
+  `security/disclosure.toml`, `security/advisories/`, `tools/disclosure.py`): a private
+  reporting channel, per-severity acknowledgement and fix targets, and a process that
+  patches every supported minor and publishes the advisory in the same move. The
+  commitments are checked — `make disclosure` fails on a missed acknowledgement, a
+  supported minor left unpatched, publication before acknowledgement, consumers notified
+  after the fact, or a public disclosure carrying no interim mitigation — and the tables
+  in `SECURITY.md` are generated from the same records. Targets are keyed by severity
+  alone, so a flaw in an optional extra is never deprioritised for being one.
+- `docs/threat-model.md`: the guarantees the kit makes, the assumption behind each, and
+  an explicit list of what it does not defend against, so a consuming product does not
+  mistake a design boundary for a security control.
 - A dependency policy the published requirements are held to
   (`tools/dependency_policy.py`, `security/dependencies.toml`, `docs/dependencies.md`),
   checked on every pull request by the `published requirements` job. Builds stay exact

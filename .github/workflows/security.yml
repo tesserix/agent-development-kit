@@ -75,3 +75,16 @@ jobs:
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             | tar -xz gitleaks
           ./gitleaks git --no-banner --redact --exit-code 1 .
+
+  disclosure:
+    name: disclosure commitments
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Daily, not only on merge: a target is missed by time passing, not by a commit.
+      - run: uv run python -m tools.disclosure

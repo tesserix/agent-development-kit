@@ -1,0 +1,29 @@
+# The published disclosure commitments. `SECURITY.md` is generated from these by
+# `make disclosure`, and the same targets are checked against every advisory record in
+# `security/advisories/`, so the page a reporter reads cannot drift from the gate.
+
+[channel]
+private = "https://github.com/tesserix/agent-development-kit/security/advisories/new"
+rota = ["@sam123ben"]
+
+# Targets are keyed by severity and nothing else. A flaw reached only through an optional
+# extra exposes every product that installs it, so scope never buys a slower response.
+[[target]]
+severity = "critical"
+acknowledge_days = 1
+fix_days = 7
+
+[[target]]
+severity = "high"
+acknowledge_days = 2
+fix_days = 14
+
+[[target]]
+severity = "moderate"
+acknowledge_days = 5
+fix_days = 30
+
+[[target]]
+severity = "low"
+acknowledge_days = 5
+fix_days = 90

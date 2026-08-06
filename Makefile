@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom deps check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom deps disclosure disclosure-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -73,10 +73,16 @@ licences: ## Fail on a dependency licence the policy does not allow
 sbom: ## Write the bill of materials for VERSION to sbom.cdx.json
 	uv run python -m tools.sbom --version $(VERSION) --output sbom.cdx.json
 
+disclosure: ## Regenerate the generated tables in SECURITY.md
+	uv run python -m tools.disclosure --write
+
+disclosure-check: ## Fail if a disclosure target was missed or SECURITY.md is out of date
+	uv run python -m tools.disclosure
+
 deps: ## Fail if a published requirement carries an unrecorded floor or cap
 	uv run python -m tools.dependency_policy
 
-check: lint typecheck deps api-check deprecations-check release-check notes-check cov ## Everything CI runs
+check: lint typecheck deps disclosure-check api-check deprecations-check release-check notes-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov

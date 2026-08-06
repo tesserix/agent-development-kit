@@ -177,6 +177,7 @@ make audit      # advisories against the locked set — needs the network
 make secrets    # credential shapes in the tree — offline
 make licences   # dependency licences against the policy — offline
 make deps       # published requirements against the dependency policy — offline
+make disclosure # regenerate the tables in SECURITY.md after an advisory record
 ```
 
 Adding a dependency means adding its licence obligations to every consuming product. If

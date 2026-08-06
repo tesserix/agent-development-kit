@@ -162,6 +162,14 @@ make sbom VERSION=0.3.0
 uv run python -m tools.sbom --diff previous.cdx.json sbom.cdx.json
 ```
 
+## Reporting a flaw in the kit itself
+
+The scanners on this page cover the dependency graph and the tree. A flaw in something
+the kit itself guarantees goes through [`../SECURITY.md`](../SECURITY.md): a private
+channel, a stated acknowledgement target, a patched release for every supported minor,
+and an advisory published with the releases rather than after them. What those guarantees
+are, and what they are not, is in [`threat-model.md`](threat-model.md).
+
 ## Known limitations
 
 - Severity comes from OSV. A package with an advisory OSV has not rated is treated as
