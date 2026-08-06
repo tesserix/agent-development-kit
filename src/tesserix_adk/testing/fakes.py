@@ -11,7 +11,7 @@ import contextlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from tesserix_adk.core.errors import AdkError
+from tesserix_adk.core.errors import BudgetExceededError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -24,10 +24,6 @@ __all__ = [
     "FakeTracer",
     "RecordedEvent",
 ]
-
-
-class BudgetExceededError(AdkError):
-    """Raised by `FakeBudgetPolicy` when a reservation would breach its limit."""
 
 
 class FakeClock:

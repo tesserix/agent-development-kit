@@ -85,6 +85,7 @@ code lands here as the kit is built.
 | Resource | Where |
 |---|---|
 | Design brief & architecture | [`docs/design-brief.md`](docs/design-brief.md) |
+| Core primitives — agents, messages, runs, usage, errors | [`docs/primitives.md`](docs/primitives.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |
 | Releasing & index policy | [`docs/releasing.md`](docs/releasing.md) |

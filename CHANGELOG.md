@@ -10,6 +10,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- The core primitives every other layer speaks — `Agent`, `Message`, `TextPart`,
+  `BinaryPart`, `ToolCall`, `Usage`, `Run`, `RunState`, `TenantContext`, `RunContext`,
+  `deduplicate`, `legal_transitions` — and a typed error hierarchy under `AdkError`
+  (`CapabilityError`, `ProviderError`, `ProviderTimeoutError`, `SchemaViolationError`,
+  `ToolExecutionError`, `GuardrailViolationError`, `BudgetExceededError`,
+  `CancelledError`, `MaxIterationsError`), each error carrying the run and tenant it
+  happened in. All are frozen, forbid unknown fields and round-trip through JSON, so a
+  run checkpointed by one process rehydrates in another and no primitive can hold a
+  client or a socket. `Usage` records an unknown cost as unknown rather than zero and
+  refuses to total two currencies; `Run.transition_to` refuses a move the transition
+  table does not declare legal, naming the legal set. **Stability:** additive — every
+  name is new and semver-governed from this release; `docs/api-surface.txt` only grows.
+  `tesserix_adk.testing.BudgetExceededError` now *is* the core error rather than a
+  distinct class of the same name, which fixes an `except` clause that would have passed
+  in tests and failed in production. Documented in `docs/primitives.md` and exercised by
+  `examples/typed_primitives.py`; docstring examples are now executed in CI.
+
 - An admission gate for third-party dependencies (`tools/admissions.py`,
   `security/admissions/`, `security/inventory.toml`), run on every pull request by the
   `dependency admissions` job. Each published requirement carries a decision record
