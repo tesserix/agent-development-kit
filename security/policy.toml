@@ -1,0 +1,2 @@
+# Accepted security findings. Every entry needs an owner, a reviewable reason and an
+# end date at most 90 days out. An expired entry fails the build. See docs/security.md.

@@ -10,6 +10,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Dependency and secret scanning (`docs/security.md`, `.github/workflows/security.yml`):
+  advisories audited against the frozen lock on every pull request and daily, rated from
+  OSV with an unrated advisory blocking, and reported with the first fixed version and the
+  blast radius derived from the lockfile — a finding reachable only through an extra still
+  blocks and names the extra. Credentials are matched by shape across the tree and by a
+  pinned `gitleaks` across the history, with recorded provider traffic also checked for
+  personal identifiers and every matched value truncated in the report. Suppressions live
+  in `security/policy.toml` and require an owner, a reason and an expiry of at most 90
+  days; an expired suppression fails the build. Neither job uses a repository secret, so
+  both run on a pull request from a fork.
 - Pre-release alpha channel (`docs/stability.md`, `.github/workflows/alpha.yml`): every
   merge to `main` publishes a pre-release through the same gates and trusted publisher as
   a release, numbered by `tools/alpha.py` from the next minor after the last stable.

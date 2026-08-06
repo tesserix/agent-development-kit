@@ -61,6 +61,7 @@ dev = [
   # tools/downstream.py parses a JUnit report written by another repository's CI.
   "defusedxml>=0.7,<0.8",
   "types-defusedxml>=0.7,<0.8",
+  "pip-audit>=2.7,<3",
 ]
 test = [
   "pytest>=8.3,<9",

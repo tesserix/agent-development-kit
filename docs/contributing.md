@@ -167,6 +167,26 @@ The example the smoke job runs is `examples/getting_started.py`. Every example i
 directory is executed by `tests/test_examples.py`, so one that stops working fails at
 review rather than after the release.
 
+## Security scanning
+
+A separate workflow audits the lockfile for advisories and scans the tree and the history
+for credentials, on every pull request and daily. Locally:
+
+```bash
+make audit      # advisories against the locked set — needs the network
+make secrets    # credential shapes in the tree — offline
+```
+
+`make check` runs neither: the audit needs the network, and the repository-wide credential
+scan already runs as a test inside `make cov`, so a leak fails the suite before it fails
+the workflow.
+
+Anything either scan is asked not to fail on goes in `security/policy.toml` with an owner,
+a reason and an expiry — and an expired entry fails the build. The severity policy, the
+blast-radius rules and what to do when an advisory has no fix are in
+[security.md](security.md). If a scan fires on a credential, rotate it first: rewriting
+history is cleanup, not remediation.
+
 ## Configuration
 
 One resolution, at startup, into one frozen `AdkConfig`. There is no reload and no second
