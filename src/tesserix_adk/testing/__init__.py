@@ -1,5 +1,16 @@
 """Fakes and fixtures published for consumers to test against."""
 
+from tesserix_adk.testing.cassette import (
+    Cassette,
+    CassetteMissError,
+    CassetteVersionError,
+    Interaction,
+    RecordedError,
+    RecordingProvider,
+    ReplayingProvider,
+    assert_same_run,
+    redacted,
+)
 from tesserix_adk.testing.conformance import (
     BudgetPolicyConformance,
     ClockConformance,
@@ -16,6 +27,7 @@ from tesserix_adk.testing.fakes import (
     FakeTracer,
     RecordedEvent,
     ScriptedProvider,
+    SequentialIds,
     StallingProvider,
     ToolExecutionError,
 )
@@ -24,6 +36,9 @@ from tesserix_adk.testing.pytest_plugin import NetworkAccessInTestError, Quarant
 __all__ = [
     "BudgetExceededError",
     "BudgetPolicyConformance",
+    "Cassette",
+    "CassetteMissError",
+    "CassetteVersionError",
     "ClockConformance",
     "FakeBudgetPolicy",
     "FakeClock",
@@ -31,12 +46,19 @@ __all__ = [
     "FakeMemoryStore",
     "FakeToolRegistry",
     "FakeTracer",
+    "Interaction",
     "MemoryStoreConformance",
     "NetworkAccessInTestError",
     "QuarantineError",
+    "RecordedError",
     "RecordedEvent",
+    "RecordingProvider",
+    "ReplayingProvider",
     "ScriptedProvider",
+    "SequentialIds",
     "StallingProvider",
     "ToolExecutionError",
     "TracerConformance",
+    "assert_same_run",
+    "redacted",
 ]

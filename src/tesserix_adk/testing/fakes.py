@@ -30,12 +30,30 @@ __all__ = [
     "FakeTracer",
     "RecordedEvent",
     "ScriptedProvider",
+    "SequentialIds",
     "StallingProvider",
     "ToolExecutionError",
 ]
 
 # A loop turn is free; a test that waits more than this is waiting for the wrong thing.
 _SETTLE_TURNS = 100
+
+
+class SequentialIds:
+    """Ids a test can write down: `run_1`, `run_2`, and so on.
+
+    Args:
+        prefix: What each id starts with.
+    """
+
+    def __init__(self, prefix: str = "run") -> None:
+        self._prefix = prefix
+        self._issued = 0
+
+    def __call__(self) -> str:
+        """Return the next id in the sequence."""
+        self._issued += 1
+        return f"{self._prefix}_{self._issued}"
 
 
 class FakeClock:

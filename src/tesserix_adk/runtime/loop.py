@@ -76,7 +76,15 @@ if TYPE_CHECKING:
     from collections.abc import Coroutine, Iterable, Mapping, Sequence
     from random import Random
 
-    from tesserix_adk.core import Agent, BudgetPolicy, Clock, Guardrail, Hook, ToolRegistry
+    from tesserix_adk.core import (
+        Agent,
+        BudgetPolicy,
+        Clock,
+        Guardrail,
+        Hook,
+        IdFactory,
+        ToolRegistry,
+    )
 
 __all__ = ["AgentRunner", "ModelRequest", "ModelResponse", "SystemClock"]
 
@@ -121,6 +129,11 @@ class ModelResponse(BaseModel):
     content: str = ""
     tool_calls: tuple[ToolCall, ...] = ()
     usage: Usage = Field(default_factory=lambda: Usage(input_tokens=0, output_tokens=0))
+
+
+def _random_id() -> str:
+    """Ids for callers that did not inject a factory."""
+    return uuid.uuid4().hex
 
 
 class SystemClock:
@@ -196,6 +209,7 @@ class AgentRunner:
         approval_ttl_seconds: float | None = None,
         jitter: Random | None = None,
         clock: Clock | None = None,
+        ids: IdFactory | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
     ) -> None:
@@ -221,6 +235,7 @@ class AgentRunner:
         self._approval_ttl = approval_ttl_seconds
         self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
+        self._ids: IdFactory = ids or _random_id
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
         self._orphans: set[asyncio.Task[Any]] = set()
@@ -321,7 +336,7 @@ class AgentRunner:
             )
         model = agent.model or ""
         run = Run(
-            id=run_id or uuid.uuid4().hex,
+            id=run_id or self._ids(),
             tenant=tenant,
             user=user,
             agent_name=agent.name,
@@ -965,7 +980,7 @@ class AgentRunner:
             f"agents calling agents have stopped making progress"
         )
         run = Run(
-            id=run_id or uuid.uuid4().hex,
+            id=run_id or self._ids(),
             tenant=tenant,
             user=user,
             agent_name=agent.name,

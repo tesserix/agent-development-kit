@@ -10,6 +10,27 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Determinism and offline replay against a recorded provider. `core` gains the `IdFactory`
+  protocol and `AgentRunner` takes `ids`, so the last ambient source in the loop joins the
+  clock and the jitter as something a test injects — a `uuid4` in the loop is a field no
+  assertion can name. `runtime` gains `RunFingerprint`, `fingerprint_of` and
+  `canonical_digest`: a canonical summary of the assembled prompt, the tool schemas the
+  model was told about, the model, the output schema and the hook chain, normalised so that
+  dict order is not a difference while list order still is. `testing` gains `Cassette`,
+  `Interaction`, `RecordedError`, `RecordingProvider`, `ReplayingProvider`, `SequentialIds`,
+  `assert_same_run`, `redacted` and the `CassetteMissError` / `CassetteVersionError` types.
+  A replay serves the exchange that was recorded or fails naming the field that diverged;
+  there is no live provider behind it to fall through to, because quietly reusing the
+  nearest response is a green test asserting nothing. Recorded failures replay with their
+  retries, so the recovery path is exercised rather than assumed. A cassette keeps digests
+  of the request and never its content, redacts credential-shaped keys and values before
+  anything is written, and is refused when it was recorded against a different provider,
+  version or format — replaying across an SDK upgrade on trust proves nothing about the
+  code now shipping. `assert_same_run` normalises timings but not sequence, which is also
+  how a hook that reads the wall clock is caught. **Stability:** additive — every name is
+  new and `ids` is keyword-only with a default that preserves random ids in production.
+  Documented in `docs/determinism.md` and exercised by `examples/determinism.py`.
+
 - Lifecycle hooks for guardrails, budgets and approval gates, so policy attaches to the
   loop instead of being remembered at a call site. `core` gains `HookPoint` (seven points,
   `before_prompt_assembly` through `on_terminal`), `HookAction`, `HookDecision`,

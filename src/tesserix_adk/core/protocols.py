@@ -22,6 +22,7 @@ __all__ = [
     "BudgetPolicy",
     "Clock",
     "Guardrail",
+    "IdFactory",
     "MemoryStore",
     "ModelProvider",
     "ToolRegistry",
@@ -49,6 +50,20 @@ class Clock(Protocol):
         Raises:
             asyncio.CancelledError: If the surrounding task is cancelled.
         """
+        ...
+
+
+@runtime_checkable
+class IdFactory(Protocol):
+    """Source of identifiers, injected so that a run can be compared with another.
+
+    A `uuid4` in the loop is a field no assertion can name: two runs of the same agent on
+    the same inputs differ, and the difference means nothing. Production passes nothing and
+    gets random ids; a test passes a factory and gets ids it can write down.
+    """
+
+    def __call__(self) -> str:
+        """Return the next identifier."""
         ...
 
 

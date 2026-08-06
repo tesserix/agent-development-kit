@@ -132,6 +132,13 @@ ignore = [
 "src/tesserix_adk/core/protocols.py" = ["ANN401"]
 # owner: @sam123ben — reason: mirrors the protocol placeholders above.
 "src/tesserix_adk/testing/fakes.py" = ["ANN401"]
+# owner: @sam123ben — reason: a cassette raises whatever the recorded provider raised and
+# wraps a provider whose request type the provider protocol still owns (#49); asserts are
+# the mechanism of assert_same_run.
+"src/tesserix_adk/testing/cassette.py" = ["S101", "ANN401"]
+# owner: @sam123ben — reason: a canonical digest is taken over arbitrary JSON, which is
+# honestly Any rather than falsely narrow.
+"src/tesserix_adk/runtime/determinism.py" = ["ANN401"]
 # owner: @sam123ben — reason: conformance suites are test code that ships in src, so
 # asserts are the mechanism, and each case name states the behaviour it checks.
 "src/tesserix_adk/testing/conformance.py" = ["S101", "D102", "ANN401"]
