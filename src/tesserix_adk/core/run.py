@@ -101,9 +101,13 @@ class RunEventKind(StrEnum):
     TOOL_RESULT_TRUNCATED = "tool_result_truncated"
     TOOL_ERROR = "tool_error"
     TOOL_REFUSED = "tool_refused"
+    TOOL_INDETERMINATE = "tool_indeterminate"
     GUARDRAIL_REFUSAL = "guardrail_refusal"
     OUTPUT_VALIDATED = "output_validated"
     SCHEMA_VIOLATION = "schema_violation"
+    CANCELLATION_REQUESTED = "cancellation_requested"
+    DEADLINE_EXCEEDED = "deadline_exceeded"
+    WORK_ORPHANED = "work_orphaned"
     TERMINATED = "terminated"
 
 

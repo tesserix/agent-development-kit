@@ -20,7 +20,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
-from tesserix_adk.core.config import BudgetConfig  # noqa: TC001
+from tesserix_adk.core.config import BudgetConfig, DeadlineConfig  # noqa: TC001
 
 __all__ = ["Agent", "ToolFailurePolicy"]
 
@@ -50,10 +50,14 @@ class Agent(BaseModel):
             rather than the model is what lets the routing decision live in one place.
         tools: Tool names this agent may call. Empty by default — a tool a consumer did
             not name is a tool the agent may not call.
+        idempotent_tools: Which of those tools are safe to call again. A tool cancelled
+            after dispatch is reported indeterminate unless it appears here, because the
+            kit cannot know whether its side effect landed. Must be a subset of `tools`.
         output_type: The type the answer must validate against. A Python type, so it is
             excluded from serialisation rather than rendered as a string that cannot be
             read back.
         budget: The ceiling for one run.
+        deadlines: Wall-clock ceilings for the run and its steps. Unbounded by default.
         on_tool_error: What happens when a tool fails. Surfaced to the model by default,
             so a run does not die on the first recoverable failure.
         guardrails: Guardrail names, applied in order.
@@ -72,8 +76,10 @@ class Agent(BaseModel):
     model: str | None = None
     task_class: str | None = None
     tools: tuple[str, ...] = ()
+    idempotent_tools: tuple[str, ...] = ()
     output_type: type[BaseModel] | None = Field(default=None, exclude=True)
     budget: BudgetConfig | None = None
+    deadlines: DeadlineConfig | None = None
     on_tool_error: ToolFailurePolicy = ToolFailurePolicy.SURFACE_TO_MODEL
     guardrails: tuple[str, ...] = ()
     metadata: dict[str, str] = Field(default_factory=dict)
@@ -94,5 +100,15 @@ class Agent(BaseModel):
             raise ValueError(
                 f"tool named more than once: {', '.join(sorted(seen))}. One of the "
                 f"entries was meant to be a different tool"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _idempotency_is_declared_of_a_declared_tool(self) -> Agent:
+        stray = sorted(set(self.idempotent_tools) - set(self.tools))
+        if stray:
+            raise ValueError(
+                f"declared idempotent but not on the allowlist: {', '.join(stray)}. "
+                f"A retry policy for a tool the agent cannot call protects nothing"
             )
         return self

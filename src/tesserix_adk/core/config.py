@@ -19,7 +19,14 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal, get_args
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, SecretStr, ValidationError
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    SecretStr,
+    ValidationError,
+    model_validator,
+)
 
 from tesserix_adk.core.errors import ConfigurationError
 
@@ -30,6 +37,7 @@ __all__ = [
     "ConfigError",
     "ConfigProblem",
     "ConfigResolution",
+    "DeadlineConfig",
     "Layer",
     "Provenance",
     "ProviderConfig",
@@ -90,6 +98,45 @@ class BudgetConfig(BaseModel):
     max_cost_usd_per_run: float = 1.0
 
 
+class DeadlineConfig(BaseModel):
+    """Wall-clock ceilings for a run, in seconds. `None` means no ceiling at that layer.
+
+    Nothing is bounded by default. A model call on CPU inference can legitimately take
+    minutes where the same call on a GPU takes a second, so a ceiling the kit invented
+    would kill good runs on the hardware this kit is aimed at. Declare the ones you want.
+
+    Args:
+        run_seconds: Wall-clock ceiling for the whole run, across every model call, tool
+            call and check it makes.
+        model_call_seconds: Ceiling for one model call.
+        tool_call_seconds: Ceiling for one tool call.
+        grace_seconds: How long a cancelled step is given to unwind before the run stops
+            waiting for it and reports the work orphaned.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    run_seconds: float | None = None
+    model_call_seconds: float | None = None
+    tool_call_seconds: float | None = None
+    grace_seconds: float = 5.0
+
+    @model_validator(mode="after")
+    def _every_ceiling_is_positive(self) -> DeadlineConfig:
+        offending = sorted(
+            name
+            for name in ("run_seconds", "model_call_seconds", "tool_call_seconds", "grace_seconds")
+            if (value := getattr(self, name)) is not None and value <= 0
+        )
+        if offending:
+            raise ValueError(
+                f"ceiling must be positive: {', '.join(offending)}. Zero reads as "
+                f"'no time at all', which cancels every run before it starts; None is "
+                f"how a layer is left unbounded"
+            )
+        return self
+
+
 class TelemetryConfig(BaseModel):
     """OpenTelemetry export. Case content is never an attribute; see docs/contributing.md."""
 
@@ -125,6 +172,7 @@ class AdkConfig(BaseModel):
 
     provider: ProviderConfig
     budget: BudgetConfig = BudgetConfig()
+    deadlines: DeadlineConfig = DeadlineConfig()
     telemetry: TelemetryConfig = TelemetryConfig()
     redaction: RedactionConfig = RedactionConfig()
     stores: StoreConfig = StoreConfig()

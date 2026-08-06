@@ -22,7 +22,8 @@ import asyncio
 import json
 import time
 import uuid
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
@@ -30,6 +31,7 @@ from tesserix_adk.core import (
     BudgetExceededError,
     CancelledError,
     ConfigurationError,
+    DeadlineConfig,
     Message,
     ModelProvider,
     Run,
@@ -44,10 +46,11 @@ from tesserix_adk.core import (
     deduplicate,
     verify_conformance,
 )
+from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Coroutine, Iterable, Mapping
 
     from tesserix_adk.core import Agent, BudgetPolicy, Clock, Guardrail, ToolRegistry
 
@@ -59,6 +62,12 @@ _DEFAULT_MAX_ITERATIONS = 8
 _DEFAULT_MAX_TOOL_RESULT_CHARS = 8_000
 _CHARS_PER_TOKEN = 4
 _TRUNCATION_MARKER = "\n[truncated]"
+
+# A cancelled coroutine needs a loop turn or two to unwind; only then is the grace window
+# the honest measure of whether it is going to stop at all.
+_UNWIND_TURNS = 3
+
+_T = TypeVar("_T")
 
 
 class ModelRequest(BaseModel):
@@ -102,6 +111,15 @@ class SystemClock:
         await asyncio.sleep(seconds)
 
 
+@dataclass(frozen=True, slots=True)
+class _Bounds:
+    """What limits one run: the caller's switch, the run's instant, the step ceilings."""
+
+    token: CancellationToken
+    deadline: Deadline | None
+    deadlines: DeadlineConfig
+
+
 class AgentRunner:
     """Drives one agent to one terminal state.
 
@@ -111,6 +129,8 @@ class AgentRunner:
             any tool.
         guardrails: Guardrails by name. Every name the agent declares must appear here.
         budget: The spend policy. Required if the agent declares a budget.
+        deadlines: Wall-clock ceilings for runs this runner drives. An agent that
+            declares its own overrides these; nothing is bounded by default.
         clock: Injected time. Defaults to wall-clock.
         max_iterations: How many model calls one run may make before it is capped.
         max_tool_result_chars: Where an oversized tool result is cut. Truncation is
@@ -129,6 +149,7 @@ class AgentRunner:
         tools: ToolRegistry | None = None,
         guardrails: Mapping[str, Guardrail] | None = None,
         budget: BudgetPolicy | None = None,
+        deadlines: DeadlineConfig | None = None,
         clock: Clock | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
@@ -145,9 +166,11 @@ class AgentRunner:
                 f"different check than the one it asked for"
             )
         self._budget = budget
+        self._deadlines = deadlines or DeadlineConfig()
         self._clock: Clock = clock or SystemClock()
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
+        self._orphans: set[asyncio.Task[Any]] = set()
 
     def run_sync(
         self,
@@ -159,6 +182,8 @@ class AgentRunner:
         run_id: str | None = None,
         history: Iterable[Message] = (),
         memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
     ) -> Run:
         """Run `agent` from a synchronous caller. Arguments are `run`'s.
 
@@ -183,6 +208,8 @@ class AgentRunner:
                         run_id=run_id,
                         history=history,
                         memory=memory,
+                        cancellation=cancellation,
+                        deadline=deadline,
                     )
                 )
             finally:
@@ -199,6 +226,8 @@ class AgentRunner:
         run_id: str | None = None,
         history: Iterable[Message] = (),
         memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
     ) -> Run:
         """Drive `agent` until it reaches a terminal state, and return the run.
 
@@ -210,6 +239,10 @@ class AgentRunner:
             run_id: Identity, generated if absent.
             history: Prior conversation, in order.
             memory: Recalled text, handed to the model as untrusted data.
+            cancellation: The caller's switch. Flipping it aborts the step in flight and
+                stops the run, which resolves `cancelled` rather than raising.
+            deadline: A ceiling from the caller, typically a parent run's. It narrows the
+                agent's own and never extends it, so a sub-agent cannot outlive its parent.
 
         Returns:
             The run, in a terminal state, carrying every event recorded on the way.
@@ -222,6 +255,7 @@ class AgentRunner:
                 waiting forever.
         """
         self._refuse_incomplete_wiring(agent)
+        bounds = self._bounds_for(agent, cancellation, deadline)
         declared = self._declarations_for(agent)
         prompt = assemble_prompt(agent, user_input, history=history, memory=memory, tools=declared)
 
@@ -238,33 +272,30 @@ class AgentRunner:
         run = run.record_event(self._event(RunEventKind.PROMPT_ASSEMBLED, name=prompt.version))
 
         messages = list(prompt.messages)
-        for _ in range(self._max_iterations):
-            request = ModelRequest(
-                model=model,
-                messages=tuple(messages),
-                tools=prompt.tools,
-                output_schema=(
-                    agent.output_type.model_json_schema() if agent.output_type else None
-                ),
-            )
-            run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
+        try:
+            for _ in range(self._max_iterations):
+                self._stop_if_over(run, bounds)
+                request = ModelRequest(
+                    model=model,
+                    messages=tuple(messages),
+                    tools=prompt.tools,
+                    output_schema=(
+                        agent.output_type.model_json_schema() if agent.output_type else None
+                    ),
+                )
+                run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
 
-            try:
-                run, response = await self._call_model(run, request)
-            except _Terminal as stop:
-                return self._terminate(stop.run, stop.state, stop.detail)
+                run, response = await self._call_model(run, request, bounds)
+                run = await self._settle(run, response, messages)
+                if run.state.is_terminal:
+                    return run
 
-            run = await self._settle(run, response, messages)
-            if run.state.is_terminal:
-                return run
-
-            try:
-                run = await self._check_guardrails(run, agent, response)
-                run, done = await self._advance(run, agent, response, messages)
-            except _Terminal as stop:
-                return self._terminate(stop.run, stop.state, stop.detail)
-            if done:
-                return run
+                run = await self._check_guardrails(run, agent, response, bounds)
+                run, done = await self._advance(run, agent, response, messages, bounds)
+                if done:
+                    return run
+        except _Terminal as stop:
+            return self._terminate(stop.run, stop.state, stop.detail)
 
         return self._terminate(
             run,
@@ -297,6 +328,127 @@ class AgentRunner:
                 f"budget policy, so the ceiling would not be enforced"
             )
 
+    def _bounds_for(
+        self, agent: Agent, token: CancellationToken | None, caller: Deadline | None
+    ) -> _Bounds:
+        deadlines = agent.deadlines or self._deadlines
+        ceiling = (
+            Deadline.in_seconds(deadlines.run_seconds, now=self._clock.now())
+            if deadlines.run_seconds is not None
+            else None
+        )
+        return _Bounds(
+            token=token or CancellationToken(),
+            deadline=ceiling.narrowed_to(caller) if ceiling is not None else caller,
+            deadlines=deadlines,
+        )
+
+    def _stop_if_over(self, run: Run, bounds: _Bounds) -> None:
+        """Refuse to start a step nobody is waiting for the answer to.
+
+        Raises:
+            _Terminal: If the run was cancelled or its deadline has elapsed.
+        """
+        if bounds.token.cancelled:
+            reason = bounds.token.reason or "cancelled"
+            raise _Terminal(
+                run.record_event(self._event(RunEventKind.CANCELLATION_REQUESTED, detail=reason)),
+                RunState.CANCELLED,
+                reason,
+            )
+        if bounds.deadline is not None and bounds.deadline.expired(self._clock.now()):
+            reason = "the run deadline elapsed"
+            raise _Terminal(
+                run.record_event(self._event(RunEventKind.DEADLINE_EXCEEDED, detail=reason)),
+                RunState.CANCELLED,
+                reason,
+            )
+
+    def _limit(self, bounds: _Bounds, step: float | None) -> float | None:
+        """The tighter of a step's own ceiling and what is left of the run's."""
+        remaining = (
+            bounds.deadline.remaining(self._clock.now()) if bounds.deadline is not None else None
+        )
+        ceilings = [seconds for seconds in (step, remaining) if seconds is not None]
+        return min(ceilings) if ceilings else None
+
+    async def _bounded(
+        self,
+        work: Coroutine[Any, Any, _T],
+        *,
+        limit: float | None,
+        bounds: _Bounds,
+        what: str,
+    ) -> _T:
+        """Await `work`, racing it against cancellation and against its own ceiling.
+
+        Raises:
+            _Aborted: If cancellation or the ceiling won the race. `work` is cancelled
+                first and given a grace window; if it does not stop, it is reported
+                orphaned rather than waited on.
+        """
+        if bounds.token.cancelled:
+            work.close()
+            raise _Aborted(bounds.token.reason or "cancelled", deadline=False, orphaned=False)
+        if limit is not None and limit <= 0:
+            work.close()
+            raise _Aborted(f"{what} had no time left", deadline=True, orphaned=False)
+
+        task: asyncio.Task[_T] = asyncio.ensure_future(work)
+        watchers: list[asyncio.Task[Any]] = [asyncio.ensure_future(bounds.token.wait())]
+        if limit is not None:
+            watchers.append(asyncio.ensure_future(self._clock.sleep(limit)))
+        done, _ = await asyncio.wait([task, *watchers], return_when=asyncio.FIRST_COMPLETED)
+        for watcher in watchers:
+            watcher.cancel()
+        await asyncio.gather(*watchers, return_exceptions=True)
+        if task in done:
+            return task.result()
+
+        expired = not bounds.token.cancelled
+        reason = (
+            f"{what} exceeded its {limit}s ceiling"
+            if expired
+            else bounds.token.reason or "cancelled"
+        )
+        raise _Aborted(reason, deadline=expired, orphaned=not await self._unwind(task, bounds))
+
+    async def _unwind(self, task: asyncio.Task[Any], bounds: _Bounds) -> bool:
+        """Cancel `task`, and say whether it actually stopped inside the grace window."""
+        task.cancel()
+        for _ in range(_UNWIND_TURNS):
+            if task.done():
+                return True
+            await asyncio.sleep(0)
+
+        grace = asyncio.ensure_future(self._clock.sleep(bounds.deadlines.grace_seconds))
+        done, _ = await asyncio.wait([task, grace], return_when=asyncio.FIRST_COMPLETED)
+        grace.cancel()
+        await asyncio.gather(grace, return_exceptions=True)
+        if task in done:
+            return True
+
+        # Keeping the reference is what makes "orphaned" honest: a dropped task can be
+        # destroyed mid-flight, and then nobody can say whether its effect landed.
+        self._orphans.add(task)
+        task.add_done_callback(self._orphans.discard)
+        return False
+
+    def _cancelled(self, run: Run, abort: _Aborted, *, name: str | None = None) -> _Terminal:
+        """Turn an aborted step into the one terminal state a cancelled run ends in."""
+        requested = RunEventKind.CANCELLATION_REQUESTED
+        kind = RunEventKind.DEADLINE_EXCEEDED if abort.deadline else requested
+        run = run.record_event(self._event(kind, name=name, detail=abort.reason))
+        if abort.orphaned:
+            run = run.record_event(
+                self._event(
+                    RunEventKind.WORK_ORPHANED,
+                    name=name,
+                    detail="did not stop inside the grace window; still running when abandoned",
+                )
+            )
+        return _Terminal(run, RunState.CANCELLED, abort.reason)
+
     def _declarations_for(self, agent: Agent) -> tuple[ToolDeclaration, ...]:
         """Only the allowlist is declared: a tool never named cannot be called for."""
         if self._tools is None or not agent.tools:
@@ -318,12 +470,21 @@ class AgentRunner:
         recorded = run.record_event(self._event(RunEventKind.TERMINATED, detail=detail))
         return recorded.transition_to(state, at=self._clock.now())
 
-    async def _call_model(self, run: Run, request: ModelRequest) -> tuple[Run, ModelResponse]:
+    async def _call_model(
+        self, run: Run, request: ModelRequest, bounds: _Bounds
+    ) -> tuple[Run, ModelResponse]:
         estimate = sum(_length(message) for message in request.messages) // _CHARS_PER_TOKEN
         try:
             if self._budget is not None:
                 await self._budget.reserve(estimate)
-            response: ModelResponse = await self._provider.complete(request)
+            response: ModelResponse = await self._bounded(
+                self._provider.complete(request),
+                limit=self._limit(bounds, bounds.deadlines.model_call_seconds),
+                bounds=bounds,
+                what="model call",
+            )
+        except _Aborted as abort:
+            raise self._cancelled(run, abort, name=request.model) from None
         except BudgetExceededError as exceeded:
             raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
         except CancelledError as cancelled:
@@ -353,12 +514,21 @@ class AgentRunner:
             messages.append(Message(role="assistant", content=[TextPart(text=response.content)]))
         return _carrying(run, messages)
 
-    async def _check_guardrails(self, run: Run, agent: Agent, response: ModelResponse) -> Run:
+    async def _check_guardrails(
+        self, run: Run, agent: Agent, response: ModelResponse, bounds: _Bounds
+    ) -> Run:
         """Guardrails fail closed: a check that did not run is not a check that passed."""
         for name in agent.guardrails:
             guardrail = self._guardrails[name]
             try:
-                verdict = await guardrail.check(response.content)
+                verdict = await self._bounded(
+                    guardrail.check(response.content),
+                    limit=self._limit(bounds, None),
+                    bounds=bounds,
+                    what=f"guardrail {name}",
+                )
+            except _Aborted as abort:
+                raise self._cancelled(run, abort, name=name) from None
             except Exception as failure:
                 raise _Terminal(
                     run.record_event(
@@ -380,15 +550,25 @@ class AgentRunner:
         return run
 
     async def _advance(
-        self, run: Run, agent: Agent, response: ModelResponse, messages: list[Message]
+        self,
+        run: Run,
+        agent: Agent,
+        response: ModelResponse,
+        messages: list[Message],
+        bounds: _Bounds,
     ) -> tuple[Run, bool]:
         """Dispatch any tool calls, or finish. Returns the run and whether it is over."""
         if response.tool_calls:
-            return await self._dispatch(run, agent, response, messages), False
+            return await self._dispatch(run, agent, response, messages, bounds), False
         return self._finish(run, agent, response), True
 
     async def _dispatch(
-        self, run: Run, agent: Agent, response: ModelResponse, messages: list[Message]
+        self,
+        run: Run,
+        agent: Agent,
+        response: ModelResponse,
+        messages: list[Message],
+        bounds: _Bounds,
     ) -> Run:
         for call in deduplicate(list(response.tool_calls)):
             if call.name not in agent.tools:
@@ -399,7 +579,7 @@ class AgentRunner:
                 )
             run = run.model_copy(update={"tool_calls": [*run.tool_calls, call]})
             run = run.record_event(self._event(RunEventKind.TOOL_CALL, name=call.name))
-            run, text, source = await self._invoke(run, agent, call)
+            run, text, source = await self._invoke(run, agent, call, bounds)
             messages.append(
                 Message(
                     role="tool",
@@ -410,10 +590,20 @@ class AgentRunner:
             run = _carrying(run, messages)
         return run
 
-    async def _invoke(self, run: Run, agent: Agent, call: ToolCall) -> tuple[Run, str, str]:
+    async def _invoke(
+        self, run: Run, agent: Agent, call: ToolCall, bounds: _Bounds
+    ) -> tuple[Run, str, str]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
         try:
-            result = await self._tools.invoke(call.name, call.arguments)
+            result = await self._bounded(
+                self._tools.invoke(call.name, call.arguments),
+                limit=self._limit(bounds, bounds.deadlines.tool_call_seconds),
+                bounds=bounds,
+                what=f"tool {call.name}",
+            )
+        except _Aborted as abort:
+            stopped = run.record_event(self._indeterminacy(agent, call))
+            raise self._cancelled(stopped, abort, name=call.name) from None
         except Exception as failure:
             wrapped = ToolExecutionError(
                 f"tool {call.name!r} failed: {failure}", run_id=run.id, tenant=run.tenant
@@ -441,6 +631,20 @@ class AgentRunner:
             "tool_result",
         )
 
+    def _indeterminacy(self, agent: Agent, call: ToolCall) -> RunEvent:
+        """A tool stopped mid-flight is unknown, not undone — unless it said it is safe to retry."""
+        if call.name in agent.idempotent_tools:
+            return self._event(
+                RunEventKind.TOOL_ERROR,
+                name=call.name,
+                detail="stopped before it returned; declared idempotent, so safe to retry",
+            )
+        return self._event(
+            RunEventKind.TOOL_INDETERMINATE,
+            name=call.name,
+            detail="stopped after dispatch; whether its effect landed cannot be known",
+        )
+
     def _finish(self, run: Run, agent: Agent, response: ModelResponse) -> Run:
         if agent.output_type is None:
             return self._terminate(run, RunState.COMPLETED)
@@ -457,6 +661,22 @@ class AgentRunner:
             self._event(RunEventKind.OUTPUT_VALIDATED, name=agent.output_type.__name__)
         )
         return self._terminate(finished, RunState.COMPLETED)
+
+
+class _Aborted(Exception):  # noqa: N818 — control flow, not an error the caller sees
+    """One step stopped short: the caller cancelled, or the step ran out of time.
+
+    Args:
+        reason: What to record on the run.
+        deadline: Whether time ran out, as opposed to a caller cancelling.
+        orphaned: Whether the work was still running when the run stopped waiting.
+    """
+
+    def __init__(self, reason: str, *, deadline: bool, orphaned: bool) -> None:
+        super().__init__(reason)
+        self.reason = reason
+        self.deadline = deadline
+        self.orphaned = orphaned
 
 
 class _Terminal(Exception):  # noqa: N818 — control flow, not an error the caller sees

@@ -56,17 +56,64 @@ state, not an escaped exception.
 | `failed` | Provider error, guardrail refusal, schema violation, an allowlist breach, zero content and zero tool calls, or a tool failure under `FAIL_RUN`. |
 | `budget_exhausted` | The budget policy refused a reservation. |
 | `max_iterations_exceeded` | The cap was reached without settling. |
-| `cancelled` | A `CancelledError` from the kit's hierarchy. |
+| `cancelled` | A `CancelledError` from the kit's hierarchy, a cancelled token, or an elapsed deadline. |
 
 `asyncio.CancelledError` is deliberately *not* converted: a cancelled task that returns
 normally leaves its canceller waiting forever, so it propagates.
+
+## Cancellation and deadlines
+
+Two ways a run stops early, both ending in `cancelled` with the record intact:
+
+```python
+token = CancellationToken()
+run = await runner.run(agent, "…", tenant="acme", cancellation=token)  # token.cancel() stops it
+
+runner = AgentRunner(provider=provider, deadlines=DeadlineConfig(model_call_seconds=30))
+run = await runner.run(agent, "…", tenant="acme", deadline=Deadline.in_seconds(60, now=time()))
+```
+
+Worked end to end, no network: `examples/cancellation.py`.
+
+**A deadline is an instant, not a duration.** `Deadline` carries the wall-clock moment the
+run must be over by, so it survives being passed down: a duration restarts at every hop,
+and five agents each given "30 seconds" take two and a half minutes. `narrowed_to` takes
+the earlier of two, so an inherited ceiling can be tightened and never extended.
+
+**Nothing is bounded by default.** `DeadlineConfig` leaves `run_seconds`,
+`model_call_seconds` and `tool_call_seconds` as `None`. A model call on CPU inference
+legitimately takes minutes where the same call on a GPU takes a second, so a ceiling the
+kit invented would kill good runs on exactly the hardware this kit is aimed at. A ceiling
+of zero is refused at construction: it reads as "no time at all" and cancels every run
+before it starts, which is never what was meant. `grace_seconds` (5s) is the only one with
+a default, because it bounds the kit's own waiting rather than the deployment's work. An
+agent that declares its own `DeadlineConfig` replaces the runner's: the agent's author
+knows what that agent does, where the runner only knows what it drives.
+
+**Cancellation is checked between steps and raced against them.** Every iteration checks
+the token and the deadline before the next model call, and each model call, guardrail
+check and tool call is raced against both. The race uses the injected `Clock`, so a test
+with `FakeClock(auto_advance=False)` drives a timeout deterministically and never sleeps.
+
+**Uncooperative work is dropped, not waited for.** Aborted work is cancelled, given the
+grace window to unwind, and then abandoned — the run resolves and records `work_orphaned`
+rather than blocking on a provider that keeps streaming into a socket nobody reads. The
+abandoned task's reference is retained so it cannot be destroyed mid-flight unobserved.
+
+**A tool cut off after dispatch is indeterminate, not failed.** `tool_indeterminate`
+records that the call was stopped *after* it went out, so whether its effect landed cannot
+be known. Naming it that is the point: the kit never claims a payment did not go through
+when it has no way to tell. A tool listed in `Agent.idempotent_tools` records an ordinary
+`tool_error` marked safe to retry instead — the declaration is what makes retry safe, and
+it is checked against the allowlist so a policy cannot name a tool the agent cannot call.
 
 ## Events
 
 Every step is appended to `Run.events` in the order it happened: `prompt_assembled`,
 `model_call`, `model_response` (carrying its `Usage`), `tool_call`, `tool_result`,
-`tool_result_truncated`, `tool_error`, `tool_refused`, `guardrail_refusal`,
-`output_validated`, `schema_violation`, `terminated`. Cost attribution totals the usage on
+`tool_result_truncated`, `tool_error`, `tool_refused`, `tool_indeterminate`,
+`guardrail_refusal`, `output_validated`, `schema_violation`, `cancellation_requested`,
+`deadline_exceeded`, `work_orphaned`, `terminated`. Cost attribution totals the usage on
 those events rather than being wired per project.
 
 ## Decisions
@@ -115,3 +162,14 @@ a loop wedges.
   is #36; a checkpoint is JSON, so the payload is stored and re-parsed.
 - **The budget estimate is characters over four**, not a tokeniser. Normalised accounting
   is #55.
+- **The token is not threaded into tool or provider signatures.** `ToolRegistry.invoke`
+  and `ModelProvider.complete` take no cancellation argument, so their work is raced and
+  cancelled from outside rather than asked to stop. A tool that wants to unwind its own
+  work cooperatively needs the token on `RunContext` — that arrives with the context
+  object (#33).
+- **Indeterminacy is a recorded event, not a raised type.** `tool_indeterminate` is on the
+  run for a caller to branch on; there is no `ToolIndeterminateError` to catch, because
+  the run does not raise.
+- **A per-run `deadline` only narrows.** Passing one later than the runner's
+  `run_seconds` ceiling changes nothing, by design — a caller cannot buy more time than
+  the deployment allows.

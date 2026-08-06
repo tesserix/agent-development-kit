@@ -15,6 +15,7 @@ tesserix_adk.core.ConfigProblem :: class ConfigProblem(object)
 tesserix_adk.core.ConfigResolution :: class ConfigResolution(object) {explain(self) -> 'str'}
 tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.core.primitives.TextPart | tesserix_adk.core.primitives.BinaryPart, FieldInfo(annotation=NoneType, required=True, discriminator='kind')]
+tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(BaseModel)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
 tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
 tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
@@ -54,6 +55,7 @@ tesserix_adk.core.config.BudgetConfig :: class BudgetConfig(BaseModel)
 tesserix_adk.core.config.ConfigError :: class ConfigError(ConfigurationError)
 tesserix_adk.core.config.ConfigProblem :: class ConfigProblem(object)
 tesserix_adk.core.config.ConfigResolution :: class ConfigResolution(object) {explain(self) -> 'str'}
+tesserix_adk.core.config.DeadlineConfig :: class DeadlineConfig(BaseModel)
 tesserix_adk.core.config.ENV_PREFIX :: ENV_PREFIX: str
 tesserix_adk.core.config.Layer :: Layer = typing.Literal['code', 'env', 'file', 'default']
 tesserix_adk.core.config.Provenance :: class Provenance(object)
@@ -118,14 +120,18 @@ tesserix_adk.core.run.RunState :: class RunState(StrEnum)
 tesserix_adk.core.run.TenantContext :: class TenantContext(BaseModel)
 tesserix_adk.core.run.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
-tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = ()) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = ()) -> 'Run'}
+tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'}
+tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
+tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.ModelRequest :: class ModelRequest(BaseModel)
 tesserix_adk.runtime.ModelResponse :: class ModelResponse(BaseModel)
 tesserix_adk.runtime.Prompt :: class Prompt(BaseModel)
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(BaseModel)
 tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = ()) -> 'Prompt'
-tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = ()) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = ()) -> 'Run'}
+tesserix_adk.runtime.cancellation.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
+tesserix_adk.runtime.cancellation.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
+tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'; run_sync(self, agent: 'Agent', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None) -> 'Run'}
 tesserix_adk.runtime.loop.ModelRequest :: class ModelRequest(BaseModel)
 tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(BaseModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
@@ -138,7 +144,7 @@ tesserix_adk.testing.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'Any'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
 tesserix_adk.testing.ClockConformance :: class ClockConformance(ABC) {make_clock(self) -> 'Any'; test_now_does_not_go_backwards(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_sleep_does_not_move_time_backwards(self) -> 'None'}
 tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
-tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.testing.FakeToolRegistry :: class FakeToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
@@ -148,6 +154,7 @@ tesserix_adk.testing.NetworkAccessInTestError :: class NetworkAccessInTestError(
 tesserix_adk.testing.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.RecordedEvent :: class RecordedEvent(object)
 tesserix_adk.testing.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'Any') -> 'Any'; stream(self, request: 'Any') -> 'Any'}
+tesserix_adk.testing.StallingProvider :: class StallingProvider(object) {complete(self, request: 'Any') -> 'Any'; release(self) -> 'None'; stream(self, request: 'Any') -> 'Any'}
 tesserix_adk.testing.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.testing.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Any'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
 tesserix_adk.testing.conformance.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'Any'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
@@ -156,13 +163,14 @@ tesserix_adk.testing.conformance.MemoryStoreConformance :: class MemoryStoreConf
 tesserix_adk.testing.conformance.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Any'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
 tesserix_adk.testing.fakes.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
-tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.fakes.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.testing.fakes.FakeToolRegistry :: class FakeToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeTracer :: class FakeTracer(object) {event(self, name: 'str', **attributes: 'object') -> 'None'; names(self) -> 'list[str]'; span(self, name: 'str', **attributes: 'object') -> 'Iterator[None]'}
 tesserix_adk.testing.fakes.RecordedEvent :: class RecordedEvent(object)
 tesserix_adk.testing.fakes.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'Any') -> 'Any'; stream(self, request: 'Any') -> 'Any'}
+tesserix_adk.testing.fakes.StallingProvider :: class StallingProvider(object) {complete(self, request: 'Any') -> 'Any'; release(self) -> 'None'; stream(self, request: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.testing.pytest_plugin.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkError)

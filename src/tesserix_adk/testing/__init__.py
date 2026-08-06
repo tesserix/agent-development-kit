@@ -16,6 +16,7 @@ from tesserix_adk.testing.fakes import (
     FakeTracer,
     RecordedEvent,
     ScriptedProvider,
+    StallingProvider,
     ToolExecutionError,
 )
 from tesserix_adk.testing.pytest_plugin import NetworkAccessInTestError, QuarantineError
@@ -35,6 +36,7 @@ __all__ = [
     "QuarantineError",
     "RecordedEvent",
     "ScriptedProvider",
+    "StallingProvider",
     "ToolExecutionError",
     "TracerConformance",
 ]

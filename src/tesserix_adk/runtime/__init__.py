@@ -1,5 +1,6 @@
 """Run loop, caps, cancellation, timeout, checkpointing, streaming."""
 
+from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.loop import AgentRunner, ModelRequest, ModelResponse, SystemClock
 from tesserix_adk.runtime.prompt import (
     Prompt,
@@ -10,6 +11,8 @@ from tesserix_adk.runtime.prompt import (
 
 __all__ = [
     "AgentRunner",
+    "CancellationToken",
+    "Deadline",
     "ModelRequest",
     "ModelResponse",
     "Prompt",

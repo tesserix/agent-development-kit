@@ -10,6 +10,24 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Cancellation and deadlines that stop in-flight work. `runtime` gains
+  `CancellationToken` and `Deadline`; `core` gains `DeadlineConfig`, `Agent.deadlines` and
+  `Agent.idempotent_tools`; `AgentRunner` takes `deadlines`, and `run`/`run_sync` take
+  `cancellation` and `deadline`. A deadline is an instant rather than a duration, so it
+  survives being passed down and narrows but never extends. Nothing is bounded by
+  default — a ceiling the kit invented would kill good runs on the slow hardware this kit
+  targets — and a zero ceiling is refused at construction. Each model call, guardrail
+  check and tool call is raced against the token and the deadline using the injected
+  clock; work that ignores the abort is given a grace window and then dropped, recording
+  `work_orphaned` rather than blocking the run. A tool stopped after dispatch records
+  `tool_indeterminate` — whether its effect landed cannot be known — unless it is declared
+  in `Agent.idempotent_tools`, which is validated against the agent's allowlist.
+  `tesserix_adk.testing` gains `StallingProvider` and a manual-advance `FakeClock`, so
+  timeout tests are deterministic and never sleep. **Stability:** additive — every name is
+  new, and the new `run`/`run_sync`/`AgentRunner` arguments are keyword-only with defaults
+  that preserve existing behaviour. Documented in `docs/run-loop.md` and exercised by
+  `examples/cancellation.py`.
+
 - `AgentRunner` — the run loop, from prompt assembly to exactly one terminal state.
   `runtime` gains `assemble_prompt`, `Prompt`, `ToolDeclaration`, `wrap_untrusted`,
   `ModelRequest`, `ModelResponse` and `SystemClock`; `core` gains `RunEvent`,

@@ -7,6 +7,7 @@ control and becomes a second thing to debug.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import inspect
 from collections import deque
@@ -29,19 +30,30 @@ __all__ = [
     "FakeTracer",
     "RecordedEvent",
     "ScriptedProvider",
+    "StallingProvider",
     "ToolExecutionError",
 ]
+
+# A loop turn is free; a test that waits more than this is waiting for the wrong thing.
+_SETTLE_TURNS = 100
 
 
 class FakeClock:
     """A clock that only moves when a test moves it.
 
-    `sleep` advances the clock instead of suspending, so a test for a timeout runs
-    in microseconds and never depends on wall-clock scheduling.
+    Args:
+        start: The time it starts at.
+        auto_advance: Whether `sleep` returns immediately, moving the clock by the
+            slept-for amount. That is what a test for elapsed time wants. A test that
+            races a sleep against work — a timeout, a grace window — wants the opposite,
+            because a sleep that returns immediately wins every race. Pass False there,
+            then `advance` past the sleeper to fire it.
     """
 
-    def __init__(self, start: float = 0.0) -> None:
+    def __init__(self, start: float = 0.0, *, auto_advance: bool = True) -> None:
         self._now = start
+        self._auto_advance = auto_advance
+        self._sleepers: list[tuple[float, asyncio.Event]] = []
         self.slept: list[float] = []
 
     def now(self) -> float:
@@ -49,13 +61,41 @@ class FakeClock:
         return self._now
 
     async def sleep(self, seconds: float) -> None:
-        """Advance the clock by `seconds` without suspending."""
+        """Advance the clock by `seconds`, or suspend until a test advances past them."""
         self.slept.append(seconds)
-        self._now += seconds
+        if self._auto_advance:
+            self._now += seconds
+            return
+        sleeper = (self._now + seconds, asyncio.Event())
+        self._sleepers.append(sleeper)
+        try:
+            await sleeper[1].wait()
+        finally:
+            with contextlib.suppress(ValueError):
+                self._sleepers.remove(sleeper)
 
     def advance(self, seconds: float) -> None:
-        """Move the clock forward without recording a sleep."""
+        """Move the clock forward without recording a sleep, waking anything now due."""
         self._now += seconds
+        for due, event in list(self._sleepers):
+            if due <= self._now:
+                event.set()
+
+    async def wait_for_sleep(self, count: int = 1) -> None:
+        """Yield until `count` sleeps have been started, so a test can advance past them.
+
+        Yields to the event loop rather than waiting on the clock, so it is ordering that
+        is being waited on and not time.
+
+        Raises:
+            AssertionError: If they have not started after `_SETTLE_TURNS` loop turns,
+                which is a test waiting for something that is never going to happen.
+        """
+        for _ in range(_SETTLE_TURNS):
+            if len(self.slept) >= count:
+                return
+            await asyncio.sleep(0)
+        raise AssertionError(f"expected {count} sleeps, saw {len(self.slept)}: {self.slept}")
 
 
 class FakeMemoryStore:
@@ -180,6 +220,65 @@ class ScriptedProvider:
     async def stream(self, request: Any) -> Any:
         """Not scripted. Streaming has its own epic (#38)."""
         raise NotImplementedError("ScriptedProvider does not stream; see #38")
+
+
+class StallingProvider:
+    """A provider that answers a script and then stops answering at all.
+
+    The provider a cancellation test needs: something in flight that will not finish on
+    its own. `entered` says the stall has been reached, so a test can cancel at the point
+    it means to rather than hoping.
+
+    Args:
+        responses: What to return before stalling, in order.
+        name: The provider name recorded on the run.
+        ignores_cancellation: How many cancellations to swallow before stopping. Above
+            zero this is the provider that keeps streaming after the caller has gone —
+            the case the kit must drop rather than wait for.
+    """
+
+    def __init__(
+        self,
+        *responses: ModelResponse,
+        name: str = "stalling",
+        ignores_cancellation: int = 0,
+    ) -> None:
+        self._responses = deque(responses)
+        self._name = name
+        self._ignores = ignores_cancellation
+        self._released = asyncio.Event()
+        self.entered = asyncio.Event()
+        self.calls = 0
+
+    @property
+    def name(self) -> str:
+        """The provider name."""
+        return self._name
+
+    def release(self) -> None:
+        """Let a stalled call return, so an abandoned task can finish rather than linger."""
+        self._released.set()
+
+    async def complete(self, request: Any) -> Any:  # noqa: ARG002 — the script ignores it
+        """Return the next scripted response, or stall until released or cancelled."""
+        self.calls += 1
+        if self._responses:
+            return self._responses.popleft()
+        self.entered.set()
+        while True:
+            try:
+                await self._released.wait()
+            except asyncio.CancelledError:
+                if not self._ignores:
+                    raise
+                self._ignores -= 1
+            else:
+                break
+        return ModelResponse(content="answered after all")
+
+    async def stream(self, request: Any) -> Any:
+        """Not scripted. Streaming has its own epic (#38)."""
+        raise NotImplementedError("StallingProvider does not stream; see #38")
 
 
 class FakeToolRegistry:

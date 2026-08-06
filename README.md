@@ -86,7 +86,7 @@ code lands here as the kit is built.
 |---|---|
 | Design brief & architecture | [`docs/design-brief.md`](docs/design-brief.md) |
 | Core primitives — agents, messages, runs, usage, errors | [`docs/primitives.md`](docs/primitives.md) |
-| The run loop — assembly, dispatch, terminal states | [`docs/run-loop.md`](docs/run-loop.md) |
+| The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |
 | Releasing & index policy | [`docs/releasing.md`](docs/releasing.md) |
