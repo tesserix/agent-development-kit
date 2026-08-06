@@ -76,6 +76,9 @@ test = [
   "types-pyyaml>=6,<7",
   "pytest-randomly>=3.15,<4",
   "packaging>=24,<27",
+  # Test-only: proves an emitted schema accepts exactly what its Python type accepts.
+  "jsonschema>=4.23,<5",
+  "types-jsonschema>=4.23,<5",
 ]
 docs = ["mkdocs-material>=9.5,<10"]
 

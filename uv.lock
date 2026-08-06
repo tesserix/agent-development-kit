@@ -2169,12 +2169,14 @@ docs = [
 ]
 test = [
     { name = "hypothesis" },
+    { name = "jsonschema" },
     { name = "packaging" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-randomly" },
     { name = "pyyaml" },
+    { name = "types-jsonschema" },
     { name = "types-pyyaml" },
 ]
 
@@ -2209,12 +2211,14 @@ dev = [
 docs = [{ name = "mkdocs-material", specifier = ">=9.5,<10" }]
 test = [
     { name = "hypothesis", specifier = ">=6.112,<7" },
+    { name = "jsonschema", specifier = ">=4.23,<5" },
     { name = "packaging", specifier = ">=24,<27" },
     { name = "pytest", specifier = ">=8.3,<9" },
     { name = "pytest-asyncio", specifier = ">=0.24,<0.25" },
     { name = "pytest-cov", specifier = ">=6,<7" },
     { name = "pytest-randomly", specifier = ">=3.15,<4" },
     { name = "pyyaml", specifier = ">=6.0.2,<7" },
+    { name = "types-jsonschema", specifier = ">=4.23,<5" },
     { name = "types-pyyaml", specifier = ">=6,<7" },
 ]
 
@@ -2291,6 +2295,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/da/d2/4553c8fa9cdebfe1e84b950cf790a4d2376a97fa016e43f7c65323fa6c7d/types_defusedxml-0.7.0.20260504.tar.gz", hash = "sha256:2ab2828a3f97111ba1c16cee273ad4124a831fc9198c41bf8368ff6ea48ad300", size = 10729, upload-time = "2026-05-04T05:22:50.192Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bf/2d/8a4b5ba1d732b8bc691f0efbb1c6f77cb5f6f473b2afe181d83d910773c5/types_defusedxml-0.7.0.20260504-py3-none-any.whl", hash = "sha256:a959e3a0a43b93e464bd625d91ec9193a2703ddc10443bdd627792485fae0b10", size = 13467, upload-time = "2026-05-04T05:22:49.319Z" },
+]
+
+[[package]]
+name = "types-jsonschema"
+version = "4.26.0.20260518"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "referencing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/dd/46/73b6a5d61a61015c4248030a8cb07e5bdddb4041430fae9e585a68692578/types_jsonschema-4.26.0.20260518.tar.gz", hash = "sha256:e1dd53dc97a64f5eccdd6fa9839666e09bb500a8ebba2db6fdaf1789faea81a6", size = 16638, upload-time = "2026-05-18T06:06:44.106Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/d5/134f8a147dcecda10db7f60cfc6af0578a25a5c53c87b3907a64385e0184/types_jsonschema-4.26.0.20260518-py3-none-any.whl", hash = "sha256:30b30a518c7fe335df85c919fcbcc631b69c03d4a4b5b632fa916bea03065307", size = 16072, upload-time = "2026-05-18T06:06:43.264Z" },
 ]
 
 [[package]]

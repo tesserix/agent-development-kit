@@ -33,6 +33,7 @@ __all__ = [
     "ProviderTimeoutError",
     "RecursionLimitError",
     "RepeatedCallError",
+    "SchemaGenerationError",
     "SchemaViolationError",
     "ToolExecutionError",
 ]
@@ -220,6 +221,32 @@ class SchemaViolationError(AdkError):
         self.paths = paths
         self.problems: dict[str, str] = dict(problems or {})
         self.payload = payload
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
+
+
+class SchemaGenerationError(ConfigurationError):
+    """Raised when a type cannot be faithfully described as a schema.
+
+    A configuration failure, raised where the type is declared rather than on the call
+    that first sends it: a permissive placeholder would let the model answer with
+    something the code cannot validate, and that failure lands in production.
+
+    Args:
+        field: The field or parameter that cannot be described.
+        annotation: What it was annotated with, as text.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        field: str = "",
+        annotation: str = "",
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.field = field
+        self.annotation = annotation
         super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
 
 

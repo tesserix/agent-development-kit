@@ -36,7 +36,11 @@ tesserix_adk.core.HookPoint :: class HookPoint(StrEnum)
 tesserix_adk.core.HookRefusedError :: class HookRefusedError(AdkError)
 tesserix_adk.core.HookRegistrationError :: class HookRegistrationError(ConfigurationError)
 tesserix_adk.core.HookSubject :: class HookSubject(AdkModel)
+tesserix_adk.core.INLINE_REFS :: INLINE_REFS: InlineRefs
 tesserix_adk.core.IdFactory :: class IdFactory(Protocol)
+tesserix_adk.core.InlineRefs :: class InlineRefs(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.JSON_SCHEMA :: JSON_SCHEMA: JsonSchema
+tesserix_adk.core.JsonSchema :: class JsonSchema(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.LoopConfig :: class LoopConfig(AdkModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
 tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
@@ -59,9 +63,13 @@ tesserix_adk.core.RunContext :: class RunContext(AdkModel)
 tesserix_adk.core.RunEvent :: class RunEvent(AdkModel)
 tesserix_adk.core.RunEventKind :: class RunEventKind(StrEnum)
 tesserix_adk.core.RunState :: class RunState(StrEnum)
+tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
+tesserix_adk.core.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.Sensitive :: class Sensitive(object)
 tesserix_adk.core.StoreConfig :: class StoreConfig(AdkModel)
+tesserix_adk.core.StrictSubset :: class StrictSubset(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.TelemetryConfig :: class TelemetryConfig(AdkModel)
 tesserix_adk.core.TenantContext :: class TenantContext(AdkModel)
 tesserix_adk.core.TextPart :: class TextPart(AdkModel)
@@ -122,6 +130,7 @@ tesserix_adk.core.errors.ProviderTimeoutError :: class ProviderTimeoutError(Prov
 tesserix_adk.core.errors.RETRYABLE_STATUS :: RETRYABLE_STATUS: frozenset
 tesserix_adk.core.errors.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.errors.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
+tesserix_adk.core.errors.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
@@ -172,6 +181,17 @@ tesserix_adk.core.run.RunEventKind :: class RunEventKind(StrEnum)
 tesserix_adk.core.run.RunState :: class RunState(StrEnum)
 tesserix_adk.core.run.TenantContext :: class TenantContext(AdkModel)
 tesserix_adk.core.run.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
+tesserix_adk.core.schema.INLINE_REFS :: INLINE_REFS: InlineRefs
+tesserix_adk.core.schema.InlineRefs :: class InlineRefs(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.schema.JSON_SCHEMA :: JSON_SCHEMA: JsonSchema
+tesserix_adk.core.schema.JsonSchema :: class JsonSchema(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.schema.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
+tesserix_adk.core.schema.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.schema.StrictSubset :: class StrictSubset(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.schema.schema_for :: def schema_for(target: 'type | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None) -> 'dict[str, Any]'
+tesserix_adk.core.schema.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
+tesserix_adk.core.schema_for :: def schema_for(target: 'type | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None) -> 'dict[str, Any]'
+tesserix_adk.core.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.core.telemetry_dump :: def telemetry_dump(model: 'BaseModel') -> 'dict[str, Any]'
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'

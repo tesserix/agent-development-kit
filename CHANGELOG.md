@@ -10,6 +10,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- JSON Schema derived from the Python type, so the shape the model is told and the shape
+  the code parses cannot drift apart. `core` gains `schema_for`, which accepts a pydantic
+  model, a dataclass, a `TypedDict` or an annotated callable and returns normalised Draft
+  2020-12 — titles dropped, keys ordered, `required` sorted — with descriptions read from
+  `Field(description=...)` or the Google-style `Args:` block of the docstring, so the
+  guidance the model reads is written once, where the field is declared. A missing or
+  malformed docstring costs descriptions and nothing else. `schema_hash` digests the
+  result: key order does not change it and any change of shape does, so a renamed field
+  misses a cassette recorded against the old one instead of replaying an answer for a type
+  that no longer exists. Provider differences sit behind the `SchemaDialect` protocol —
+  `JSON_SCHEMA`, `STRICT_SUBSET` and `INLINE_REFS` ship with the kit, and any value with a
+  `name`, a `forbidden` keyword set and an `adapt` is a dialect. Nothing is downgraded
+  silently: a forbidden keyword, or a recursive type under an inlining dialect, raises
+  `CapabilityError` naming the dialect. The new `SchemaGenerationError` is raised where the
+  type is declared for anything that cannot be described faithfully — an unannotated or
+  variadic parameter, `Any` in a required position at any depth, a type pydantic cannot
+  render, or a schema past `max_bytes`, refused whole rather than truncated into a
+  different type. **Stability:** additive. Documented in `docs/schemas.md` and exercised by
+  `examples/schemas.py`.
+
 - Strict validation at every boundary. `core` gains `AdkModel` — frozen, `strict=True`,
   `extra="forbid"` — and every model in the kit derives from it, so a misspelt field is an
   error rather than a passenger, `"12"` is never quietly read as `12`, and a validated
