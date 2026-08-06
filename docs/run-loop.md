@@ -107,12 +107,59 @@ when it has no way to tell. A tool listed in `Agent.idempotent_tools` records an
 `tool_error` marked safe to retry instead — the declaration is what makes retry safe, and
 it is checked against the allowlist so a policy cannot name a tool the agent cannot call.
 
+## Retries
+
+```python
+runner = AgentRunner(provider=provider, retry=RetryConfig(max_attempts=3))
+agent = Agent(name="planner", …, retry=RetryConfig(max_attempts=5), idempotent_tools=("lookup_fare",))
+```
+
+Worked end to end, no network and no sleeping: `examples/retry.py`.
+
+**Nothing is retried by default.** `RetryConfig().max_attempts` is 1. A retry is a second
+charge on someone's account and a second write to someone's database; the kit does not
+assume either on a caller's behalf. As with deadlines, an agent's own `RetryConfig`
+replaces the runner's.
+
+**Retryability is a property of the error, not of the call site.** `AdkError.retryable` is
+`False` and is overridden only where a failure is a *fault* rather than an *answer*: a
+timeout and a transient status (408, 409, 425, 429, 500, 502, 503, 504) are faults; a 400,
+a guardrail refusal, a budget ceiling and a schema violation are answers, and asking again
+spends more to be told the same thing. A `ProviderError` with no status at all is retried,
+because a request the provider rejected always comes back with one — no status means the
+call never got there. Anything outside the kit's hierarchy is never retried: the kit did
+not raise it, so it cannot know what repeating it repeats.
+
+**The backoff is full jitter.** The delay is drawn uniformly from `[0, min(base ×
+multiplier^(n-1), cap))`. A fixed schedule makes every process in a fleet retry the same
+blip at the same instant and knock the recovering provider over again. The source is an
+injected `Random`, so a test seeds it and asserts the exact schedule instead of waiting it
+out, and each `RetryPlan` seeds its own rather than sharing one per process.
+
+**A provider that names a time is believed, up to a ceiling.** A `Retry-After` is used in
+preference to the computed window — the provider knows its own recovery better than a
+multiplier does — but one beyond `max_retry_after_seconds` (60s) ends the run rather than
+being clamped. A provider asking for an hour is reporting a quota, not a blip; waiting
+stalls the run and retrying sooner ignores what it said.
+
+**A retry never outlives the run.** A backoff that would land past the deadline is not
+taken; the run fails with the attempt's own error instead of sleeping through its ceiling.
+Every attempt also reserves against the budget, so a budget bounds retries without knowing
+what a retry is.
+
+**A tool is retried on its declaration, never on the shape of its exception.** Only tools
+in `Agent.idempotent_tools` are tried again, because an exception says nothing about
+whether the side effect landed — a gateway timeout on `charge_card` is exactly the case
+where the charge went through. Every failed attempt records `attempt_failed` with what
+failed and either the delay before the next attempt or why there is not one.
+
 ## Events
 
 Every step is appended to `Run.events` in the order it happened: `prompt_assembled`,
 `model_call`, `model_response` (carrying its `Usage`), `tool_call`, `tool_result`,
 `tool_result_truncated`, `tool_error`, `tool_refused`, `tool_indeterminate`,
-`guardrail_refusal`, `output_validated`, `schema_violation`, `cancellation_requested`,
+`attempt_failed`, `guardrail_refusal`, `output_validated`, `schema_violation`,
+`cancellation_requested`,
 `deadline_exceeded`, `work_orphaned`, `terminated`. Cost attribution totals the usage on
 those events rather than being wired per project.
 
@@ -154,6 +201,11 @@ a loop wedges.
 - **Tools run one at a time.** Bounded parallelism is #44.
 - **No retry or repair on a schema violation.** The run fails; bounded validation repair
   with the error fed back is #35.
+- **No fallback to a second provider.** A retry re-sends the same request to the same
+  provider; routing a fault to another one is the gateway epic.
+- **A failed attempt's usage is only counted if the provider attached it.** `ProviderError`
+  carries no `Usage`, so tokens spent on an attempt that raised are invisible until the
+  provider protocol (#49) defines how a failed call reports what it burned.
 - **`task_class` is refused.** Routing by task class needs a router (#53); guessing a
   model would attribute the run to one that never ran it.
 - **`ModelRequest`, `ModelResponse` and `ToolDeclaration` are provisional**, owned by the

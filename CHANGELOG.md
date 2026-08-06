@@ -10,6 +10,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Retry with full jitter and an explicit retryability policy. `core` gains `RetryConfig`,
+  `RETRYABLE_STATUS`, `AdkError.retryable`, `ProviderError.status` / `retry_after` and
+  `Agent.retry`; `runtime` gains `RetryPlan`; `AgentRunner` takes `retry` and `jitter`;
+  `RunEventKind` gains `attempt_failed`. Nothing is retried by default — a retry is a
+  second charge on someone's account and a second write to someone's database.
+  Retryability is a property of the error rather than of the call site: a timeout and a
+  transient status are faults worth a second attempt, while a rejected request, a
+  guardrail refusal, a budget ceiling and a schema violation are answers, and asking again
+  spends more to be told the same thing. Delays are drawn from the full window
+  (`[0, min(base × multiplier^(n-1), cap))`) so a fleet does not retry one blip in unison,
+  from an injected `Random` a test seeds to assert the schedule without waiting it out. A
+  provider's `Retry-After` is believed over the computed backoff but refused beyond
+  `max_retry_after_seconds`, a backoff that would land past the deadline is not taken, and
+  a tool is retried only where `Agent.idempotent_tools` declares it safe to repeat — never
+  on the shape of its exception, which says nothing about whether the side effect landed.
+  **Stability:** additive — every name is new, and the new `AgentRunner` arguments are
+  keyword-only with defaults that preserve existing behaviour (`max_attempts=1` means no
+  run retries anything it did not before). Documented in `docs/run-loop.md` and exercised
+  by `examples/retry.py`.
+
 - Cancellation and deadlines that stop in-flight work. `runtime` gains
   `CancellationToken` and `Deadline`; `core` gains `DeadlineConfig`, `Agent.deadlines` and
   `Agent.idempotent_tools`; `AgentRunner` takes `deadlines`, and `run`/`run_sync` take

@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 __all__ = [
+    "RETRYABLE_STATUS",
     "AdkError",
     "BudgetExceededError",
     "CancelledError",
@@ -28,6 +29,11 @@ __all__ = [
 ]
 
 _DISTRIBUTION = "tesserix-adk"
+
+# Faults, not answers: the same request sent later can succeed. 429 is here because a rate
+# limit is transient by construction; a quota that is not transient is caught by the
+# `Retry-After` ceiling rather than by retrying until it clears.
+RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
 
 
 class AdkError(Exception):
@@ -58,6 +64,16 @@ class AdkError(Exception):
         """Carries the run and tenant: a bare message in a log is a fact nobody can act on."""
         where = f"run_id={self.run_id!r}, tenant={self.tenant!r}"
         return f"{type(self).__name__}({str(self)!r}, {where})"
+
+    @property
+    def retryable(self) -> bool:
+        """Whether the same request could succeed on a second attempt.
+
+        False here, and overridden only where a failure is a fault rather than an answer.
+        A guardrail refusal, a budget ceiling and a schema violation are decisions: asking
+        again spends more to be told the same thing.
+        """
+        return False
 
 
 class ConfigurationError(AdkError):
@@ -121,9 +137,36 @@ class CapabilityError(AdkError):
 class ProviderError(AdkError):
     """Raised when a model provider fails, in the kit's own vocabulary.
 
-    Provider-specific status codes and bodies belong in `details`; the type is what a
-    consumer branches on, so it is the same across providers.
+    Provider-specific bodies belong in `details`; the type is what a consumer branches
+    on, so it is the same across providers.
+
+    Args:
+        status: The HTTP status the provider answered with, where it answered at all.
+            `None` means the request never got that far — a reset connection, a DNS
+            failure — which is the transient case, because a request the provider
+            rejected always comes back with a status.
+        retry_after: Seconds the provider asked the caller to wait, from its own
+            `Retry-After` header. Believed in preference to any computed backoff, up to
+            the policy's ceiling.
     """
+
+    def __init__(
+        self,
+        *args: object,
+        status: int | None = None,
+        retry_after: float | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.status = status
+        self.retry_after = retry_after
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
+
+    @property
+    def retryable(self) -> bool:
+        """Transient statuses and transport faults, never a request the provider rejected."""
+        return self.status is None or self.status in RETRYABLE_STATUS
 
 
 class ProviderTimeoutError(ProviderError):
@@ -132,6 +175,11 @@ class ProviderTimeoutError(ProviderError):
     A `ProviderError`, so the common case is not missed by `except ProviderError`, and
     its own type, because a timeout is retryable where a 400 is not.
     """
+
+    @property
+    def retryable(self) -> bool:
+        """Always. A timeout says nothing about the request, only about this attempt."""
+        return True
 
 
 class SchemaViolationError(AdkError):

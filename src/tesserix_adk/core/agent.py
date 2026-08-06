@@ -20,7 +20,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
-from tesserix_adk.core.config import BudgetConfig, DeadlineConfig  # noqa: TC001
+from tesserix_adk.core.config import BudgetConfig, DeadlineConfig, RetryConfig  # noqa: TC001
 
 __all__ = ["Agent", "ToolFailurePolicy"]
 
@@ -58,6 +58,8 @@ class Agent(BaseModel):
             read back.
         budget: The ceiling for one run.
         deadlines: Wall-clock ceilings for the run and its steps. Unbounded by default.
+        retry: Which failures are worth a second attempt, and how long to wait first.
+            Nothing is retried by default.
         on_tool_error: What happens when a tool fails. Surfaced to the model by default,
             so a run does not die on the first recoverable failure.
         guardrails: Guardrail names, applied in order.
@@ -80,6 +82,7 @@ class Agent(BaseModel):
     output_type: type[BaseModel] | None = Field(default=None, exclude=True)
     budget: BudgetConfig | None = None
     deadlines: DeadlineConfig | None = None
+    retry: RetryConfig | None = None
     on_tool_error: ToolFailurePolicy = ToolFailurePolicy.SURFACE_TO_MODEL
     guardrails: tuple[str, ...] = ()
     metadata: dict[str, str] = Field(default_factory=dict)

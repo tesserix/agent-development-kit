@@ -42,6 +42,7 @@ __all__ = [
     "Provenance",
     "ProviderConfig",
     "RedactionConfig",
+    "RetryConfig",
     "StoreConfig",
     "TelemetryConfig",
     "leaf_keys",
@@ -137,6 +138,54 @@ class DeadlineConfig(BaseModel):
         return self
 
 
+class RetryConfig(BaseModel):
+    """When a failed attempt is worth making again, and how long to wait first.
+
+    Nothing is retried by default. A retry is a second charge on someone's account and a
+    second chance to duplicate a side effect, so it is declared rather than assumed.
+
+    Args:
+        max_attempts: Total attempts, not retries. 1 is one attempt and no retry.
+        base_delay_seconds: The first backoff window. The delay is drawn uniformly from
+            `[0, window]` — full jitter, so a fleet recovering from one provider blip
+            does not retry in unison and cause the next one.
+        multiplier: How much the window widens per attempt.
+        max_delay_seconds: Where the window stops widening.
+        max_retry_after_seconds: The longest `Retry-After` that is honoured. Beyond it
+            the run stops rather than waiting: a provider asking for an hour is reporting
+            a quota, not a blip, and neither waiting it out nor retrying sooner is right.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    max_attempts: int = 1
+    base_delay_seconds: float = 0.5
+    multiplier: float = 2.0
+    max_delay_seconds: float = 30.0
+    max_retry_after_seconds: float = 60.0
+
+    @model_validator(mode="after")
+    def _the_policy_can_be_followed(self) -> RetryConfig:
+        if self.max_attempts < 1:
+            raise ValueError(
+                f"max_attempts counts attempts rather than retries, so it must permit at "
+                f"least one attempt; got {self.max_attempts}"
+            )
+        if self.multiplier < 1:
+            raise ValueError(
+                f"multiplier must be at least 1; got {self.multiplier}. A window that "
+                f"shrinks retries harder the worse things get, which is the storm"
+            )
+        offending = sorted(
+            name
+            for name in ("base_delay_seconds", "max_delay_seconds", "max_retry_after_seconds")
+            if getattr(self, name) < 0
+        )
+        if offending:
+            raise ValueError(f"delay must not be negative: {', '.join(offending)}")
+        return self
+
+
 class TelemetryConfig(BaseModel):
     """OpenTelemetry export. Case content is never an attribute; see docs/contributing.md."""
 
@@ -173,6 +222,7 @@ class AdkConfig(BaseModel):
     provider: ProviderConfig
     budget: BudgetConfig = BudgetConfig()
     deadlines: DeadlineConfig = DeadlineConfig()
+    retry: RetryConfig = RetryConfig()
     telemetry: TelemetryConfig = TelemetryConfig()
     redaction: RedactionConfig = RedactionConfig()
     stores: StoreConfig = StoreConfig()

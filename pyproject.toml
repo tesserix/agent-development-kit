@@ -120,6 +120,12 @@ ignore = [
 # owner: @sam123ben — reason: asserts are the mechanism of a test suite, and test
 # bodies document themselves through their names.
 "tests/*" = ["S101", "D", "ANN"]
+# owner: @sam123ben — reason: a seeded Random is how the backoff schedule is asserted
+# rather than waited out; jitter is not a security boundary.
+"tests/test_retry.py" = ["S101", "D", "ANN", "S311"]
+# owner: @sam123ben — reason: the example seeds the jitter source so its printed backoff
+# schedule is reproducible; jitter is not a security boundary.
+"examples/retry.py" = ["S311"]
 # owner: @sam123ben — reason: payload types are owned by the stories that introduce
 # them (models, tools, memory); until then a protocol placeholder is honestly Any
 # rather than falsely narrow. Removed when those stories land. RFC 0001.

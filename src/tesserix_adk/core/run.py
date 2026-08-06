@@ -96,6 +96,7 @@ class RunEventKind(StrEnum):
     PROMPT_ASSEMBLED = "prompt_assembled"
     MODEL_CALL = "model_call"
     MODEL_RESPONSE = "model_response"
+    ATTEMPT_FAILED = "attempt_failed"
     TOOL_CALL = "tool_call"
     TOOL_RESULT = "tool_result"
     TOOL_RESULT_TRUNCATED = "tool_result_truncated"

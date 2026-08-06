@@ -31,6 +31,7 @@ tesserix_adk.core.ProviderConfig :: class ProviderConfig(BaseModel)
 tesserix_adk.core.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
 tesserix_adk.core.RedactionConfig :: class RedactionConfig(BaseModel)
+tesserix_adk.core.RetryConfig :: class RetryConfig(BaseModel)
 tesserix_adk.core.Role :: Role = typing.Literal['system', 'user', 'assistant', 'tool']
 tesserix_adk.core.Run :: class Run(BaseModel) {record(self, usage: 'Usage') -> 'Run'; record_event(self, event: 'RunEvent') -> 'Run'; transition_to(self, state: 'RunState', *, at: 'float | None' = None) -> 'Run'; with_output(self, output: 'dict[str, Any]') -> 'Run'}
 tesserix_adk.core.RunContext :: class RunContext(BaseModel)
@@ -61,6 +62,7 @@ tesserix_adk.core.config.Layer :: Layer = typing.Literal['code', 'env', 'file', 
 tesserix_adk.core.config.Provenance :: class Provenance(object)
 tesserix_adk.core.config.ProviderConfig :: class ProviderConfig(BaseModel)
 tesserix_adk.core.config.RedactionConfig :: class RedactionConfig(BaseModel)
+tesserix_adk.core.config.RetryConfig :: class RetryConfig(BaseModel)
 tesserix_adk.core.config.StoreConfig :: class StoreConfig(BaseModel)
 tesserix_adk.core.config.TelemetryConfig :: class TelemetryConfig(BaseModel)
 tesserix_adk.core.config.leaf_keys :: def leaf_keys(model: 'type[BaseModel]', prefix: 'str' = '') -> 'dict[str, Any]'
@@ -87,6 +89,7 @@ tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, 
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.errors.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.errors.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
+tesserix_adk.core.errors.RETRYABLE_STATUS :: RETRYABLE_STATUS: frozenset
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
@@ -126,6 +129,7 @@ tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'flo
 tesserix_adk.runtime.ModelRequest :: class ModelRequest(BaseModel)
 tesserix_adk.runtime.ModelResponse :: class ModelResponse(BaseModel)
 tesserix_adk.runtime.Prompt :: class Prompt(BaseModel)
+tesserix_adk.runtime.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(BaseModel)
 tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = ()) -> 'Prompt'
@@ -139,6 +143,7 @@ tesserix_adk.runtime.prompt.Prompt :: class Prompt(BaseModel)
 tesserix_adk.runtime.prompt.ToolDeclaration :: class ToolDeclaration(BaseModel)
 tesserix_adk.runtime.prompt.assemble_prompt :: def assemble_prompt(agent: 'Agent', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = ()) -> 'Prompt'
 tesserix_adk.runtime.prompt.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
+tesserix_adk.runtime.retry.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.runtime.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
 tesserix_adk.testing.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'Any'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}

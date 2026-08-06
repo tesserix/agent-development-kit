@@ -34,6 +34,7 @@ from tesserix_adk.core import (
     DeadlineConfig,
     Message,
     ModelProvider,
+    RetryConfig,
     Run,
     RunEvent,
     RunEventKind,
@@ -48,9 +49,11 @@ from tesserix_adk.core import (
 )
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
+from tesserix_adk.runtime.retry import RetryPlan
 
 if TYPE_CHECKING:
     from collections.abc import Coroutine, Iterable, Mapping
+    from random import Random
 
     from tesserix_adk.core import Agent, BudgetPolicy, Clock, Guardrail, ToolRegistry
 
@@ -118,6 +121,7 @@ class _Bounds:
     token: CancellationToken
     deadline: Deadline | None
     deadlines: DeadlineConfig
+    retry: RetryConfig
 
 
 class AgentRunner:
@@ -131,6 +135,10 @@ class AgentRunner:
         budget: The spend policy. Required if the agent declares a budget.
         deadlines: Wall-clock ceilings for runs this runner drives. An agent that
             declares its own overrides these; nothing is bounded by default.
+        retry: Which failures are worth another attempt, and how long to wait first. An
+            agent that declares its own overrides this; nothing is retried by default.
+        jitter: The source the backoff is drawn from. Injected so a test can seed it and
+            assert the exact schedule instead of waiting it out.
         clock: Injected time. Defaults to wall-clock.
         max_iterations: How many model calls one run may make before it is capped.
         max_tool_result_chars: Where an oversized tool result is cut. Truncation is
@@ -150,6 +158,8 @@ class AgentRunner:
         guardrails: Mapping[str, Guardrail] | None = None,
         budget: BudgetPolicy | None = None,
         deadlines: DeadlineConfig | None = None,
+        retry: RetryConfig | None = None,
+        jitter: Random | None = None,
         clock: Clock | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
@@ -167,6 +177,8 @@ class AgentRunner:
             )
         self._budget = budget
         self._deadlines = deadlines or DeadlineConfig()
+        self._retry = retry or RetryConfig()
+        self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
@@ -341,6 +353,7 @@ class AgentRunner:
             token=token or CancellationToken(),
             deadline=ceiling.narrowed_to(caller) if ceiling is not None else caller,
             deadlines=deadlines,
+            retry=agent.retry or self._retry,
         )
 
     def _stop_if_over(self, run: Run, bounds: _Bounds) -> None:
@@ -474,26 +487,75 @@ class AgentRunner:
         self, run: Run, request: ModelRequest, bounds: _Bounds
     ) -> tuple[Run, ModelResponse]:
         estimate = sum(_length(message) for message in request.messages) // _CHARS_PER_TOKEN
+        plan = RetryPlan(bounds.retry, random=self._jitter)
+        attempt = 1
+        while True:
+            try:
+                if self._budget is not None:
+                    await self._budget.reserve(estimate)
+                response: ModelResponse = await self._bounded(
+                    self._provider.complete(request),
+                    limit=self._limit(bounds, bounds.deadlines.model_call_seconds),
+                    bounds=bounds,
+                    what="model call",
+                )
+            except _Aborted as abort:
+                raise self._cancelled(run, abort, name=request.model) from None
+            except BudgetExceededError as exceeded:
+                raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
+            except CancelledError as cancelled:
+                raise _Terminal(run, RunState.CANCELLED, str(cancelled)) from cancelled
+            except Exception as failure:
+                run, delay = self._after_failure(run, plan, attempt, failure, bounds, request.model)
+                if delay is None:
+                    raise _Terminal(
+                        run, RunState.FAILED, f"{type(failure).__name__}: {failure}"
+                    ) from failure
+                await self._backoff(run, delay, bounds, name=request.model)
+                run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=request.model))
+                attempt += 1
+            else:
+                return run, response
+
+    def _after_failure(
+        self,
+        run: Run,
+        plan: RetryPlan,
+        attempt: int,
+        failure: Exception,
+        bounds: _Bounds,
+        name: str,
+    ) -> tuple[Run, float | None]:
+        """Record the failed attempt, and say how long to wait or why there is no next one."""
+        if not plan.retryable(failure):
+            delay, why = None, "not retryable, so the same request is not sent again"
+        elif (delay := plan.delay_for(attempt, retry_after=_retry_after(failure))) is None:
+            why = (
+                "the provider asked to wait longer than the policy honours"
+                if _retry_after(failure) is not None
+                else "no attempts left"
+            )
+        elif not self._fits(delay, bounds):
+            delay, why = None, "no time left in the run to wait for another attempt"
+        else:
+            why = f"retrying in {delay:.2f}s"
+        detail = f"attempt {attempt}: {type(failure).__name__}: {failure} — {why}"
+        return (
+            run.record_event(self._event(RunEventKind.ATTEMPT_FAILED, name=name, detail=detail)),
+            delay,
+        )
+
+    def _fits(self, delay: float, bounds: _Bounds) -> bool:
+        """A backoff that would land past the deadline is not a backoff, it is a stall."""
+        return bounds.deadline is None or delay <= bounds.deadline.remaining(self._clock.now())
+
+    async def _backoff(self, run: Run, delay: float, bounds: _Bounds, *, name: str) -> None:
         try:
-            if self._budget is not None:
-                await self._budget.reserve(estimate)
-            response: ModelResponse = await self._bounded(
-                self._provider.complete(request),
-                limit=self._limit(bounds, bounds.deadlines.model_call_seconds),
-                bounds=bounds,
-                what="model call",
+            await self._bounded(
+                self._clock.sleep(delay), limit=None, bounds=bounds, what="retry backoff"
             )
         except _Aborted as abort:
-            raise self._cancelled(run, abort, name=request.model) from None
-        except BudgetExceededError as exceeded:
-            raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
-        except CancelledError as cancelled:
-            raise _Terminal(run, RunState.CANCELLED, str(cancelled)) from cancelled
-        except Exception as failure:
-            raise _Terminal(run, RunState.FAILED, f"{type(failure).__name__}: {failure}") from (
-                failure
-            )
-        return run, response
+            raise self._cancelled(run, abort, name=name) from None
 
     async def _settle(self, run: Run, response: ModelResponse, messages: list[Message]) -> Run:
         """Record what the response cost, and stop if it said nothing at all."""
@@ -594,26 +656,34 @@ class AgentRunner:
         self, run: Run, agent: Agent, call: ToolCall, bounds: _Bounds
     ) -> tuple[Run, str, str]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
-        try:
-            result = await self._bounded(
-                self._tools.invoke(call.name, call.arguments),
-                limit=self._limit(bounds, bounds.deadlines.tool_call_seconds),
-                bounds=bounds,
-                what=f"tool {call.name}",
-            )
-        except _Aborted as abort:
-            stopped = run.record_event(self._indeterminacy(agent, call))
-            raise self._cancelled(stopped, abort, name=call.name) from None
-        except Exception as failure:
-            wrapped = ToolExecutionError(
-                f"tool {call.name!r} failed: {failure}", run_id=run.id, tenant=run.tenant
-            )
-            run = run.record_event(
-                self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=str(failure))
-            )
-            if agent.on_tool_error is ToolFailurePolicy.FAIL_RUN:
-                raise _Terminal(run, RunState.FAILED, str(wrapped)) from failure
-            return run, f"error: {failure}", "tool_error"
+        plan = RetryPlan(bounds.retry, random=self._jitter)
+        attempt = 1
+        while True:
+            try:
+                result = await self._bounded(
+                    self._tools.invoke(call.name, call.arguments),
+                    limit=self._limit(bounds, bounds.deadlines.tool_call_seconds),
+                    bounds=bounds,
+                    what=f"tool {call.name}",
+                )
+            except _Aborted as abort:
+                stopped = run.record_event(self._indeterminacy(agent, call))
+                raise self._cancelled(stopped, abort, name=call.name) from None
+            except Exception as failure:
+                delay = self._tool_backoff(agent, call, plan, attempt, bounds)
+                if delay is None:
+                    return self._tool_failed(run, agent, call, failure, bounds)
+                run = run.record_event(
+                    self._event(
+                        RunEventKind.ATTEMPT_FAILED,
+                        name=call.name,
+                        detail=f"attempt {attempt}: {failure} — retrying in {delay:.2f}s",
+                    )
+                )
+                await self._backoff(run, delay, bounds, name=call.name)
+                attempt += 1
+            else:
+                break
 
         text = _render(result)
         if len(text) > self._max_tool_result_chars:
@@ -630,6 +700,37 @@ class AgentRunner:
             text,
             "tool_result",
         )
+
+    def _tool_backoff(
+        self, agent: Agent, call: ToolCall, plan: RetryPlan, attempt: int, bounds: _Bounds
+    ) -> float | None:
+        """A tool is retried on its declaration, not on the shape of its exception.
+
+        A tool's exception says nothing about whether its side effect landed, so the only
+        safe gate is the agent naming the tool as safe to call again.
+        """
+        if call.name not in agent.idempotent_tools:
+            return None
+        delay = plan.delay_for(attempt)
+        return delay if delay is not None and self._fits(delay, bounds) else None
+
+    def _tool_failed(
+        self, run: Run, agent: Agent, call: ToolCall, failure: Exception, bounds: _Bounds
+    ) -> tuple[Run, str, str]:
+        wrapped = ToolExecutionError(
+            f"tool {call.name!r} failed: {failure}", run_id=run.id, tenant=run.tenant
+        )
+        unretried = (
+            "; not declared idempotent, so it was not tried again"
+            if bounds.retry.max_attempts > 1 and call.name not in agent.idempotent_tools
+            else ""
+        )
+        run = run.record_event(
+            self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=f"{failure}{unretried}")
+        )
+        if agent.on_tool_error is ToolFailurePolicy.FAIL_RUN:
+            raise _Terminal(run, RunState.FAILED, str(wrapped)) from failure
+        return run, f"error: {failure}", "tool_error"
 
     def _indeterminacy(self, agent: Agent, call: ToolCall) -> RunEvent:
         """A tool stopped mid-flight is unknown, not undone — unless it said it is safe to retry."""
@@ -692,6 +793,12 @@ class _Terminal(Exception):  # noqa: N818 — control flow, not an error the cal
 def _carrying(run: Run, messages: list[Message]) -> Run:
     """The conversation belongs on the run: a checkpoint without it cannot be resumed."""
     return run.model_copy(update={"messages": list(messages)})
+
+
+def _retry_after(failure: Exception) -> float | None:
+    """What the provider asked for, where it is a provider that asked."""
+    after = getattr(failure, "retry_after", None)
+    return after if isinstance(after, int | float) else None
 
 
 def _length(message: Message) -> int:
