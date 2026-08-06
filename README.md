@@ -88,6 +88,7 @@ code lands here as the kit is built.
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |
 | Releasing & index policy | [`docs/releasing.md`](docs/releasing.md) |
+| Stability & the alpha channel | [`docs/stability.md`](docs/stability.md) |
 | Issue template | [`.github/ISSUE_TEMPLATE/engineering-story.md`](.github/ISSUE_TEMPLATE/engineering-story.md) |
 
 ## A note on the name

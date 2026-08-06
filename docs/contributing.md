@@ -158,6 +158,11 @@ where the migration note lives. The `release-notes` CI job fails on a change wit
 neither, and renders the notes into the run summary so you can read the wording a
 consumer will read.
 
+Your merge to `main` also publishes a pre-release, so a change that lands is installable
+by a consumer within the hour. Nobody gets it by accident — a stable specifier never
+resolves a pre-release — but if your change alters what a subpackage promises, say so in
+[stability.md](stability.md) in the same pull request.
+
 The example the smoke job runs is `examples/getting_started.py`. Every example in that
 directory is executed by `tests/test_examples.py`, so one that stops working fails at
 review rather than after the release.

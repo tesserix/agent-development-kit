@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -54,6 +54,12 @@ notes: ## Preview the release notes assembled from the change fragments
 
 notes-check: ## Fail if a change since the last tag has no note fragment or readable subject
 	uv run python -m tools.release_notes --version $(VERSION) --dry-run > /dev/null
+
+alpha: ## Show the pre-release version the next merge to main would publish
+	uv run python -m tools.alpha
+
+alpha-retention: ## List the pre-releases that should be yanked from the index
+	uv run python -m tools.alpha --retention
 
 check: lint typecheck api-check deprecations-check release-check notes-check cov ## Everything CI runs
 

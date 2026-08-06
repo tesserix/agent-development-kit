@@ -1,0 +1,119 @@
+name: Alpha
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.12.1"
+
+concurrency:
+  # Two alphas racing for the same number means one of them is a yank.
+  group: alpha
+  cancel-in-progress: false
+
+jobs:
+  gates:
+    name: full gates
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: build the alpha
+    needs: gates
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        # hatch-vcs derives the version from the tag, so the history has to be there.
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - id: version
+        run: echo "version=$(uv run python -m tools.alpha)" >> "$GITHUB_OUTPUT"
+      # Tagged locally and never pushed: the tag is how hatch-vcs sees the version, but
+      # an alpha is not a release and should not appear in the repository's tag list.
+      - run: git tag "v$VERSION"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+      - run: uv build
+      - run: uvx twine check --strict dist/*
+      - run: ls dist | grep -q "tesserix_adk-$VERSION"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alpha-dist
+          path: dist/
+
+  publish:
+    name: publish the alpha
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: alpha-dist
+          path: dist/
+      # Trusted publishing: the token is minted for this run and expires with it.
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  downstream:
+    name: earliest consumer
+    needs: [build, publish]
+    if: vars.DOWNSTREAM_REPO != ''
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: ${{ vars.DOWNSTREAM_REPO }}
+          token: ${{ secrets.DOWNSTREAM_TOKEN }}
+          path: consumer
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      # Two runs of the same suite. The consumer's own failures show up in both, so the
+      # comparison is what decides; neither run may fail the job on its own.
+      - run: uv run --directory consumer --with "tesserix-adk" pytest --junitxml=../baseline.xml
+        continue-on-error: true
+      - run: |
+          uv run --directory consumer --with "tesserix-adk==$VERSION" \
+            pytest --junitxml=../candidate.xml
+        continue-on-error: true
+      - uses: actions/checkout@v5
+        with:
+          path: kit
+      - run: |
+          uv run --directory kit python -m tools.downstream \
+            --baseline baseline.xml --candidate candidate.xml --report regressions.md
+      - if: failure()
+        run: cat regressions.md >> "$GITHUB_STEP_SUMMARY"
+
+  retention:
+    name: alpha retention
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # A report, not an action: PyPI has no yank API a trusted publisher can call, so
+      # the yanks are done by hand from this list. See docs/releasing.md.
+      - run: uv run python -m tools.alpha --retention >> "$GITHUB_STEP_SUMMARY"

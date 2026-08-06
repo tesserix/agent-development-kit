@@ -10,6 +10,14 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Pre-release alpha channel (`docs/stability.md`, `.github/workflows/alpha.yml`): every
+  merge to `main` publishes a pre-release through the same gates and trusted publisher as
+  a release, numbered by `tools/alpha.py` from the next minor after the last stable.
+  Consumers opt in explicitly — a stable specifier never resolves a pre-release — and the
+  per-subpackage stability matrix states what each one promises. Promotion is
+  alpha → rc → stable through the one pipeline, retention is reported rather than
+  guessed, and a downstream job runs the earliest consumer's suite against the last
+  stable and the alpha, failing only on a regression the alpha introduced.
 - Release notes assembled from the repository (`tools/release_notes.py`): change
   fragments in `changes/`, conventional commit subjects, the public API snapshot diff and
   the live deprecation records. A change with neither a fragment nor a readable subject

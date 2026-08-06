@@ -183,8 +183,67 @@ Deletion is reserved for a release that must not be installed at all — leaked
 credentials, or a dependency confusion vector. That case is an incident, not a release
 task: follow the security policy, and expect the version number to stay burned.
 
+## The alpha channel
+
+Every merge to `main` publishes a pre-release. It exists so the earliest consumer can
+build against the kit while the API can still change — which is the only time their
+feedback can still be acted on. What each subpackage promises is in
+[`stability.md`](stability.md); this section is the mechanics.
+
+`.github/workflows/alpha.yml` runs the same gates as a release, numbers the version with
+`tools/alpha.py`, tags it locally so `hatch-vcs` derives it, builds, and publishes by the
+same trusted publisher. The tag is never pushed: an alpha is not a release and does not
+belong in the repository's tag list.
+
+Numbering: the base is the next minor after the last stable release, and the alpha number
+follows the highest alpha of that same base. Release candidates are a separate series, so
+an `rc1` does not push the next alpha to `a2`.
+
+```bash
+make alpha             # the version the next merge would publish
+make alpha-retention   # the pre-releases that should be yanked
+```
+
+### Promotion
+
+alpha → rc → stable is the same pipeline, not a different one. Nothing is rebuilt from a
+different tree; each step is a tag on the commit that has already been through the gates:
+
+1. `main` publishes `0.2.0a7`, and the consumer builds against it.
+2. When the surface is settled, tag `v0.2.0rc1`. `release.yml` runs, the guard applies,
+   and it publishes as a release — still opt-in, because it is still a pre-release.
+3. After the soak, tag `v0.2.0` on the same commit. The release guard refuses it if that
+   version is already on the index, so an rc that has to change gets `rc2`, not a re-cut.
+
+An alpha is never "promoted" by re-uploading its file under a stable version. The stable
+build is made from the same commit, and its artefact is a different file with a different
+hash — which is what a consumer comparing the two should see.
+
+### Retention and yanking
+
+Pre-releases accumulate: one per merge is hundreds a year, and an index page nobody can
+read is one nobody checks. `tools/alpha.py --retention` reports what to retire:
+
+- Any alpha of a version that has since shipped stable — nobody should be building
+  against a pre-release of released work.
+- All but the newest ten alphas of the version currently open.
+- Never a stable release, and never a release candidate.
+
+Yanking a broken alpha does not touch the stable channel: they are separate versions, and
+a consumer on a stable specifier never resolved the alpha in the first place. A consumer
+who pinned it exactly still gets it, which is the point of yanking rather than deleting.
+
+The report is a list, not an action: **PyPI has no yank API a trusted publisher can call**,
+so the yanks are done by hand from the project page. The `retention` job writes the list
+into the run summary on every alpha.
+
 ## Known limitations
 
+- Retention is a report; yanking is manual, because PyPI exposes no yank API to a trusted
+  publisher (above). A token with upload rights could do it, and creating one to avoid a
+  monthly click is a worse trade than the click.
+- The downstream integration job is configured but inert until a consumer repository
+  exists: it runs only when the `DOWNSTREAM_REPO` variable is set.
 - The mirror is flat release assets, not a simple-API index (above).
 - The smoke job installs from PyPI only. If PyPI is slow to make a new file available it
   retries for a few minutes; a longer outage fails the job after the release has already
