@@ -86,6 +86,7 @@ code lands here as the kit is built.
 |---|---|
 | Design brief & architecture | [`docs/design-brief.md`](docs/design-brief.md) |
 | Core primitives — agents, messages, runs, usage, errors | [`docs/primitives.md`](docs/primitives.md) |
+| Boundary models — strictness, extras, sensitive fields, field changes | [`docs/models.md`](docs/models.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | Determinism, cassettes & replay | [`docs/determinism.md`](docs/determinism.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |

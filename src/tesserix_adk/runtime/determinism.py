@@ -17,7 +17,9 @@ import json
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
+
+from tesserix_adk.core.models import AdkModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -28,12 +30,11 @@ if TYPE_CHECKING:
 
 __all__ = ["RunFingerprint", "canonical_digest", "fingerprint_of"]
 
-_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 _FIELDS = ("hooks", "messages", "model", "output_schema", "tools")
 
 
-class RunFingerprint(BaseModel):
+class RunFingerprint(AdkModel):
     """A canonical summary of one provider call, field by field.
 
     Each field is a digest rather than the content it summarises: a fingerprint travels
@@ -52,8 +53,6 @@ class RunFingerprint(BaseModel):
         ... )
         ('hooks',)
     """
-
-    model_config = _FROZEN
 
     model: str = Field(min_length=1)
     messages: str = Field(min_length=1)

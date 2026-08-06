@@ -18,9 +18,10 @@ import re
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from tesserix_adk.core.errors import AdkError, ProviderError
+from tesserix_adk.core.models import AdkModel
 from tesserix_adk.runtime import ModelResponse, RunFingerprint, fingerprint_of
 
 if TYPE_CHECKING:
@@ -42,7 +43,6 @@ __all__ = [
     "redacted",
 ]
 
-_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 CASSETTE_FORMAT = "1"
 
@@ -79,7 +79,7 @@ class CassetteVersionError(AdkError):
     """
 
 
-class RecordedError(BaseModel):
+class RecordedError(AdkModel):
     """A provider failure, kept so that the recovery replays as well as the success.
 
     Args:
@@ -87,8 +87,6 @@ class RecordedError(BaseModel):
         status: The HTTP status, where there was one.
         retry_after: Seconds the provider asked for.
     """
-
-    model_config = _FROZEN
 
     message: str = ""
     status: int | None = None
@@ -99,7 +97,7 @@ class RecordedError(BaseModel):
         return ProviderError(self.message, status=self.status, retry_after=self.retry_after)
 
 
-class Interaction(BaseModel):
+class Interaction(AdkModel):
     """One request and what came back, keyed by the request's fingerprint.
 
     Args:
@@ -108,14 +106,12 @@ class Interaction(BaseModel):
         error: What it raised instead, where it raised.
     """
 
-    model_config = _FROZEN
-
     fingerprint: RunFingerprint
     response: ModelResponse | None = None
     error: RecordedError | None = None
 
 
-class Cassette(BaseModel):
+class Cassette(AdkModel):
     """Recorded exchanges plus what they were recorded against.
 
     Args:
@@ -124,8 +120,6 @@ class Cassette(BaseModel):
         provider_version: Its version at recording time.
         interactions: The exchanges, in the order they happened.
     """
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     format: str = CASSETTE_FORMAT
     provider: str = Field(min_length=1)
@@ -143,7 +137,9 @@ class Cassette(BaseModel):
         Raises:
             CassetteVersionError: If it was written in a format this kit does not read.
         """
-        loaded = cls.model_validate(json.loads(path.read_text()))
+        # Validated as JSON, not as a dict: a JSON array is a tuple, which strict Python
+        # validation would refuse.
+        loaded = cls.model_validate_json(path.read_text())
         if loaded.format != CASSETTE_FORMAT:
             raise CassetteVersionError(
                 f"cassette at {path} is format {loaded.format!r}, and this kit reads "

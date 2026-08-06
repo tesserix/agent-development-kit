@@ -19,8 +19,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
+from tesserix_adk.core.models import AdkModel
 from tesserix_adk.core.primitives import Message, ToolCall, Usage
 
 __all__ = [
@@ -32,8 +33,6 @@ __all__ = [
     "TenantContext",
     "legal_transitions",
 ]
-
-_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 
 class RunState(StrEnum):
@@ -122,7 +121,7 @@ class RunEventKind(StrEnum):
     TERMINATED = "terminated"
 
 
-class RunEvent(BaseModel):
+class RunEvent(AdkModel):
     """One thing that happened during a run, in the order it happened.
 
     Args:
@@ -134,8 +133,6 @@ class RunEvent(BaseModel):
             attribution totals these rather than re-deriving spend per product.
     """
 
-    model_config = _FROZEN
-
     kind: RunEventKind
     name: str | None = None
     detail: str | None = None
@@ -143,7 +140,7 @@ class RunEvent(BaseModel):
     usage: Usage | None = None
 
 
-class TenantContext(BaseModel):
+class TenantContext(AdkModel):
     """Who a run belongs to.
 
     Args:
@@ -151,27 +148,23 @@ class TenantContext(BaseModel):
         user: The acting principal within the tenant, where there is one.
     """
 
-    model_config = _FROZEN
-
     tenant: str = Field(min_length=1)
     user: str | None = None
 
 
-class RunContext(BaseModel):
+class RunContext(AdkModel):
     """What the runtime threads through every layer of a run.
 
     A tool never receives the tenant as an argument a caller might forget: the runtime
     carries this, so identity cannot be dropped between the agent and the tool.
     """
 
-    model_config = _FROZEN
-
     run_id: str = Field(min_length=1)
     tenant: TenantContext
     depth: int = Field(default=0, ge=0)
 
 
-class Run(BaseModel):
+class Run(AdkModel):
     """One execution of an agent, from prompt assembly to a terminal state.
 
     Args:
@@ -197,8 +190,6 @@ class Run(BaseModel):
         started_at: Unix seconds at the transition into `RUNNING`.
         ended_at: Unix seconds at the transition into a terminal state.
     """
-
-    model_config = _FROZEN
 
     id: str = Field(min_length=1)
     tenant: str = Field(min_length=1)

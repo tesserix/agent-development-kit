@@ -26,7 +26,7 @@ import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import Field, ValidationError
 
 from tesserix_adk.core import (
     AdkError,
@@ -68,6 +68,7 @@ from tesserix_adk.core import (
     resolve_hooks,
     verify_conformance,
 )
+from tesserix_adk.core.models import AdkModel
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
 from tesserix_adk.runtime.retry import RetryPlan
@@ -88,7 +89,6 @@ if TYPE_CHECKING:
 
 __all__ = ["AgentRunner", "ModelRequest", "ModelResponse", "SystemClock"]
 
-_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 _DEFAULT_MAX_ITERATIONS = 8
 _DEFAULT_MAX_TOOL_RESULT_CHARS = 8_000
@@ -102,14 +102,12 @@ _UNWIND_TURNS = 3
 _T = TypeVar("_T")
 
 
-class ModelRequest(BaseModel):
+class ModelRequest(AdkModel):
     """One call to a provider, as data.
 
     Provisional and owned by the runtime until the provider protocol declares its own
     request type (#49).
     """
-
-    model_config = _FROZEN
 
     model: str = Field(min_length=1)
     messages: tuple[Message, ...]
@@ -117,14 +115,12 @@ class ModelRequest(BaseModel):
     output_schema: dict[str, Any] | None = None
 
 
-class ModelResponse(BaseModel):
+class ModelResponse(AdkModel):
     """What a provider returned for one call.
 
     A response with neither content nor tool calls is not retried: asking again for the
     same nothing is how a loop wedges.
     """
-
-    model_config = _FROZEN
 
     content: str = ""
     tool_calls: tuple[ToolCall, ...] = ()

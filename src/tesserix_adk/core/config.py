@@ -17,18 +17,22 @@ import tomllib
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
-from typing import Annotated, Any, Literal, get_args
+from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args
 
 from pydantic import (
     BaseModel,
     BeforeValidator,
-    ConfigDict,
     SecretStr,
+    TypeAdapter,
     ValidationError,
     model_validator,
 )
 
-from tesserix_adk.core.errors import ConfigurationError
+from tesserix_adk.core.errors import ConfigurationError, SchemaViolationError
+from tesserix_adk.core.models import AdkModel, parsed_from_strings
+
+if TYPE_CHECKING:
+    from pydantic.fields import FieldInfo
 
 __all__ = [
     "ENV_PREFIX",
@@ -67,39 +71,45 @@ PRECEDENCE: tuple[Layer, ...] = ("code", "env", "file")
 _CWD = "."
 _NUMBER = re.compile(r"-?\d+(\.\d+)?")
 
-
-def _seconds_when_bare_number(value: Any) -> Any:  # noqa: ANN401
-    """Every environment value is a string, so `45` must mean 45 seconds, not a parse error."""
-    return float(value) if isinstance(value, str) and _NUMBER.fullmatch(value.strip()) else value
+# ISO 8601 durations, parsed by pydantic itself rather than by a regex of our own.
+_ISO_DURATION = TypeAdapter(timedelta).validate_strings
 
 
-Duration = Annotated[timedelta, BeforeValidator(_seconds_when_bare_number)]
+def _duration(value: Any) -> Any:  # noqa: ANN401
+    """A duration arrives as a string wherever it comes from a file, an env var or JSON.
+
+    `45` means 45 seconds; `PT45S` means the same thing spelt in ISO 8601. Both are read
+    here, in front of the strict validation, so that nothing downstream has to guess.
+    """
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    return timedelta(seconds=float(text)) if _NUMBER.fullmatch(text) else _ISO_DURATION(text)
 
 
-class ProviderConfig(BaseModel):
+Duration = Annotated[timedelta, BeforeValidator(_duration)]
+
+
+class ProviderConfig(AdkModel):
     """Where the model provider lives and how long to wait for it.
 
     `endpoint` has no default: an invented endpoint is how an agent starts half
     configured and fails on its first call instead of at startup.
     """
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
     endpoint: str
     api_key: SecretStr | None = None
     request_timeout: Duration = timedelta(seconds=30)
 
 
-class BudgetConfig(BaseModel):
+class BudgetConfig(AdkModel):
     """Spend ceilings enforced per run. Reaching one ends the run; it is never a warning."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_tokens_per_run: int = 100_000
     max_cost_usd_per_run: float = 1.0
 
 
-class LoopConfig(BaseModel):
+class LoopConfig(AdkModel):
     """Caps on the shape of a run: how deep, how wide, and how often the same call.
 
     Unlike a deadline, these are bounded by default. A ceiling on wall-clock time the kit
@@ -124,8 +134,6 @@ class LoopConfig(BaseModel):
         >>> LoopConfig(max_depth=9).narrowed_to(LoopConfig(max_depth=2)).max_depth
         2
     """
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_depth: int = 4
     max_tool_calls_per_turn: int = 8
@@ -159,7 +167,7 @@ _LOOP_CAPS = (
 )
 
 
-class DeadlineConfig(BaseModel):
+class DeadlineConfig(AdkModel):
     """Wall-clock ceilings for a run, in seconds. `None` means no ceiling at that layer.
 
     Nothing is bounded by default. A model call on CPU inference can legitimately take
@@ -176,8 +184,6 @@ class DeadlineConfig(BaseModel):
         grace_seconds: How long a cancelled step is given to unwind before the run stops
             waiting for it and reports the work orphaned.
     """
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     run_seconds: float | None = None
     model_call_seconds: float | None = None
@@ -210,7 +216,7 @@ _DEADLINE_CEILINGS = (
 )
 
 
-class RetryConfig(BaseModel):
+class RetryConfig(AdkModel):
     """When a failed attempt is worth making again, and how long to wait first.
 
     Nothing is retried by default. A retry is a second charge on someone's account and a
@@ -227,8 +233,6 @@ class RetryConfig(BaseModel):
             the run stops rather than waiting: a provider asking for an hour is reporting
             a quota, not a blip, and neither waiting it out nor retrying sooner is right.
     """
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_attempts: int = 1
     base_delay_seconds: float = 0.5
@@ -258,38 +262,30 @@ class RetryConfig(BaseModel):
         return self
 
 
-class TelemetryConfig(BaseModel):
+class TelemetryConfig(AdkModel):
     """OpenTelemetry export. Case content is never an attribute; see docs/contributing.md."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     enabled: bool = True
     endpoint: str | None = None
     sample_ratio: float = 1.0
 
 
-class RedactionConfig(BaseModel):
+class RedactionConfig(AdkModel):
     """Redaction applied before anything is logged or exported."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     enabled: bool = True
     extra_patterns: tuple[str, ...] = ()
 
 
-class StoreConfig(BaseModel):
+class StoreConfig(AdkModel):
     """Endpoints for the optional stores. Absent means the integration is not in use."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     redis_url: str | None = None
     postgres_dsn: SecretStr | None = None
 
 
-class AdkConfig(BaseModel):
+class AdkConfig(AdkModel):
     """The kit's resolved configuration. Frozen, fully typed, validated at startup."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
 
     provider: ProviderConfig
     budget: BudgetConfig = BudgetConfig()
@@ -420,6 +416,16 @@ def _flatten(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
     return flat
 
 
+def _parsed(info: FieldInfo, value: object) -> Any:  # noqa: ANN401
+    """Parse one environment string against its field's own annotation.
+
+    Every value in the environment is a string, so this is where the kit's models stop
+    being strict — once, explicitly, at the layer that has no types to offer.
+    """
+    annotation = Annotated[(info.annotation, *info.metadata)] if info.metadata else info.annotation
+    return parsed_from_strings(annotation, value)
+
+
 def _from_env(env: dict[str, str]) -> dict[str, Any]:
     return {
         name.removeprefix(ENV_PREFIX).lower().replace(NESTED_DELIMITER, "."): value
@@ -516,10 +522,14 @@ def resolve_config(
                 merged[key] = (layer, value)
 
     data_in: dict[str, Any] = {prefix: {} for prefix in _nested_prefixes(AdkConfig)}
-    for key, (_, value) in merged.items():
+    for key, (layer, value) in merged.items():
         head, _, tail = key.rpartition(".")
         target = data_in[head] if head else data_in
-        target[tail] = value
+        try:
+            target[tail] = _parsed(known[key], value) if layer == "env" else value
+        except SchemaViolationError as failure:
+            reason = next(iter(failure.problems.values()), "invalid value")
+            problems.append(ConfigProblem(key, layer, reason, _display(key, value, secrets)))
 
     try:
         config = AdkConfig(**data_in)

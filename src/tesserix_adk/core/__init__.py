@@ -62,6 +62,13 @@ from tesserix_adk.core.hooks import (
     HookSubject,
     resolve_hooks,
 )
+from tesserix_adk.core.models import (
+    AdkModel,
+    Sensitive,
+    parsed_from_strings,
+    telemetry_dump,
+    validated,
+)
 from tesserix_adk.core.primitives import (
     BinaryPart,
     ContentPart,
@@ -98,6 +105,7 @@ __all__ = [
     "AdkConfig",
     "AdkDeprecationWarning",
     "AdkError",
+    "AdkModel",
     "Agent",
     "ApprovalDecision",
     "ApprovalDeniedError",
@@ -155,6 +163,7 @@ __all__ = [
     "RunEventKind",
     "RunState",
     "SchemaViolationError",
+    "Sensitive",
     "StoreConfig",
     "TelemetryConfig",
     "TenantContext",
@@ -171,8 +180,11 @@ __all__ = [
     "legal_transitions",
     "load_config",
     "members_of",
+    "parsed_from_strings",
     "require_extra",
     "resolve_config",
     "resolve_hooks",
+    "telemetry_dump",
+    "validated",
     "verify_conformance",
 ]

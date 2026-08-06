@@ -20,9 +20,10 @@ import json
 import re
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
 from tesserix_adk.core import Message, TextPart
+from tesserix_adk.core.models import AdkModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -31,7 +32,6 @@ if TYPE_CHECKING:
 
 __all__ = ["Prompt", "ToolDeclaration", "assemble_prompt", "wrap_untrusted"]
 
-_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 _BEGIN = "<untrusted-data"
 _END = "</untrusted-data>"
@@ -64,7 +64,7 @@ def wrap_untrusted(content: str, *, source: str) -> str:
     return f'{_BEGIN} source="{source}">\n{safe}\n{_END}'
 
 
-class ToolDeclaration(BaseModel):
+class ToolDeclaration(AdkModel):
     """A tool as the model is told about it.
 
     Provisional and owned by the runtime until the Tools epic lands a registry type
@@ -72,14 +72,12 @@ class ToolDeclaration(BaseModel):
     the prompt version and diffed in review.
     """
 
-    model_config = _FROZEN
-
     name: str = Field(min_length=1)
     description: str = ""
     parameters: dict[str, Any] = Field(default_factory=dict)
 
 
-class Prompt(BaseModel):
+class Prompt(AdkModel):
     """What is actually sent for one turn, plus the identity of its cacheable prefix.
 
     Args:
@@ -89,8 +87,6 @@ class Prompt(BaseModel):
             runs sharing a version were shaped by the same prompt, whatever was asked of
             it, which is what makes a regression attributable.
     """
-
-    model_config = _FROZEN
 
     messages: tuple[Message, ...]
     tools: tuple[ToolDeclaration, ...] = ()

@@ -16,13 +16,13 @@ import base64
 from typing import Annotated, Any, Literal
 
 from pydantic import (
-    BaseModel,
-    ConfigDict,
     Field,
     field_serializer,
     field_validator,
     model_validator,
 )
+
+from tesserix_adk.core.models import AdkModel, Sensitive
 
 __all__ = [
     "BinaryPart",
@@ -37,34 +37,28 @@ __all__ = [
 
 Role = Literal["system", "user", "assistant", "tool"]
 
-_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
-
-class TextPart(BaseModel):
+class TextPart(AdkModel):
     """Text in a message.
 
     Its repr shows the text: redacting prompt content is the telemetry exporter's job,
     and a type that hides it from a debugger helps nobody.
     """
 
-    model_config = _FROZEN
-
     kind: Literal["text"] = "text"
     text: str
 
 
-class BinaryPart(BaseModel):
+class BinaryPart(AdkModel):
     """Bytes in a message — an image, an audio clip, a scanned document.
 
     The payload round-trips through JSON but never appears in the repr, which is the
     form that reaches a log line or a span attribute.
     """
 
-    model_config = _FROZEN
-
     kind: Literal["binary"] = "binary"
     media_type: str
-    data: bytes
+    data: Annotated[bytes, Sensitive("an exhibit, a scan or a recording is not a span attribute")]
 
     # Base64 on the wire, raw bytes in Python: a checkpoint is JSON, and JSON has no bytes.
     @field_serializer("data")
@@ -88,7 +82,7 @@ class BinaryPart(BaseModel):
 ContentPart = Annotated[TextPart | BinaryPart, Field(discriminator="kind")]
 
 
-class Usage(BaseModel):
+class Usage(AdkModel):
     """What one step consumed, and what it cost if the cost is knowable.
 
     Args:
@@ -101,8 +95,6 @@ class Usage(BaseModel):
         extras: Usage fields a provider reports that the kit does not model, kept rather
             than dropped. Nothing in the kit reads them; they are evidence.
     """
-
-    model_config = _FROZEN
 
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
@@ -164,7 +156,7 @@ class Usage(BaseModel):
         )
 
 
-class Message(BaseModel):
+class Message(AdkModel):
     """One turn in a conversation.
 
     Args:
@@ -174,8 +166,6 @@ class Message(BaseModel):
         tool_call_id: The `ToolCall.id` this result belongs to.
         metadata: Consumer-owned annotations. The kit reads nothing from it.
     """
-
-    model_config = _FROZEN
 
     role: Role
     content: list[ContentPart] = Field(min_length=1)
@@ -194,7 +184,7 @@ class Message(BaseModel):
         return self
 
 
-class ToolCall(BaseModel):
+class ToolCall(AdkModel):
     """A model's request to run a tool.
 
     Args:
@@ -206,8 +196,6 @@ class ToolCall(BaseModel):
         idempotent: Whether repeating the call is known to be safe. Defaults to `False`:
             a retry that re-sends a payment is worse than a retry that does nothing.
     """
-
-    model_config = _FROZEN
 
     id: str = Field(min_length=1)
     name: str = Field(min_length=1)

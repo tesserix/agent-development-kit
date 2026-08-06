@@ -19,9 +19,10 @@ import json
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
 
 from tesserix_adk.core.errors import HookRegistrationError, ProtocolConformanceError
+from tesserix_adk.core.models import AdkModel
 from tesserix_adk.core.protocols import verify_conformance
 from tesserix_adk.core.run import RunState  # noqa: TC001 — pydantic resolves this annotation
 
@@ -40,8 +41,6 @@ __all__ = [
     "HookSubject",
     "resolve_hooks",
 ]
-
-_FROZEN = ConfigDict(frozen=True, extra="forbid")
 
 
 class HookPoint(StrEnum):
@@ -81,7 +80,7 @@ _RESTRICTIVENESS = {
 }
 
 
-class HookDecision(BaseModel):
+class HookDecision(AdkModel):
     """One hook's answer at one point.
 
     Args:
@@ -93,8 +92,6 @@ class HookDecision(BaseModel):
         >>> HookDecision.refuse("account number in the prompt").action
         <HookAction.REFUSE: 'refuse'>
     """
-
-    model_config = _FROZEN
 
     action: HookAction = HookAction.CONTINUE
     reason: str = ""
@@ -141,7 +138,7 @@ class HookDecision(BaseModel):
         return cls(action=HookAction.REQUIRE_APPROVAL, reason=reason)
 
 
-class HookSubject(BaseModel):
+class HookSubject(AdkModel):
     """What a hook is told about the step it is being asked about.
 
     Facts, not handles. There is no run, no config and no chain here, so a hook has
@@ -159,8 +156,6 @@ class HookSubject(BaseModel):
         tool_arguments: What it was called with.
         state: The terminal state, at `ON_TERMINAL` only.
     """
-
-    model_config = _FROZEN
 
     point: HookPoint
     run_id: str = Field(min_length=1)
@@ -205,7 +200,7 @@ class ApprovalGate(Protocol):
         ...
 
 
-class ApprovalRecord(BaseModel):
+class ApprovalRecord(AdkModel):
     """A tool call held for a human decision, in a form safe to put in a queue.
 
     An approval queue is a queryable store that outlives the run and is read by people who
@@ -223,8 +218,6 @@ class ApprovalRecord(BaseModel):
         reason: Why approval is required — the tool's declaration or a hook's decision.
         requested_at: Unix seconds.
     """
-
-    model_config = _FROZEN
 
     id: str = Field(min_length=1)
     run_id: str = Field(min_length=1)
@@ -261,7 +254,7 @@ class ApprovalRecord(BaseModel):
         )
 
 
-class ApprovalDecision(BaseModel):
+class ApprovalDecision(AdkModel):
     """A human's answer about one held call.
 
     Args:
@@ -273,8 +266,6 @@ class ApprovalDecision(BaseModel):
             approval is permission at a moment rather than a standing licence.
         reason: Why, where the decider gave one.
     """
-
-    model_config = _FROZEN
 
     record_id: str = Field(min_length=1)
     granted: bool

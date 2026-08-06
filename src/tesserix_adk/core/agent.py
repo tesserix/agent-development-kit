@@ -19,13 +19,15 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-# Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
 from tesserix_adk.core.config import (  # noqa: TC001
     BudgetConfig,
     DeadlineConfig,
     LoopConfig,
     RetryConfig,
 )
+
+# Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
+from tesserix_adk.core.models import AdkModel
 
 __all__ = ["Agent", "ToolFailurePolicy"]
 
@@ -42,7 +44,7 @@ class ToolFailurePolicy(StrEnum):
     FAIL_RUN = "fail_run"
 
 
-class Agent(BaseModel):
+class Agent(AdkModel):
     """A declarative description of an agent.
 
     Args:
@@ -79,7 +81,8 @@ class Agent(BaseModel):
         ()
     """
 
-    model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
+    # An output type is a class, which pydantic will not accept as a value without this.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     name: str = Field(min_length=1)
     version: str = "1.0.0"

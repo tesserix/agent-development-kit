@@ -10,6 +10,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Strict validation at every boundary. `core` gains `AdkModel` — frozen, `strict=True`,
+  `extra="forbid"` — and every model in the kit derives from it, so a misspelt field is an
+  error rather than a passenger, `"12"` is never quietly read as `12`, and a validated
+  record cannot be edited by the layer that reads it. Alongside it: `validated`, which
+  normalises pydantic's error into `SchemaViolationError` carrying the model, every failing
+  path at once (`content.0.binary.media_type` — the list index and the union member are
+  both part of the location), the reason per path and the raw payload; `Sensitive`, a
+  marker carried in `Annotated[...]` metadata; `telemetry_dump`, which drops sensitive
+  fields and masks `SecretStr` while `model_dump_json` keeps both, because a run rehydrated
+  without its credentials rehydrates broken; and `parsed_from_strings`, the one deliberate
+  exception to strictness, for the environment, where every value is a string whatever it
+  means. `BinaryPart.data` is now marked `Sensitive` — a scanned exhibit is evidence in one
+  system and a retention problem in another. Extras stay possible where they are declared
+  (`Usage.extras`, `Message.metadata`) and are refused where they are loose, so forbidding
+  them never blocks a provider from evolving. Aliases stay forbidden outright, with a test
+  that fails if one appears. **Stability:** additive for anything constructing models
+  correctly; a payload that relied on coercion or on an ignored unknown field now raises
+  `SchemaViolationError`, which is an existing defect surfacing rather than a new one.
+  Documented in `docs/models.md` and exercised by `examples/models.py`.
+
 - Determinism and offline replay against a recorded provider. `core` gains the `IdFactory`
   protocol and `AgentRunner` takes `ids`, so the last ambient source in the loop joins the
   clock and the jitter as something a test injects — a `uuid4` in the loop is a field no

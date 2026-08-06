@@ -192,11 +192,35 @@ class ProviderTimeoutError(ProviderError):
 
 
 class SchemaViolationError(AdkError):
-    """Raised when model output does not match the declared type.
+    """Raised when a payload does not match the type declared for that boundary.
 
     The kit does not coerce, fill or partially accept: an output that does not validate
     is an error, not a half-populated object handed on to the caller.
+
+    Args:
+        model: The model that refused it.
+        paths: Every dotted field path that failed, sorted. All of them, not the first:
+            one field per round trip is how a five-field config takes five deploys.
+        problems: Each of those paths with what was wrong with it.
+        payload: What arrived, kept for a debugger. Never logged by the kit.
     """
+
+    def __init__(
+        self,
+        *args: object,
+        model: str = "",
+        paths: tuple[str, ...] = (),
+        problems: Mapping[str, str] | None = None,
+        payload: object = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.model = model
+        self.paths = paths
+        self.problems: dict[str, str] = dict(problems or {})
+        self.payload = payload
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
 
 
 class ToolExecutionError(AdkError):
