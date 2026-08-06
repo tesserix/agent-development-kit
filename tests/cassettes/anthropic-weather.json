@@ -1,0 +1,64 @@
+{
+  "exchanges": [
+    {
+      "body": {
+        "content": [
+          {
+            "id": "toolu_1",
+            "input": {
+              "city": "Delhi"
+            },
+            "name": "lookup",
+            "type": "tool_use"
+          }
+        ],
+        "id": "msg_1",
+        "model": "claude-sonnet-4-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 412,
+          "output_tokens": 38
+        }
+      },
+      "headers": {},
+      "method": "POST",
+      "path": "/v1/messages",
+      "status": 200,
+      "stream": []
+    },
+    {
+      "body": {
+        "content": [
+          {
+            "id": "toolu_2",
+            "input": {
+              "city": "Delhi",
+              "summary": "clear"
+            },
+            "name": "structured_output",
+            "type": "tool_use"
+          }
+        ],
+        "id": "msg_2",
+        "model": "claude-sonnet-4-5",
+        "role": "assistant",
+        "stop_reason": "tool_use",
+        "type": "message",
+        "usage": {
+          "input_tokens": 468,
+          "output_tokens": 24
+        }
+      },
+      "headers": {},
+      "method": "POST",
+      "path": "/v1/messages",
+      "status": 200,
+      "stream": []
+    }
+  ],
+  "format": "1",
+  "provider": "anthropic",
+  "recorded": "2026-08-07"
+}

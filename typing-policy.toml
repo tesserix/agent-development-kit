@@ -226,10 +226,3 @@ reason = "Mirrors MemoryStore, whose value is whatever the consumer stored."
 owner = "@sam123ben"
 review_by = 2027-08-07
 
-[[any]]
-symbol = "tesserix_adk.core.protocols.ModelProvider"
-kind = "provisional"
-reason = "stream() returns the incremental event type, which #38 defines; naming it now would name it twice"
-owner = "@sam123ben"
-review_by = "2026-12-31"
-removed_by = "#38"

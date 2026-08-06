@@ -26,10 +26,11 @@ from tesserix_adk.runtime import ModelResponse, RunFingerprint, fingerprint_of
 from tesserix_adk.testing.fakes import CAPABLE, estimate_tokens
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import AsyncIterator, Iterable, Sequence
     from pathlib import Path
 
     from tesserix_adk.core import Message, ModelCapabilities, ModelProvider, Run
+    from tesserix_adk.core.streaming import StreamEvent
     from tesserix_adk.runtime import ModelRequest
 
 __all__ = [
@@ -220,7 +221,7 @@ class RecordingProvider:
         )
         return response
 
-    async def stream(self, request: ModelRequest) -> object:
+    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
         """Not recorded yet — streaming is #38."""
         raise NotImplementedError("RecordingProvider does not stream; see #38")
 
@@ -294,7 +295,7 @@ class ReplayingProvider:
             raise interaction.error.raised()
         return interaction.response or ModelResponse()
 
-    async def stream(self, request: ModelRequest) -> object:
+    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
         """Not replayed yet — streaming is #38."""
         raise NotImplementedError("ReplayingProvider does not stream; see #38")
 

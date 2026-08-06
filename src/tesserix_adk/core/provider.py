@@ -13,14 +13,32 @@ change to it shows up in a pull request's diff and follows `docs/versioning.md`.
 
 from __future__ import annotations
 
-from typing import Any
+from enum import StrEnum
+from typing import Annotated, Any
 
 from pydantic import Field
 
-from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.models import AdkModel, Sensitive
 from tesserix_adk.core.primitives import Message, ToolCall, Usage
 
-__all__ = ["ModelRequest", "ModelResponse", "ToolDeclaration"]
+__all__ = ["ModelRequest", "ModelResponse", "StopReason", "ToolDeclaration"]
+
+
+class StopReason(StrEnum):
+    """Why a model stopped generating, in the kit's words rather than a vendor's.
+
+    Vendors spell the same handful of outcomes a dozen ways, and a consumer branching on
+    the spelling changes when a vendor renames one. A reason no vendor map covers is
+    `UNKNOWN` rather than the nearest guess: reporting a truncation as a finished answer
+    is the failure that guess produces.
+    """
+
+    END_TURN = "end_turn"
+    MAX_TOKENS = "max_tokens"
+    TOOL_CALLS = "tool_calls"
+    REFUSAL = "refusal"
+    SAFETY = "safety"
+    UNKNOWN = "unknown"
 
 
 class ToolDeclaration(AdkModel):
@@ -51,8 +69,17 @@ class ModelResponse(AdkModel):
 
     A response with neither content nor tool calls is not retried: asking again for the
     same nothing is how a loop wedges.
+
+    Args:
+        content: The answer, as the caller may show it.
+        reasoning: The model's own working out, where it emitted any. Marked sensitive:
+            it is not the answer, it is never replayed into the next turn as though the
+            assistant had said it, and it does not travel to telemetry.
+        stop_reason: Why generation ended, translated into the kit's taxonomy.
     """
 
     content: str = ""
+    reasoning: Annotated[str, Sensitive("model reasoning is not user-visible content")] = ""
     tool_calls: tuple[ToolCall, ...] = ()
     usage: Usage = Field(default_factory=lambda: Usage(input_tokens=0, output_tokens=0))
+    stop_reason: StopReason = StopReason.END_TURN

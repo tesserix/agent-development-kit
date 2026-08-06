@@ -50,7 +50,7 @@ tesserix_adk.core.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 
 tesserix_adk.core.Message :: class Message(AdkModel)
 tesserix_adk.core.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
 tesserix_adk.core.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
-tesserix_adk.core.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'Any'}
+tesserix_adk.core.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.core.ModelRef :: class ModelRef(AdkModel)
 tesserix_adk.core.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.core.ModelResponse :: class ModelResponse(AdkModel)
@@ -62,6 +62,7 @@ tesserix_adk.core.Provenance :: class Provenance(object)
 tesserix_adk.core.ProviderConfig :: class ProviderConfig(AdkModel)
 tesserix_adk.core.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
+tesserix_adk.core.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.core.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.RedactionConfig :: class RedactionConfig(AdkModel)
 tesserix_adk.core.RepairConfig :: class RepairConfig(AdkModel)
@@ -77,19 +78,29 @@ tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
 tesserix_adk.core.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.SchemaViolationError :: class SchemaViolationError(AdkError)
+tesserix_adk.core.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.core.Sensitive :: class Sensitive(object)
+tesserix_adk.core.StopReason :: class StopReason(StrEnum)
 tesserix_adk.core.StoreConfig :: class StoreConfig(AdkModel)
+tesserix_adk.core.StreamAccumulator :: class StreamAccumulator(object) {feed(self, event: 'StreamEvent') -> 'None'; finish(self, stop_reason: 'StopReason') -> 'ModelResponse'}
+tesserix_adk.core.StreamEnd :: class StreamEnd(StreamEvent)
+tesserix_adk.core.StreamEvent :: class StreamEvent(AdkModel)
+tesserix_adk.core.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
 tesserix_adk.core.StrictSubset :: class StrictSubset(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.TelemetryConfig :: class TelemetryConfig(AdkModel)
 tesserix_adk.core.TenantContext :: class TenantContext(AdkModel)
+tesserix_adk.core.TextDelta :: class TextDelta(StreamEvent)
 tesserix_adk.core.TextPart :: class TextPart(AdkModel)
+tesserix_adk.core.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError)
 tesserix_adk.core.ToolCall :: class ToolCall(AdkModel)
+tesserix_adk.core.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.core.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.core.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
 tesserix_adk.core.Usage :: class Usage(AdkModel)
+tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.capabilities.Capability :: class Capability(StrEnum)
@@ -150,6 +161,8 @@ tesserix_adk.core.errors.RecursionLimitError :: class RecursionLimitError(LoopLi
 tesserix_adk.core.errors.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
 tesserix_adk.core.errors.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
+tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
+tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
 tesserix_adk.core.hooks.ApprovalDecision :: class ApprovalDecision(AdkModel)
@@ -186,13 +199,15 @@ tesserix_adk.core.protocols.Clock :: class Clock(Protocol) {now(self) -> 'float'
 tesserix_adk.core.protocols.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.core.protocols.IdFactory :: class IdFactory(Protocol)
 tesserix_adk.core.protocols.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
-tesserix_adk.core.protocols.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'Any'}
+tesserix_adk.core.protocols.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.core.protocols.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.core.protocols.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.core.protocols.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
 tesserix_adk.core.protocols.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
 tesserix_adk.core.protocols.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.provider.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.core.provider.ModelResponse :: class ModelResponse(AdkModel)
+tesserix_adk.core.provider.StopReason :: class StopReason(StrEnum)
 tesserix_adk.core.provider.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.core.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
 tesserix_adk.core.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
@@ -215,20 +230,61 @@ tesserix_adk.core.schema.schema_for :: def schema_for(target: 'type | Callable[.
 tesserix_adk.core.schema.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.core.schema_for :: def schema_for(target: 'type | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None) -> 'dict[str, Any]'
 tesserix_adk.core.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
+tesserix_adk.core.streaming.ReasoningDelta :: class ReasoningDelta(StreamEvent)
+tesserix_adk.core.streaming.StreamAccumulator :: class StreamAccumulator(object) {feed(self, event: 'StreamEvent') -> 'None'; finish(self, stop_reason: 'StopReason') -> 'ModelResponse'}
+tesserix_adk.core.streaming.StreamEnd :: class StreamEnd(StreamEvent)
+tesserix_adk.core.streaming.StreamEvent :: class StreamEvent(AdkModel)
+tesserix_adk.core.streaming.TextDelta :: class TextDelta(StreamEvent)
+tesserix_adk.core.streaming.ToolCallDelta :: class ToolCallDelta(StreamEvent)
+tesserix_adk.core.streaming.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.telemetry_dump :: def telemetry_dump(model: 'BaseModel') -> 'dict[str, Any]'
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
+tesserix_adk.models.CATALOGUE_VERSION :: CATALOGUE_VERSION: str
 tesserix_adk.models.Capability :: class Capability(StrEnum)
 tesserix_adk.models.CapabilityError :: class CapabilityError(AdkError)
 tesserix_adk.models.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
+tesserix_adk.models.Credential :: class Credential(object) {value(self) -> 'str'}
+tesserix_adk.models.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.models.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
-tesserix_adk.models.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'Any'}
+tesserix_adk.models.ModelCard :: class ModelCard(AdkModel)
+tesserix_adk.models.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.ModelRef :: class ModelRef(AdkModel)
 tesserix_adk.models.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.models.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.models.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.models.ModelSpec :: class ModelSpec(AdkModel) {with_capabilities(self, **overrides: 'object') -> 'Self'}
+tesserix_adk.models.Pricing :: class Pricing(AdkModel)
+tesserix_adk.models.ReasoningDelta :: class ReasoningDelta(StreamEvent)
+tesserix_adk.models.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
+tesserix_adk.models.StopReason :: class StopReason(StrEnum)
+tesserix_adk.models.StreamAccumulator :: class StreamAccumulator(object) {feed(self, event: 'StreamEvent') -> 'None'; finish(self, stop_reason: 'StopReason') -> 'ModelResponse'}
+tesserix_adk.models.StreamEnd :: class StreamEnd(StreamEvent)
+tesserix_adk.models.StreamEvent :: class StreamEvent(AdkModel)
+tesserix_adk.models.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
+tesserix_adk.models.TextDelta :: class TextDelta(StreamEvent)
+tesserix_adk.models.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError)
+tesserix_adk.models.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.models.ToolDeclaration :: class ToolDeclaration(AdkModel)
+tesserix_adk.models.UsageDelta :: class UsageDelta(StreamEvent)
+tesserix_adk.models.catalogue.CATALOGUE_VERSION :: CATALOGUE_VERSION: str
+tesserix_adk.models.catalogue.ModelCard :: class ModelCard(AdkModel)
+tesserix_adk.models.catalogue.Pricing :: class Pricing(AdkModel)
+tesserix_adk.models.catalogue.known_models :: def known_models(provider: 'str | None' = None) -> 'tuple[ModelCard, ...]'
+tesserix_adk.models.catalogue.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
+tesserix_adk.models.catalogue.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
+tesserix_adk.models.credentials.Credential :: class Credential(object) {value(self) -> 'str'}
+tesserix_adk.models.credentials.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
+tesserix_adk.models.known_models :: def known_models(provider: 'str | None' = None) -> 'tuple[ModelCard, ...]'
+tesserix_adk.models.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
+tesserix_adk.models.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
+tesserix_adk.models.providers.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.anthropic.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.gemini.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.normalised_tool_calls :: def normalised_tool_calls(calls: 'Sequence[ToolCall]', *, request: 'ModelRequest', capabilities: 'ModelCapabilities', provider: 'str') -> 'tuple[ToolCall, ...]'
+tesserix_adk.models.providers.openai.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
@@ -272,8 +328,13 @@ tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {record(
 tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.testing.FakeSecrets :: class FakeSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.testing.FakeToolRegistry :: class FakeToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.testing.FakeTracer :: class FakeTracer(object) {event(self, name: 'str', **attributes: 'object') -> 'None'; names(self) -> 'list[str]'; span(self, name: 'str', **attributes: 'object') -> 'Iterator[None]'}
+tesserix_adk.testing.HTTP_CASSETTE_FORMAT :: HTTP_CASSETTE_FORMAT: str
+tesserix_adk.testing.HttpCassette :: class HttpCassette(AdkModel) {save(self, path: 'Path') -> 'None'}
+tesserix_adk.testing.HttpExchange :: class HttpExchange(AdkModel)
+tesserix_adk.testing.HttpReplay :: class HttpReplay(object)
 tesserix_adk.testing.Interaction :: class Interaction(AdkModel)
 tesserix_adk.testing.MemoryStoreConformance :: class MemoryStoreConformance(ABC) {make_store(self) -> 'MemoryStore'; test_delete_removes_the_key(self) -> 'None'; test_deleting_an_absent_key_is_not_an_error(self) -> 'None'; test_get_returns_none_for_an_absent_key(self) -> 'None'; test_keys_do_not_collide_across_distinct_values(self) -> 'None'; test_put_replaces_rather_than_merges(self) -> 'None'; test_put_then_get_round_trips(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
 tesserix_adk.testing.ModelProviderConformance :: class ModelProviderConformance(ABC) {make_provider(self) -> 'ModelProvider'; test_a_longer_prompt_does_not_count_for_less(self) -> 'None'; test_it_answers_with_a_response(self) -> 'None'; test_it_counts_tokens_without_going_negative(self) -> 'None'; test_it_declares_what_it_can_do(self) -> 'None'; test_it_is_named(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_streaming_it_never_declared_is_refused(self) -> 'None'; test_the_declaration_does_not_change_between_reads(self) -> 'None'}
@@ -281,11 +342,12 @@ tesserix_adk.testing.NetworkAccessInTestError :: class NetworkAccessInTestError(
 tesserix_adk.testing.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.RecordedError :: class RecordedError(AdkModel) {raised(self) -> 'ProviderError'}
 tesserix_adk.testing.RecordedEvent :: class RecordedEvent(object)
-tesserix_adk.testing.RecordingProvider :: class RecordingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'object'}
-tesserix_adk.testing.ReplayingProvider :: class ReplayingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'object'}
-tesserix_adk.testing.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'object'}
+tesserix_adk.testing.RecordingProvider :: class RecordingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.testing.ReplayingProvider :: class ReplayingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.testing.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.testing.SentRequest :: class SentRequest(AdkModel)
 tesserix_adk.testing.SequentialIds :: class SequentialIds(object)
-tesserix_adk.testing.StallingProvider :: class StallingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; release(self) -> 'None'; stream(self, request: 'ModelRequest') -> 'object'}
+tesserix_adk.testing.StallingProvider :: class StallingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; release(self) -> 'None'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.testing.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Tracer'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
 tesserix_adk.testing.assert_same_run :: def assert_same_run(first: 'Run', second: 'Run', *, message: 'str' = '') -> 'None'
@@ -294,8 +356,8 @@ tesserix_adk.testing.cassette.CassetteMissError :: class CassetteMissError(AdkEr
 tesserix_adk.testing.cassette.CassetteVersionError :: class CassetteVersionError(AdkError)
 tesserix_adk.testing.cassette.Interaction :: class Interaction(AdkModel)
 tesserix_adk.testing.cassette.RecordedError :: class RecordedError(AdkModel) {raised(self) -> 'ProviderError'}
-tesserix_adk.testing.cassette.RecordingProvider :: class RecordingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'object'}
-tesserix_adk.testing.cassette.ReplayingProvider :: class ReplayingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'object'}
+tesserix_adk.testing.cassette.RecordingProvider :: class RecordingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.testing.cassette.ReplayingProvider :: class ReplayingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.cassette.assert_same_run :: def assert_same_run(first: 'Run', second: 'Run', *, message: 'str' = '') -> 'None'
 tesserix_adk.testing.cassette.redacted :: def redacted(text: 'str') -> 'str'
 tesserix_adk.testing.conformance.BudgetPolicyConformance :: class BudgetPolicyConformance(ABC) {make_policy(self) -> 'BudgetPolicy'; test_a_reservation_within_budget_is_permitted(self) -> 'None'; test_recording_after_reserving_does_not_raise(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
@@ -310,14 +372,20 @@ tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {r
 tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.fakes.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.testing.fakes.FakeSecrets :: class FakeSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.testing.fakes.FakeToolRegistry :: class FakeToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeTracer :: class FakeTracer(object) {event(self, name: 'str', **attributes: 'object') -> 'None'; names(self) -> 'list[str]'; span(self, name: 'str', **attributes: 'object') -> 'Iterator[None]'}
 tesserix_adk.testing.fakes.RecordedEvent :: class RecordedEvent(object)
-tesserix_adk.testing.fakes.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'object'}
+tesserix_adk.testing.fakes.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.fakes.SequentialIds :: class SequentialIds(object)
-tesserix_adk.testing.fakes.StallingProvider :: class StallingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; release(self) -> 'None'; stream(self, request: 'ModelRequest') -> 'object'}
+tesserix_adk.testing.fakes.StallingProvider :: class StallingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; release(self) -> 'None'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.fakes.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.testing.fakes.estimate_tokens :: def estimate_tokens(messages: 'Sequence[Message]') -> 'int'
+tesserix_adk.testing.http_cassette.HTTP_CASSETTE_FORMAT :: HTTP_CASSETTE_FORMAT: str
+tesserix_adk.testing.http_cassette.HttpCassette :: class HttpCassette(AdkModel) {save(self, path: 'Path') -> 'None'}
+tesserix_adk.testing.http_cassette.HttpExchange :: class HttpExchange(AdkModel)
+tesserix_adk.testing.http_cassette.HttpReplay :: class HttpReplay(object)
+tesserix_adk.testing.http_cassette.SentRequest :: class SentRequest(AdkModel)
 tesserix_adk.testing.pytest_plugin.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.redacted :: def redacted(text: 'str') -> 'str'

@@ -20,9 +20,10 @@ from tesserix_adk.core.primitives import TextPart
 from tesserix_adk.runtime import ModelRequest, ModelResponse, ToolDeclaration
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator, Mapping, Sequence
+    from collections.abc import AsyncIterator, Callable, Iterator, Mapping, Sequence
 
     from tesserix_adk.core.primitives import Message
+    from tesserix_adk.core.streaming import StreamEvent
 
 __all__ = [
     "CAPABLE",
@@ -31,6 +32,7 @@ __all__ = [
     "FakeClock",
     "FakeGuardrail",
     "FakeMemoryStore",
+    "FakeSecrets",
     "FakeToolRegistry",
     "FakeTracer",
     "RecordedEvent",
@@ -280,7 +282,7 @@ class ScriptedProvider:
             raise nxt
         return nxt
 
-    async def stream(self, request: ModelRequest) -> object:  # noqa: ARG002 — nothing is sent yet
+    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:  # noqa: ARG002
         """Not scripted. Streaming has its own epic (#38).
 
         Raises:
@@ -357,7 +359,7 @@ class StallingProvider:
                 break
         return ModelResponse(content="answered after all")
 
-    async def stream(self, request: ModelRequest) -> object:
+    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
         """Not scripted. Streaming has its own epic (#38)."""
         raise NotImplementedError("StallingProvider does not stream; see #38")
 
@@ -429,3 +431,21 @@ class FakeGuardrail:
         if self._raises is not None:
             raise self._raises
         return self._allow
+
+
+class FakeSecrets:
+    """A `SecretProvider` backed by a mapping, so a test never touches the environment.
+
+    Args:
+        secrets: Values by variable name. A name that is absent answers `None`, which is
+            how the unconfigured path is exercised.
+    """
+
+    def __init__(self, secrets: Mapping[str, str] | None = None) -> None:
+        self._secrets = dict(secrets or {})
+        self.asked: list[str] = []
+
+    def secret(self, name: str) -> str | None:
+        """Return the value recorded for `name`, or `None`."""
+        self.asked.append(name)
+        return self._secrets.get(name)

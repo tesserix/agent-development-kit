@@ -921,6 +921,13 @@ class AgentRunner:
     ) -> Run[Any]:
         calls = deduplicate(list(response.tool_calls))
         self._refuse_a_turn_that_would_break_a_cap(run, agent, calls, bounds)
+        messages.append(
+            Message(
+                role="assistant",
+                content=[TextPart(text=response.content)] if response.content else [],
+                tool_calls=tuple(calls),
+            )
+        )
         for call in calls:
             if call.name not in agent.tools:
                 raise _Terminal(

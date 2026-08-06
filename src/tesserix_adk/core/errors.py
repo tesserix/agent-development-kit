@@ -37,6 +37,8 @@ __all__ = [
     "RepeatedCallError",
     "SchemaGenerationError",
     "SchemaViolationError",
+    "StreamInterruptedError",
+    "ToolArgumentValidationError",
     "ToolExecutionError",
 ]
 
@@ -305,6 +307,81 @@ class SchemaViolationError(AdkError):
         self.problems: dict[str, str] = dict(problems or {})
         self.payload = payload
         super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
+
+
+class ToolArgumentValidationError(SchemaViolationError):
+    """Raised when a model's tool-call arguments do not match the tool's own schema.
+
+    Raised by the provider adapter, before the call reaches the registry: the adapter is
+    the last place a malformed call can be stopped for free. Nothing is coerced and no
+    absent field is filled in — a tool run with arguments the model did not send is a
+    side effect nobody asked for.
+
+    Args:
+        tool: The tool that was called.
+        call_id: The provider's id for the call, which is what a result is matched back to.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        tool: str = "",
+        call_id: str = "",
+        paths: tuple[str, ...] = (),
+        problems: Mapping[str, str] | None = None,
+        payload: object = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.tool = tool
+        self.call_id = call_id
+        super().__init__(
+            *args,
+            model=tool,
+            paths=paths,
+            problems=problems,
+            payload=payload,
+            run_id=run_id,
+            tenant=tenant,
+            details=details,
+        )
+
+
+class StreamInterruptedError(ProviderError):
+    """Raised when a stream stopped before the model had finished answering.
+
+    The partial text is carried rather than returned: a truncated answer handed back as a
+    complete one is a wrong answer with nothing to show that it is wrong. A caller that
+    wants what did arrive reads `partial` deliberately.
+
+    Args:
+        partial: The text emitted before the stream stopped.
+        received: How many events arrived, which separates a stream that died at once
+            from one that died a word from the end.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        partial: str = "",
+        received: int = 0,
+        status: int | None = None,
+        retry_after: float | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.partial = partial
+        self.received = received
+        super().__init__(
+            *args,
+            status=status,
+            retry_after=retry_after,
+            run_id=run_id,
+            tenant=tenant,
+            details=details,
+        )
 
 
 class SchemaGenerationError(ConfigurationError):

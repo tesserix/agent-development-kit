@@ -34,6 +34,27 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Providers for Anthropic, OpenAI and Gemini, behind the one protocol. `AnthropicProvider`,
+  `OpenAIProvider` and `GeminiProvider` take a model id as the vendor spells it, read their
+  capabilities and prices from the model catalogue, and resolve their key on every call
+  rather than at construction, so a rotated secret is picked up without a restart; the same
+  agent definition runs on all three with only the model reference changed. They speak HTTP
+  directly rather than through vendor SDKs, so each adapter is one request shape and one
+  response shape instead of a second dependency graph and a second translation. The
+  differences stay inside them: system prompt placement, structured output through a forced
+  tool or `response_format` or `responseSchema` and never through parsing prose, tool
+  results merged into one turn or sent one turn each or matched back by name, the tool-call
+  ids Gemini does not send and the adapter mints, and the `STOP` Gemini reports whether or
+  not it asked for a tool. Streaming is one event model across the three, terminating in a
+  `StreamEnd` that carries the settled response; a stream that ends early raises
+  `StreamInterruptedError` with the partial text rather than returning a fragment as a whole
+  answer. `HttpCassette`, `HttpExchange`, `HttpReplay` and `FakeSecrets` in
+  `tesserix_adk.testing` record and serve traffic at the HTTP layer, so the whole matrix
+  runs in CI with no network and no keys, and `replay.sent` asserts what the adapter put on
+  the wire — which a provider-level recording cannot see. **Stability:** additive; nothing
+  existing changes. Documented in `docs/providers.md`, exercised by
+  `examples/vendor_providers.py`.
+
 - A conformance gate for the typing guarantee. Every `# type: ignore` in the source and
   every `Any` in an exported signature is declared in the new `typing-policy.toml` with a
   reason, an owner and a review date; `make typing-gate` fails on an escape the policy does

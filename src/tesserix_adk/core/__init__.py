@@ -57,6 +57,8 @@ from tesserix_adk.core.errors import (
     RepeatedCallError,
     SchemaGenerationError,
     SchemaViolationError,
+    StreamInterruptedError,
+    ToolArgumentValidationError,
     ToolExecutionError,
 )
 from tesserix_adk.core.extras import require_extra
@@ -97,12 +99,18 @@ from tesserix_adk.core.protocols import (
     IdFactory,
     MemoryStore,
     ModelProvider,
+    SecretProvider,
     ToolRegistry,
     Tracer,
     members_of,
     verify_conformance,
 )
-from tesserix_adk.core.provider import ModelRequest, ModelResponse, ToolDeclaration
+from tesserix_adk.core.provider import (
+    ModelRequest,
+    ModelResponse,
+    StopReason,
+    ToolDeclaration,
+)
 from tesserix_adk.core.run import (
     Run,
     RunContext,
@@ -122,6 +130,15 @@ from tesserix_adk.core.schema import (
     StrictSubset,
     schema_for,
     schema_hash,
+)
+from tesserix_adk.core.streaming import (
+    ReasoningDelta,
+    StreamAccumulator,
+    StreamEnd,
+    StreamEvent,
+    TextDelta,
+    ToolCallDelta,
+    UsageDelta,
 )
 
 __all__ = [
@@ -189,6 +206,7 @@ __all__ = [
     "ProviderConfig",
     "ProviderError",
     "ProviderTimeoutError",
+    "ReasoningDelta",
     "RecursionLimitError",
     "RedactionConfig",
     "RepairConfig",
@@ -203,19 +221,29 @@ __all__ = [
     "SchemaDialect",
     "SchemaGenerationError",
     "SchemaViolationError",
+    "SecretProvider",
     "Sensitive",
+    "StopReason",
     "StoreConfig",
+    "StreamAccumulator",
+    "StreamEnd",
+    "StreamEvent",
+    "StreamInterruptedError",
     "StrictSubset",
     "TelemetryConfig",
     "TenantContext",
+    "TextDelta",
     "TextPart",
+    "ToolArgumentValidationError",
     "ToolCall",
+    "ToolCallDelta",
     "ToolDeclaration",
     "ToolExecutionError",
     "ToolFailurePolicy",
     "ToolRegistry",
     "Tracer",
     "Usage",
+    "UsageDelta",
     "deduplicate",
     "deprecate",
     "deprecations",

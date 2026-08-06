@@ -25,6 +25,7 @@ from tesserix_adk.testing.fakes import (
     FakeClock,
     FakeGuardrail,
     FakeMemoryStore,
+    FakeSecrets,
     FakeToolRegistry,
     FakeTracer,
     RecordedEvent,
@@ -34,10 +35,18 @@ from tesserix_adk.testing.fakes import (
     ToolExecutionError,
     estimate_tokens,
 )
+from tesserix_adk.testing.http_cassette import (
+    HTTP_CASSETTE_FORMAT,
+    HttpCassette,
+    HttpExchange,
+    HttpReplay,
+    SentRequest,
+)
 from tesserix_adk.testing.pytest_plugin import NetworkAccessInTestError, QuarantineError
 
 __all__ = [
     "CAPABLE",
+    "HTTP_CASSETTE_FORMAT",
     "BudgetExceededError",
     "BudgetPolicyConformance",
     "Cassette",
@@ -48,8 +57,12 @@ __all__ = [
     "FakeClock",
     "FakeGuardrail",
     "FakeMemoryStore",
+    "FakeSecrets",
     "FakeToolRegistry",
     "FakeTracer",
+    "HttpCassette",
+    "HttpExchange",
+    "HttpReplay",
     "Interaction",
     "MemoryStoreConformance",
     "ModelProviderConformance",
@@ -60,6 +73,7 @@ __all__ = [
     "RecordingProvider",
     "ReplayingProvider",
     "ScriptedProvider",
+    "SentRequest",
     "SequentialIds",
     "StallingProvider",
     "ToolExecutionError",

@@ -19,11 +19,12 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 from tesserix_adk.core.errors import ProtocolConformanceError
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import AsyncIterator, Sequence
 
     from tesserix_adk.core.capabilities import ModelCapabilities
     from tesserix_adk.core.primitives import Message
     from tesserix_adk.core.provider import ModelRequest, ModelResponse
+    from tesserix_adk.core.streaming import StreamEvent
 
 __all__ = [
     "BudgetPolicy",
@@ -32,6 +33,7 @@ __all__ = [
     "IdFactory",
     "MemoryStore",
     "ModelProvider",
+    "SecretProvider",
     "ToolRegistry",
     "Tracer",
     "members_of",
@@ -107,10 +109,12 @@ class ModelProvider(Protocol):
         """
         ...
 
-    async def stream(self, request: ModelRequest) -> Any:
+    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
         """Return an async iterator of incremental completion events.
 
-        The event type is `Any` until the streaming epic (#38) names one.
+        The events are the kit's own — see `tesserix_adk.core.streaming` — so a consumer
+        reads one vocabulary whichever vendor produced the stream. The last event is a
+        `StreamEnd` carrying the assembled response.
 
         Raises:
             CapabilityError: If this provider does not declare `streaming`. Buffering one
@@ -147,6 +151,20 @@ class ToolRegistry(Protocol):
             ToolNotFoundError: If no tool is registered under `name`.
             ToolInputError: If `arguments` do not satisfy the declared schema.
         """
+        ...
+
+
+@runtime_checkable
+class SecretProvider(Protocol):
+    """Where a credential is looked up, asked once per use rather than once per process.
+
+    Implemented by the environment by default, and by a secret manager where one is
+    injected. Nothing in the kit reads a key from a config file or a database: one is
+    found by whoever clones the repository, the other cannot be rotated without a restart.
+    """
+
+    def secret(self, name: str) -> str | None:
+        """Return the current value for `name`, or None where there is not one."""
         ...
 
 

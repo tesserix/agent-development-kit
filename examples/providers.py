@@ -25,9 +25,9 @@ from tesserix_adk.runtime import AgentRunner
 from tesserix_adk.testing import FakeClock, FakeToolRegistry, estimate_tokens
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import AsyncIterator, Sequence
 
-    from tesserix_adk.core import Message
+    from tesserix_adk.core import Message, StreamEvent
 
 
 class EchoProvider:
@@ -51,7 +51,7 @@ class EchoProvider:
         said = [p.text for m in request.messages for p in m.content if isinstance(p, TextPart)]
         return ModelResponse(content=f"echo: {said[-1]}")
 
-    async def stream(self, request: ModelRequest) -> object:  # noqa: ARG002
+    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:  # noqa: ARG002
         """Refused unless declared: a single buffered chunk is not a stream.
 
         Raises:

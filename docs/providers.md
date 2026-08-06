@@ -131,3 +131,68 @@ explicitly — `capabilities=CAPABLE.declaring(structured_output=True)` — so c
 gating can be proven without a network.
 
 Runnable: [`examples/providers.py`](../examples/providers.py).
+
+## The vendor adapters
+
+Three ship with the kit, under `tesserix_adk.models.providers`:
+
+```python
+from tesserix_adk.models.providers import AnthropicProvider, GeminiProvider, OpenAIProvider
+
+provider = AnthropicProvider("claude-sonnet-4-5")   # key from ANTHROPIC_API_KEY
+```
+
+Each takes a model id as the vendor spells it, reads its capabilities and prices from the
+[model catalogue](models.md), and resolves its key on every call rather than at
+construction, so a rotated key is picked up without a restart. Nothing else is required:
+
+| Provider | Endpoint | Key |
+|---|---|---|
+| `AnthropicProvider` | `/v1/messages` | `ANTHROPIC_API_KEY` |
+| `OpenAIProvider` | `/v1/chat/completions` | `OPENAI_API_KEY` |
+| `GeminiProvider` | `/v1beta/models/{model}:generateContent` | `GEMINI_API_KEY` |
+
+Options are shared: `capabilities` overrides what the catalogue says, `secrets` injects a
+`SecretProvider`, `api_key_variable` renames the variable, `base_url` reaches a proxy or a
+self-hosted endpoint, `timeout` bounds the call, and `transport` replaces the HTTP
+transport, which is what the recorded tests use.
+
+They speak HTTP directly rather than through vendor SDKs. `httpx` is already a dependency,
+so each adapter is one request shape and one response shape instead of a second dependency
+graph and a second translation — and the traffic can be recorded at the HTTP layer, which
+is where the interesting half of an adapter's behaviour lives.
+
+### Where the three differ
+
+The differences the adapters absorb, so nothing above them has to:
+
+| | Anthropic | OpenAI | Gemini |
+|---|---|---|---|
+| System prompt | Top-level `system` | A `system` turn | `systemInstruction` |
+| Structured output | Forced tool, unwrapped on the way back | `response_format`, `strict` only when the schema qualifies | `responseSchema`, pruned of keywords the vendor rejects |
+| Tool results | Merged into one user turn of `tool_result` blocks | One `tool` turn each | `functionResponse`, matched back by tool name |
+| Tool call ids | Sent | Sent | **Not sent** — minted by the adapter |
+| Stop reason | Reported | Reported | `STOP` either way, so it is read off the parts |
+
+An adapter that believed Gemini's `STOP` would return a finished turn for a model that had
+asked for a tool, and the caller would never run it.
+
+### Recording the traffic
+
+`HttpCassette` records exchanges at the HTTP layer and `HttpReplay` serves them back
+through an `httpx` transport, so the whole matrix runs in CI with no network and no keys:
+
+```python
+from tesserix_adk.testing import FakeSecrets, HttpCassette, HttpExchange, HttpReplay
+
+replay = HttpReplay(HttpCassette(provider="openai", exchanges=(HttpExchange(...),)))
+provider = OpenAIProvider(
+    "gpt-4o", secrets=FakeSecrets({"OPENAI_API_KEY": "test"}), transport=replay.transport
+)
+```
+
+`replay.sent` is the list of requests the adapter actually made. Asserting on it is how a
+dropped system prompt or a mis-shaped tool result is caught — a provider-level recording
+cannot see any of it, because by then the translation has already happened.
+
+Runnable: [`examples/vendor_providers.py`](../examples/vendor_providers.py).

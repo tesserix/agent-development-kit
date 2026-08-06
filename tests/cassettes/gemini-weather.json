@@ -1,0 +1,64 @@
+{
+  "exchanges": [
+    {
+      "body": {
+        "candidates": [
+          {
+            "content": {
+              "parts": [
+                {
+                  "functionCall": {
+                    "args": {
+                      "city": "Delhi"
+                    },
+                    "name": "lookup"
+                  }
+                }
+              ],
+              "role": "model"
+            },
+            "finishReason": "STOP"
+          }
+        ],
+        "usageMetadata": {
+          "candidatesTokenCount": 15,
+          "promptTokenCount": 358
+        }
+      },
+      "headers": {},
+      "method": "POST",
+      "path": "/v1beta/models/gemini-2.5-flash:generateContent",
+      "status": 200,
+      "stream": []
+    },
+    {
+      "body": {
+        "candidates": [
+          {
+            "content": {
+              "parts": [
+                {
+                  "text": "{\"city\": \"Delhi\", \"summary\": \"clear\"}"
+                }
+              ],
+              "role": "model"
+            },
+            "finishReason": "STOP"
+          }
+        ],
+        "usageMetadata": {
+          "candidatesTokenCount": 12,
+          "promptTokenCount": 402
+        }
+      },
+      "headers": {},
+      "method": "POST",
+      "path": "/v1beta/models/gemini-2.5-flash:generateContent",
+      "status": 200,
+      "stream": []
+    }
+  ],
+  "format": "1",
+  "provider": "gemini",
+  "recorded": "2026-08-07"
+}

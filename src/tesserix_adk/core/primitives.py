@@ -162,15 +162,28 @@ class Message(AdkModel):
     Args:
         role: Who produced it. A `tool` message is a result and must name the call it
             answers; every other role must not, since there is nothing to answer.
-        content: One or more parts. A message with none says nothing and is refused.
+        content: The parts of what was said. Empty only on an assistant turn that asked
+            for a tool and said nothing else, which is a turn with no words in it.
+        tool_calls: What the assistant asked for on this turn. Recorded because every
+            vendor wants the call beside the result that answers it, and a history of
+            results alone is one no vendor accepts and no reader can follow.
         tool_call_id: The `ToolCall.id` this result belongs to.
         metadata: Consumer-owned annotations. The kit reads nothing from it.
     """
 
     role: Role
-    content: list[ContentPart] = Field(min_length=1)
+    content: list[ContentPart] = Field(default_factory=list)
+    tool_calls: tuple[ToolCall, ...] = ()
     tool_call_id: str | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _a_message_says_something(self) -> Message:
+        if not self.content and not self.tool_calls:
+            raise ValueError("a message with no content and no tool calls says nothing")
+        if self.tool_calls and self.role != "assistant":
+            raise ValueError(f"a {self.role} message cannot ask for a tool; only an assistant can")
+        return self
 
     @model_validator(mode="after")
     def _tool_results_name_their_call(self) -> Message:
