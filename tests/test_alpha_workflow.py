@@ -46,6 +46,11 @@ class TestGates:
     def test_the_full_gates_run_before_anything_is_published(self) -> None:
         assert alpha_jobs()["gates"]["uses"] == "./.github/workflows/ci.yml"
 
+    def test_ci_does_not_also_run_itself_on_a_push_to_main(self) -> None:
+        """Both would land in CI's own concurrency group and cancel each other, which
+        reads on the branch as a failed run. Alpha runs the same gates on the same push."""
+        assert "push" not in triggers(ALPHA.with_name("ci.yml"))
+
     def test_the_build_waits_for_the_gates(self) -> None:
         assert "gates" in alpha_jobs()["build"]["needs"]
 
@@ -75,6 +80,14 @@ class TestPublishing:
 
     def test_the_publish_is_gated_by_an_environment(self) -> None:
         assert alpha_jobs()["publish"]["environment"] == "pypi"
+
+    def test_the_upload_waits_for_the_trusted_publisher_to_be_configured(self) -> None:
+        """One-time setup nobody can do from here. Failing every merge until it happens
+        trains the team to ignore a red main, which costs more than the delay."""
+        assert "PUBLISH_ALPHAS" in alpha_jobs()["publish"]["if"]
+
+    def test_the_build_is_not_gated_so_every_merge_is_proven_publishable(self) -> None:
+        assert "if" not in alpha_jobs()["build"]
 
     def test_the_workflow_cannot_write_to_the_repository_by_default(self) -> None:
         assert load_yaml(ALPHA)["permissions"] == {"contents": "read"}

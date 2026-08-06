@@ -71,8 +71,14 @@ path nobody has tested by the time it matters.
 ### One-time setup
 
 - PyPI: a trusted publisher for `tesserix/agent-development-kit`, workflow
-  `release.yml`, environment `pypi`.
+  `release.yml`, environment `pypi`. A second one for `alpha.yml`, same environment.
 - GitHub: a `pypi` environment with the reviewers who are allowed to approve a publish.
+- GitHub: repository variable `PUBLISH_ALPHAS=true`, once both publishers exist. Until it
+  is set, `alpha.yml` builds and checks the alpha on every merge but does not upload it —
+  a merge that fails on setup nobody can do from the pull request teaches the team to
+  ignore a red `main`.
+- GitHub, when a consumer repository exists: variable `DOWNSTREAM_REPO` and a read-scoped
+  `DOWNSTREAM_TOKEN`, which turn on the integration job.
 
 ## Release notes
 

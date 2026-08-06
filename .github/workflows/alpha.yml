@@ -57,6 +57,9 @@ jobs:
   publish:
     name: publish the alpha
     needs: build
+    # Waits for the one-time trusted-publisher setup in docs/releasing.md. The build above
+    # still runs on every merge, so the alpha is proven publishable either way.
+    if: vars.PUBLISH_ALPHAS == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

@@ -1,11 +1,11 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
-  # The release calls this workflow rather than copying it: a second set of gates drifts.
+  # Release and Alpha call this workflow rather than copying it: a second set of gates
+  # drifts. Alpha runs it on every push to main, so a push trigger here would put the
+  # same gates twice in one concurrency group, where they cancel each other.
   workflow_call:
 
 permissions:
