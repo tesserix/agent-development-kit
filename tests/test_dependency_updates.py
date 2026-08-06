@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from tests.ci_config import CI, ROOT, ci_jobs, ci_run_steps, load_yaml
+from tests.ci_config import CI, ROOT, ci_jobs, ci_run_steps, load_yaml, triggers
 
 DEPENDABOT = ROOT / ".github" / "dependabot.yml"
 CODEOWNERS = ROOT / ".github" / "CODEOWNERS"
@@ -54,6 +54,10 @@ class TestWhatMustPassBeforeMerge:
     def test_the_full_matrix_runs_on_a_dependency_change(self) -> None:
         """The fast lane proves two ends of the range; an update has to prove all of it."""
         assert "dependencies" in str(ci_jobs()[FULL_MATRIX]["if"])
+
+    def test_labelling_an_open_pull_request_starts_the_full_matrix(self) -> None:
+        """Otherwise a hand-labelled bump keeps the fast lane's verdict from before."""
+        assert "labeled" in triggers(CI)["pull_request"]["types"]
 
     def test_the_lowest_declared_versions_are_proved_on_every_pull_request(self) -> None:
         """A floor nothing resolves against is a floor nobody has checked."""

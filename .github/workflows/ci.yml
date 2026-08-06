@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  # `labeled` as well, so labelling an open pull request `dependencies` starts the full
+  # matrix rather than leaving the fast lane's verdict from before the label.
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
   # Release and Alpha call this workflow rather than copying it: a second set of gates
   # drifts. Alpha runs it on every push to main, so a push trigger here would put the

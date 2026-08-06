@@ -113,6 +113,18 @@ prevent.
 
 ## Known limitations
 
+- **Dependabot cannot update `uv.lock` while `required-version` excludes its bundled uv.**
+  `pyproject.toml` pins `required-version = ">=0.12,<0.13"`; the hosted updater currently
+  runs uv 0.11.31 and reports `tool_version_not_supported` for every locked package, so
+  the `uv` ecosystem opens manifest-only pull requests and its run is red. The pin stays:
+  dropping it would let a different uv rewrite the lock and take reproducibility with it.
+  Until the updater ships uv 0.12, locked-package updates are done on the weekly rota by
+  hand — `uv lock --upgrade`, run the suite, open the change with the `dependencies`
+  label. The `github-actions` ecosystem is unaffected.
+- **A label Dependabot is told to apply must already exist on the repository.** A label
+  named in `.github/dependabot.yml` that does not exist is dropped silently, and a
+  dependency pull request without the `dependencies` label never starts the full matrix.
+  `dependencies` and `actions` exist; adding a third means creating it first.
 - The floor check compares the declared floor against the recorded one as a string. A
   floor written `>=2.9.0` where the policy records `2.9` is reported as a disagreement;
   the fix is to write them identically, which is the point.
