@@ -73,3 +73,13 @@ class TestInjection:
     def test_no_event_input_is_interpolated_into_a_shell(self) -> None:
         for job in jobs():
             assert not any("${{" in step for step in run_steps(job))
+
+
+class TestLicences:
+    """A licence obligation arrives silently and surfaces in a legal review years later."""
+
+    def test_every_pull_request_is_checked_against_the_licence_policy(self) -> None:
+        assert any("tools.licences" in step for step in run_steps("licences"))
+
+    def test_the_check_covers_the_extras_as_well_as_the_base_install(self) -> None:
+        assert any("--all-extras" in step for step in run_steps("licences"))

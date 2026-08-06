@@ -175,7 +175,13 @@ for credentials, on every pull request and daily. Locally:
 ```bash
 make audit      # advisories against the locked set — needs the network
 make secrets    # credential shapes in the tree — offline
+make licences   # dependency licences against the policy — offline
 ```
+
+Adding a dependency means adding its licence obligations to every consuming product. If
+`make licences` blocks, the answer is a decision recorded in `security/licences.toml` with
+your name against it, or a different dependency — not a wider allow list. Note that it
+only sees what is installed, so run it after `uv sync --all-extras`; CI syncs every extra.
 
 `make check` runs neither: the audit needs the network, and the repository-wide credential
 scan already runs as a test inside `make cov`, so a leak fails the suite before it fails

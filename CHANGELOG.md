@@ -10,6 +10,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A bill of materials published with every release (`tools/sbom.py`): a CycloneDX 1.6
+  document built from `uv.lock` inside the release job, so it describes the graph that was
+  published rather than a later re-resolution, attached to the GitHub Release as
+  `sbom.cdx.json`. Each component carries its purl, licence, source hash, the install
+  profile that reaches it (`base` or `extra:<name>`) and every wheel with its platform tag
+  and hash; development-only packages are excluded. A diff against the previous release's
+  document goes into the release notes.
+- A licence policy across the whole graph (`tools/licences.py`, `security/licences.toml`),
+  checked on every pull request and again in the release before anything irreversible. An
+  undeclared or disallowed licence blocks, `A AND B` needs both halves allowed, `A OR B`
+  needs a recorded decision naming an owner, and a licence off the allow list can be
+  accepted for one named package and one named licence only.
 - Dependency and secret scanning (`docs/security.md`, `.github/workflows/security.yml`):
   advisories audited against the frozen lock on every pull request and daily, rated from
   OSV with an unrated advisory blocking, and reported with the first fixed version and the

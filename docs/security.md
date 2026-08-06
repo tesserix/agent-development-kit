@@ -115,6 +115,53 @@ redaction. That is legitimate, and it is declared with `kind = "secret"` rather 
 inferred — deciding automatically which keys are fake is exactly how the real one gets
 through.
 
+## Licences
+
+A consuming product inherits every licence in the graph, and inherits it silently: the
+extra someone added on a Tuesday is in a legal review two years later. `make licences`
+reads the declared licence of every shipped distribution and checks it against
+[`security/licences.toml`](../security/licences.toml). It runs on every pull request and
+again in the release, before anything irreversible happens.
+
+The check syncs every extra, because a licence that only arrives through `[postgres]` is
+still one a consumer inherits.
+
+| Declaration | Verdict |
+|---|---|
+| On the `allowed` list | Passes |
+| `A AND B` | Passes only if both are allowed — both sets of obligations arrive |
+| `A OR B` | Blocks until a `[[decision]]` records which one we took |
+| Off the list | Blocks unless an `[[acceptance]]` names that package *and* that licence |
+| Undeclared or unreadable | Blocks — the component nobody could determine is the one to look at |
+
+`allowed` is a blanket permission. An `[[acceptance]]` is not: it applies to one package
+and one licence, and needs an owner and a reason, because a copyleft obligation accepted
+once must not become a general one. A `[[decision]]` may only take a licence the package
+actually offers and the allow list already permits — recording a decision is not a quiet
+way to widen the policy.
+
+## Bill of materials
+
+Every release publishes `sbom.cdx.json`, a CycloneDX 1.6 document, as a release asset.
+The question it answers is the one that arrives on the day of a widely reported
+vulnerability: *do we ship that package* — including for a version released two years
+ago, which nobody can answer by installing the kit and looking.
+
+It is built from `uv.lock` inside the release job, so it describes the resolved graph that
+was published rather than a later re-resolution, and development-only packages are left
+out: they are not part of a consumer's exposure and listing them overstates the surface.
+Each component carries its purl, licence, source hash, and properties naming the install
+profile that reaches it (`base` or `extra:<name>`), the platform of every wheel, and each
+built artefact with its own hash.
+
+The release notes carry a diff against the previous release's document, so dependency
+growth is visible rather than being the number nobody watches until it is 400.
+
+```bash
+make sbom VERSION=0.3.0
+uv run python -m tools.sbom --diff previous.cdx.json sbom.cdx.json
+```
+
 ## Known limitations
 
 - Severity comes from OSV. A package with an advisory OSV has not rated is treated as
@@ -123,3 +170,8 @@ through.
   wheel bundles is not visible to it.
 - The tree scan matches shapes, not provider lookups. A credential in a format no rule
   describes passes; the history scan is the second net under that.
+- Licences are read from distribution metadata, which some older packages get wrong. The
+  policy blocks on anything it cannot read, so the failure mode is a question rather than
+  a silent pass, but a package declaring the wrong licence is believed.
+- The bill of materials lists Python distributions. A native library vendored inside a
+  wheel is described by that wheel's entry and not separately.

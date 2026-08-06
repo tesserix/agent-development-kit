@@ -40,6 +40,19 @@ jobs:
           { echo "## Advisories"; echo; echo '```'; cat advisories.txt; echo '```'; } \
             >> "$GITHUB_STEP_SUMMARY"
 
+  licences:
+    name: licence policy across the graph
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      # Every extra: a licence a consumer only inherits through one is still inherited.
+      - run: uv sync --frozen --all-groups --all-extras
+      - run: uv run python -m tools.licences
+
   secrets:
     name: credentials in the tree and the history
     runs-on: ubuntu-latest

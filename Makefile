@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -66,6 +66,12 @@ audit: ## Fail on a blocking advisory against the locked dependency set
 
 secrets: ## Fail on a credential shape in the tree that the policy does not declare
 	uv run python -m tools.secret_scan
+
+licences: ## Fail on a dependency licence the policy does not allow
+	uv run python -m tools.licences
+
+sbom: ## Write the bill of materials for VERSION to sbom.cdx.json
+	uv run python -m tools.sbom --version $(VERSION) --output sbom.cdx.json
 
 check: lint typecheck api-check deprecations-check release-check notes-check cov ## Everything CI runs
 

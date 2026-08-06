@@ -1,0 +1,30 @@
+# Licences a consuming product may inherit through the kit. Anything not on this list, and
+# anything undeclared, blocks the release. A package offering a choice needs a decision
+# below saying which one we took. See docs/security.md.
+
+allowed = [
+  "MIT",
+  "BSD-3-Clause",
+  "BSD-2-Clause",
+  "0BSD",
+  "Apache-2.0",
+  "MPL-2.0",
+  "ISC",
+  "PSF-2.0",
+  "Python-2.0",
+  "Zlib",
+  "CC0-1.0",
+  "Unlicense",
+]
+
+# Accepted for one package only, because the obligation is real and does not generalise.
+[[acceptance]]
+package = "psycopg"
+licence = "LGPL-3.0-only"
+owner = "@sam123ben"
+reason = """
+psycopg 3 is LGPL-3.0-only and reaches consumers only through the optional postgres extra.
+It is imported unmodified over a published API and never vendored or statically linked, so
+the obligation is to keep it replaceable and to say so. A consumer who cannot take LGPL
+installs the kit without the postgres extra and loses nothing else.
+"""

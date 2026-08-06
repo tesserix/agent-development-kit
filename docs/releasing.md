@@ -53,10 +53,11 @@ The tag push is the only trigger. Pushing to `main` never publishes.
 |-----|---------------------|
 | `guard` | The tag matches the documented format, points at a commit on `main`, and names a version the index does not already hold. Nothing irreversible has happened yet. |
 | `gates` | The full CI workflow — the same one pull requests run, called rather than copied. |
-| `notes` | Assembles the release body from the repository, and fails if any change in the range has nothing describing it to a consumer. |
+| `sbom` | Checks every licence in the graph against the policy, then builds `sbom.cdx.json` from the lock at this tag and diffs it against the previous release. See [`security.md`](security.md). |
+| `notes` | Assembles the release body from the repository, appends the dependency diff, and fails if any change in the range has nothing describing it to a consumer. |
 | `build` | `uv build`, `twine check --strict` on the metadata, and an assertion that the artefact filename carries the tag's version. |
 | `publish` | Trusted publishing to PyPI via workflow identity, behind the `pypi` environment. |
-| `mirror` | The same artefacts attached to a GitHub Release, with the assembled notes as its body. |
+| `mirror` | The same artefacts plus `sbom.cdx.json` attached to a GitHub Release, with the assembled notes as its body. |
 | `divergence` | Fails the release if PyPI succeeded and the mirror did not. |
 | `smoke` | Installs the *published* wheel from PyPI in a clean virtualenv, once per extra, and runs `examples/getting_started.py`. |
 

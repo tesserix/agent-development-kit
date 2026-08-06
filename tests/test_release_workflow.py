@@ -140,3 +140,31 @@ def test_the_smoke_job_does_not_stop_at_the_first_failing_extra() -> None:
 def test_the_workflow_reads_no_more_than_it_needs_by_default() -> None:
     """Write scopes are granted per job, so a compromised step cannot reach the rest."""
     assert WORKFLOW["permissions"] == {"contents": "read"}
+
+
+SBOM = "sbom"
+
+
+def test_the_bill_of_materials_is_generated_in_the_release_build() -> None:
+    """Regenerating it later describes a resolution, not the artefact that was published."""
+    assert "tools.sbom" in " ".join(release_run_steps(SBOM))
+
+
+def test_the_licence_policy_is_checked_before_anything_is_published() -> None:
+    assert "tools.licences" in " ".join(release_run_steps(SBOM))
+    assert SBOM in _needs(PUBLISH) | _needs(NOTES)
+
+
+def test_the_licence_check_sees_every_extra() -> None:
+    """A licence arriving through an extra is exposure a consumer still inherits."""
+    assert any("--all-extras" in step for step in release_run_steps(SBOM))
+
+
+def test_the_bill_of_materials_is_published_with_the_release() -> None:
+    """An SBOM a reviewer cannot fetch answers nobody's question."""
+    assert "sbom.cdx.json" in " ".join(release_run_steps(MIRROR))
+
+
+def test_the_dependency_diff_reaches_the_release_notes() -> None:
+    assert any("--diff" in step for step in release_run_steps(SBOM))
+    assert "sbom-diff.md" in " ".join(release_run_steps(NOTES))
