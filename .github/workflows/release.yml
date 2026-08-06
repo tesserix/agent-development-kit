@@ -64,7 +64,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
       # Records repository, workflow, commit and build inputs against each artefact's
       # digest, so an install can be traced back to this run. See docs/verifying.md.
-      - uses: actions/attest-build-provenance@v3
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*
       - uses: actions/upload-artifact@v4
@@ -104,7 +104,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       # An unattested component list is one an attacker can edit after the fact.
-      - uses: actions/attest-build-provenance@v3
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: sbom.cdx.json
       - uses: actions/upload-artifact@v4
