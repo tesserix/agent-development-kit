@@ -29,6 +29,7 @@ from tesserix_adk.models.catalogue import CATALOGUE_VERSION, known_models
 if TYPE_CHECKING:
     from tesserix_adk.core.capabilities import ModelRef
     from tesserix_adk.core.primitives import Usage
+    from tesserix_adk.runtime.estimate import Pricer
 
 __all__ = [
     "PRICE_LIST_ENV",
@@ -39,6 +40,7 @@ __all__ = [
     "cost_of",
     "kit_prices",
     "price_list",
+    "pricing_at",
 ]
 
 PRICE_LIST_ENV = "ADK_PRICE_LIST"
@@ -284,3 +286,18 @@ def cost_of(
         currency=rate.currency,
         confidence=CostConfidence.ESTIMATED if usage.estimated else CostConfidence.COUNTED,
     )
+
+
+def pricing_at(at: date, *, prices: PriceList | None = None, batch: bool = False) -> Pricer:
+    """The shipped price list, as the `Pricing` an estimate is built against.
+
+    Estimation holds no opinion about where prices live, so it takes a callable rather than
+    a list. This is that callable over `cost_of`, priced as of `at`.
+    """
+
+    def priced(usage: Usage, model: str) -> Cost:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UnknownPricing)
+            return cost_of(usage, model, at=at, prices=prices, batch=batch)
+
+    return priced

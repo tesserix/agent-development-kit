@@ -25,6 +25,7 @@ __all__ = [
     "ConfigurationError",
     "ContentFilteredError",
     "ContextWindowExceededError",
+    "EstimateUnavailableError",
     "FallbackExhaustedError",
     "FallbackUnsafeError",
     "FanOutLimitError",
@@ -686,6 +687,33 @@ class BudgetUnavailableError(AdkError):
     becomes an unbounded bill. Permitting degraded operation is an explicit configuration
     choice and is recorded on the run.
     """
+
+
+class EstimateUnavailableError(AdkError):
+    """Raised when a run's cost cannot be estimated on anything better than a guess.
+
+    A caller asking what a run will cost is about to make a decision with the answer, and a
+    confident-looking figure with nothing behind it is worse for that decision than no
+    figure at all. Proceeding without a price is available, by asking for it by name.
+
+    Args:
+        model: The model that could not be priced.
+        reason: What was missing.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        model: str = "",
+        reason: str = "",
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        super().__init__(message, run_id=run_id, tenant=tenant, details=details)
+        self.model = model
+        self.reason = reason
 
 
 class CancelledError(AdkError):

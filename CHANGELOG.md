@@ -84,6 +84,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A run can be costed before it starts. `estimate_run` returns a `CostEstimate` — a point, a
+  tenth- and ninetieth-percentile case, the token counts behind them, the `Assumptions` they
+  rest on and a `Confidence` saying whether those assumptions came from this agent version's
+  own finished runs, another version's, or the kit's defaults. The provider is asked only to
+  count tokens, never to complete anything. A model nothing prices raises
+  `EstimateUnavailableError` rather than a plausible-looking figure, unless `allow_unknown`
+  asks for the token counts with the money marked unknown. Prompt growth across turns and the
+  prompt cache are both modelled rather than assumed away. `affordable` and
+  `refuse_unaffordable` check the high case against what is left of a budget, before anything
+  is spent; `as_limits(headroom=…)` is the explicit conversion into `BudgetLimits`, with
+  headroom on the money and the shape ceilings taken from the high case. `approval_for` puts
+  the range and its confidence to a person rather than one number, `calibrate` holds the
+  estimate against what the run actually cost without clamping the outliers, and
+  `with_children` totals a multi-agent run and takes the weakest confidence in it. `RunHistory`
+  is the protocol over runs a deployment already stores (`InMemoryHistory` ships for tests),
+  and `Pricer` — with `models.pricing.pricing_at` as the shipped adapter — keeps the runtime
+  free of any opinion about where prices live.
 - A finished run can say who spent what. `spend_of(run)` returns one `SpendRecord` per metered
   step carrying the tenant, user, agent, agent version, model, prompt version, task class and
   run id that were true when the money went out — derived from the run, never supplied by the
