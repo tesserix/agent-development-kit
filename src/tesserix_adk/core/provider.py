@@ -47,11 +47,21 @@ class ToolDeclaration(AdkModel):
     Provisional until the Tools epic lands a registry type (#130). It carries the JSON
     Schema as data so that a declaration can be hashed into the prompt version and diffed
     in review.
+
+    Args:
+        name: What the model calls it.
+        description: What the model is told it does.
+        parameters: Its JSON Schema, as data.
+        parallel_safe: Whether two of this tool's calls, or this call and a sibling, may
+            be in flight together. A tool whose effect depends on the order it is called
+            in declares itself here and is run alone; the runtime cannot infer it from a
+            signature.
     """
 
     name: str = Field(min_length=1)
     description: str = ""
     parameters: dict[str, Any] = Field(default_factory=dict)
+    parallel_safe: bool = True
 
 
 class ModelRequest(AdkModel):

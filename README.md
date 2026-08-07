@@ -105,6 +105,7 @@ code lands here as the kit is built.
 | The agent definition — owner, evaluation suite, revision, pinning | [`docs/agent-definition.md`](docs/agent-definition.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
+| Tool concurrency — bounded fan-out, per-tool and per-tenant lanes, per-call failure | [`docs/tool-concurrency.md`](docs/tool-concurrency.md) |
 | Transports — SSE framing, websocket control channel, reconnection, the boundary | [`docs/transports.md`](docs/transports.md) |
 | Async and sync — the sync surface, the running-loop refusal, worker pools, stall detection | [`docs/async-and-sync.md`](docs/async-and-sync.md) |
 | The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |

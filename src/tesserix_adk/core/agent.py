@@ -23,6 +23,7 @@ from pydantic import ConfigDict, Field, model_validator
 from tesserix_adk.core.budget import BudgetLimits  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.capabilities import CapabilitySet  # noqa: TC001
 from tesserix_adk.core.config import (  # noqa: TC001
+    ConcurrencyConfig,
     DeadlineConfig,
     LoopConfig,
     RepairConfig,
@@ -78,6 +79,10 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
         deadlines: Wall-clock ceilings for the run and its steps. Unbounded by default.
         loop: Caps on the shape of the run — depth, fan-out, repetition. Narrows what the
             runner allows and never widens it, so an agent cannot vote itself more rope.
+        concurrency: How wide this agent's tool batches may run, and what any one tool may
+            take. Narrows the runner's lanes and never widens them. Per-tenant and
+            per-tool lanes bound a downstream shared with every other run, so those are
+            the runner's to declare; what an agent narrows, it narrows for its own turn.
         retry: Which failures are worth a second attempt, and how long to wait first.
             Nothing is retried by default.
         repair: Whether an answer that failed validation is sent back with the reason, and
@@ -115,6 +120,7 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
     budget: BudgetLimits | None = None
     deadlines: DeadlineConfig | None = None
     loop: LoopConfig | None = None
+    concurrency: ConcurrencyConfig | None = None
     retry: RetryConfig | None = None
     repair: RepairConfig | None = None
     on_tool_error: ToolFailurePolicy = ToolFailurePolicy.SURFACE_TO_MODEL

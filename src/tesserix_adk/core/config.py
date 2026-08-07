@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args
 from pydantic import (
     BaseModel,
     BeforeValidator,
+    Field,
     SecretStr,
     TypeAdapter,
     ValidationError,
@@ -195,6 +196,89 @@ _DEADLINE_CEILINGS = (
     "hook_seconds",
     "grace_seconds",
 )
+
+
+class ConcurrencyConfig(AdkModel):
+    """How wide one turn's tool calls may run, and how long any one of them may take.
+
+    A turn that asked for four independent lookups should not cost four round trips, and
+    firing all four at once is how one agent turn breaks a partner's rate limit. The lanes
+    below are stood in together — a call holds its tenant's, its run's and its tool's at
+    once — so the tightest declared bound is the one that decides.
+
+    Args:
+        max_concurrent_tools: How many of one turn's tool calls may be in flight together.
+        per_tool: Tighter caps for named tools, across every run of this runner. A partner
+            that permits one call at a time is declared here rather than in each agent.
+        per_tenant: How many tool calls one tenant may have in flight across all its runs.
+            `None` leaves a tenant bounded only by its runs.
+        per_tool_seconds: Ceiling for one named tool's call, in seconds. Independent of
+            its siblings, so a slow tool spends its own ceiling and not the batch's, and
+            the call that overran is reported rather than the run stopped.
+
+    Example:
+        >>> narrowed = ConcurrencyConfig().narrowed_to(ConcurrencyConfig(max_concurrent_tools=2))
+        >>> narrowed.max_concurrent_tools
+        2
+    """
+
+    max_concurrent_tools: int = 8
+    per_tool: dict[str, int] = Field(default_factory=dict)
+    per_tenant: int | None = None
+    per_tool_seconds: dict[str, float] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _every_lane_admits_someone(self) -> ConcurrencyConfig:
+        empty = sorted(
+            name
+            for name, width in (
+                ("max_concurrent_tools", self.max_concurrent_tools),
+                ("per_tenant", self.per_tenant),
+                *((f"per_tool[{tool!r}]", width) for tool, width in self.per_tool.items()),
+            )
+            if width is not None and width < 1
+        )
+        if empty:
+            raise ValueError(
+                f"a lane must admit at least one call: {', '.join(empty)}. Zero reads as "
+                f"'never call this at all', which stops every run that needs it rather "
+                f"than bounding it"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _every_ceiling_is_positive(self) -> ConcurrencyConfig:
+        offending = sorted(tool for tool, seconds in self.per_tool_seconds.items() if seconds <= 0)
+        if offending:
+            raise ValueError(
+                f"per-tool ceiling must be positive: {', '.join(offending)}. Zero reads as "
+                f"'no time at all', which fails the call before it is made"
+            )
+        return self
+
+    def narrowed_to(self, other: ConcurrencyConfig | None) -> ConcurrencyConfig:
+        """Return the tighter of each lane and ceiling, so an agent cannot widen a runner's."""
+        if other is None:
+            return self
+        tools = {
+            name: min(width, other.per_tool.get(name, width))
+            for name, width in self.per_tool.items()
+        } | {name: width for name, width in other.per_tool.items() if name not in self.per_tool}
+        seconds = {
+            name: min(limit, other.per_tool_seconds.get(name, limit))
+            for name, limit in self.per_tool_seconds.items()
+        } | {
+            name: limit
+            for name, limit in other.per_tool_seconds.items()
+            if name not in self.per_tool_seconds
+        }
+        tenants = [width for width in (self.per_tenant, other.per_tenant) if width is not None]
+        return ConcurrencyConfig(
+            max_concurrent_tools=min(self.max_concurrent_tools, other.max_concurrent_tools),
+            per_tool=tools,
+            per_tenant=min(tenants) if tenants else None,
+            per_tool_seconds=seconds,
+        )
 
 
 class RetryConfig(AdkModel):

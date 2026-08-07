@@ -16,6 +16,7 @@ from tesserix_adk.core import (
     Agent,
     BudgetLimits,
     BudgetScope,
+    ConcurrencyConfig,
     Consumed,
     ModelCapabilities,
     Run,
@@ -226,7 +227,7 @@ class TestConcurrencyThatDoesNotOverwhelmWhatIsDownstream:
         assert watcher.peak <= 4
 
     async def test_a_fan_out_cancelled_part_way_records_what_ran_and_stops(self) -> None:
-        """The calls that landed are on the record; the ones that had not gone out do not."""
+        """The calls that landed are on the record; the ones still queued never go out."""
         clock = FakeClock()
         token = CancellationToken()
         registry = FakeToolRegistry({"lookup": _cancelling(token)})
@@ -236,6 +237,7 @@ class TestConcurrencyThatDoesNotOverwhelmWhatIsDownstream:
             clock=clock,
             budget=limit,
             tools=registry,
+            concurrency=ConcurrencyConfig(max_concurrent_tools=1),
         ).run(agent(), "look it up", tenant="acme", cancellation=token)
         assert run.state is RunState.CANCELLED
         assert len(registry.calls) == 1

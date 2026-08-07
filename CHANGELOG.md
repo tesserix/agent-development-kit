@@ -114,6 +114,27 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- The tool calls in one model response now run as one bounded batch rather than one after
+  another, so a turn that asked for four independent lookups costs roughly one lookup.
+  `ConcurrencyConfig` declares the lanes they stand in — `max_concurrent_tools` for the turn,
+  `per_tool` and `per_tenant` for the downstream shared across runs — and `Agent.concurrency`
+  may narrow the runner's widths and never widen them, since an agent cannot know about the
+  other runs a partner's rate limit is counting. Results are merged in call order however the
+  batch finished, so a run still reads and replays deterministically. `per_tool_seconds` gives
+  a slow tool its own ceiling and fails it with `ToolTimedOutError` while its siblings are
+  kept; a raising tool is reported against its own call id with no fabricated placeholder; and
+  a stopped batch records what was still queued (`never dispatched`) distinctly from what was
+  already in flight (indeterminate unless the tool was declared idempotent), because claiming
+  an in-flight booking was undone is how it gets made twice. A tool whose effect depends on
+  call order declares `ToolDeclaration(parallel_safe=False)` and is run alone. A sub-agent
+  started from a tool body spends the lane its caller already holds instead of queueing behind
+  itself.
+  **Stability:** additive. Serial dispatch was never a documented guarantee, but a consumer
+  relying on it can restore it with `ConcurrencyConfig(max_concurrent_tools=1)`.
+  `parallel_safe` defaults to `True`, reaches no vendor and is not part of a determinism
+  fingerprint. The run-wide `DeadlineConfig.tool_call_seconds` is unchanged and still ends the
+  run. Documented in `docs/tool-concurrency.md`, exercised by `examples/tool_concurrency.py`.
+
 - Both crossings between the async core and synchronous code now have a name. `run_sync` and
   the new `stream_sync` drive the same run `run` and `stream` drive, and refuse from inside a
   running event loop with `RunningLoopError`, which names the async call to use instead of

@@ -41,6 +41,7 @@ from tesserix_adk.core import (
     BudgetUnavailableError,
     CancelledError,
     Capability,
+    ConcurrencyConfig,
     ConfigurationError,
     ContextWindowExceededError,
     CountSource,
@@ -82,6 +83,7 @@ from tesserix_adk.core import (
     ToolCall,
     ToolExecutionError,
     ToolFailurePolicy,
+    ToolTimedOutError,
     TrustBoundaryError,
     Usage,
     deduplicate,
@@ -96,6 +98,7 @@ from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
 from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
+from tesserix_adk.runtime.fanout import Lanes, Turn, phased
 from tesserix_adk.runtime.progress import (
     WATCHING,
     AnswerDelta,
@@ -176,8 +179,27 @@ class _Bounds:
     deadlines: DeadlineConfig
     retry: RetryConfig
     loop: LoopConfig
+    concurrency: ConcurrencyConfig
     provider: ModelProvider
     budget: BudgetPolicy
+
+
+@dataclass(slots=True)
+class _Ticket:
+    """One call's place in the batch, and whether it got as far as being made."""
+
+    call: ToolCall
+    dispatched: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class _Outcome:
+    """What one call in a batch produced, held until the batch is merged in call order."""
+
+    events: tuple[RunEvent, ...]
+    text: str = ""
+    source: str = "tool_error"
+    failure: _Terminal | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,6 +299,7 @@ class AgentRunner:
         deadlines: DeadlineConfig | None = None,
         retry: RetryConfig | None = None,
         loop: LoopConfig | None = None,
+        concurrency: ConcurrencyConfig | None = None,
         hooks: HookChain | Iterable[Hook] | None = None,
         approvals: ApprovalGate | None = None,
         approval_ttl_seconds: float | None = None,
@@ -310,6 +333,8 @@ class AgentRunner:
         self._deadlines = deadlines or DeadlineConfig()
         self._retry = retry or RetryConfig()
         self._loop = loop or LoopConfig()
+        self._concurrency = concurrency or ConcurrencyConfig()
+        self._lanes = Lanes(self._concurrency)
         self._hooks = (
             hooks.sealed() if isinstance(hooks, HookChain) else HookChain(hooks or ()).sealed()
         )
@@ -865,6 +890,7 @@ class AgentRunner:
             deadlines=deadlines,
             retry=agent.retry or self._retry,
             loop=self._loop.narrowed_to(agent.loop),
+            concurrency=self._concurrency.narrowed_to(agent.concurrency),
             provider=provider,
             budget=budget or self._budget_for(agent),
         )
@@ -940,7 +966,15 @@ class AgentRunner:
         watchers: list[asyncio.Task[Any]] = [asyncio.ensure_future(bounds.token.wait())]
         if limit is not None:
             watchers.append(asyncio.ensure_future(self._clock.sleep(limit)))
-        done, _ = await asyncio.wait([task, *watchers], return_when=asyncio.FIRST_COMPLETED)
+        try:
+            done, _ = await asyncio.wait([task, *watchers], return_when=asyncio.FIRST_COMPLETED)
+        except asyncio.CancelledError:
+            # A batch stopping its siblings cancels the waiter, not the work it was waiting
+            # on; the step is unwound here rather than left running with nobody holding it.
+            for unfinished in (task, *watchers):
+                unfinished.cancel()
+            await asyncio.gather(task, *watchers, return_exceptions=True)
+            raise
         for watcher in watchers:
             watcher.cancel()
         await asyncio.gather(*watchers, return_exceptions=True)
@@ -1485,13 +1519,20 @@ class AgentRunner:
             self._emit(
                 ToolCallStarted(call_id=call.id, tool=call.name, arguments=_shown(call.arguments))
             )
-            run, text, source = await self._invoke(run, agent, call, bounds)
+
+        outcomes = await self._fanned_out(run, agent, calls, bounds)
+        recorded = [event for call in calls for event in outcomes[call.id].events]
+        run = run.model_copy(update={"events": [*run.events, *recorded]})
+        for call in calls:
+            outcome = outcomes[call.id]
+            if outcome.failure is not None:
+                raise _Terminal(run, outcome.failure.state, outcome.failure.detail)
             run, text, decision, _ = await self._ask_hooks(
                 run,
                 agent,
                 HookPoint.AFTER_TOOL_RESULT,
                 bounds,
-                content=text,
+                content=outcome.text,
                 tool_name=call.name,
                 tool_arguments=call.arguments,
             )
@@ -1500,11 +1541,106 @@ class AgentRunner:
                 Message(
                     role="tool",
                     tool_call_id=call.id,
-                    content=[TextPart(text=wrap_untrusted(text, source=source))],
+                    content=[TextPart(text=wrap_untrusted(text, source=outcome.source))],
                 )
             )
             run = _carrying(run, messages)
         return run
+
+    async def _fanned_out(
+        self, run: Run[Any], agent: Agent[Any], calls: Sequence[ToolCall], bounds: _Bounds
+    ) -> dict[str, _Outcome]:
+        """Run the batch inside its lanes, and return one outcome per call.
+
+        Every call is dispatched against the same run, and what each recorded is merged
+        back in call order afterwards: a batch that resolved in whatever order the network
+        allowed still reads, and replays, as the order the model asked for.
+        """
+        serial = frozenset(
+            declaration.name
+            for declaration in self._declarations_for(agent)
+            if not declaration.parallel_safe
+        )
+        turn = Turn(bounds.concurrency)
+        outcomes: dict[str, _Outcome] = {}
+        stopped: str | None = None
+        for phase in phased(calls, serial=serial):
+            if stopped is not None:
+                outcomes |= {call.id: self._never_dispatched(call, stopped) for call in phase}
+                continue
+            done = await self._one_phase(run, agent, phase, bounds, turn)
+            outcomes |= done
+            failures = (outcomes[call.id].failure for call in phase)
+            stopped = next(
+                (failure.detail or "the batch stopped" for failure in failures if failure), None
+            )
+        return outcomes
+
+    async def _one_phase(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        phase: Sequence[ToolCall],
+        bounds: _Bounds,
+        turn: Turn,
+    ) -> dict[str, _Outcome]:
+        """Dispatch one phase together, stopping the rest of it as soon as one call ends the run."""
+        tickets = {call.id: _Ticket(call=call) for call in phase}
+        tasks: dict[asyncio.Future[Any], ToolCall] = {
+            asyncio.ensure_future(self._one_call(run, agent, tickets[call.id], bounds, turn)): call
+            for call in phase
+        }
+        watcher = asyncio.ensure_future(bounds.token.wait())
+        outcomes: dict[str, _Outcome] = {}
+        pending: set[asyncio.Future[Any]] = {*tasks, watcher}
+        while pending - {watcher}:
+            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+            for finished in done - {watcher}:
+                outcomes[tasks[finished].id] = finished.result()
+            if watcher in done or any(outcome.failure is not None for outcome in outcomes.values()):
+                break
+        watcher.cancel()
+        await asyncio.gather(watcher, return_exceptions=True)
+        for unfinished in pending - {watcher}:
+            unfinished.cancel()
+        await asyncio.gather(*(pending - {watcher}), return_exceptions=True)
+        for unfinished in pending - {watcher}:
+            call = tasks[unfinished]
+            outcomes[call.id] = self._stopped_short(agent, tickets[call.id], bounds)
+        return outcomes
+
+    async def _one_call(
+        self, run: Run[Any], agent: Agent[Any], ticket: _Ticket, bounds: _Bounds, turn: Turn
+    ) -> _Outcome:
+        """One call's turn in the lanes, reported as what it recorded rather than raised."""
+        async with self._lanes.held(ticket.call.name, tenant=run.tenant, turn=turn):
+            ticket.dispatched = True
+            try:
+                after, text, source = await self._invoke(run, agent, ticket.call, bounds)
+            except _Terminal as terminal:
+                return _Outcome(
+                    events=tuple(terminal.run.events[len(run.events) :]), failure=terminal
+                )
+            return _Outcome(events=tuple(after.events[len(run.events) :]), text=text, source=source)
+
+    def _never_dispatched(self, call: ToolCall, why: str) -> _Outcome:
+        """A call the batch stopped before it was made — undone, not unknown."""
+        detail = f"never dispatched: {why}"
+        self._emit(
+            ToolCallFailed(call_id=call.id, tool=call.name, error="Cancelled", detail=detail)
+        )
+        return _Outcome(
+            events=(self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=detail),),
+            text=f"error: {detail}",
+        )
+
+    def _stopped_short(self, agent: Agent[Any], ticket: _Ticket, bounds: _Bounds) -> _Outcome:
+        """A sibling ended the batch: what was queued is undone, what was running is unknown."""
+        why = bounds.token.reason or "a sibling call ended the run"
+        if not ticket.dispatched:
+            return self._never_dispatched(ticket.call, why)
+        stopped = self._indeterminacy(agent, ticket.call)
+        return _Outcome(events=(stopped,), text=f"error: {stopped.detail}")
 
     def _refuse_a_turn_that_would_break_a_cap(
         self, run: Run[Any], agent: Agent[Any], calls: Sequence[ToolCall], bounds: _Bounds
@@ -1740,6 +1876,32 @@ class AgentRunner:
                 f"tool {call.name}", lambda: registry.invoke(call.name, call.arguments)
             )
 
+    async def _inside_its_own_ceiling(
+        self, run: Run[Any], call: ToolCall, bounds: _Bounds
+    ) -> object:
+        """Hold the call to the ceiling declared for that tool, if one was.
+
+        A per-tool ceiling is the call's own, not the run's: it is reported as that tool's
+        failure and leaves its siblings' results standing, where the run-wide
+        `tool_call_seconds` stops the run.
+
+        Raises:
+            ToolTimedOutError: If the call outran the ceiling declared for its tool.
+        """
+        ceiling = bounds.concurrency.per_tool_seconds.get(call.name)
+        if ceiling is None:
+            return await self._dispatched(run, call, bounds)
+        work = asyncio.ensure_future(self._dispatched(run, call, bounds))
+        timer = asyncio.ensure_future(self._clock.sleep(ceiling))
+        done, _ = await asyncio.wait([work, timer], return_when=asyncio.FIRST_COMPLETED)
+        if work in done:
+            timer.cancel()
+            await asyncio.gather(timer, return_exceptions=True)
+            return work.result()
+        work.cancel()
+        await asyncio.gather(work, return_exceptions=True)
+        raise ToolTimedOutError(call.name, ceiling)
+
     async def _invoke(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
     ) -> tuple[Run[Any], str, str]:
@@ -1753,7 +1915,7 @@ class AgentRunner:
         while True:
             try:
                 result = await self._bounded(
-                    self._dispatched(run, call, bounds),
+                    self._inside_its_own_ceiling(run, call, bounds),
                     limit=self._limit(bounds, bounds.deadlines.tool_call_seconds),
                     bounds=bounds,
                     what=f"tool {call.name}",

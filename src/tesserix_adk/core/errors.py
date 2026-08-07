@@ -53,6 +53,7 @@ __all__ = [
     "StreamInterruptedError",
     "ToolArgumentValidationError",
     "ToolExecutionError",
+    "ToolTimedOutError",
     "TrustBoundaryError",
     "WorkersBusyError",
 ]
@@ -862,3 +863,19 @@ class WorkersBusyError(AdkError):
     Growing the pool instead would trade a bounded wait for unbounded threads, which
     fails later, harder and on someone else's request.
     """
+
+
+class ToolTimedOutError(AdkError):
+    """Raised when one tool call outran the ceiling declared for that tool.
+
+    It is the call's own failure rather than the run's: a batch whose slowest member is
+    reported by name leaves its siblings' results standing.
+    """
+
+    def __init__(self, tool: str, seconds: float) -> None:
+        self.tool = tool
+        self.seconds = seconds
+        super().__init__(
+            f"tool {tool!r} did not return inside its ceiling of {seconds:g}s",
+            details={"tool": tool, "seconds": f"{seconds:g}"},
+        )

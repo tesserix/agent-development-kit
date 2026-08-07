@@ -16,6 +16,7 @@ import pytest
 from tesserix_adk.core import (
     Agent,
     CancelledError,
+    ConcurrencyConfig,
     DeadlineConfig,
     Run,
     RunEventKind,
@@ -446,7 +447,7 @@ class TestToolsCaughtMidFlight:
         assert RunEventKind.TOOL_ERROR in kinds(run)
 
     async def test_cancellation_between_two_tool_calls_stops_the_second(self) -> None:
-        """The gap between validating a call's arguments and running it is a gap to check in."""
+        """A call still queued behind the lane has not gone out, so cancelling stops it."""
         token = CancellationToken()
         provider = StallingProvider(
             ModelResponse(
@@ -463,7 +464,12 @@ class TestToolsCaughtMidFlight:
                 "second": lambda: "done",
             }
         )
-        run = await runner(provider, FakeClock(), tools=tools).run(
+        run = await runner(
+            provider,
+            FakeClock(),
+            tools=tools,
+            concurrency=ConcurrencyConfig(max_concurrent_tools=1),
+        ).run(
             agent(tools=("first", "second")),
             "plan a trip",
             tenant="acme",
@@ -487,7 +493,11 @@ class TestToolsCaughtMidFlight:
             {"slow": tool_that(lambda: clock.advance(100), "done"), "next": lambda: "done"}
         )
         run = await runner(
-            provider, clock, tools=tools, deadlines=DeadlineConfig(run_seconds=50)
+            provider,
+            clock,
+            tools=tools,
+            deadlines=DeadlineConfig(run_seconds=50),
+            concurrency=ConcurrencyConfig(max_concurrent_tools=1),
         ).run(agent(tools=("slow", "next")), "plan a trip", tenant="acme")
 
         assert run.state is RunState.CANCELLED
