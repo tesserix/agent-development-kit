@@ -186,6 +186,8 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
         agent_version: Which version of it, so a behaviour change is attributable.
         model: The model actually used, not the one requested.
         prompt_version: Which prompt produced this run, where prompts are versioned.
+        task_class: What was asked for, where routing decided it. Spend groups by the kind
+            of work as well as by the model, or a price change reads as a workload change.
         depth: How far down a chain of agents calling agents this run sits. Zero is a run
             nobody called.
         path: The agents this run was called through, root first. A delegation cycle is
@@ -213,6 +215,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
     agent_version: str = Field(min_length=1)
     model: str = Field(min_length=1)
     prompt_version: str | None = None
+    task_class: str | None = None
     depth: int = Field(default=0, ge=0)
     path: tuple[str, ...] = ()
     state: RunState = RunState.PENDING

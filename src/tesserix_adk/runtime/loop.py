@@ -426,7 +426,7 @@ class AgentRunner:
             budget=bounds.budget.resolved,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
         if decision is not None:
-            run = run.record_event(
+            run = run.model_copy(update={"task_class": str(decision.task_class)}).record_event(
                 self._event(
                     RunEventKind.MODEL_ROUTED,
                     name=str(decision.chosen),

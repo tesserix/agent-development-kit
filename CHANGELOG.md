@@ -84,6 +84,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A finished run can say who spent what. `spend_of(run)` returns one `SpendRecord` per metered
+  step carrying the tenant, user, agent, agent version, model, prompt version, task class and
+  run id that were true when the money went out — derived from the run, never supplied by the
+  caller. A run that fell back bills each step against the model that answered it; an attempt
+  that failed after burning tokens is a record rather than a gap; a run acting on another
+  tenant's request bills the tenant it ran as; and what the run could not say resolves to an
+  explicit `unknown` named by `Attribution.unknowns`. `totals_by` groups by any fields of
+  `Attribution`, keyed by a tuple in the order asked for, refusing an unknown dimension by name
+  and refusing to sum two currencies; `Totals.estimated` separates spend that will appear on a
+  vendor invoice from spend that was counted rather than metered. `record_spend` reads a
+  finished run rather than hooking the loop, emits full-identity spans under one `adk.` prefix,
+  and emits the `adk.cost`, `adk.tokens` and `adk.calls` counters whatever the trace did,
+  because a cost total taken from sampled spans looks precise and is wrong; `Dimensions` keeps
+  metric cardinality bounded with an allow-list, bucketing the rest under `other` without ever
+  dropping the money. Consumer attributes are pattern-scrubbed and the dropped keys named on an
+  `adk.redacted` event, while `adk.` attributes pass through as structural identity. `Run` gains
+  `prompt_version`, `task_class` and `depth`; `tesserix_adk.testing` gains `FakeMeter` and
+  `MetricPoint`. **Stability:** additive. Documented in `docs/cost-attribution.md`, exercised by
+  `examples/cost_attribution.py`.
+
 - The ceiling is enforced where the spend happens. The run loop reserves before a model call,
   settles against what came back, charges every tool call before dispatch and re-checks every
   dimension at the top of each iteration, so a ceiling reached on the fortieth turn ends the run

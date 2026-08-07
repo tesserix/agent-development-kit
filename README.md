@@ -94,6 +94,7 @@ code lands here as the kit is built.
 | Fallback — the chain, eligible failures, side-effect safety, attribution | [`docs/fallback.md`](docs/fallback.md) |
 | Usage and cost — normalised counts, decimal money, dated prices, confidence | [`docs/cost.md`](docs/cost.md) |
 | Budgets — the limits vocabulary, scope precedence, tenant ledgers, mid-run enforcement | [`docs/budget.md`](docs/budget.md) |
+| Cost attribution — chargeback dimensions, metric cardinality, redaction, reconciliation | [`docs/cost-attribution.md`](docs/cost-attribution.md) |
 | Structured output — declared answer shapes, provider fallback, violations | [`docs/structured-output.md`](docs/structured-output.md) |
 | Repair — bounded correction, what goes back, what it costs | [`docs/repair.md`](docs/repair.md) |
 | Typing — the answer type, the escape-hatch policy, third-party boundaries | [`docs/typing.md`](docs/typing.md) |

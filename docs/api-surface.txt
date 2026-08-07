@@ -381,6 +381,48 @@ tesserix_adk.models.routing.RoutingTable :: class RoutingTable(AdkModel) {matchi
 tesserix_adk.models.routing.TABLE_VERSION :: TABLE_VERSION: int
 tesserix_adk.models.routing.TableRouter :: class TableRouter(object) {reloaded(self, table: 'RoutingTable') -> 'TableRouter'; resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
 tesserix_adk.models.routing.routing_table :: def routing_table(path: 'Path | str | None' = None, *, env: 'Mapping[str, str] | None' = None) -> 'RoutingTable'
+tesserix_adk.observability.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
+tesserix_adk.observability.Attribution :: class Attribution(AdkModel)
+tesserix_adk.observability.CALLS :: CALLS: str
+tesserix_adk.observability.COST :: COST: str
+tesserix_adk.observability.Dimensions :: class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] | None') -> 'str'; of(self, record: 'SpendRecord') -> 'dict[str, str]'}
+tesserix_adk.observability.MASK :: MASK: str
+tesserix_adk.observability.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
+tesserix_adk.observability.Outcome :: class Outcome(StrEnum)
+tesserix_adk.observability.REDACTED_EVENT :: REDACTED_EVENT: str
+tesserix_adk.observability.Redaction :: class Redaction(AdkModel)
+tesserix_adk.observability.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
+tesserix_adk.observability.SPAN_NAMES :: SPAN_NAMES: dict
+tesserix_adk.observability.SpendRecord :: class SpendRecord(AdkModel)
+tesserix_adk.observability.Step :: class Step(StrEnum)
+tesserix_adk.observability.TOKENS :: TOKENS: str
+tesserix_adk.observability.Totals :: class Totals(AdkModel)
+tesserix_adk.observability.UNKNOWN :: UNKNOWN: str
+tesserix_adk.observability.attributes_of :: def attributes_of(record: 'SpendRecord') -> 'dict[str, str]'
+tesserix_adk.observability.attribution.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
+tesserix_adk.observability.attribution.Attribution :: class Attribution(AdkModel)
+tesserix_adk.observability.attribution.Outcome :: class Outcome(StrEnum)
+tesserix_adk.observability.attribution.SpendRecord :: class SpendRecord(AdkModel)
+tesserix_adk.observability.attribution.Step :: class Step(StrEnum)
+tesserix_adk.observability.attribution.Totals :: class Totals(AdkModel)
+tesserix_adk.observability.attribution.UNKNOWN :: UNKNOWN: str
+tesserix_adk.observability.attribution.attributes_of :: def attributes_of(record: 'SpendRecord') -> 'dict[str, str]'
+tesserix_adk.observability.attribution.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
+tesserix_adk.observability.attribution.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
+tesserix_adk.observability.emit.REDACTED_EVENT :: REDACTED_EVENT: str
+tesserix_adk.observability.emit.SPAN_NAMES :: SPAN_NAMES: dict
+tesserix_adk.observability.emit.record_spend :: def record_spend(run: 'Run[OutputT]', *, tracer: 'Tracer | None' = None, meter: 'Meter | None' = None, dimensions: 'Dimensions | None' = None, redactor: 'Redactor | None' = None, extra: 'Mapping[str, str] | None' = None, sampled: 'bool' = True) -> 'tuple[SpendRecord, ...]'
+tesserix_adk.observability.metrics.CALLS :: CALLS: str
+tesserix_adk.observability.metrics.COST :: COST: str
+tesserix_adk.observability.metrics.Dimensions :: class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] | None') -> 'str'; of(self, record: 'SpendRecord') -> 'dict[str, str]'}
+tesserix_adk.observability.metrics.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
+tesserix_adk.observability.metrics.TOKENS :: TOKENS: str
+tesserix_adk.observability.record_spend :: def record_spend(run: 'Run[OutputT]', *, tracer: 'Tracer | None' = None, meter: 'Meter | None' = None, dimensions: 'Dimensions | None' = None, redactor: 'Redactor | None' = None, extra: 'Mapping[str, str] | None' = None, sampled: 'bool' = True) -> 'tuple[SpendRecord, ...]'
+tesserix_adk.observability.redaction.MASK :: MASK: str
+tesserix_adk.observability.redaction.Redaction :: class Redaction(AdkModel)
+tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
+tesserix_adk.observability.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
+tesserix_adk.observability.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
 tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
@@ -428,6 +470,7 @@ tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(s
 tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.testing.FakeMeter :: class FakeMeter(object) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'; total(self, name: 'str', **dimensions: 'str') -> 'float'}
 tesserix_adk.testing.FakeSecrets :: class FakeSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.testing.FakeTenantLedger :: class FakeTenantLedger(object) {consume(self, tenant: 'str', window: 'str', spent: 'Consumed') -> 'Consumed'; total(self, tenant: 'str', window: 'str') -> 'Consumed'}
 tesserix_adk.testing.FakeToolRegistry :: class FakeToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
@@ -438,6 +481,7 @@ tesserix_adk.testing.HttpExchange :: class HttpExchange(AdkModel)
 tesserix_adk.testing.HttpReplay :: class HttpReplay(object)
 tesserix_adk.testing.Interaction :: class Interaction(AdkModel)
 tesserix_adk.testing.MemoryStoreConformance :: class MemoryStoreConformance(ABC) {make_store(self) -> 'MemoryStore'; test_delete_removes_the_key(self) -> 'None'; test_deleting_an_absent_key_is_not_an_error(self) -> 'None'; test_get_returns_none_for_an_absent_key(self) -> 'None'; test_keys_do_not_collide_across_distinct_values(self) -> 'None'; test_put_replaces_rather_than_merges(self) -> 'None'; test_put_then_get_round_trips(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
+tesserix_adk.testing.MetricPoint :: class MetricPoint(object)
 tesserix_adk.testing.ModelProviderConformance :: class ModelProviderConformance(ABC) {make_provider(self) -> 'ModelProvider'; test_a_longer_prompt_does_not_count_for_less(self) -> 'None'; test_it_answers_with_a_response(self) -> 'None'; test_it_counts_tokens_without_going_negative(self) -> 'None'; test_it_declares_what_it_can_do(self) -> 'None'; test_it_is_named(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_streaming_it_never_declared_is_refused(self) -> 'None'; test_the_declaration_does_not_change_between_reads(self) -> 'None'}
 tesserix_adk.testing.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.QuarantineError :: class QuarantineError(AdkError)
@@ -473,10 +517,12 @@ tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {c
 tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.fakes.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
+tesserix_adk.testing.fakes.FakeMeter :: class FakeMeter(object) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'; total(self, name: 'str', **dimensions: 'str') -> 'float'}
 tesserix_adk.testing.fakes.FakeSecrets :: class FakeSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.testing.fakes.FakeTenantLedger :: class FakeTenantLedger(object) {consume(self, tenant: 'str', window: 'str', spent: 'Consumed') -> 'Consumed'; total(self, tenant: 'str', window: 'str') -> 'Consumed'}
 tesserix_adk.testing.fakes.FakeToolRegistry :: class FakeToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeTracer :: class FakeTracer(object) {event(self, name: 'str', **attributes: 'object') -> 'None'; names(self) -> 'list[str]'; span(self, name: 'str', **attributes: 'object') -> 'Iterator[None]'}
+tesserix_adk.testing.fakes.MetricPoint :: class MetricPoint(object)
 tesserix_adk.testing.fakes.RecordedEvent :: class RecordedEvent(object)
 tesserix_adk.testing.fakes.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.fakes.SequentialIds :: class SequentialIds(object)

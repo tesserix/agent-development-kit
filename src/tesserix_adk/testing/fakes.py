@@ -44,10 +44,12 @@ __all__ = [
     "FakeClock",
     "FakeGuardrail",
     "FakeMemoryStore",
+    "FakeMeter",
     "FakeSecrets",
     "FakeTenantLedger",
     "FakeToolRegistry",
     "FakeTracer",
+    "MetricPoint",
     "RecordedEvent",
     "ScriptedProvider",
     "SequentialIds",
@@ -203,6 +205,34 @@ class FakeTracer:
     def names(self) -> list[str]:
         """Return the recorded names in order, for concise assertions."""
         return [r.name for r in self.recorded]
+
+
+@dataclass(frozen=True, slots=True)
+class MetricPoint:
+    """One counter increment captured by `FakeMeter`."""
+
+    name: str
+    value: float
+    dimensions: dict[str, str]
+
+
+class FakeMeter:
+    """A meter that records instead of exporting, and never raises."""
+
+    def __init__(self) -> None:
+        self.points: list[MetricPoint] = []
+
+    def count(self, name: str, value: float, **dimensions: str) -> None:
+        """Record an increment."""
+        self.points.append(MetricPoint(name, value, dimensions))
+
+    def total(self, name: str, **dimensions: str) -> float:
+        """Total the increments to `name`, narrowed to points carrying `dimensions`."""
+        return sum(
+            point.value
+            for point in self.points
+            if point.name == name and dimensions.items() <= point.dimensions.items()
+        )
 
 
 class FakeBudgetPolicy:
