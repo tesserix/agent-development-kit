@@ -114,6 +114,33 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Response caching with the correctness rules written down rather than assumed.
+  `CachingProvider` wraps any `ModelProvider`, so caching is a change to where the provider
+  is built and nothing else. An entry is served only when every determinant of the answer
+  matches — tenant, model, assembled prompt, tool schema hash, output schema hash, declared
+  parameters, prompt version, model version — so an edited tool schema is a miss rather than
+  a stale hit shaped for the old tools. `CachePolicy` refuses to store a sampled call
+  (declared `temperature` above zero, or `n` above one) and anything inside
+  `not_cacheable(...)`, for the paths a request cannot show: a personalised memory read, a
+  side-effecting tool's result, an approval-gated answer. A cold key under concurrent load
+  is one call with the rest counted as `coalesced`; a store outage degrades to a live call
+  and reports `STORE_UNAVAILABLE` rather than failing the run. `MemoryCacheStore` and
+  `RedisCacheStore` sit behind a `CacheStore` protocol, and an optional semantic tier serves
+  near matches at or above a threshold.
+  **Stability:** additive — two new modules and sixteen new names, no existing signature
+  changed. The tenant is a constructor argument rather than a per-call one, so a provider
+  bound to one customer cannot be asked for another's entry even if a key were mis-derived,
+  proven by a test. Caching is opt-in composition rather than a flag on an existing
+  provider, because a cache that turns on by configuration is a cache somebody enables in
+  production without reading what it refuses to store. `forget` raises where `get` and `put`
+  swallow: erasure that failed silently is worse than erasure that failed loudly. The Redis
+  key carries the tenant and both versions so every purge criterion is a key segment, and
+  the model's reasoning is dropped before writing — it is sensitive, never replayed, and a
+  cache is not a place to keep it. **Known limitation:** parameters are the ones the caller
+  declares, since the kit cannot see a provider's own defaults, and treating everything
+  undeclared as non-deterministic would refuse every call anyone wanted cached. Documented
+  in `docs/response-caching.md`, exercised by `examples/response_caching.py`.
+
 - Concurrent single-text embedding calls are coalesced into provider batches.
   `BatchingEmbedder` wraps any `EmbeddingProvider` and turns the few hundred sequential
   round trips that indexing a document costs into a handful of calls, while each caller

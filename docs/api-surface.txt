@@ -3,11 +3,13 @@ tesserix_adk.adapters.ApprovalInbox :: class ApprovalInbox(object) {decide(self,
 tesserix_adk.adapters.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.DEFAULT_HEARTBEAT_SECONDS :: DEFAULT_HEARTBEAT_SECONDS: float
 tesserix_adk.adapters.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
+tesserix_adk.adapters.DEFAULT_NAMESPACE :: DEFAULT_NAMESPACE: str
 tesserix_adk.adapters.DEFAULT_PAYLOAD_LIMIT_BYTES :: DEFAULT_PAYLOAD_LIMIT_BYTES: int
 tesserix_adk.adapters.DEFAULT_RETRY_MILLISECONDS :: DEFAULT_RETRY_MILLISECONDS: int
 tesserix_adk.adapters.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.PayloadElided :: class PayloadElided(ProgressEvent)
 tesserix_adk.adapters.PostgresLedger :: class PostgresLedger(_Shared) {ensure_schema(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.RedisCacheStore :: class RedisCacheStore(object) {get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
 tesserix_adk.adapters.RedisClient :: class RedisClient(Protocol) {eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
 tesserix_adk.adapters.RedisLedger :: class RedisLedger(_Shared) {forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.RunBroker :: class RunBroker(Generic) {authorise(self, run_id: 'str', *, tenant: 'str') -> 'None'; cancel(self, run_id: 'str', *, tenant: 'str') -> 'None'; register(self, stream: 'RunStream[OutputT]', *, tenant: 'str') -> 'str'; run(self, run_id: 'str', *, tenant: 'str') -> 'Run[OutputT]'; subscribe(self, run_id: 'str', *, tenant: 'str', after: 'int | None' = None) -> 'AsyncGenerator[ProgressEvent]'}
@@ -17,6 +19,8 @@ tesserix_adk.adapters.StreamGap :: class StreamGap(ProgressEvent)
 tesserix_adk.adapters.TransportAuthorizationError :: class TransportAuthorizationError(AdkError)
 tesserix_adk.adapters.WebSocketBridge :: class WebSocketBridge(Generic) {serve(self, connection: 'WebSocketLike', *, run_id: 'str', tenant: 'str', after: 'int | None' = None) -> 'None'}
 tesserix_adk.adapters.WebSocketLike :: class WebSocketLike(Protocol) {close(self, code: 'int' = 1000) -> 'None'; receive_text(self) -> 'str'; send_text(self, data: 'str') -> 'None'}
+tesserix_adk.adapters.cache.DEFAULT_NAMESPACE :: DEFAULT_NAMESPACE: str
+tesserix_adk.adapters.cache.RedisCacheStore :: class RedisCacheStore(object) {get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
 tesserix_adk.adapters.ledger.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.ledger.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
 tesserix_adk.adapters.ledger.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
@@ -396,6 +400,15 @@ tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 
 tesserix_adk.models.BatchConfig :: class BatchConfig(object)
 tesserix_adk.models.BatchingEmbedder :: class BatchingEmbedder(object) {aclose(self) -> 'None'; embed(self, text: 'str', *, model: 'str', tenant: 'str' = 'default', interactive: 'bool' = False) -> 'Vector'}
 tesserix_adk.models.CATALOGUE_VERSION :: CATALOGUE_VERSION: str
+tesserix_adk.models.CacheEntry :: class CacheEntry(object) {expired(self, now: 'float') -> 'bool'}
+tesserix_adk.models.CacheKey :: class CacheKey(object)
+tesserix_adk.models.CacheMetrics :: class CacheMetrics(object)
+tesserix_adk.models.CacheOutcome :: class CacheOutcome(object)
+tesserix_adk.models.CachePolicy :: class CachePolicy(object) {verdict(self, parameters: 'Mapping[str, object]') -> 'Cacheability'}
+tesserix_adk.models.CacheStatus :: class CacheStatus(StrEnum)
+tesserix_adk.models.CacheStore :: class CacheStore(Protocol) {get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
+tesserix_adk.models.Cacheability :: class Cacheability(object)
+tesserix_adk.models.CachingProvider :: class CachingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; forget(self, **by: 'str | None') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.Capability :: class Capability(StrEnum)
 tesserix_adk.models.CapabilityError :: class CapabilityError(AdkError)
 tesserix_adk.models.ClientKey :: class ClientKey(object)
@@ -406,6 +419,8 @@ tesserix_adk.models.EmbeddingLimits :: class EmbeddingLimits(object)
 tesserix_adk.models.EmbeddingMetrics :: class EmbeddingMetrics(object)
 tesserix_adk.models.EmbeddingProvider :: class EmbeddingProvider(Protocol) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
 tesserix_adk.models.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
+tesserix_adk.models.MemoryCacheStore :: class MemoryCacheStore(object) {every(self) -> 'list[CacheEntry]'; get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
+tesserix_adk.models.MemorySemanticIndex :: class MemorySemanticIndex(object) {add(self, digest: 'str', vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'None'; nearest(self, vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'tuple[str, float] | None'; purge(self, **by: 'str | None') -> 'int'}
 tesserix_adk.models.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
 tesserix_adk.models.ModelCard :: class ModelCard(AdkModel)
 tesserix_adk.models.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
@@ -419,6 +434,8 @@ tesserix_adk.models.PoolMetrics :: class PoolMetrics(object)
 tesserix_adk.models.Pricing :: class Pricing(AdkModel)
 tesserix_adk.models.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.models.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
+tesserix_adk.models.SemanticConfig :: class SemanticConfig(object)
+tesserix_adk.models.SemanticIndex :: class SemanticIndex(Protocol) {add(self, digest: 'str', vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'None'; nearest(self, vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'tuple[str, float] | None'; purge(self, **by: 'str | None') -> 'int'}
 tesserix_adk.models.StopReason :: class StopReason(StrEnum)
 tesserix_adk.models.StreamAccumulator :: class StreamAccumulator(object) {feed(self, event: 'StreamEvent') -> 'None'; finish(self, stop_reason: 'StopReason') -> 'ModelResponse'}
 tesserix_adk.models.StreamEnd :: class StreamEnd(StreamEvent)
@@ -430,6 +447,20 @@ tesserix_adk.models.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.models.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.models.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.models.Vector :: Vector: TypeAliasType
+tesserix_adk.models.cache.CacheEntry :: class CacheEntry(object) {expired(self, now: 'float') -> 'bool'}
+tesserix_adk.models.cache.CacheKey :: class CacheKey(object)
+tesserix_adk.models.cache.CacheMetrics :: class CacheMetrics(object)
+tesserix_adk.models.cache.CacheOutcome :: class CacheOutcome(object)
+tesserix_adk.models.cache.CachePolicy :: class CachePolicy(object) {verdict(self, parameters: 'Mapping[str, object]') -> 'Cacheability'}
+tesserix_adk.models.cache.CacheStatus :: class CacheStatus(StrEnum)
+tesserix_adk.models.cache.CacheStore :: class CacheStore(Protocol) {get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
+tesserix_adk.models.cache.Cacheability :: class Cacheability(object)
+tesserix_adk.models.cache.CachingProvider :: class CachingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; forget(self, **by: 'str | None') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.cache.MemoryCacheStore :: class MemoryCacheStore(object) {every(self) -> 'list[CacheEntry]'; get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
+tesserix_adk.models.cache.MemorySemanticIndex :: class MemorySemanticIndex(object) {add(self, digest: 'str', vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'None'; nearest(self, vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'tuple[str, float] | None'; purge(self, **by: 'str | None') -> 'int'}
+tesserix_adk.models.cache.SemanticConfig :: class SemanticConfig(object)
+tesserix_adk.models.cache.SemanticIndex :: class SemanticIndex(Protocol) {add(self, digest: 'str', vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'None'; nearest(self, vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'tuple[str, float] | None'; purge(self, **by: 'str | None') -> 'int'}
+tesserix_adk.models.cache.not_cacheable :: def not_cacheable(reason: 'str') -> 'Iterator[None]'
 tesserix_adk.models.catalogue.CATALOGUE_VERSION :: CATALOGUE_VERSION: str
 tesserix_adk.models.catalogue.ModelCard :: class ModelCard(AdkModel)
 tesserix_adk.models.catalogue.Pricing :: class Pricing(AdkModel)
@@ -454,6 +485,7 @@ tesserix_adk.models.gguf.quantization_for :: def quantization_for(parameters_b: 
 tesserix_adk.models.gguf.refuse_if_it_will_not_fit :: def refuse_if_it_will_not_fit(model: 'GgufModel', *, context_tokens: 'int', available_bytes: 'int') -> 'None'
 tesserix_adk.models.known_models :: def known_models(provider: 'str | None' = None) -> 'tuple[ModelCard, ...]'
 tesserix_adk.models.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
+tesserix_adk.models.not_cacheable :: def not_cacheable(reason: 'str') -> 'Iterator[None]'
 tesserix_adk.models.pool.ClientKey :: class ClientKey(object)
 tesserix_adk.models.pool.ClientPool :: class ClientPool(object) {aclose(self) -> 'None'; config_for(self, provider: 'str') -> 'PoolConfig'; retire(self, *, provider: 'str', base_url: 'str', credential: 'str' = '', timeout_seconds: 'float | None' = None, connect_seconds: 'float | None' = None) -> 'None'}
 tesserix_adk.models.pool.PoolConfig :: class PoolConfig(object) {for_provider(self, provider: 'str') -> 'PoolConfig'}
