@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import socket  # noqa: TC003 — annotates a signature resolved at runtime
 from enum import StrEnum
 from typing import Annotated, Any, Literal, TypedDict
 
@@ -28,7 +29,7 @@ from tesserix_adk.core import (
     schema_for,
     schema_hash,
 )
-from tesserix_adk.core.schema import InlineRefs, SchemaDialect
+from tesserix_adk.core.schema import InlineRefs, SchemaDialect, annotations_of
 
 
 class Priority(StrEnum):
@@ -660,6 +661,64 @@ def _resolve(schema: dict[str, Any], node: dict[str, Any]) -> dict[str, Any]:
     if reference is None:
         return node
     return dict(schema["$defs"][reference.rsplit("/", 1)[-1]])
+
+
+class TestWhatElseCanBeDescribed:
+    """The targets a tool definition arrives with, beyond a model and a function."""
+
+    def test_a_generic_alias_is_described_as_the_type_it_is(self) -> None:
+        assert schema_for(list[str]) == {"items": {"type": "string"}, "type": "array"}
+
+    def test_an_optional_is_a_type_too(self) -> None:
+        assert schema_for(str | None) == {"anyOf": [{"type": "string"}, {"type": "null"}]}
+
+    def test_a_builtin_does_not_lend_the_model_its_own_docstring(self) -> None:
+        assert schema_for(str) == {"type": "string"}
+
+    def test_an_injected_parameter_is_left_out_entirely(self) -> None:
+        def book(city: str, connection: Waypoint) -> str:
+            """Book a stay.
+
+            Args:
+                city: Where to stay.
+                connection: Supplied by the caller, never by the model.
+            """
+            return city + connection.city
+
+        schema = schema_for(book, exclude=("connection",))
+
+        assert set(schema["properties"]) == {"city"}
+        assert schema["required"] == ["city"]
+        assert "Waypoint" not in str(schema)
+
+    def test_a_callable_object_is_read_through_its_call(self) -> None:
+        class Book:
+            """A tool that holds a client."""
+
+            def __call__(self, city: str) -> str:
+                """Book a stay.
+
+                Args:
+                    city: Where to stay.
+                """
+                return city
+
+        assert annotations_of(Book()) == {"city": str, "return": str}
+        assert schema_for(Book())["properties"]["city"]["type"] == "string"
+
+    def test_a_type_pydantic_refuses_names_the_parameter_that_carried_it(self) -> None:
+        def send(sock: socket.socket) -> str:
+            """Send something.
+
+            Args:
+                sock: The socket to send on.
+            """
+            return str(sock)
+
+        with pytest.raises(SchemaGenerationError) as refused:
+            schema_for(send)
+
+        assert refused.value.field == "sock"
 
 
 def test_the_type_still_validates_what_it_always_did() -> None:

@@ -174,7 +174,13 @@ asyncio_default_fixture_loop_scope = "function"
 addopts = "-q --strict-markers --strict-config"
 xfail_strict = true
 # A warning the kit emits and nobody sees is a breakage already scheduled for a consumer.
-filterwarnings = ["error"]
+filterwarnings = [
+  "error",
+  # pytest-asyncio installs a fresh event loop after every async test and never closes it.
+  # Which test is running when the collector finalises one is chance, so as an error it
+  # fails whichever test happened to allocate at the wrong moment.
+  "default::pytest.PytestUnraisableExceptionWarning",
+]
 
 [tool.coverage.run]
 source = ["src/tesserix_adk", "tools"]
@@ -191,5 +197,6 @@ exclude_lines = [
   "raise NotImplementedError",
   "^\\s*\\.\\.\\.$",       # Protocol method stubs are declarations, not code
   "@(abc\\.)?abstractmethod",
+  "@overload",            # an overload stub is a signature the type checker reads, not code
   "if __name__ == .__main__.:",
 ]

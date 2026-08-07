@@ -246,3 +246,34 @@ what a column comes back as. Typing it would pick a driver on the consumer's beh
 """
 owner = "@sam123ben"
 review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.core.schema.annotations_of"
+kind = "json"
+reason = """
+Annotations are whatever the consumer wrote. The mapping's values are types, aliases and
+`Annotated` forms alike, and no narrower type covers the three.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.tools.decorator.Tool"
+kind = "json"
+reason = """
+A tool's arguments and result are the consumer's, and the generic parameters carry them.
+The `Any` is in the schema dictionaries and in the model-supplied arguments, which are
+JSON by the time a provider has sent them.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.tools.decorator.tool"
+kind = "json"
+reason = """
+The decorator's overloads carry the wrapped signature; the implementation behind them takes
+any callable, because it is the one place every shape of tool arrives.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07

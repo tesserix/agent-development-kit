@@ -182,6 +182,7 @@ tesserix_adk.core.ToolArgumentValidationError :: class ToolArgumentValidationErr
 tesserix_adk.core.ToolCall :: class ToolCall(AdkModel)
 tesserix_adk.core.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.core.ToolDeclaration :: class ToolDeclaration(AdkModel)
+tesserix_adk.core.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
 tesserix_adk.core.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
@@ -288,6 +289,7 @@ tesserix_adk.core.errors.SchemaGenerationError :: class SchemaGenerationError(Co
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
 tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError)
+tesserix_adk.core.errors.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.errors.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.errors.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
@@ -379,9 +381,10 @@ tesserix_adk.core.schema.JsonSchema :: class JsonSchema(object) {adapt(self, sch
 tesserix_adk.core.schema.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
 tesserix_adk.core.schema.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.schema.StrictSubset :: class StrictSubset(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
-tesserix_adk.core.schema.schema_for :: def schema_for(target: 'type | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None) -> 'dict[str, Any]'
+tesserix_adk.core.schema.annotations_of :: def annotations_of(target: 'Callable[..., Any]') -> 'dict[str, Any]'
+tesserix_adk.core.schema.schema_for :: def schema_for(target: 'type | UnionType | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None, exclude: 'Collection[str]' = ()) -> 'dict[str, Any]'
 tesserix_adk.core.schema.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
-tesserix_adk.core.schema_for :: def schema_for(target: 'type | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None) -> 'dict[str, Any]'
+tesserix_adk.core.schema_for :: def schema_for(target: 'type | UnionType | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None, exclude: 'Collection[str]' = ()) -> 'dict[str, Any]'
 tesserix_adk.core.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.core.scrub :: def scrub(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'str'
 tesserix_adk.core.streaming.ReasoningDelta :: class ReasoningDelta(StreamEvent)
@@ -808,3 +811,9 @@ tesserix_adk.testing.http_cassette.SentRequest :: class SentRequest(AdkModel)
 tesserix_adk.testing.pytest_plugin.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.redacted :: def redacted(text: 'str') -> 'str'
+tesserix_adk.tools.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any]', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'}
+tesserix_adk.tools.ToolContext :: class ToolContext(object) {raise_if_cancelled(self) -> 'None'}
+tesserix_adk.tools.context.ToolContext :: class ToolContext(object) {raise_if_cancelled(self) -> 'None'}
+tesserix_adk.tools.decorator.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any]', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'}
+tesserix_adk.tools.decorator.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'}))) -> 'Tool[Any, Any] | _Decorator'
+tesserix_adk.tools.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'}))) -> 'Tool[Any, Any] | _Decorator'

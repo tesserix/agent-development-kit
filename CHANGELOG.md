@@ -114,6 +114,28 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `@tool`, which makes one typed function the whole tool: `tesserix_adk.tools.tool` derives
+  the model-facing schema from the signature and the docstring, so the declaration the model
+  reads and the code that runs cannot drift apart. Everything a model could be told wrongly
+  is refused at decoration — an unannotated parameter, `*args`, `**kwargs`, `Any` at any
+  depth, a type with no JSON Schema form, an unresolvable annotation, a generator, a
+  self-referencing model under the default inlining dialect, and a name another *live* tool
+  answers to, that claim being released when the tool is collected so a reloaded module
+  keeps working. Decorating makes every tool awaitable: `Tool.__call__` keeps the function's
+  typed signature, `Tool.invoke` takes the mapping a provider chose, and a synchronous body
+  leaves the event loop via a thread or a `WorkerPool` passed as `workers=`. `ToolContext`
+  carries run, tenant, user, trace and cancellation; a parameter annotated with it is
+  excluded from the schema, filled by the caller, and overwrites any same-named argument the
+  payload contained — a model picks arguments, never the tenant whose data it may read.
+  **Stability:** additive. One new package, four new public names, and `ToolDefinitionError`
+  alongside the existing `ToolExecutionError`. `schema_for` gained a keyword-only `exclude=`
+  and now accepts targets like `list[str]` and `str | None`; `annotations_of` is exported for
+  callers resolving a callable object's hints through its `__call__`. One behaviour change
+  inside the additions: a builtin's own docstring is no longer emitted as a schema
+  description, so `schema_for(str)` is `{"type": "string"}` rather than carrying `str`'s
+  Python-facing `__doc__`. Documented in `docs/tools.md` and `docs/schemas.md`, exercised by
+  `examples/tools.py`.
+
 - A benchmark harness whose verdicts survive a shared runner. `measure` runs a `Scenario`
   over warm-up, rounds and iterations, drops the slowest round where there are three to
   spare, and records the run's own spread beside the numbers; `compare` judges a

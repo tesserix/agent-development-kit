@@ -41,6 +41,29 @@ a reason to refuse to run.
 The `Args:` block is never used as the type's own description: pydantic would otherwise
 emit the whole docstring, repeating field-by-field guidance the schema already carries.
 
+A description has to have been written for this type. `schema_for(str)` is `{"type": "string"}`
+and not `str`'s own docstring: a builtin's `__doc__` is written for a Python reader, and
+telling the model that a string is `str(object='') -> str` spends tokens to confuse it.
+
+## What can be described
+
+A pydantic model, a dataclass, a `TypedDict`, a callable, a bare type, and a type spelled in
+a way `isinstance` does not recognise — `list[str]`, `str | None`, `dict[str, int]` — which
+is how a tool's parameters usually arrive.
+
+`annotations_of` is the resolution `schema_for` uses on a callable, exported because a caller
+inspecting a signature needs the same answer: `get_type_hints` with `include_extras=True`,
+falling back to the `__call__` of a callable object, which `get_type_hints` refuses outright.
+
+## Excluding a parameter
+
+`schema_for(callable, exclude=("ctx",))` describes every parameter but the named ones. It is
+for arguments the caller injects — a request context, a connection, a tenant — which are not
+the model's to choose and often cannot be rendered as JSON Schema anyway. Excluding is
+structural rather than cosmetic: the parameter is not described, so nothing the caller
+injects can be overridden by a model that guessed the name. `@tool` uses it for
+[`ToolContext`](tools.md#context-is-injected-never-chosen).
+
 ## Provider dialects
 
 Providers disagree about what a schema may contain, so the dialect is a parameter rather

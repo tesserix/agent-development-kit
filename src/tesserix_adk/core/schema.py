@@ -27,7 +27,8 @@ from pydantic.errors import PydanticInvalidForJsonSchema, PydanticSchemaGenerati
 from tesserix_adk.core.errors import CapabilityError, SchemaGenerationError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Collection, Mapping
+    from types import UnionType
 
 __all__ = [
     "INLINE_REFS",
@@ -37,6 +38,7 @@ __all__ = [
     "JsonSchema",
     "SchemaDialect",
     "StrictSubset",
+    "annotations_of",
     "schema_for",
     "schema_hash",
 ]
@@ -125,10 +127,11 @@ INLINE_REFS = InlineRefs()
 
 
 def schema_for(
-    target: type | Callable[..., Any],
+    target: type | UnionType | Callable[..., Any],
     *,
     dialect: SchemaDialect = JSON_SCHEMA,
     max_bytes: int | None = None,
+    exclude: Collection[str] = (),
 ) -> dict[str, Any]:
     """Derive a provider-ready JSON Schema from a type or a callable's signature.
 
@@ -138,9 +141,14 @@ def schema_for(
     docstring costs descriptions, never the schema.
 
     Args:
-        target: The type or callable to describe.
+        target: The type or callable to describe. A generic alias — `list[str]`,
+            `Literal["a"]`, `str | None` — is described as the type it is.
         dialect: The provider dialect to emit. Defaults to plain JSON Schema.
         max_bytes: The provider's schema size limit, where it has one.
+        exclude: Parameters of a callable to leave out entirely, for arguments the
+            runtime supplies rather than the model. An excluded parameter is not
+            described, so nothing the caller injects can be overridden by a model that
+            guessed the name.
 
     Raises:
         SchemaGenerationError: The type cannot be faithfully described — an unannotated
@@ -151,13 +159,29 @@ def schema_for(
         CapabilityError: The dialect forbids a construct this type needs, or inlining it
             would not terminate.
     """
-    source = _source(target)
+    source = _source(target, exclude)
     described = _documented(source.schema, source)
     schema = dialect.adapt(_normalised(described))
     _refuse_permissive(schema, ())
     _refuse_forbidden(schema, dialect, ())
     _refuse_oversized(schema, max_bytes, dialect)
     return schema
+
+
+def annotations_of(target: Callable[..., Any]) -> dict[str, Any]:
+    """Resolve a callable's annotations, including those of a callable object's `__call__`.
+
+    `get_type_hints` refuses anything that is not a module, class, method or function, so
+    an instance with a `__call__` — the usual way to write a tool that holds a client —
+    would otherwise have no annotations at all rather than the ones it plainly declares.
+
+    Raises:
+        NameError: If an annotation names something that cannot be resolved.
+    """
+    try:
+        return get_type_hints(target, include_extras=True)
+    except TypeError:
+        return get_type_hints(type(target).__call__, include_extras=True)
 
 
 def schema_hash(schema: Mapping[str, Any]) -> str:
@@ -180,15 +204,19 @@ class _Source:
     schema: dict[str, Any]
 
 
-def _source(target: type | Callable[..., Any]) -> _Source:
+def _source(target: type | UnionType | Callable[..., Any], exclude: Collection[str]) -> _Source:
     if isinstance(target, type) and issubclass(target, BaseModel):
         hints = {name: info.annotation for name, info in target.model_fields.items()}
         return _Source(target.__name__, target.__doc__, hints, _generated(target, hints))
     if isinstance(target, type) or _is_typed_dict(target):
         declared = get_type_hints(target, include_extras=True)
-        return _Source(_named(target), target.__doc__, declared, _generated(target, declared))
+        return _Source(_named(target), _authored(target), declared, _generated(target, declared))
+    if get_origin(target) is not None:
+        # `list[str]` is callable and has no signature worth reading: it is a type spelled
+        # in a way `isinstance` does not recognise, so it is described as one.
+        return _Source(_named(target), None, {}, _generated(target, {}))
     if callable(target):
-        return _from_signature(target)
+        return _from_signature(target, exclude)
     raise SchemaGenerationError(
         f"a {type(target).__name__} is neither a type nor a callable, so there is nothing "
         f"to derive a schema from.",
@@ -206,11 +234,13 @@ def _generated(target: Any, hints: Mapping[str, Any]) -> dict[str, Any]:  # noqa
         raise _undescribable(_named(target), hints, failure) from failure
 
 
-def _from_signature(target: Callable[..., Any]) -> _Source:
+def _from_signature(target: Callable[..., Any], exclude: Collection[str]) -> _Source:
     signature = inspect.signature(target)
-    hints = get_type_hints(target, include_extras=True)
+    hints = annotations_of(target)
     fields: dict[str, Any] = {}
     for name, parameter in signature.parameters.items():
+        if name in exclude:
+            continue
         if parameter.kind in (parameter.VAR_POSITIONAL, parameter.VAR_KEYWORD):
             raise SchemaGenerationError(
                 f"{_named(target)}.{name} is variadic, and no schema can say what a caller "
@@ -227,9 +257,27 @@ def _from_signature(target: Callable[..., Any]) -> _Source:
             )
         default = ... if parameter.default is parameter.empty else parameter.default
         fields[name] = (hints[name], default)
-    declared = {name: annotation for name, annotation in hints.items() if name != "return"}
-    model = create_model(_named(target), **fields)
+    declared = {
+        name: annotation
+        for name, annotation in hints.items()
+        if name != "return" and name not in exclude
+    }
+    try:
+        model = create_model(_named(target), **fields)
+    except (PydanticSchemaGenerationError, PydanticInvalidForJsonSchema) as failure:
+        raise _undescribable(_named(target), declared, failure) from failure
     return _Source(_named(target), target.__doc__, declared, _generated(model, declared))
+
+
+def _authored(target: object) -> str | None:
+    """A docstring somebody wrote about this type, rather than one the language ships.
+
+    `str.__doc__` describes the constructor, and a model told that a field is documented
+    as "str(object='') -> str" is paying tokens to be told nothing.
+    """
+    if getattr(target, "__module__", "") == "builtins":
+        return None
+    return getattr(target, "__doc__", None)
 
 
 def _is_typed_dict(target: object) -> bool:

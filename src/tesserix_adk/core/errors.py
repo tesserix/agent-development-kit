@@ -53,6 +53,7 @@ __all__ = [
     "SchemaViolationError",
     "StreamInterruptedError",
     "ToolArgumentValidationError",
+    "ToolDefinitionError",
     "ToolExecutionError",
     "ToolTimedOutError",
     "TrustBoundaryError",
@@ -679,6 +680,32 @@ class SchemaGenerationError(ConfigurationError):
     ) -> None:
         self.field = field
         self.annotation = annotation
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
+
+
+class ToolDefinitionError(ConfigurationError):
+    """Raised when a callable cannot be made into a tool.
+
+    Raised at decoration, which is import time: a tool whose schema is missing an argument
+    is a tool the model calls wrongly for as long as the process lives, and the call site
+    that suffers is nowhere near the definition that caused it.
+
+    Args:
+        tool: The tool being defined, by the name it asked for.
+        parameter: The parameter that cannot be described, where one is to blame.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        tool: str = "",
+        parameter: str = "",
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.tool = tool
+        self.parameter = parameter
         super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
 
 
