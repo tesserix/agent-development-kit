@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from tesserix_adk.core.capabilities import Capability, ModelCapabilities
+from tesserix_adk.core.cost import CountSource
 from tesserix_adk.core.errors import ConfigurationError, ProviderError
 from tesserix_adk.core.primitives import Message, TextPart, Usage
 from tesserix_adk.core.provider import ModelResponse, StopReason
@@ -229,7 +230,7 @@ class OpenAICompatibleProvider(OpenAIProvider):
             update={
                 "input_tokens": self.count_tokens(request.messages),
                 "output_tokens": self.count_tokens([answered]),
-                "estimated": True,
+                "source": CountSource.TOKENISER,
             }
         )
 

@@ -10,6 +10,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- Usage and cost are two records, not one float. `Usage` is what a call consumed and `Cost`
+  is what that came to; `Usage.cost` is now a `Cost` rather than a `float`, `Usage.currency`
+  is gone because money without a currency is a number, and `Usage.estimated` is derived from
+  a new `CountSource` saying who counted — the provider, the model's own tokeniser, or
+  characters over a constant. `Usage` gains `cache_write_tokens`, `reasoning_tokens` and
+  `image_units` as fields, and every vendor adapter normalises into them rather than leaving
+  its own key in `extras`: OpenAI reports reasoning inside its completion total and the
+  adapter splits it out, so one workload reads the same way whoever answered it. `Cost` is
+  `Decimal` throughout with input, output, cache-read, cache-write, reasoning and image kept
+  separate and unrounded until `quantised()`; totals keep the weaker confidence and refuse to
+  add two currencies. **Stability:** breaking for anything reading `usage.cost` as a number
+  or `usage.currency`, and for anything reading `extras["reasoning_tokens"]`,
+  `extras["thoughts_tokens"]` or `extras["cache_creation_input_tokens"]`. Documented in
+  `docs/cost.md`, exercised by `examples/cost.py`.
+
 - One typed provider protocol, with what a model can do declared as data. `ModelProvider`
   now states `complete`, `stream`, `count_tokens` and `capabilities` over the kit's own
   request and response types, which moved into `core` so the protocol could be typed over
@@ -33,6 +48,20 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   `examples/providers.py`.
 
 ### Added
+
+- Prices are dated data rather than a constant. `PriceCard` carries the day a rate took
+  effect, the request shape it answers for and a `Rate`; `PriceList.rate_for` picks the
+  narrowest card the request clears — batch tier, then the highest long-context threshold —
+  and among those the latest already in force. A price change is a new card and never an edit,
+  because overwriting one rewrites what last week's runs cost, and two cards for one shape on
+  one day is refused. `price_list()` reads a TOML file named by `ADK_PRICE_LIST` or by path and
+  never by convention, `overridden_by` lays negotiated rates over the shipped ones, and a file
+  that will not parse is a `ConfigurationError` rather than a quiet fall back to list price. A
+  model no card covers warns `UnknownPricing` and reports `Cost.unknown()` — zero components at
+  `UNKNOWN` confidence, never a silent free call. Tokens burned on failed and retried attempts
+  are on the ledger too, carried on each `ATTEMPT_FAILED` event and summed into the run, so a
+  run that never got an answer still says what it spent. **Stability:** additive. Documented in
+  `docs/cost.md`, exercised by `examples/cost.py` and `tests/test_cost.py`.
 
 - A run survives a vendor that will not answer it. `FallbackChain` is the eligible
   candidates of the routing rule that already matched, chosen one first, so the fallback

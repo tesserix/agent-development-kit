@@ -256,14 +256,15 @@ def _arguments(raw: str, tool: str, *, provider: str) -> dict[str, Any]:
 
 
 def _usage(reported: object) -> Usage:
+    """Reasoning is reported inside the completion total; the kit records it beside it."""
     counted = _dict(reported)
     cached = int(_dict(counted.get("prompt_tokens_details")).get("cached_tokens", 0) or 0)
     reasoning = int(_dict(counted.get("completion_tokens_details")).get("reasoning_tokens", 0) or 0)
     return Usage(
         input_tokens=int(counted.get("prompt_tokens", 0) or 0),
-        output_tokens=int(counted.get("completion_tokens", 0) or 0),
+        output_tokens=max(int(counted.get("completion_tokens", 0) or 0) - reasoning, 0),
         cached_tokens=cached,
-        extras={"reasoning_tokens": reasoning} if reasoning else {},
+        reasoning_tokens=reasoning,
     )
 
 

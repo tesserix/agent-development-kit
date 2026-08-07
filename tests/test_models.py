@@ -12,6 +12,7 @@ from __future__ import annotations
 import inspect
 import pkgutil
 from datetime import timedelta
+from decimal import Decimal
 from importlib import import_module
 from typing import Annotated
 
@@ -24,6 +25,7 @@ from tesserix_adk.core import (
     AdkModel,
     Agent,
     BinaryPart,
+    Cost,
     Message,
     ProviderConfig,
     SchemaViolationError,
@@ -219,13 +221,13 @@ class TestStringsFromTheEnvironment:
 class TestExtrasArePolicy:
     def test_provider_fields_the_kit_does_not_model_go_in_a_declared_map(self) -> None:
         """Forbidding extras must never mean a provider cannot evolve."""
-        usage = Usage(input_tokens=1, output_tokens=1, extras={"reasoning_tokens": 7})
+        usage = Usage(input_tokens=1, output_tokens=1, extras={"audio_seconds": 7})
 
-        assert usage.extras["reasoning_tokens"] == 7
+        assert usage.extras["audio_seconds"] == 7
 
     def test_the_same_field_loose_on_the_model_is_refused(self) -> None:
-        with pytest.raises(SchemaViolationError, match="reasoning_tokens"):
-            validated(Usage, {"input_tokens": 1, "output_tokens": 1, "reasoning_tokens": 7})
+        with pytest.raises(SchemaViolationError, match="audio_seconds"):
+            validated(Usage, {"input_tokens": 1, "output_tokens": 1, "audio_seconds": 7})
 
 
 class TestEveryBoundaryModelRoundTrips:
@@ -236,7 +238,7 @@ class TestEveryBoundaryModelRoundTrips:
             BinaryPart(media_type="image/png", data=b"\x89PNG"),
             Message(role="user", content=[TextPart(text="hi")]),
             ToolCall(id="call_1", name="search", arguments={"q": "kyoto"}),
-            Usage(input_tokens=1, output_tokens=2, cost=0.5, currency="USD"),
+            Usage(input_tokens=1, output_tokens=2, cost=Cost(input=Decimal("0.5"))),
             AdkConfig(provider=ProviderConfig(endpoint="http://x")),
             Agent(name="a", instructions="do", model="claude-sonnet-5", free_text=True),
         ],

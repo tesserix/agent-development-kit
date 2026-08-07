@@ -7,11 +7,14 @@ of a run can be modelled — and checkpointed — without one. Run it with
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from pydantic import BaseModel
 
 from tesserix_adk.core import (
     Agent,
     BudgetExceededError,
+    Cost,
     Message,
     Run,
     RunState,
@@ -28,6 +31,12 @@ class TripPlan(BaseModel):
 
     destination: str
     nights: int
+
+
+def spent_on(run: object) -> str:
+    """What the run cost, or an honest word where nothing priced it."""
+    cost = run.usage.cost  # type: ignore[attr-defined]
+    return "an unknown amount" if cost is None else f"{cost.total} {cost.currency}"
 
 
 def main() -> None:
@@ -63,10 +72,12 @@ def main() -> None:
     print(f"provider asked for {len(requested)} calls, {len(calls)} of them distinct")  # noqa: T201
 
     run = run.transition_to(RunState.RUNNING, at=0.0)
-    run = run.record(Usage(input_tokens=1_200, output_tokens=300, cost=0.004, currency="USD"))
-    run = run.record(Usage(input_tokens=800, output_tokens=150, cost=0.003, currency="USD"))
+    run = run.record(
+        Usage(input_tokens=1_200, output_tokens=300, cost=Cost(input=Decimal("0.004")))
+    )
+    run = run.record(Usage(input_tokens=800, output_tokens=150, cost=Cost(input=Decimal("0.003"))))
     print(  # noqa: T201
-        f"spent {run.usage.input_tokens} in / {run.usage.output_tokens} out, {run.usage.cost} USD"
+        f"spent {run.usage.input_tokens} in / {run.usage.output_tokens} out, {spent_on(run)}"
     )
 
     ceiling = 1_500

@@ -288,7 +288,7 @@ class TestWhatTheAdapterReadsBack:
         model, _ = provider(answered())
         usage = (await model.complete(asked())).usage
         assert usage.cost is not None
-        assert usage.currency == "USD"
+        assert usage.cost.currency == "USD"
 
     @pytest.mark.parametrize(
         ("vendor", "expected"),

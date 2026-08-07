@@ -26,6 +26,7 @@ from tesserix_adk.core.config import (
     load_config,
     resolve_config,
 )
+from tesserix_adk.core.cost import Cost, CostConfidence, CountSource, weaker_source
 from tesserix_adk.core.deprecation import (
     AdkDeprecationWarning,
     Deprecation,
@@ -196,6 +197,9 @@ __all__ = [
     "ContentFilteredError",
     "ContentPart",
     "ContextWindowExceededError",
+    "Cost",
+    "CostConfidence",
+    "CountSource",
     "DeadlineConfig",
     "DeclaresEmulation",
     "Deprecation",
@@ -300,4 +304,5 @@ __all__ = [
     "telemetry_dump",
     "validated",
     "verify_conformance",
+    "weaker_source",
 ]

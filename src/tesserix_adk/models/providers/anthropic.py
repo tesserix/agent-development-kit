@@ -153,6 +153,7 @@ class _Stream(VendorStream):
         super().__init__()
         self._input = 0
         self._cached = 0
+        self._written = 0
 
     def read(self, frame: Mapping[str, Any]) -> list[StreamEvent]:
         """Translate one server-sent frame into the kit's events."""
@@ -208,12 +209,16 @@ class _Stream(VendorStream):
         counted = _dict(reported)
         self._input = int(counted.get("input_tokens", self._input) or self._input)
         self._cached = int(counted.get("cache_read_input_tokens", self._cached) or self._cached)
+        self._written = int(
+            counted.get("cache_creation_input_tokens", self._written) or self._written
+        )
         return [
             UsageDelta(
                 usage=Usage(
                     input_tokens=self._input + self._cached,
                     output_tokens=int(counted.get("output_tokens", 0) or 0),
                     cached_tokens=self._cached,
+                    cache_write_tokens=self._written,
                 )
             )
         ]
@@ -274,7 +279,7 @@ def _usage(reported: object) -> Usage:
         input_tokens=int(counted.get("input_tokens", 0) or 0) + cached,
         output_tokens=int(counted.get("output_tokens", 0) or 0),
         cached_tokens=cached,
-        extras={"cache_creation_input_tokens": written} if written else {},
+        cache_write_tokens=written,
     )
 
 

@@ -13,9 +13,11 @@ is an upper bound for a batch job and wrong for an enterprise agreement.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from tesserix_adk.core.capabilities import ModelCapabilities, ModelRef
+from tesserix_adk.core.cost import Cost, CostConfidence
 from tesserix_adk.core.errors import ConfigurationError
 from tesserix_adk.core.models import AdkModel
 
@@ -33,7 +35,7 @@ __all__ = [
 
 CATALOGUE_VERSION = "2026-08-07"
 
-_PER_MILLION = 1_000_000
+_PER_MILLION = Decimal(1_000_000)
 
 
 class Pricing(AdkModel):
@@ -238,20 +240,21 @@ def priced(usage: Usage, card: ModelCard) -> Usage:
     """
     if card.pricing is None:
         return usage
-    return usage.model_copy(
-        update={"cost": _cost(usage, card.pricing), "currency": "USD"},
-    )
+    return usage.model_copy(update={"cost": _cost(usage, card.pricing)})
 
 
-def _cost(usage: Usage, pricing: Pricing) -> float:
-    cached_rate = (
-        pricing.input_usd_per_mtok
-        if pricing.cached_input_usd_per_mtok is None
-        else pricing.cached_input_usd_per_mtok
+def _cost(usage: Usage, pricing: Pricing) -> Cost:
+    cached_rate = Decimal(
+        str(
+            pricing.input_usd_per_mtok
+            if pricing.cached_input_usd_per_mtok is None
+            else pricing.cached_input_usd_per_mtok
+        )
     )
     fresh = max(usage.input_tokens - usage.cached_tokens, 0)
-    return (
-        fresh * pricing.input_usd_per_mtok
-        + usage.cached_tokens * cached_rate
-        + usage.output_tokens * pricing.output_usd_per_mtok
-    ) / _PER_MILLION
+    return Cost(
+        input=fresh * Decimal(str(pricing.input_usd_per_mtok)) / _PER_MILLION,
+        output=usage.output_tokens * Decimal(str(pricing.output_usd_per_mtok)) / _PER_MILLION,
+        cache_read=usage.cached_tokens * cached_rate / _PER_MILLION,
+        confidence=CostConfidence.ESTIMATED if usage.estimated else CostConfidence.COUNTED,
+    )

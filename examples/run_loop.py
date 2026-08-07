@@ -9,10 +9,11 @@ Run it with `python examples/run_loop.py`.
 from __future__ import annotations
 
 import asyncio
+from decimal import Decimal
 
 from pydantic import BaseModel
 
-from tesserix_adk.core import Agent, RunEventKind, ToolCall, Usage
+from tesserix_adk.core import Agent, Cost, RunEventKind, ToolCall, Usage
 from tesserix_adk.runtime import AgentRunner, ModelResponse, ToolDeclaration
 from tesserix_adk.testing import FakeToolRegistry, ScriptedProvider
 
@@ -27,6 +28,12 @@ class TripPlan(BaseModel):
 def timetable(origin: str, destination: str) -> dict[str, object]:
     """A tool. Ordinary function, ordinary return value."""
     return {"origin": origin, "destination": destination, "trains": 4}
+
+
+def spent_on(run: object) -> str:
+    """What the run cost, or an honest word where nothing priced it."""
+    cost = run.usage.cost  # type: ignore[attr-defined]
+    return "an unknown amount" if cost is None else f"{cost.total} {cost.currency}"
 
 
 def main() -> None:
@@ -50,11 +57,11 @@ def main() -> None:
                     arguments={"origin": "Osaka", "destination": "Kyoto"},
                 ),
             ),
-            usage=Usage(input_tokens=420, output_tokens=18, cost=0.004, currency="USD"),
+            usage=Usage(input_tokens=420, output_tokens=18, cost=Cost(input=Decimal("0.004"))),
         ),
         ModelResponse(
             content='{"destination": "Kyoto", "nights": 4}',
-            usage=Usage(input_tokens=610, output_tokens=24, cost=0.006, currency="USD"),
+            usage=Usage(input_tokens=610, output_tokens=24, cost=Cost(input=Decimal("0.006"))),
         ),
     )
     tools = FakeToolRegistry(
@@ -80,7 +87,7 @@ def main() -> None:
     print(f"answer:  {run.output}")  # noqa: T201
     print(f"prompt:  {run.agent_name} {run.agent_version} @ {run.prompt_version}")  # noqa: T201
     spent = run.usage.input_tokens + run.usage.output_tokens
-    print(f"spent:   {spent} tokens, {run.usage.cost} {run.usage.currency}")  # noqa: T201
+    print(f"spent:   {spent} tokens, {spent_on(run)}")  # noqa: T201
 
     print("\nwhat happened:")  # noqa: T201
     for event in run.events:

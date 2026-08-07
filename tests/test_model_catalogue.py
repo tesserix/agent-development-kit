@@ -8,6 +8,7 @@ names here stay put, the rows behind them move.
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 import pytest
 
@@ -73,8 +74,9 @@ class TestPriceIsRecordedWhereItIsKnownAndNotInventedWhereItIsNot:
             pricing=Pricing(input_usd_per_mtok=3.0, output_usd_per_mtok=15.0),
         )
         usage = priced(Usage(input_tokens=1_000_000, output_tokens=100_000), card)
-        assert usage.cost == pytest.approx(4.5)
-        assert usage.currency == "USD"
+        assert usage.cost is not None
+        assert usage.cost.total == Decimal("4.5")
+        assert usage.cost.currency == "USD"
 
     def test_cached_input_is_billed_at_the_cached_rate(self) -> None:
         card = ModelCard(
@@ -88,7 +90,8 @@ class TestPriceIsRecordedWhereItIsKnownAndNotInventedWhereItIsNot:
         usage = priced(
             Usage(input_tokens=1_000_000, output_tokens=0, cached_tokens=1_000_000), card
         )
-        assert usage.cost == pytest.approx(0.3)
+        assert usage.cost is not None
+        assert usage.cost.total == Decimal("0.3")
 
     def test_cached_input_falls_back_to_the_full_rate_where_no_discount_is_recorded(
         self,
@@ -98,14 +101,14 @@ class TestPriceIsRecordedWhereItIsKnownAndNotInventedWhereItIsNot:
             pricing=Pricing(input_usd_per_mtok=3.0, output_usd_per_mtok=15.0),
         )
         usage = priced(Usage(input_tokens=1_000_000, output_tokens=0, cached_tokens=500_000), card)
-        assert usage.cost == pytest.approx(3.0)
+        assert usage.cost is not None
+        assert usage.cost.total == Decimal("3.0")
 
     def test_a_model_with_no_recorded_price_stays_unpriced(self) -> None:
         """Zero is a statement about money. A model whose price nobody recorded is not free."""
         card = ModelCard(ref=ModelRef(provider="test", model="m"))
         usage = priced(Usage(input_tokens=10, output_tokens=10), card)
         assert usage.cost is None
-        assert usage.currency is None
 
     def test_the_rest_of_the_usage_record_survives_pricing(self) -> None:
         card = ModelCard(

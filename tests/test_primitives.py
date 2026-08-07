@@ -7,15 +7,29 @@ round trip through JSON — a run checkpointed by one process is rehydrated by a
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 from pydantic import ValidationError
 
-from tesserix_adk.core import BinaryPart, Message, TextPart, ToolCall, Usage, deduplicate
+from tesserix_adk.core import (
+    BinaryPart,
+    Cost,
+    Message,
+    TextPart,
+    ToolCall,
+    Usage,
+    deduplicate,
+)
+
+
+def money(amount: str, currency: str = "USD") -> Cost:
+    return Cost(input=Decimal(amount), currency=currency)
 
 
 class TestUsage:
     def test_tokens_and_cost_round_trip(self) -> None:
-        usage = Usage(input_tokens=100, output_tokens=20, cost=0.004, currency="USD")
+        usage = Usage(input_tokens=100, output_tokens=20, cost=money("0.004"))
         assert Usage.model_validate_json(usage.model_dump_json()) == usage
 
     def test_cost_is_none_for_a_model_that_has_no_price(self) -> None:
@@ -29,8 +43,8 @@ class TestUsage:
 
     def test_a_provider_field_the_kit_does_not_model_is_kept(self) -> None:
         """Dropping it loses the evidence; promoting it makes a provider quirk public."""
-        usage = Usage(input_tokens=1, output_tokens=1, extras={"reasoning_tokens": 512})
-        assert usage.extras["reasoning_tokens"] == 512
+        usage = Usage(input_tokens=1, output_tokens=1, extras={"audio_seconds": 512})
+        assert usage.extras["audio_seconds"] == 512
 
     def test_usage_is_frozen(self) -> None:
         usage = Usage(input_tokens=1, output_tokens=1)
@@ -43,44 +57,43 @@ class TestUsage:
 
     def test_adding_a_priced_and_an_unpriced_usage_gives_an_unknown_cost(self) -> None:
         """Unknown is not zero. A total that silently omits a step understates the bill."""
-        total = Usage(input_tokens=1, output_tokens=1, cost=0.5, currency="USD") + Usage(
+        total = Usage(input_tokens=1, output_tokens=1, cost=money("0.5")) + Usage(
             input_tokens=1, output_tokens=1
         )
         assert total.cost is None
 
     def test_adding_two_priced_usages_sums_the_cost(self) -> None:
-        total = Usage(input_tokens=1, output_tokens=1, cost=0.5, currency="USD") + Usage(
-            input_tokens=1, output_tokens=1, cost=0.25, currency="USD"
+        total = Usage(input_tokens=1, output_tokens=1, cost=money("0.5")) + Usage(
+            input_tokens=1, output_tokens=1, cost=money("0.25")
         )
-        assert total.cost == 0.75
+        assert total.cost is not None
+        assert total.cost.total == Decimal("0.75")
 
     def test_adding_across_currencies_is_refused(self) -> None:
         """Summing USD and EUR produces a number that is true in neither."""
-        priced = Usage(input_tokens=1, output_tokens=1, cost=1.0, currency="USD")
-        other = Usage(input_tokens=1, output_tokens=1, cost=1.0, currency="EUR")
-        with pytest.raises(ValueError, match="currenc"):
+        priced = Usage(input_tokens=1, output_tokens=1, cost=money("1.0"))
+        other = Usage(input_tokens=1, output_tokens=1, cost=money("1.0", currency="EUR"))
+        with pytest.raises(ValueError, match="neither currency"):
             priced + other
 
     def test_nothing_spent_yet_does_not_make_the_total_unknown(self) -> None:
         """A run starts on an empty usage. If that counted as an unknown price, no run
         could ever report a cost."""
-        priced = Usage(input_tokens=1, output_tokens=1, cost=0.5, currency="USD")
-        assert (Usage(input_tokens=0, output_tokens=0) + priced).cost == 0.5
-        assert (priced + Usage(input_tokens=0, output_tokens=0)).cost == 0.5
+        priced = Usage(input_tokens=1, output_tokens=1, cost=money("0.5"))
+        assert (Usage(input_tokens=0, output_tokens=0) + priced).cost == priced.cost
+        assert (priced + Usage(input_tokens=0, output_tokens=0)).cost == priced.cost
 
     def test_nothing_spent_yet_keeps_the_currency(self) -> None:
-        priced = Usage(input_tokens=1, output_tokens=1, cost=0.5, currency="USD")
-        assert (Usage(input_tokens=0, output_tokens=0) + priced).currency == "USD"
+        priced = Usage(input_tokens=1, output_tokens=1, cost=money("0.5", currency="EUR"))
+        total = (Usage(input_tokens=0, output_tokens=0) + priced).cost
+        assert total is not None
+        assert total.currency == "EUR"
 
     def test_an_empty_usage_that_reports_something_is_not_nothing(self) -> None:
         """It carries a field the kit does not model, so its price is genuinely unknown."""
-        priced = Usage(input_tokens=1, output_tokens=1, cost=0.5, currency="USD")
-        reported = Usage(input_tokens=0, output_tokens=0, extras={"reasoning_tokens": 8})
+        priced = Usage(input_tokens=1, output_tokens=1, cost=money("0.5"))
+        reported = Usage(input_tokens=0, output_tokens=0, extras={"audio_seconds": 8})
         assert (priced + reported).cost is None
-
-    def test_a_cost_without_a_currency_is_refused(self) -> None:
-        with pytest.raises(ValidationError, match="currency"):
-            Usage(input_tokens=1, output_tokens=1, cost=0.5)
 
 
 class TestMessage:

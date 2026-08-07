@@ -27,6 +27,9 @@ tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.ContentFilteredError :: class ContentFilteredError(ProviderError)
 tesserix_adk.core.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.core.primitives.TextPart | tesserix_adk.core.primitives.BinaryPart, FieldInfo(annotation=NoneType, required=True, discriminator='kind')]
 tesserix_adk.core.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
+tesserix_adk.core.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 6) -> 'Cost'}
+tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
+tesserix_adk.core.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(AdkModel)
 tesserix_adk.core.DeclaresEmulation :: class DeclaresEmulation(Protocol)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
@@ -147,6 +150,10 @@ tesserix_adk.core.config.leaf_keys :: def leaf_keys(model: 'type[BaseModel]', pr
 tesserix_adk.core.config.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.config.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
 tesserix_adk.core.config.secret_keys :: def secret_keys(model: 'type[BaseModel]') -> 'set[str]'
+tesserix_adk.core.cost.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 6) -> 'Cost'}
+tesserix_adk.core.cost.CostConfidence :: class CostConfidence(StrEnum)
+tesserix_adk.core.cost.CountSource :: class CountSource(StrEnum)
+tesserix_adk.core.cost.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
 tesserix_adk.core.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
 tesserix_adk.core.deprecate :: def deprecate(*, since: 'str', removal: 'str', alternative: 'str', reason: 'str | None' = None) -> 'Callable[[_T], _T]'
 tesserix_adk.core.deprecation.AdkDeprecationWarning :: class AdkDeprecationWarning(DeprecationWarning)
@@ -280,6 +287,7 @@ tesserix_adk.core.streaming.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.telemetry_dump :: def telemetry_dump(model: 'BaseModel') -> 'dict[str, Any]'
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
+tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
 tesserix_adk.models.CATALOGUE_VERSION :: CATALOGUE_VERSION: str
 tesserix_adk.models.Capability :: class Capability(StrEnum)
 tesserix_adk.models.CapabilityError :: class CapabilityError(AdkError)
@@ -318,6 +326,14 @@ tesserix_adk.models.credentials.EnvironmentSecrets :: class EnvironmentSecrets(o
 tesserix_adk.models.known_models :: def known_models(provider: 'str | None' = None) -> 'tuple[ModelCard, ...]'
 tesserix_adk.models.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
 tesserix_adk.models.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
+tesserix_adk.models.pricing.PRICE_LIST_ENV :: PRICE_LIST_ENV: str
+tesserix_adk.models.pricing.PriceCard :: class PriceCard(AdkModel)
+tesserix_adk.models.pricing.PriceList :: class PriceList(AdkModel) {overridden_by(self, other: 'PriceList') -> 'Self'; rate_for(self, ref: 'str | ModelRef', *, at: 'date', input_tokens: 'int' = 0, batch: 'bool' = False) -> 'Rate | None'}
+tesserix_adk.models.pricing.Rate :: class Rate(AdkModel)
+tesserix_adk.models.pricing.UnknownPricing :: class UnknownPricing(UserWarning)
+tesserix_adk.models.pricing.cost_of :: def cost_of(usage: 'Usage', ref: 'str | ModelRef', *, at: 'date', prices: 'PriceList | None' = None, batch: 'bool' = False) -> 'Cost'
+tesserix_adk.models.pricing.kit_prices :: def kit_prices() -> 'PriceList'
+tesserix_adk.models.pricing.price_list :: def price_list(path: 'str | Path | None' = None) -> 'PriceList'
 tesserix_adk.models.providers.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.CompatibilityPreset :: class CompatibilityPreset(object)
 tesserix_adk.models.providers.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}

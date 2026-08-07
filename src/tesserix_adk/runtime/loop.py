@@ -38,6 +38,7 @@ from tesserix_adk.core import (
     Capability,
     ConfigurationError,
     ContextWindowExceededError,
+    CountSource,
     DeadlineConfig,
     DeclaresEmulation,
     FallbackChain,
@@ -900,7 +901,9 @@ class AgentRunner:
             except CancelledError as cancelled:
                 raise _Terminal(run, RunState.CANCELLED, str(cancelled)) from cancelled
             except Exception as failure:
-                run, delay = self._after_failure(run, plan, attempt, failure, bounds, request.model)
+                run, delay = self._after_failure(
+                    run, plan, attempt, failure, bounds, request.model, estimate
+                )
                 if delay is None:
                     raise _Refused(run, failure) from failure
                 await self._backoff(run, delay, bounds, name=request.model)
@@ -1042,6 +1045,7 @@ class AgentRunner:
         failure: Exception,
         bounds: _Bounds,
         name: str,
+        burned: int,
     ) -> tuple[Run[Any], float | None]:
         """Record the failed attempt, and say how long to wait or why there is no next one."""
         if not plan.retryable(failure):
@@ -1057,8 +1061,13 @@ class AgentRunner:
         else:
             why = f"retrying in {delay:.2f}s"
         detail = f"attempt {attempt}: {type(failure).__name__}: {failure} — {why}"
+        # A vendor that read the prompt and then refused still charged for reading it, and
+        # nothing was reported back, so the kit's own estimate is all there is to record.
+        spent = Usage(input_tokens=burned, output_tokens=0, source=CountSource.HEURISTIC)
         return (
-            run.record_event(self._event(RunEventKind.ATTEMPT_FAILED, name=name, detail=detail)),
+            run.record(spent).record_event(
+                self._event(RunEventKind.ATTEMPT_FAILED, name=name, detail=detail, usage=spent)
+            ),
             delay,
         )
 

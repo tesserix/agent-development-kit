@@ -252,7 +252,7 @@ def _usage(reported: object) -> Usage:
         input_tokens=int(counted.get("promptTokenCount", 0) or 0),
         output_tokens=int(counted.get("candidatesTokenCount", 0) or 0),
         cached_tokens=int(counted.get("cachedContentTokenCount", 0) or 0),
-        extras={"thoughts_tokens": thoughts} if thoughts else {},
+        reasoning_tokens=thoughts,
     )
 
 

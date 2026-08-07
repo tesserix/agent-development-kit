@@ -22,6 +22,7 @@ from pydantic import (
     model_validator,
 )
 
+from tesserix_adk.core.cost import Cost, CountSource, weaker_source
 from tesserix_adk.core.models import AdkModel, Sensitive
 
 __all__ = [
@@ -87,31 +88,39 @@ class Usage(AdkModel):
 
     Args:
         input_tokens: Tokens sent, including any that were served from cache.
-        output_tokens: Tokens generated.
         cached_tokens: Of the input, how many the provider served from its cache.
-        cost: Money, in `currency`. `None` when the model has no price — a self-hosted
-            model costs something, so recording zero would be a false statement.
-        currency: ISO 4217 code. Required whenever `cost` is set.
+        cache_write_tokens: Prompt tokens the provider charged to write into its cache.
+            Priced apart from a read, and often at a premium, so a total that hides it
+            makes caching look free.
+        output_tokens: Tokens generated and shown, not counting hidden reasoning.
+        reasoning_tokens: Hidden reasoning tokens, recorded beside the visible answer
+            rather than inside it. Vendors that bill them within the completion total
+            have that total split by their adapter, so one workload reads the same way
+            whoever answered it.
+        image_units: Images, tiles or audio seconds, which are priced per unit rather
+            than per token.
+        cost: What it came to, or `None` where nothing has priced it. A self-hosted model
+            costs something, so recording zero would be a false statement.
         extras: Usage fields a provider reports that the kit does not model, kept rather
             than dropped. Nothing in the kit reads them; they are evidence.
-        estimated: Whether the counts were worked out by the kit rather than reported by
-            the provider. Self-hosted endpoints often report none, and a ledger that
-            cannot tell a count from a guess presents a guess as a count.
+        source: Who counted. A ledger that cannot tell a count from a guess presents a
+            guess as a count.
     """
 
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
     cached_tokens: int = Field(default=0, ge=0)
-    cost: float | None = Field(default=None, ge=0)
-    currency: str | None = None
+    cache_write_tokens: int = Field(default=0, ge=0)
+    reasoning_tokens: int = Field(default=0, ge=0)
+    image_units: int = Field(default=0, ge=0)
+    cost: Cost | None = None
     extras: dict[str, int] = Field(default_factory=dict)
-    estimated: bool = False
+    source: CountSource = CountSource.PROVIDER
 
-    @model_validator(mode="after")
-    def _cost_needs_a_currency(self) -> Usage:
-        if self.cost is not None and not self.currency:
-            raise ValueError("currency is required when cost is set; a bare number is not money")
-        return self
+    @property
+    def estimated(self) -> bool:
+        """Whether the counts were worked out by the kit rather than reported."""
+        return self.source.is_estimate
 
     @property
     def _is_nothing(self) -> bool:
@@ -120,6 +129,9 @@ class Usage(AdkModel):
             self.input_tokens == 0
             and self.output_tokens == 0
             and self.cached_tokens == 0
+            and self.cache_write_tokens == 0
+            and self.reasoning_tokens == 0
+            and self.image_units == 0
             and self.cost is None
             and not self.extras
         )
@@ -136,7 +148,8 @@ class Usage(AdkModel):
             ValueError: If both carry a cost in different currencies.
 
         Example:
-            >>> priced = Usage(input_tokens=1, output_tokens=1, cost=0.5, currency="USD")
+            >>> from decimal import Decimal
+            >>> priced = Usage(input_tokens=1, output_tokens=1, cost=Cost(input=Decimal("0.5")))
             >>> (priced + Usage(input_tokens=1, output_tokens=1)).cost is None
             True
         """
@@ -145,21 +158,18 @@ class Usage(AdkModel):
         if other._is_nothing:
             return self
         priced = self.cost is not None and other.cost is not None
-        if priced and self.currency != other.currency:
-            raise ValueError(
-                f"cannot total {self.currency} and {other.currency} usage: the result "
-                f"would be a number that is true in neither currency"
-            )
         return Usage(
             input_tokens=self.input_tokens + other.input_tokens,
             output_tokens=self.output_tokens + other.output_tokens,
             cached_tokens=self.cached_tokens + other.cached_tokens,
-            cost=(self.cost or 0) + (other.cost or 0) if priced else None,
-            currency=self.currency if priced else None,
+            cache_write_tokens=self.cache_write_tokens + other.cache_write_tokens,
+            reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
+            image_units=self.image_units + other.image_units,
+            cost=self.cost + other.cost if priced and self.cost and other.cost else None,
             extras={**self.extras, **other.extras},
             # One guessed step makes the total a guess; reporting it as counted would
             # hide the one part of the bill nobody measured.
-            estimated=self.estimated or other.estimated,
+            source=weaker_source(self.source, other.source),
         )
 
 
