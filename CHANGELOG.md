@@ -84,6 +84,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Agents now run on a machine with no GPU. `LlamaCppProvider` puts `llama-server` behind the
+  OpenAI-compatible client, so an agent written against vLLM runs on CPU unchanged — same
+  runner, same structured output, same usage accounting. Its timeout is minutes rather than
+  seconds, because a first token waits for the weights to load, and every request asks for
+  llama.cpp's prompt cache, which the server does not turn on by itself and without which
+  every turn re-evaluates the whole prefix. `LlamaCppTuning` describes how the server was
+  started — `threads`, `batch_size`, `micro_batch_size`, `context_tokens`, `prompt_cache` —
+  renders `server_arguments()` for the launch command, and refuses a batch smaller than its
+  own micro-batch; a field left unset renders no flag rather than a guess. `GgufModel`
+  answers what a quantized model will need before anything loads it, splitting weights, KV
+  cache and buffers, with the per-token KV cost a field because grouped-query attention moves
+  it by an order of magnitude between two models of the same size. Given `weights` and
+  `available_bytes`, the provider raises `ModelTooLargeError` — a `ConfigurationError` — at
+  construction, naming the shortfall and a lighter quantization that would have fitted,
+  instead of being OOM-killed mid-run. `quantization_for` picks a format and is never heavier
+  than `Q4_K_M`, the published trade-off point, because more bits past it buys little quality
+  and costs the memory bandwidth that is the whole budget on CPU.
+  **Stability:** additive. Documented in `docs/cpu-inference.md`, exercised by
+  `examples/cpu_inference.py`.
+
 - A per-tenant ceiling now holds across replicas. `SpendLedger` is the protocol —
   `reserve` / `settle` / `release` / `record_progress` / `read_window` / `reconcile` /
   `forget` — with `InMemoryLedger` for one process, `RedisLedger` and `PostgresLedger` for a

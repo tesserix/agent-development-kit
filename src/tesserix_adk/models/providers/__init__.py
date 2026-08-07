@@ -11,9 +11,15 @@ from tesserix_adk.models.providers.compatible import (
     OpenAICompatibleProvider,
 )
 from tesserix_adk.models.providers.gemini import GeminiProvider
+from tesserix_adk.models.providers.llama_cpp import (
+    LLAMA_CPP,
+    LlamaCppProvider,
+    LlamaCppTuning,
+)
 from tesserix_adk.models.providers.openai import OpenAIProvider
 
 __all__ = [
+    "LLAMA_CPP",
     "OLLAMA",
     "PHASE_DEFAULTS",
     "TGI",
@@ -21,6 +27,8 @@ __all__ = [
     "AnthropicProvider",
     "CompatibilityPreset",
     "GeminiProvider",
+    "LlamaCppProvider",
+    "LlamaCppTuning",
     "OpenAICompatibleProvider",
     "OpenAIProvider",
     "PhaseTimeouts",

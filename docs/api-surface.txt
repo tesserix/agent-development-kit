@@ -375,6 +375,14 @@ tesserix_adk.models.catalogue.model_card :: def model_card(ref: 'str | ModelRef'
 tesserix_adk.models.catalogue.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
 tesserix_adk.models.credentials.Credential :: class Credential(object) {value(self) -> 'str'}
 tesserix_adk.models.credentials.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
+tesserix_adk.models.gguf.DEFAULT_KV_BYTES_PER_TOKEN :: DEFAULT_KV_BYTES_PER_TOKEN: int
+tesserix_adk.models.gguf.DEFAULT_QUANTIZATION :: DEFAULT_QUANTIZATION: Quantization
+tesserix_adk.models.gguf.GgufModel :: class GgufModel(AdkModel) {at(self, quantization: 'Quantization') -> 'GgufModel'; footprint(self, *, context_tokens: 'int') -> 'MemoryEstimate'}
+tesserix_adk.models.gguf.MemoryEstimate :: class MemoryEstimate(AdkModel)
+tesserix_adk.models.gguf.ModelTooLargeError :: class ModelTooLargeError(ConfigurationError)
+tesserix_adk.models.gguf.Quantization :: class Quantization(StrEnum)
+tesserix_adk.models.gguf.quantization_for :: def quantization_for(parameters_b: 'float', *, context_tokens: 'int', available_bytes: 'int', kv_bytes_per_token: 'int' = 131072) -> 'Quantization'
+tesserix_adk.models.gguf.refuse_if_it_will_not_fit :: def refuse_if_it_will_not_fit(model: 'GgufModel', *, context_tokens: 'int', available_bytes: 'int') -> 'None'
 tesserix_adk.models.known_models :: def known_models(provider: 'str | None' = None) -> 'tuple[ModelCard, ...]'
 tesserix_adk.models.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
 tesserix_adk.models.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
@@ -390,6 +398,9 @@ tesserix_adk.models.pricing.pricing_at :: def pricing_at(at: 'date', *, prices: 
 tesserix_adk.models.providers.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.CompatibilityPreset :: class CompatibilityPreset(object)
 tesserix_adk.models.providers.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.LLAMA_CPP :: LLAMA_CPP: CompatibilityPreset
+tesserix_adk.models.providers.LlamaCppProvider :: class LlamaCppProvider(OpenAICompatibleProvider)
+tesserix_adk.models.providers.LlamaCppTuning :: class LlamaCppTuning(AdkModel) {server_arguments(self) -> 'tuple[str, ...]'}
 tesserix_adk.models.providers.OLLAMA :: OLLAMA: CompatibilityPreset
 tesserix_adk.models.providers.OpenAICompatibleProvider :: class OpenAICompatibleProvider(OpenAIProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
@@ -404,6 +415,9 @@ tesserix_adk.models.providers.compatible.OpenAICompatibleProvider :: class OpenA
 tesserix_adk.models.providers.compatible.TGI :: TGI: CompatibilityPreset
 tesserix_adk.models.providers.compatible.VLLM :: VLLM: CompatibilityPreset
 tesserix_adk.models.providers.gemini.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
+tesserix_adk.models.providers.llama_cpp.LLAMA_CPP :: LLAMA_CPP: CompatibilityPreset
+tesserix_adk.models.providers.llama_cpp.LlamaCppProvider :: class LlamaCppProvider(OpenAICompatibleProvider)
+tesserix_adk.models.providers.llama_cpp.LlamaCppTuning :: class LlamaCppTuning(AdkModel) {server_arguments(self) -> 'tuple[str, ...]'}
 tesserix_adk.models.providers.normalised_tool_calls :: def normalised_tool_calls(calls: 'Sequence[ToolCall]', *, request: 'ModelRequest', capabilities: 'ModelCapabilities', provider: 'str') -> 'tuple[ToolCall, ...]'
 tesserix_adk.models.providers.openai.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.routing.ROUTING_TABLE_ENV :: ROUTING_TABLE_ENV: str
