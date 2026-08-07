@@ -59,9 +59,18 @@ _CONSERVATIVE: dict[str, object] = {
     "max_tool_calls": 40,
     "max_iterations": 10,
     "max_seconds": 300.0,
+    "max_peer_invocations": 8,
+}
+
+# Shape, not spend: these bound how wide and how deep a run may go rather than how much of
+# anything it has used, so nothing accumulates against them.
+_SHAPE: dict[str, object] = {
+    "max_parallel_tool_calls": 8,
+    "max_delegation_depth": 4,
 }
 
 _DIMENSIONS = tuple(_CONSERVATIVE)
+_CAPS = _DIMENSIONS + tuple(_SHAPE)
 
 
 class BudgetScope(StrEnum):
@@ -112,6 +121,14 @@ class BudgetLimits(AdkModel):
         max_tool_calls: Tool invocations across the run.
         max_iterations: Turns of the loop.
         max_seconds: Wall-clock time the run may occupy.
+        max_peer_invocations: Runs this run's tree may start, counted across the whole
+            tree rather than per hop — per-hop counting is how a tree of runs each stays
+            under a cap they broke together.
+        max_parallel_tool_calls: How many tool calls one model turn may ask for, and how
+            many of them may be in flight at once. The turn is refused entire rather than
+            trimmed, because half a fan-out is a set of side effects nobody chose.
+        max_delegation_depth: How deep a chain of agents calling agents may go. A child
+            cannot raise this: an agent narrows what it was given and never widens it.
         unlimited: No ceiling anywhere. The one way to mean it, and a contradiction
             alongside any stated ceiling, so it cannot be set by accident.
     """
@@ -124,18 +141,21 @@ class BudgetLimits(AdkModel):
     max_tool_calls: int | None = None
     max_iterations: int | None = None
     max_seconds: float | None = None
+    max_peer_invocations: int | None = None
+    max_parallel_tool_calls: int | None = None
+    max_delegation_depth: int | None = None
     unlimited: bool = False
 
     @model_validator(mode="after")
     def _a_ceiling_of_zero_is_a_field_in_the_wrong_place(self) -> BudgetLimits:
-        for name in _DIMENSIONS:
+        for name in _CAPS:
             value = getattr(self, name)
             if value is not None and value <= 0:
                 raise ValueError(
                     f"{name} is {value}, which permits nothing at all; a run that may not "
                     f"do anything is a run nobody meant to configure"
                 )
-        if self.unlimited and any(getattr(self, name) is not None for name in _DIMENSIONS):
+        if self.unlimited and any(getattr(self, name) is not None for name in _CAPS):
             raise ValueError(
                 "limits are marked unlimited and also state a ceiling; one of the two is "
                 "what somebody meant, and guessing which would be the wrong one"
@@ -153,6 +173,9 @@ class BudgetLimits(AdkModel):
             max_tool_calls=40,
             max_iterations=10,
             max_seconds=300.0,
+            max_peer_invocations=8,
+            max_parallel_tool_calls=8,
+            max_delegation_depth=4,
         )
 
     @classmethod
@@ -172,7 +195,8 @@ class BudgetLimits(AdkModel):
         """
         if self.unlimited:
             return self
-        unsaid = {name: _CONSERVATIVE[name] for name in _DIMENSIONS if getattr(self, name) is None}
+        defaults = {**_CONSERVATIVE, **_SHAPE}
+        unsaid = {name: defaults[name] for name in _CAPS if getattr(self, name) is None}
         return self.model_copy(update=unsaid)
 
 
@@ -233,11 +257,11 @@ def most_restrictive(*scoped: ScopedLimits) -> ResolvedBudget:
     if unbounded and len(unbounded) == len(scoped):
         return ResolvedBudget(
             limits=BudgetLimits.unbounded(),
-            sources=dict.fromkeys(_DIMENSIONS, unbounded[0].scope),
+            sources=dict.fromkeys(_CAPS, unbounded[0].scope),
         )
     winning: dict[str, object] = {}
     sources: dict[str, BudgetScope] = {}
-    for name in _DIMENSIONS:
+    for name in _CAPS:
         stated = [(one.limits, getattr(one.limits, name), one.scope) for one in scoped]
         capped = [(value, scope) for _, value, scope in stated if value is not None]
         if not capped:
@@ -282,6 +306,7 @@ class Consumed(AdkModel):
         tool_calls: Tools invoked.
         iterations: Turns of the loop.
         seconds: Wall-clock time elapsed.
+        peer_invocations: Runs started by this run's tree, counted across the tree.
     """
 
     usage: Usage = Usage(input_tokens=0, output_tokens=0)
@@ -289,6 +314,7 @@ class Consumed(AdkModel):
     tool_calls: int = 0
     iterations: int = 0
     seconds: float = 0.0
+    peer_invocations: int = 0
 
     def __add__(self, other: Consumed) -> Consumed:
         """Total two records of spend."""
@@ -298,6 +324,7 @@ class Consumed(AdkModel):
             tool_calls=self.tool_calls + other.tool_calls,
             iterations=self.iterations + other.iterations,
             seconds=self.seconds + other.seconds,
+            peer_invocations=self.peer_invocations + other.peer_invocations,
         )
 
     def against(self, name: str) -> Decimal:
@@ -314,6 +341,7 @@ _MEASURED: dict[str, Callable[[Consumed], float | int]] = {
     "max_tool_calls": lambda spent: spent.tool_calls,
     "max_iterations": lambda spent: spent.iterations,
     "max_seconds": lambda spent: spent.seconds,
+    "max_peer_invocations": lambda spent: spent.peer_invocations,
 }
 
 
@@ -502,6 +530,7 @@ class RunBudget:
         model_calls: int = 0,
         tool_calls: int = 0,
         iterations: int = 0,
+        peer_invocations: int = 0,
     ) -> None:
         """Record what was actually consumed, releasing the outstanding reservation.
 
@@ -510,6 +539,7 @@ class RunBudget:
             model_calls: Model calls this covers, failed attempts included.
             tool_calls: Tools invoked.
             iterations: Turns of the loop completed.
+            peer_invocations: Runs this run's tree started.
 
         Raises:
             BudgetExceededError: If the run has now passed a ceiling.
@@ -521,6 +551,7 @@ class RunBudget:
             model_calls=model_calls,
             tool_calls=tool_calls,
             iterations=iterations,
+            peer_invocations=peer_invocations,
         )
         self._absorb(consumed)
         await self._write_the_ledger(consumed)
@@ -668,6 +699,7 @@ class UnlimitedBudget:
         model_calls: int = 0,
         tool_calls: int = 0,
         iterations: int = 0,
+        peer_invocations: int = 0,
     ) -> None:
         """Accept the spend. Nothing is enforced, deliberately and on the record."""
 

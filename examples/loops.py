@@ -13,16 +13,31 @@ import asyncio
 
 from tesserix_adk.core import (
     Agent,
+    BudgetLimits,
+    BudgetScope,
     LoopConfig,
     Run,
+    RunBudget,
     RunContext,
     RunEventKind,
+    ScopedLimits,
     TenantContext,
     ToolCall,
     Usage,
+    most_restrictive,
 )
-from tesserix_adk.runtime import AgentRunner, ModelResponse
+from tesserix_adk.runtime import AgentRunner, ModelResponse, SystemClock
 from tesserix_adk.testing import FakeToolRegistry, ScriptedProvider
+
+
+def capped(**limits: object) -> RunBudget:
+    """A ceiling stated for this run alone. Caps live with the money, in one policy."""
+    return RunBudget(
+        resolved=most_restrictive(
+            ScopedLimits(scope=BudgetScope.RUN, limits=BudgetLimits(**limits))  # type: ignore[arg-type]
+        ),
+        clock=SystemClock(),
+    )
 
 
 def agent(**overrides: object) -> Agent:
@@ -85,9 +100,7 @@ async def a_turn_too_wide_is_refused_whole() -> None:
     Half a fan-out is a set of side effects nobody chose.
     """
     provider = ScriptedProvider(fanning_out(6))
-    runner = AgentRunner(
-        provider=provider, tools=tools(), loop=LoopConfig(max_tool_calls_per_turn=3)
-    )
+    runner = AgentRunner(provider=provider, tools=tools(), budget=capped(max_parallel_tool_calls=3))
 
     run = await runner.run(agent(), "Everything about Kyoto.", tenant="acme")
     report("a turn wider than its cap", run)
@@ -112,8 +125,13 @@ async def a_chain_of_agents_cannot_outrun_its_ceiling() -> None:
     Past the ceiling it fails closed, before a prompt is assembled or a token is spent.
     """
     provider = ScriptedProvider()
-    runner = AgentRunner(provider=provider, tools=tools(), loop=LoopConfig(max_depth=2))
-    deep = RunContext(run_id="run_parent", tenant=TenantContext(tenant="acme"), depth=2)
+    runner = AgentRunner(provider=provider, tools=tools(), budget=capped(max_delegation_depth=2))
+    deep = RunContext(
+        run_id="run_parent",
+        tenant=TenantContext(tenant="acme"),
+        depth=2,
+        path=("planner", "delegator"),
+    )
 
     run = await runner.run(agent(), "Delegate once more.", tenant="acme", parent=deep)
     report("one agent calling another, too far down", run)
@@ -126,12 +144,12 @@ async def an_agent_narrows_a_cap_but_never_widens_it() -> None:
     An agent cannot vote itself more rope than the runner allows.
     """
     provider = ScriptedProvider(fanning_out(6))
-    runner = AgentRunner(
-        provider=provider, tools=tools(), loop=LoopConfig(max_tool_calls_per_turn=3)
-    )
+    runner = AgentRunner(provider=provider, tools=tools(), budget=capped(max_parallel_tool_calls=3))
 
     run = await runner.run(
-        agent(loop=LoopConfig(max_tool_calls_per_turn=12)), "Everything at once.", tenant="acme"
+        agent(budget=BudgetLimits(max_parallel_tool_calls=12)),
+        "Everything at once.",
+        tenant="acme",
     )
     report("an agent asking for more rope", run)
 

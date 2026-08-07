@@ -10,6 +10,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- How deep and how wide a run may go are caps on spend, so they live with the money.
+  `BudgetLimits` gains `max_delegation_depth`, `max_parallel_tool_calls` and
+  `max_peer_invocations`; `LoopConfig` loses `max_depth`, `max_tool_calls_per_turn` and
+  `max_tool_calls_per_run`, keeping `max_repeated_calls`, which is not spend but the shape of
+  a run that has stopped making progress. A turn wider than `max_parallel_tool_calls` is
+  refused entire before any tool is dispatched, naming the cap and what was asked for, and the
+  run total is checked against the whole turn so a fan-out cannot step over a ceiling one call
+  at a time. Depth and peer invocations are checked before a prompt is assembled and the
+  refusal prints the call path, carried on the new `Run.path` and `RunContext.path`; peer
+  invocations are counted on the shared ledger, so a tree of runs cannot each stay under a cap
+  they broke together and a delegated agent cannot vote itself more rope than its parent had.
+  Tool calls in a cleared turn still go out one at a time, because the check between them is
+  what stops the second call of a turn the caller cancelled during the first.
+  **Stability:** breaking for anything constructing `LoopConfig` with the removed fields.
+  Documented in `docs/run-loop.md` and `docs/budget.md`, exercised by `examples/loops.py`.
+
 - A ceiling said once and honoured everywhere, and no way to build a runtime without one.
   `BudgetLimits` replaces `BudgetConfig` on `Agent.budget` and `AdkConfig.budget` and states
   money as `Decimal` with a currency alongside tokens, model calls, tool calls, iterations

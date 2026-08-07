@@ -11,22 +11,27 @@ import pytest
 
 from tesserix_adk.core import (
     Agent,
+    BudgetLimits,
+    BudgetScope,
     FanOutLimitError,
     LoopConfig,
     RecursionLimitError,
     RepeatedCallError,
     Run,
+    RunBudget,
     RunContext,
     RunEventKind,
     RunState,
+    ScopedLimits,
     TenantContext,
     ToolCall,
     ToolExecutionError,
     ToolFailurePolicy,
     Usage,
+    most_restrictive,
 )
 from tesserix_adk.runtime import AgentRunner, ModelResponse
-from tesserix_adk.testing import FakeBudgetPolicy, FakeToolRegistry, ScriptedProvider
+from tesserix_adk.testing import FakeClock, FakeToolRegistry, ScriptedProvider
 
 
 def agent(**overrides: object) -> Agent:
@@ -67,40 +72,38 @@ def registry() -> FakeToolRegistry:
     return FakeToolRegistry({"search": lambda **_: "a result"})
 
 
+def capped(**limits: object) -> RunBudget:
+    return RunBudget(
+        resolved=most_restrictive(
+            ScopedLimits(scope=BudgetScope.RUN, limits=BudgetLimits(**limits))  # type: ignore[arg-type]
+        ),
+        clock=FakeClock(),
+    )
+
+
 class TestDeclaringLoopBounds:
     def test_a_run_is_bounded_by_default(self) -> None:
         """Unlike a deadline, a loop cap costs nothing when it does not bind, and the
         run it stops is one nobody can otherwise interrupt."""
-        bounds = LoopConfig()
-        assert bounds.max_depth >= 1
-        assert bounds.max_tool_calls_per_turn >= 1
-        assert bounds.max_tool_calls_per_run >= 1
-        assert bounds.max_repeated_calls >= 1
+        assert LoopConfig().max_repeated_calls >= 1
 
-    @pytest.mark.parametrize(
-        "field",
-        [
-            "max_depth",
-            "max_tool_calls_per_turn",
-            "max_tool_calls_per_run",
-            "max_repeated_calls",
-        ],
-    )
-    def test_a_cap_of_zero_is_refused(self, field: str) -> None:
+    def test_a_cap_of_zero_is_refused(self) -> None:
         """Zero reads as 'never do this at all', which is not a cap, it is a broken run."""
-        with pytest.raises(ValueError, match=field):
-            LoopConfig(**{field: 0})
+        with pytest.raises(ValueError, match="max_repeated_calls"):
+            LoopConfig(max_repeated_calls=0)
 
     def test_an_agent_narrows_the_runner_and_never_widens_it(self) -> None:
-        tight = LoopConfig(max_depth=2, max_tool_calls_per_run=4)
-        loose = LoopConfig(max_depth=9, max_tool_calls_per_run=99)
-        narrowed = loose.narrowed_to(tight)
-        assert narrowed.max_depth == 2
-        assert narrowed.max_tool_calls_per_run == 4
+        narrowed = LoopConfig(max_repeated_calls=9).narrowed_to(LoopConfig(max_repeated_calls=2))
+        assert narrowed.max_repeated_calls == 2
 
     def test_narrowing_against_nothing_leaves_the_bounds_alone(self) -> None:
-        bounds = LoopConfig(max_depth=3)
+        bounds = LoopConfig(max_repeated_calls=3)
         assert bounds.narrowed_to(None) == bounds
+
+    def test_how_deep_and_how_wide_are_stated_with_the_money(self) -> None:
+        """One policy for the caps and the cost, or one of the two gets raised unread."""
+        assert not hasattr(LoopConfig(), "max_depth")
+        assert BudgetLimits.conservative().max_delegation_depth is not None
 
 
 class TestRecursionDepth:
@@ -122,7 +125,7 @@ class TestRecursionDepth:
 
     async def test_the_deepest_run_fails_closed_without_calling_a_model(self) -> None:
         provider = ScriptedProvider()
-        runner = AgentRunner(provider=provider, loop=LoopConfig(max_depth=1))
+        runner = AgentRunner(provider=provider, budget=capped(max_delegation_depth=1))
         parent = RunContext(run_id="run_1", tenant=TenantContext(tenant="acme"), depth=1)
 
         run = await runner.run(agent(), "again", tenant="acme", parent=parent)
@@ -154,7 +157,7 @@ class TestRecursionDepth:
         runner = AgentRunner(
             provider=_always_calls_peer(),
             tools=FakeToolRegistry({"ask_peer": peer}),
-            loop=LoopConfig(max_depth=2),
+            budget=capped(max_delegation_depth=2),
         )
 
         run = await runner.run(_peer_agent(), "start", tenant="acme", run_id="run_0")
@@ -164,22 +167,29 @@ class TestRecursionDepth:
 
     async def test_an_agent_cannot_raise_the_ceiling_it_was_given(self) -> None:
         provider = ScriptedProvider()
-        runner = AgentRunner(provider=provider, loop=LoopConfig(max_depth=1))
+        runner = AgentRunner(provider=provider, budget=capped(max_delegation_depth=1))
         parent = RunContext(run_id="run_1", tenant=TenantContext(tenant="acme"), depth=1)
 
         run = await runner.run(
-            agent(loop=LoopConfig(max_depth=99)), "again", tenant="acme", parent=parent
+            agent(budget=BudgetLimits(max_delegation_depth=99)),
+            "again",
+            tenant="acme",
+            parent=parent,
         )
 
         assert run.state is RunState.LOOP_LIMIT_EXCEEDED
 
     async def test_an_agent_may_tighten_it(self) -> None:
+        """A runner left to the defaults still enforces what the agent asked for."""
         provider = ScriptedProvider()
-        runner = AgentRunner(provider=provider, loop=LoopConfig(max_depth=9))
+        runner = AgentRunner(provider=provider)
         parent = RunContext(run_id="run_1", tenant=TenantContext(tenant="acme"), depth=1)
 
         run = await runner.run(
-            agent(loop=LoopConfig(max_depth=1)), "again", tenant="acme", parent=parent
+            agent(budget=BudgetLimits(max_delegation_depth=1)),
+            "again",
+            tenant="acme",
+            parent=parent,
         )
 
         assert run.state is RunState.LOOP_LIMIT_EXCEEDED
@@ -200,7 +210,7 @@ class TestFanOut:
         runner = AgentRunner(
             provider=ScriptedProvider(fanning_out("search", 5)),
             tools=tools,
-            loop=LoopConfig(max_tool_calls_per_turn=2),
+            budget=capped(max_parallel_tool_calls=2),
         )
 
         run = await runner.run(agent(tools=("search",)), "plan a trip", tenant="acme")
@@ -215,7 +225,7 @@ class TestFanOut:
         runner = AgentRunner(
             provider=ScriptedProvider(*[fanning_out("search", 2) for _ in range(4)]),
             tools=tools,
-            loop=LoopConfig(max_tool_calls_per_turn=2, max_tool_calls_per_run=3),
+            budget=capped(max_parallel_tool_calls=2, max_tool_calls=3),
         )
 
         run = await runner.run(agent(tools=("search",)), "plan a trip", tenant="acme")
@@ -326,10 +336,9 @@ class TestWhicheverCapBindsFirst:
         """A cap and a budget reached on the same turn is still one ending and one reason."""
         tools = registry()
         runner = AgentRunner(
-            provider=ScriptedProvider(*[calling("search", page=n) for n in range(4)]),
+            provider=ScriptedProvider(*[fanning_out("search", 2) for _ in range(4)]),
             tools=tools,
-            budget=FakeBudgetPolicy(limit=40),
-            loop=LoopConfig(max_tool_calls_per_run=1),
+            budget=capped(max_tool_calls=1, max_iterations=1),
         )
 
         run = await runner.run(agent(tools=("search",)), "plan a trip", tenant="acme")

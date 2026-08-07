@@ -73,16 +73,16 @@ def test_code_beats_the_environment() -> None:
 
 def test_the_full_precedence_order_holds_for_one_key(tmp_path: Path) -> None:
     """Every layer sets the same key; the winner and the losers are both asserted."""
-    (tmp_path / "adk.toml").write_text("[loop]\nmax_tool_calls_per_run = 3\n", encoding="utf-8")
+    (tmp_path / "adk.toml").write_text("[loop]\nmax_repeated_calls = 3\n", encoding="utf-8")
 
     resolution = resolve_config(
-        {"loop": {"max_tool_calls_per_run": 1}},
-        env=MINIMAL_ENV | {f"{ENV_PREFIX}LOOP__MAX_TOOL_CALLS_PER_RUN": "2"},
+        {"loop": {"max_repeated_calls": 1}},
+        env=MINIMAL_ENV | {f"{ENV_PREFIX}LOOP__MAX_REPEATED_CALLS": "2"},
         start=tmp_path,
     )
 
-    entry = resolution.provenance["loop.max_tool_calls_per_run"]
-    assert (resolution.config.loop.max_tool_calls_per_run, entry.layer) == (1, "code")
+    entry = resolution.provenance["loop.max_repeated_calls"]
+    assert (resolution.config.loop.max_repeated_calls, entry.layer) == (1, "code")
     assert entry.overridden == (("env", "2"), ("file", "3"))
 
 

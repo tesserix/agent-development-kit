@@ -170,6 +170,8 @@ class RunContext(AdkModel):
     run_id: str = Field(min_length=1)
     tenant: TenantContext
     depth: int = Field(default=0, ge=0)
+    path: tuple[str, ...] = ()
+    """The agents this run was called through, root first. A cycle is only visible here."""
 
 
 class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot carry the parameter's default before 3.13
@@ -186,6 +188,9 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
         prompt_version: Which prompt produced this run, where prompts are versioned.
         depth: How far down a chain of agents calling agents this run sits. Zero is a run
             nobody called.
+        path: The agents this run was called through, root first. A delegation cycle is
+            only legible here — a depth alone says a run went too far, not where it went
+            round.
         state: Where the run is. See `RunState`.
         messages: The conversation as it stands.
         tool_calls: Calls the model requested, deduplicated by id.
@@ -209,6 +214,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
     model: str = Field(min_length=1)
     prompt_version: str | None = None
     depth: int = Field(default=0, ge=0)
+    path: tuple[str, ...] = ()
     state: RunState = RunState.PENDING
     messages: list[Message] = Field(default_factory=list)
     tool_calls: list[ToolCall] = Field(default_factory=list)
@@ -226,6 +232,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
             run_id=self.id,
             tenant=TenantContext(tenant=self.tenant, user=self.user),
             depth=self.depth,
+            path=self.path,
         )
 
     @property

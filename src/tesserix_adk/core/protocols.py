@@ -273,6 +273,7 @@ class BudgetPolicy(Protocol):
         model_calls: int = 0,
         tool_calls: int = 0,
         iterations: int = 0,
+        peer_invocations: int = 0,
     ) -> None:
         """Record what was consumed, releasing any over-reservation.
 

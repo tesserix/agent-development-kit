@@ -155,6 +155,23 @@ class _Bounds:
 
 
 @dataclass(frozen=True, slots=True)
+class _Started:
+    """Who is about to run and where in the call graph, before there is a run to record on."""
+
+    agent: Agent[Any]
+    depth: int
+    path: tuple[str, ...]
+    tenant: str
+    user: str | None
+    run_id: str | None
+
+    @property
+    def trail(self) -> str:
+        """The call path as one readable string, which is where a cycle becomes visible."""
+        return "→".join(self.path)
+
+
+@dataclass(frozen=True, slots=True)
 class _Answered:
     """One answer and where it came from, which is not always where the run started."""
 
@@ -388,10 +405,13 @@ class AgentRunner:
         bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision), budget)
         self._refuse_incomplete_wiring(agent, bounds.provider)
         depth = parent.depth + 1 if parent is not None else 0
-        if depth > bounds.loop.max_depth:
-            return await self._too_deep(
-                agent, depth, bounds, tenant=tenant, user=user, run_id=run_id
-            )
+        path = (*parent.path, agent.name) if parent is not None else (agent.name,)
+        started = _Started(agent, depth, path, tenant=tenant, user=user, run_id=run_id)
+        refused = await self._refused_before_it_started(
+            started, bounds, delegated=parent is not None
+        )
+        if refused is not None:
+            return refused
         model = agent.model or (decision.chosen.model if decision is not None else "")
         chain = FallbackChain.of(decision) if agent.model is None else FallbackChain()
         run: Run[Any] = _carrier_for(agent.output_type)(
@@ -402,6 +422,7 @@ class AgentRunner:
             agent_version=agent.version,
             model=model,
             depth=depth,
+            path=path,
             budget=bounds.budget.resolved,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
         if decision is not None:
@@ -1287,16 +1308,18 @@ class AgentRunner:
             _Terminal: If the turn is wider than a cap allows, or repeats a call the run
                 has already made past its threshold.
         """
-        caps = bounds.loop
+        caps = bounds.budget.resolved.limits
         made = len(run.tool_calls)
+        width, total = caps.max_parallel_tool_calls, caps.max_tool_calls
         too_wide = (
-            f"turn asked for {len(calls)} tool calls, over the {caps.max_tool_calls_per_turn} "
-            f"allowed in one turn"
-            if len(calls) > caps.max_tool_calls_per_turn
+            f"turn asked for {len(calls)} tool calls, over the max_parallel_tool_calls of {width}"
+            if width is not None and len(calls) > width
             else (
                 f"turn would take the run to {made + len(calls)} tool calls, over the "
-                f"{caps.max_tool_calls_per_run} allowed in one run"
-                if made + len(calls) > caps.max_tool_calls_per_run
+                f"max_tool_calls of {total}"
+                # Only a fan-out is refused here. A single call that will not fit is spend,
+                # and it belongs to the ceiling that charges for it, not to this check.
+                if total is not None and len(calls) > 1 and made + len(calls) > total
                 else None
             )
         )
@@ -1313,7 +1336,7 @@ class AgentRunner:
             repeats = _same_call_count(run.tool_calls, call) + _same_call_count(
                 calls[:position], call
             )
-            if repeats >= caps.max_repeated_calls:
+            if repeats >= bounds.loop.max_repeated_calls:
                 detail = (
                     f"{call.name} asked for with the same arguments {repeats + 1} times; the "
                     f"run is going round rather than getting anywhere"
@@ -1326,33 +1349,58 @@ class AgentRunner:
                     _named(RepeatedCallError(detail)),
                 )
 
-    async def _too_deep(
-        self,
-        agent: Agent[Any],
-        depth: int,
-        bounds: _Bounds,
-        *,
-        tenant: str,
-        user: str | None,
-        run_id: str | None,
+    async def _refused_before_it_started(
+        self, started: _Started, bounds: _Bounds, *, delegated: bool
+    ) -> Run[Any] | None:
+        """End a run the call graph has no room for, before it calls anything itself.
+
+        Depth and peer invocations are caps on the tree, not on this run, so they are the
+        one thing worth checking before a prompt is even assembled.
+        """
+        caps = bounds.budget.resolved.limits
+        depth = caps.max_delegation_depth
+        if depth is not None and started.depth > depth:
+            return await self._refused(
+                started,
+                bounds,
+                RunEventKind.DEPTH_EXCEEDED,
+                RecursionLimitError(
+                    f"max_delegation_depth is {depth} and {started.trail} would sit at "
+                    f"{started.depth}; agents calling agents have stopped making progress"
+                ),
+            )
+        if not delegated:
+            return None
+        peers = caps.max_peer_invocations
+        if peers is not None and (bounds.budget.limits().max_peer_invocations or 0) < 1:
+            return await self._refused(
+                started,
+                bounds,
+                RunEventKind.DEPTH_EXCEEDED,
+                RecursionLimitError(
+                    f"max_peer_invocations is {peers} for the whole call graph and it is "
+                    f"spent; {started.trail} is one delegation too many"
+                ),
+            )
+        await bounds.budget.record(_NOTHING, peer_invocations=1)
+        return None
+
+    async def _refused(
+        self, started: _Started, bounds: _Bounds, kind: RunEventKind, failure: AdkError
     ) -> Run[Any]:
-        """End a run that was called from too deep a chain, before it calls anything itself."""
-        detail = (
-            f"run would sit at depth {depth}, past the ceiling of {bounds.loop.max_depth}; "
-            f"agents calling agents have stopped making progress"
-        )
         run = Run(
-            id=run_id or self._ids(),
-            tenant=tenant,
-            user=user,
-            agent_name=agent.name,
-            agent_version=agent.version,
-            model=agent.model or "",
-            depth=depth,
+            id=started.run_id or self._ids(),
+            tenant=started.tenant,
+            user=started.user,
+            agent_name=started.agent.name,
+            agent_version=started.agent.version,
+            model=started.agent.model or "",
+            depth=started.depth,
+            path=started.path,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
-        run = run.record_event(self._event(RunEventKind.DEPTH_EXCEEDED, detail=detail))
+        run = run.record_event(self._event(kind, detail=str(failure)))
         return await self._terminate(
-            run, agent, RunState.LOOP_LIMIT_EXCEEDED, _named(RecursionLimitError(detail)), bounds
+            run, started.agent, RunState.LOOP_LIMIT_EXCEEDED, _named(failure), bounds
         )
 
     async def _cleared_to_dispatch(

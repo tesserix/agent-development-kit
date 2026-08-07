@@ -157,34 +157,57 @@ failed and either the delay before the next attempt or why there is not one.
 ## Caps on the shape of a run
 
 ```python
-runner = AgentRunner(provider=provider, loop=LoopConfig(max_depth=4, max_tool_calls_per_turn=8))
+runner = AgentRunner(provider=provider, budget=RunBudget(resolved=resolved, clock=clock))
+agent = Agent(name="planner", …, budget=BudgetLimits(max_delegation_depth=2))
 agent = Agent(name="planner", …, loop=LoopConfig(max_repeated_calls=2))
 ```
 
 Worked end to end, no network: `examples/loops.py`.
 
-**Loop shape *is* bounded by default,** unlike deadlines and retries. `LoopConfig` caps
-depth (4), tool calls per turn (8), tool calls per run (32) and identical repeats (3). A
+**How deep and how wide are stated with the money.** `max_delegation_depth`,
+`max_parallel_tool_calls`, `max_peer_invocations` and `max_tool_calls` are dimensions of
+`BudgetLimits`, resolved and attributed like any other ceiling — see
+[`docs/budget.md`](budget.md). Two policies would be two places to raise a cap, and the
+one nobody read is the one that lets a run away. `LoopConfig` keeps only
+`max_repeated_calls`, which counts a run going round rather than a run spending.
+
+**They are bounded by default,** unlike deadlines and retries. `BudgetLimits.conservative()`
+caps delegation depth at 4, fan-out at 8, peer invocations at 8 and tool calls at 40. A
 wall-clock ceiling the kit invented would kill good runs on slow hardware; a cap on shape
 only ever stops a run that has stopped making progress, and costs nothing when it does not
 bind. A cap of zero is refused at construction — it reads as "never do this at all", which
 is not a bound on a run but a run that cannot work.
 
-**A cap narrows and never widens.** `LoopConfig.narrowed_to` takes the minimum of each
-field, so an agent that declares its own tightens the runner's ceiling and can never vote
-itself more rope. This is the opposite of `DeadlineConfig` and `RetryConfig`, which an
-agent *replaces*: how long to wait and what to retry are properties of the work, but how
-far a chain of agents may recurse is a property of the deployment paying for it.
+**A cap narrows and never widens.** Resolution takes the tightest applicable scope, so an
+agent declaring its own tightens what the deployment gave it and can never vote itself more
+rope; a delegated child spends its parent's remaining allowance through `child()`. This is
+the opposite of `DeadlineConfig` and `RetryConfig`, which an agent *replaces*: how long to
+wait and what to retry are properties of the work, but how far a chain of agents may
+recurse is a property of the deployment paying for it.
 
-**A turn that would break a cap is refused entire, before any dispatch.** Fan-out width,
-the per-run total and repetition are all checked against the whole turn first. Trimming a
+**A turn that would break a cap is refused entire, before any dispatch.** A fan-out wider
+than `max_parallel_tool_calls`, a fan-out that would only partly fit under
+`max_tool_calls`, and repetition are all checked against the whole turn first. Trimming a
 fan-out to fit leaves half a plan executed — a set of side effects nobody chose — so the
-run terminates `loop_limit_exceeded` with nothing dispatched.
+run terminates `loop_limit_exceeded` with nothing dispatched. A *single* call that will not
+fit is spend rather than shape, and ends the run `budget_exhausted` at the ceiling that
+charges for it.
 
-**Depth is checked before a prompt is assembled.** Pass the caller's `RunContext` as
-`parent` and the depth carries down the chain; a run past the ceiling fails closed without
-a model call. Failing closed at the bottom is the point: a level that invents a substitute
-result keeps the cycle alive one layer up, where nothing can see it.
+**Tool calls go out one at a time.** Dispatching a cleared fan-out concurrently would save
+wall-clock and lose the check between calls, and that check is what stops the second call
+of a turn the caller cancelled during the first. Latency is worth less than a side effect
+nobody is waiting for.
+
+**Depth and the call path are checked before a prompt is assembled.** Pass the caller's
+`RunContext` as `parent` and both the depth and the path carry down the chain; a run past
+the ceiling fails closed without a model call, naming the path it took — `alpha→beta→alpha`
+is the shape of the bug, and printing it is how somebody finds it. Failing closed at the
+bottom is the point: a level that invents a substitute result keeps the cycle alive one
+layer up, where nothing can see it.
+
+**A delegation is counted against the whole tree.** `max_peer_invocations` is charged on
+the shared ledger, so a graph of agents each under the cap cannot break it together — which
+is exactly how per-hop counting fails.
 
 **Repeats are counted by request, not by tool.** The signature is the tool name plus its
 arguments, order-independent, so paging through results is progress and asking the same

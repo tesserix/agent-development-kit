@@ -105,34 +105,25 @@ class ProviderConfig(AdkModel):
 
 
 class LoopConfig(AdkModel):
-    """Caps on the shape of a run: how deep, how wide, and how often the same call.
+    """How often a run may make the same call before it is treated as going nowhere.
 
-    Unlike a deadline, these are bounded by default. A ceiling on wall-clock time the kit
-    invented would kill good runs on slow hardware; a ceiling on recursion and repetition
-    only ever stops a run that has stopped making progress — and a run with neither is one
-    nobody can interrupt short of a provider quota.
+    How deep and how wide a run may go are ceilings on spend and live in `BudgetLimits`
+    with the money — one policy, so a cap cannot be raised in the place nobody read.
+    Repetition is not spend: it is the shape of a run that has stopped making progress,
+    and it is bounded by default because a run with neither bound is one nobody can
+    interrupt short of a provider quota.
 
     Args:
-        max_depth: How deep a chain of agents calling agents may go. A child run cannot
-            raise this: an agent's own config narrows what it was given and never widens
-            it, or a runaway agent could vote itself more rope.
-        max_tool_calls_per_turn: How many tool calls one model response may ask for. The
-            whole turn is refused rather than trimmed, because half a fan-out is a set of
-            side effects nobody chose.
-        max_tool_calls_per_run: How many tool calls the whole run may make.
         max_repeated_calls: How many times one tool may be called with the same arguments
             before the run is treated as cycling. Tools declared in
             `Agent.idempotent_tools` are exempt: polling one endpoint with the same
             arguments is the design, not a cycle.
 
     Example:
-        >>> LoopConfig(max_depth=9).narrowed_to(LoopConfig(max_depth=2)).max_depth
+        >>> LoopConfig().narrowed_to(LoopConfig(max_repeated_calls=2)).max_repeated_calls
         2
     """
 
-    max_depth: int = 4
-    max_tool_calls_per_turn: int = 8
-    max_tool_calls_per_run: int = 32
     max_repeated_calls: int = 3
 
     @model_validator(mode="after")
@@ -154,12 +145,7 @@ class LoopConfig(AdkModel):
         )
 
 
-_LOOP_CAPS = (
-    "max_depth",
-    "max_tool_calls_per_turn",
-    "max_tool_calls_per_run",
-    "max_repeated_calls",
-)
+_LOOP_CAPS = ("max_repeated_calls",)
 
 
 class DeadlineConfig(AdkModel):

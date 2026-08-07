@@ -22,8 +22,17 @@ BudgetLimits(
     max_tool_calls=40,
     max_iterations=10,
     max_seconds=300.0,
+    max_peer_invocations=8,     # runs this run's tree may start
+    max_parallel_tool_calls=8,  # how wide one turn may be
+    max_delegation_depth=4,     # how deep agents calling agents may go
 )
 ```
+
+The last three are caps on the *shape* of a run rather than on what it has used. They are
+here and not in a policy of their own because two policies is two places to raise a cap,
+and the one nobody read is the one that lets a run away. Depth and fan-out do not
+accumulate — nothing is spent against them — so they are not narrowed by `limits()` the way
+a consumed dimension is; peer invocations are, because a tree of runs shares one count.
 
 Every field is optional to write and none is optional in effect: `filled()` replaces what
 was left unsaid with `BudgetLimits.conservative()`, shown above. A ceiling of zero is
@@ -148,6 +157,8 @@ fortieth iteration, so the loop checks it where the money goes:
 | After a model call | The reservation settled against what actually came back |
 | After a failed attempt | The kit's own estimate of what the vendor read is charged |
 | Before a tool call | The tool charged, so a ceiling refuses the dispatch rather than discovering it |
+| Before a turn is dispatched | Fan-out width and the run total checked against the whole turn, which is refused entire or not at all |
+| Before a prompt exists | Delegation depth and peer invocations checked, so a cycle costs nothing to stop |
 
 Money is the one dimension that can only stop the run *after* the call that broke it: the
 price is not known until the response carries it. Pre-flight cost estimation and caller

@@ -221,6 +221,7 @@ class FakeBudgetPolicy:
         self.model_calls = 0
         self.tool_calls = 0
         self.iterations = 0
+        self.peer_invocations = 0
 
     @property
     def resolved(self) -> ResolvedBudget:
@@ -264,6 +265,7 @@ class FakeBudgetPolicy:
         model_calls: int = 0,
         tool_calls: int = 0,
         iterations: int = 0,
+        peer_invocations: int = 0,
     ) -> None:
         """Record consumption and release the outstanding reservation."""
         self.recorded.append(usage)
@@ -271,6 +273,7 @@ class FakeBudgetPolicy:
         self.model_calls += model_calls
         self.tool_calls += tool_calls
         self.iterations += iterations
+        self.peer_invocations += peer_invocations
         self.reserved = 0
 
     def check(self) -> BudgetDecision:

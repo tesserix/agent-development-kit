@@ -14,7 +14,7 @@ tesserix_adk.core.BinaryPart :: class BinaryPart(AdkModel)
 tesserix_adk.core.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
 tesserix_adk.core.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.core.BudgetLimits :: class BudgetLimits(AdkModel) {filled(self) -> 'Self'}
-tesserix_adk.core.BudgetPolicy :: class BudgetPolicy(Protocol) {check(self) -> 'BudgetDecision'; child(self) -> 'BudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.BudgetPolicy :: class BudgetPolicy(Protocol) {check(self) -> 'BudgetDecision'; child(self) -> 'BudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.BudgetScope :: class BudgetScope(StrEnum)
 tesserix_adk.core.BudgetUnavailableError :: class BudgetUnavailableError(AdkError)
 tesserix_adk.core.CHEAP :: CHEAP: TaskClass
@@ -96,7 +96,7 @@ tesserix_adk.core.RetryConfig :: class RetryConfig(AdkModel)
 tesserix_adk.core.Role :: Role = typing.Literal['system', 'user', 'assistant', 'tool']
 tesserix_adk.core.RoutingDecision :: class RoutingDecision(AdkModel) {explain(self) -> 'str'}
 tesserix_adk.core.Run :: class Run(AdkModel, Generic) {record(self, usage: 'Usage') -> 'Self'; record_event(self, event: 'RunEvent') -> 'Self'; transition_to(self, state: 'RunState', *, at: 'float | None' = None) -> 'Self'; with_output(self, output: 'OutputT') -> 'Self'}
-tesserix_adk.core.RunBudget :: class RunBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'RunBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.RunBudget :: class RunBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'RunBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.RunContext :: class RunContext(AdkModel)
 tesserix_adk.core.RunEvent :: class RunEvent(AdkModel)
 tesserix_adk.core.RunEventKind :: class RunEventKind(StrEnum)
@@ -130,7 +130,7 @@ tesserix_adk.core.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
-tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.Usage :: class Usage(AdkModel)
 tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
@@ -141,10 +141,10 @@ tesserix_adk.core.budget.BudgetScope :: class BudgetScope(StrEnum)
 tesserix_adk.core.budget.Consumed :: class Consumed(AdkModel) {against(self, name: 'str') -> 'Decimal'}
 tesserix_adk.core.budget.LedgerFailure :: class LedgerFailure(StrEnum)
 tesserix_adk.core.budget.ResolvedBudget :: class ResolvedBudget(AdkModel)
-tesserix_adk.core.budget.RunBudget :: class RunBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'RunBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.budget.RunBudget :: class RunBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'RunBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.budget.ScopedLimits :: class ScopedLimits(AdkModel)
 tesserix_adk.core.budget.TenantLedger :: class TenantLedger(Protocol) {consume(self, tenant: 'str', window: 'str', spent: 'Consumed') -> 'Consumed'; total(self, tenant: 'str', window: 'str') -> 'Consumed'}
-tesserix_adk.core.budget.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.budget.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.budget.most_restrictive :: def most_restrictive(*scoped: 'ScopedLimits') -> 'ResolvedBudget'
 tesserix_adk.core.capabilities.Capability :: class Capability(StrEnum)
 tesserix_adk.core.capabilities.CapabilitySet :: CapabilitySet = typing.Annotated[frozenset[tesserix_adk.core.capabilities.Capability], BeforeValidator(func=<class 'frozenset'>, json_schema_input_type=PydanticUndefined)]
@@ -254,7 +254,7 @@ tesserix_adk.core.primitives.TextPart :: class TextPart(AdkModel)
 tesserix_adk.core.primitives.ToolCall :: class ToolCall(AdkModel)
 tesserix_adk.core.primitives.Usage :: class Usage(AdkModel)
 tesserix_adk.core.primitives.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
-tesserix_adk.core.protocols.BudgetPolicy :: class BudgetPolicy(Protocol) {check(self) -> 'BudgetDecision'; child(self) -> 'BudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.protocols.BudgetPolicy :: class BudgetPolicy(Protocol) {check(self) -> 'BudgetDecision'; child(self) -> 'BudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.protocols.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.core.protocols.DeclaresEmulation :: class DeclaresEmulation(Protocol)
 tesserix_adk.core.protocols.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
@@ -424,7 +424,7 @@ tesserix_adk.testing.Cassette :: class Cassette(AdkModel) {save(self, path: 'Pat
 tesserix_adk.testing.CassetteMissError :: class CassetteMissError(AdkError)
 tesserix_adk.testing.CassetteVersionError :: class CassetteVersionError(AdkError)
 tesserix_adk.testing.ClockConformance :: class ClockConformance(ABC) {make_clock(self) -> 'Clock'; test_now_does_not_go_backwards(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_sleep_does_not_move_time_backwards(self) -> 'None'}
-tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
@@ -469,7 +469,7 @@ tesserix_adk.testing.conformance.TracerConformance :: class TracerConformance(AB
 tesserix_adk.testing.estimate_tokens :: def estimate_tokens(messages: 'Sequence[Message]') -> 'int'
 tesserix_adk.testing.fakes.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.fakes.CAPABLE :: CAPABLE: ModelCapabilities
-tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.fakes.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
