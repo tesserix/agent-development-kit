@@ -96,6 +96,7 @@ code lands here as the kit is built.
 | Budgets — the limits vocabulary, scope precedence, tenant ledgers, mid-run enforcement | [`docs/budget.md`](docs/budget.md) |
 | Cost attribution — chargeback dimensions, metric cardinality, redaction, reconciliation | [`docs/cost-attribution.md`](docs/cost-attribution.md) |
 | Estimation — pre-flight cost, confidence, refusal, calibration | [`docs/estimation.md`](docs/estimation.md) |
+| The spend ledger — shared ceilings, windows, leases, sharding, coalescing | [`docs/ledger.md`](docs/ledger.md) |
 | Structured output — declared answer shapes, provider fallback, violations | [`docs/structured-output.md`](docs/structured-output.md) |
 | Repair — bounded correction, what goes back, what it costs | [`docs/repair.md`](docs/repair.md) |
 | Typing — the answer type, the escape-hatch policy, third-party boundaries | [`docs/typing.md`](docs/typing.md) |

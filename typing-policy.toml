@@ -226,3 +226,23 @@ reason = "Mirrors MemoryStore, whose value is whatever the consumer stored."
 owner = "@sam123ben"
 review_by = 2027-08-07
 
+
+[[any]]
+symbol = "tesserix_adk.adapters.ledger.RedisClient"
+kind = "json"
+reason = """
+A Lua script's reply is whatever the server sent: an integer, a string, or an array of
+both, varying by script. Narrowing it here would describe one script rather than the call.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.adapters.ledger.SqlExecutor"
+kind = "json"
+reason = """
+Rows and bound parameters vary by statement, and the driver a deployment brings decides
+what a column comes back as. Typing it would pick a driver on the consumer's behalf.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07

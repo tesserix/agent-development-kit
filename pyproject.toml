@@ -146,6 +146,9 @@ ignore = [
 # owner: @sam123ben — reason: conformance suites are test code that ships in src, so
 # asserts are the mechanism, and each case name states the behaviour it checks.
 "src/tesserix_adk/testing/conformance.py" = ["S101", "D102", "ANN401"]
+# owner: @sam123ben — reason: a Redis reply and a database row are whatever the server sent,
+# so the two client protocols are honestly Any rather than falsely narrow.
+"src/tesserix_adk/adapters/ledger.py" = ["ANN401"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tesserix_adk", "tests"]

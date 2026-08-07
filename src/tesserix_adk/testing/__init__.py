@@ -16,6 +16,7 @@ from tesserix_adk.testing.conformance import (
     ClockConformance,
     MemoryStoreConformance,
     ModelProviderConformance,
+    SpendLedgerConformance,
     TracerConformance,
 )
 from tesserix_adk.testing.fakes import (
@@ -81,6 +82,7 @@ __all__ = [
     "ScriptedProvider",
     "SentRequest",
     "SequentialIds",
+    "SpendLedgerConformance",
     "StallingProvider",
     "ToolExecutionError",
     "TracerConformance",

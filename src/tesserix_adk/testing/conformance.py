@@ -20,12 +20,19 @@ every implementation learns about it by failing rather than by drifting.
 
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
+from decimal import Decimal
 
 import pytest
 
 from tesserix_adk.core.capabilities import Capability, ModelCapabilities
-from tesserix_adk.core.errors import CapabilityError
+from tesserix_adk.core.errors import (
+    BudgetExceededError,
+    BudgetUnavailableError,
+    CapabilityError,
+)
+from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
 from tesserix_adk.core.primitives import Message, TextPart, Usage
 from tesserix_adk.core.protocols import (
     BudgetPolicy,
@@ -221,3 +228,90 @@ class TracerConformance(ABC):
         except ValueError:
             raised = True
         assert raised, "a span must not swallow the exception its body raised"
+
+
+class SpendLedgerConformance(ABC):
+    """Behaviour every `SpendLedger` implementation must exhibit.
+
+    A store that gets any of these wrong lets a tenant past its ceiling, which is the one
+    thing the ledger exists to prevent. Structural typing cannot express "the ceiling check
+    and the hold happen together", so it is asserted here and every implementation —
+    in-process, Redis, PostgreSQL, or a deployment's own — inherits the suite.
+    """
+
+    ceiling = Decimal("10.00")
+
+    @abstractmethod
+    def make_ledger(self) -> SpendLedger:
+        """Return a fresh, empty ledger under test."""
+
+    def a_key(self, tenant: str = "conformance") -> LedgerKey:
+        """A window to spend against. Rolling by default, because that is the harder one."""
+        return LedgerKey(
+            tenant=tenant, agent=None, window=Window(kind=WindowKind.ROLLING, seconds=3_600)
+        )
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_ledger(), SpendLedger)
+
+    async def test_settled_spend_is_visible_to_the_next_reader(self) -> None:
+        ledger, key = self.make_ledger(), self.a_key()
+        await ledger.settle(
+            await ledger.reserve(key, Decimal("1.00"), ceiling=self.ceiling), Decimal("1.00")
+        )
+        assert (await ledger.read_window(key)).settled == Decimal("1.00")
+
+    async def test_a_hold_counts_before_it_settles(self) -> None:
+        ledger, key = self.make_ledger(), self.a_key()
+        await ledger.reserve(key, Decimal("4.00"), ceiling=self.ceiling)
+        assert (await ledger.read_window(key)).committed == Decimal("4.00")
+
+    async def test_the_ceiling_refuses_rather_than_overshoots(self) -> None:
+        ledger, key = self.make_ledger(), self.a_key()
+        await ledger.reserve(key, Decimal("9.50"), ceiling=self.ceiling)
+        with pytest.raises(BudgetExceededError):
+            await ledger.reserve(key, Decimal("1.00"), ceiling=self.ceiling)
+
+    async def test_concurrent_holds_do_not_pass_the_ceiling(self) -> None:
+        """The reserve-and-check has to be one operation, whatever the store."""
+        ledger, key = self.make_ledger(), self.a_key()
+        granted = await asyncio.gather(
+            *(self._try(ledger, key, Decimal("1.00")) for _ in range(40))
+        )
+        assert sum(granted) == 10
+
+    async def test_a_release_gives_the_allowance_back(self) -> None:
+        ledger, key = self.make_ledger(), self.a_key()
+        await ledger.release(await ledger.reserve(key, Decimal("9.00"), ceiling=self.ceiling))
+        assert (await ledger.read_window(key)).reserved == Decimal(0)
+
+    async def test_settling_twice_is_refused(self) -> None:
+        ledger, key = self.make_ledger(), self.a_key()
+        held = await ledger.reserve(key, Decimal("1.00"), ceiling=self.ceiling)
+        await ledger.settle(held, Decimal("1.00"))
+        with pytest.raises(BudgetUnavailableError):
+            await ledger.settle(held, Decimal("1.00"))
+
+    async def test_one_tenant_cannot_read_another_s_window(self) -> None:
+        ledger = self.make_ledger()
+        await ledger.settle(
+            await ledger.reserve(self.a_key("one"), Decimal("2.00"), ceiling=self.ceiling),
+            Decimal("2.00"),
+        )
+        assert (await ledger.read_window(self.a_key("two"))).settled == Decimal(0)
+
+    async def test_erasure_leaves_nothing_of_the_tenant_behind(self) -> None:
+        ledger, key = self.make_ledger(), self.a_key()
+        await ledger.settle(
+            await ledger.reserve(key, Decimal("2.00"), ceiling=self.ceiling), Decimal("2.00")
+        )
+        assert (await ledger.forget(key.tenant)).settled == Decimal("2.00")
+        assert (await ledger.read_window(key)).settled == Decimal(0)
+
+    async def _try(self, ledger: SpendLedger, key: LedgerKey, amount: Decimal) -> bool:
+        try:
+            held = await ledger.reserve(key, amount, ceiling=self.ceiling)
+        except BudgetExceededError:
+            return False
+        await ledger.settle(held, amount)
+        return True

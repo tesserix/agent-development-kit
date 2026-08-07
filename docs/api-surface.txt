@@ -1,4 +1,18 @@
 tesserix_adk.__version__ :: __version__: str
+tesserix_adk.adapters.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
+tesserix_adk.adapters.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.PostgresLedger :: class PostgresLedger(_Shared) {ensure_schema(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.RedisClient :: class RedisClient(Protocol) {eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
+tesserix_adk.adapters.RedisLedger :: class RedisLedger(_Shared) {forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.SqlExecutor :: class SqlExecutor(Protocol) {fetch(self, statement: 'str', *args: 'Any') -> 'Sequence[Sequence[Any]]'}
+tesserix_adk.adapters.ledger.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.ledger.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
+tesserix_adk.adapters.ledger.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.ledger.PostgresLedger :: class PostgresLedger(_Shared) {ensure_schema(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.ledger.RedisClient :: class RedisClient(Protocol) {eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
+tesserix_adk.adapters.ledger.RedisLedger :: class RedisLedger(_Shared) {forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.ledger.SqlExecutor :: class SqlExecutor(Protocol) {fetch(self, statement: 'str', *args: 'Any') -> 'Sequence[Sequence[Any]]'}
 tesserix_adk.core.AdkConfig :: class AdkConfig(AdkModel)
 tesserix_adk.core.AdkDeprecationWarning :: class AdkDeprecationWarning(DeprecationWarning)
 tesserix_adk.core.AdkError :: class AdkError(Exception)
@@ -61,6 +75,7 @@ tesserix_adk.core.InvalidRequestError :: class InvalidRequestError(ProviderError
 tesserix_adk.core.JSON_SCHEMA :: JSON_SCHEMA: JsonSchema
 tesserix_adk.core.JsonSchema :: class JsonSchema(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.LedgerFailure :: class LedgerFailure(StrEnum)
+tesserix_adk.core.LedgerKey :: class LedgerKey(AdkModel) {at(self, now: 'float') -> 'str'}
 tesserix_adk.core.LoopConfig :: class LoopConfig(AdkModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
 tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
@@ -92,6 +107,7 @@ tesserix_adk.core.RedactionConfig :: class RedactionConfig(AdkModel)
 tesserix_adk.core.RejectedCandidate :: class RejectedCandidate(AdkModel)
 tesserix_adk.core.RepairConfig :: class RepairConfig(AdkModel)
 tesserix_adk.core.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
+tesserix_adk.core.Reservation :: class Reservation(AdkModel)
 tesserix_adk.core.ResolvedBudget :: class ResolvedBudget(AdkModel)
 tesserix_adk.core.RetryConfig :: class RetryConfig(AdkModel)
 tesserix_adk.core.Role :: Role = typing.Literal['system', 'user', 'assistant', 'tool']
@@ -102,6 +118,7 @@ tesserix_adk.core.RunContext :: class RunContext(AdkModel)
 tesserix_adk.core.RunEvent :: class RunEvent(AdkModel)
 tesserix_adk.core.RunEventKind :: class RunEventKind(StrEnum)
 tesserix_adk.core.RunState :: class RunState(StrEnum)
+tesserix_adk.core.SEPARATOR :: SEPARATOR: str
 tesserix_adk.core.SMART :: SMART: TaskClass
 tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
 tesserix_adk.core.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
@@ -110,6 +127,7 @@ tesserix_adk.core.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.ScopedLimits :: class ScopedLimits(AdkModel)
 tesserix_adk.core.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.core.Sensitive :: class Sensitive(object)
+tesserix_adk.core.SpendLedger :: class SpendLedger(Protocol) {forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = Ellipsis) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.core.StopReason :: class StopReason(StrEnum)
 tesserix_adk.core.StoreConfig :: class StoreConfig(AdkModel)
 tesserix_adk.core.StreamAccumulator :: class StreamAccumulator(object) {feed(self, event: 'StreamEvent') -> 'None'; finish(self, stop_reason: 'StopReason') -> 'ModelResponse'}
@@ -134,6 +152,9 @@ tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **a
 tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.Usage :: class Usage(AdkModel)
 tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
+tesserix_adk.core.Window :: class Window(AdkModel) {bucket(self, now: 'float') -> 'int'; opened_at(self, now: 'float') -> 'float'; resets_at(self, now: 'float') -> 'float'}
+tesserix_adk.core.WindowKind :: class WindowKind(StrEnum)
+tesserix_adk.core.WindowSpend :: class WindowSpend(AdkModel) {remaining(self, ceiling: 'Decimal') -> 'Decimal'}
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.budget.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
@@ -236,6 +257,13 @@ tesserix_adk.core.hooks.HookDecision :: class HookDecision(AdkModel)
 tesserix_adk.core.hooks.HookPoint :: class HookPoint(StrEnum)
 tesserix_adk.core.hooks.HookSubject :: class HookSubject(AdkModel)
 tesserix_adk.core.hooks.resolve_hooks :: def resolve_hooks(decisions: 'Sequence[HookDecision] | Iterable[HookDecision]') -> 'HookDecision'
+tesserix_adk.core.ledger.LedgerKey :: class LedgerKey(AdkModel) {at(self, now: 'float') -> 'str'}
+tesserix_adk.core.ledger.Reservation :: class Reservation(AdkModel)
+tesserix_adk.core.ledger.SEPARATOR :: SEPARATOR: str
+tesserix_adk.core.ledger.SpendLedger :: class SpendLedger(Protocol) {forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = Ellipsis) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.core.ledger.Window :: class Window(AdkModel) {bucket(self, now: 'float') -> 'int'; opened_at(self, now: 'float') -> 'float'; resets_at(self, now: 'float') -> 'float'}
+tesserix_adk.core.ledger.WindowKind :: class WindowKind(StrEnum)
+tesserix_adk.core.ledger.WindowSpend :: class WindowSpend(AdkModel) {remaining(self, ceiling: 'Decimal') -> 'Decimal'}
 tesserix_adk.core.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
 tesserix_adk.core.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
@@ -500,7 +528,7 @@ tesserix_adk.testing.CassetteMissError :: class CassetteMissError(AdkError)
 tesserix_adk.testing.CassetteVersionError :: class CassetteVersionError(AdkError)
 tesserix_adk.testing.ClockConformance :: class ClockConformance(ABC) {make_clock(self) -> 'Clock'; test_now_does_not_go_backwards(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_sleep_does_not_move_time_backwards(self) -> 'None'}
 tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
-tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
+tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; set(self, when: 'float') -> 'None'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.testing.FakeMeter :: class FakeMeter(object) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'; total(self, name: 'str', **dimensions: 'str') -> 'float'}
@@ -525,6 +553,7 @@ tesserix_adk.testing.ReplayingProvider :: class ReplayingProvider(object) {compl
 tesserix_adk.testing.ScriptedProvider :: class ScriptedProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.SentRequest :: class SentRequest(AdkModel)
 tesserix_adk.testing.SequentialIds :: class SequentialIds(object)
+tesserix_adk.testing.SpendLedgerConformance :: class SpendLedgerConformance(ABC) {a_key(self, tenant: 'str' = 'conformance') -> 'LedgerKey'; make_ledger(self) -> 'SpendLedger'; test_a_hold_counts_before_it_settles(self) -> 'None'; test_a_release_gives_the_allowance_back(self) -> 'None'; test_concurrent_holds_do_not_pass_the_ceiling(self) -> 'None'; test_erasure_leaves_nothing_of_the_tenant_behind(self) -> 'None'; test_one_tenant_cannot_read_another_s_window(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_settled_spend_is_visible_to_the_next_reader(self) -> 'None'; test_settling_twice_is_refused(self) -> 'None'; test_the_ceiling_refuses_rather_than_overshoots(self) -> 'None'}
 tesserix_adk.testing.StallingProvider :: class StallingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; release(self) -> 'None'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.testing.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Tracer'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
@@ -547,7 +576,7 @@ tesserix_adk.testing.estimate_tokens :: def estimate_tokens(messages: 'Sequence[
 tesserix_adk.testing.fakes.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.fakes.CAPABLE :: CAPABLE: ModelCapabilities
 tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
-tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
+tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; set(self, when: 'float') -> 'None'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
 tesserix_adk.testing.fakes.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.testing.fakes.FakeMemoryStore :: class FakeMemoryStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.testing.fakes.FakeMeter :: class FakeMeter(object) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'; total(self, name: 'str', **dimensions: 'str') -> 'float'}

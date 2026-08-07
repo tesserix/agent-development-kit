@@ -134,9 +134,17 @@ class FakeClock:
             with contextlib.suppress(ValueError):
                 self._sleepers.remove(sleeper)
 
+    def set(self, when: float) -> None:
+        """Put the clock at `when`, forwards or back, for testing a clock that moved."""
+        self._now = when
+        self._wake_what_is_due()
+
     def advance(self, seconds: float) -> None:
         """Move the clock forward without recording a sleep, waking anything now due."""
         self._now += seconds
+        self._wake_what_is_due()
+
+    def _wake_what_is_due(self) -> None:
         for due, event in list(self._sleepers):
             if due <= self._now:
                 event.set()
