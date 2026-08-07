@@ -107,6 +107,8 @@ class RunEventKind(StrEnum):
     TOOL_ERROR = "tool_error"
     TOOL_REFUSED = "tool_refused"
     TOOL_INDETERMINATE = "tool_indeterminate"
+    BUDGET_EXCEEDED = "budget_exceeded"
+    COMPENSATION_REQUIRED = "compensation_required"
     FAN_OUT_REFUSED = "fan_out_refused"
     REPEAT_DETECTED = "repeat_detected"
     DEPTH_EXCEEDED = "depth_exceeded"

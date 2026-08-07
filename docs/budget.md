@@ -136,6 +136,61 @@ a reason nobody wrote down is one nobody can review.
 Breaching a ceiling ends the run in `BUDGET_EXHAUSTED`; losing the ledger ends it in
 `FAILED`. Neither is a warning.
 
+## Where the loop enforces it
+
+A ceiling checked at the boundaries does not stop the run that discovered its spend on the
+fortieth iteration, so the loop checks it where the money goes:
+
+| Point | What happens |
+|---|---|
+| Top of each iteration | Every dimension re-checked, and the iteration charged before it runs |
+| Before a model call | Input tokens estimated and reserved; a call that would not fit is never dispatched |
+| After a model call | The reservation settled against what actually came back |
+| After a failed attempt | The kit's own estimate of what the vendor read is charged |
+| Before a tool call | The tool charged, so a ceiling refuses the dispatch rather than discovering it |
+
+Money is the one dimension that can only stop the run *after* the call that broke it: the
+price is not known until the response carries it. Pre-flight cost estimation and caller
+refusal are a separate story. Token, iteration, tool and wall-clock ceilings all refuse
+before dispatch.
+
+Nothing is squeezed under a ceiling. The prompt is not truncated, tools are not dropped and
+the model is not downgraded to make a call fit — a degraded answer presented as a real one is
+worse than no answer and cheaper only in money.
+
+### Retries, cancellation and side effects
+
+A failed attempt is spend. Whatever the vendor read before it failed is charged against the
+ceiling, so retries and fallback cannot be used to spend past a limit.
+
+Cancellation wins over a breach reached in the same breath: the aborted call settles what it
+had already sent, and the run still ends `CANCELLED`. One deterministic terminal state, and a
+ledger that still reconciles.
+
+A tool that already ran is never re-dispatched while the run unwinds — that is how one side
+effect becomes two. Instead each non-idempotent tool that ran on a run that did not complete
+gets a `COMPENSATION_REQUIRED` event naming it, for whoever has to undo it. Tools listed in
+`Agent.idempotent_tools` are left alone.
+
+When a call costs more than the estimate that reserved for it, the run lands marginally over
+and `BudgetDecision.overshoot` says by how much. The terminating event carries it, because
+rounding it away is how a ceiling comes to mean something other than what it says.
+
+### Streams
+
+`budgeted_stream` holds a stream to the same ceiling. Each running total the vendor reports is
+charged as an increment, so a stream repeating a total is billed once, and passing the ceiling
+mid-stream raises `BudgetExceededError` rather than letting the stream end quietly:
+
+```python
+async for event in budgeted_stream(provider.stream(request), run_budget):
+    ...
+```
+
+A consumer that sees a stream simply stop reads it as a finished answer. The source stream is
+closed on the way out, so an aborted stream does not leave the vendor sending tokens charged
+to nobody.
+
 ## Testing
 
 `FakeBudgetPolicy` is a counting budget with a hard token limit and no ledger, and
@@ -149,4 +204,6 @@ Pricing is not here — see [`docs/cost.md`](cost.md) for how a `Usage` becomes 
 cross-process ledger implementation is not here either; the protocol is the contract and a
 deployment supplies the store.
 
-Exercised by [`examples/budget.py`](../examples/budget.py) and `tests/test_budget.py`.
+Exercised by [`examples/budget.py`](../examples/budget.py) and `tests/test_budget.py`;
+enforcement by [`examples/budget_enforcement.py`](../examples/budget_enforcement.py) and
+`tests/test_budget_enforcement.py`.

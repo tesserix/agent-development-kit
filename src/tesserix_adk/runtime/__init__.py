@@ -11,6 +11,7 @@ from tesserix_adk.runtime.prompt import (
 )
 from tesserix_adk.runtime.rate_limit import RateLimiter
 from tesserix_adk.runtime.retry import RetryPlan
+from tesserix_adk.runtime.spend import budgeted_stream
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
 __all__ = [
@@ -27,6 +28,7 @@ __all__ = [
     "SystemClock",
     "ToolDeclaration",
     "assemble_prompt",
+    "budgeted_stream",
     "canonical_digest",
     "fingerprint_of",
     "unwrap_fenced",

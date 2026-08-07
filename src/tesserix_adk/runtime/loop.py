@@ -20,7 +20,9 @@ import hashlib
 import json
 import time
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass, replace
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from pydantic import BaseModel
@@ -112,6 +114,7 @@ __all__ = ["AgentRunner", "ModelRequest", "ModelResponse", "SystemClock"]
 _DEFAULT_MAX_ITERATIONS = 8
 _DEFAULT_MAX_TOOL_RESULT_CHARS = 8_000
 _CHARS_PER_TOKEN = 4
+_NOTHING = Usage(input_tokens=0, output_tokens=0)
 _TRUNCATION_MARKER = "\n[truncated]"
 
 # A cancelled coroutine needs a loop turn or two to unwind; only then is the grace window
@@ -427,6 +430,7 @@ class AgentRunner:
             messages = list(prompt.messages)
             for _ in range(self._max_iterations):
                 self._stop_if_over(run, bounds)
+                await self._spent(run, bounds, _NOTHING, iterations=1)
                 run, messages = await self._before_the_call(run, agent, messages, bounds)
                 self._refuse_unreadable_prompt(messages, model, bounds.provider)
                 request = ModelRequest(
@@ -840,8 +844,34 @@ class AgentRunner:
         self, run: Run[Any], agent: Agent[Any], state: RunState, detail: str | None, bounds: _Bounds
     ) -> Run[Any]:
         run = await self._notify(run, agent, state, bounds)
+        run = self._to_compensate(run, agent, state)
         recorded = run.record_event(self._event(RunEventKind.TERMINATED, detail=detail))
         return recorded.transition_to(state, at=self._clock.now())
+
+    def _to_compensate(self, run: Run[Any], agent: Agent[Any], state: RunState) -> Run[Any]:
+        """Name the side effects that outlived the run, so somebody can undo them.
+
+        A run that stops after a tool has changed the world leaves that change behind.
+        The runtime does not undo it — unwinding by re-dispatching is how one side effect
+        becomes two — so it says which tools ran and are not declared safe to repeat.
+        """
+        if state is RunState.COMPLETED:
+            return run
+        for name in dict.fromkeys(
+            event.name
+            for event in run.events
+            if event.kind in _SIDE_EFFECTS and event.name is not None
+        ):
+            if name in agent.idempotent_tools:
+                continue
+            run = run.record_event(
+                self._event(
+                    RunEventKind.COMPENSATION_REQUIRED,
+                    name=name,
+                    detail=f"ran before the run ended in {state}, and is not declared idempotent",
+                )
+            )
+        return run
 
     async def _notify(
         self, run: Run[Any], agent: Agent[Any], state: RunState, bounds: _Bounds
@@ -908,6 +938,9 @@ class AgentRunner:
                 the chain's decision, not this one's.
         """
         estimate = sum(_length(message) for message in request.messages) // _CHARS_PER_TOKEN
+        # Nothing was reported back for an attempt that failed, so the kit's own estimate
+        # of what the vendor read is all there is to charge for it.
+        burned = Usage(input_tokens=estimate, output_tokens=0, source=CountSource.HEURISTIC)
         plan = RetryPlan(bounds.retry, random=self._jitter)
         attempt = 1
         while True:
@@ -920,17 +953,20 @@ class AgentRunner:
                     what="model call",
                 )
             except _Aborted as abort:
+                await self._settle_the_hold(bounds, burned)
                 raise self._cancelled(run, abort, name=request.model) from None
             except BudgetExceededError as exceeded:
-                raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
+                raise self._exhausted(run, exceeded) from exceeded
             except BudgetUnavailableError as unavailable:
                 raise _Terminal(run, RunState.FAILED, str(unavailable)) from unavailable
             except CancelledError as cancelled:
                 raise _Terminal(run, RunState.CANCELLED, str(cancelled)) from cancelled
             except Exception as failure:
                 run, delay = self._after_failure(
-                    run, plan, attempt, failure, bounds, request.model, estimate
+                    run, plan, attempt, failure, bounds, request.model, burned
                 )
+                # A retry that spent nothing off the ceiling is a way to spend past it.
+                await self._spent(run, bounds, burned, model_calls=1)
                 if delay is None:
                     raise _Refused(run, failure) from failure
                 await self._backoff(run, delay, bounds, name=request.model)
@@ -1072,7 +1108,7 @@ class AgentRunner:
         failure: Exception,
         bounds: _Bounds,
         name: str,
-        burned: int,
+        burned: Usage,
     ) -> tuple[Run[Any], float | None]:
         """Record the failed attempt, and say how long to wait or why there is no next one."""
         if not plan.retryable(failure):
@@ -1088,12 +1124,9 @@ class AgentRunner:
         else:
             why = f"retrying in {delay:.2f}s"
         detail = f"attempt {attempt}: {type(failure).__name__}: {failure} — {why}"
-        # A vendor that read the prompt and then refused still charged for reading it, and
-        # nothing was reported back, so the kit's own estimate is all there is to record.
-        spent = Usage(input_tokens=burned, output_tokens=0, source=CountSource.HEURISTIC)
         return (
-            run.record(spent).record_event(
-                self._event(RunEventKind.ATTEMPT_FAILED, name=name, detail=detail, usage=spent)
+            run.record(burned).record_event(
+                self._event(RunEventKind.ATTEMPT_FAILED, name=name, detail=detail, usage=burned)
             ),
             delay,
         )
@@ -1126,7 +1159,7 @@ class AgentRunner:
                 usage=response.usage,
             )
         )
-        await self._spent(run, bounds, response.usage, model_calls=1, iterations=1)
+        await self._spent(run, bounds, response.usage, model_calls=1)
         if not response.content and not response.tool_calls:
             return await self._terminate(
                 run,
@@ -1433,6 +1466,9 @@ class AgentRunner:
     ) -> tuple[Run[Any], str, str]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
         await self._reserve(run, bounds, len(_signature(call)) // _CHARS_PER_TOKEN)
+        # Charged before dispatch: a tool counted afterwards is one whose side effect has
+        # already landed by the time the ceiling refuses it.
+        await self._spent(run, bounds, _NOTHING, tool_calls=1)
         plan = RetryPlan(bounds.retry, random=self._jitter)
         attempt = 1
         while True:
@@ -1480,7 +1516,6 @@ class AgentRunner:
                 output_tokens=0,
                 source=CountSource.HEURISTIC,
             ),
-            tool_calls=1,
         )
         return (
             run.record_event(self._event(RunEventKind.TOOL_RESULT, name=call.name)),
@@ -1512,7 +1547,7 @@ class AgentRunner:
                 iterations=iterations,
             )
         except BudgetExceededError as exceeded:
-            raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
+            raise self._exhausted(run, exceeded) from exceeded
         except BudgetUnavailableError as unavailable:
             raise _Terminal(run, RunState.FAILED, str(unavailable)) from unavailable
 
@@ -1521,9 +1556,37 @@ class AgentRunner:
         try:
             await bounds.budget.reserve(estimate)
         except BudgetExceededError as exceeded:
-            raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
+            raise self._exhausted(run, exceeded) from exceeded
         except BudgetUnavailableError as unavailable:
             raise _Terminal(run, RunState.FAILED, str(unavailable)) from unavailable
+
+    def _exhausted(self, run: Run[Any], exceeded: BudgetExceededError) -> _Terminal:
+        """End the run on the ceiling it reached, saying by how much it went past.
+
+        A reservation holds the overshoot to zero where the call was refused before it
+        was made. Where the answer came back dearer than the estimate that reserved for
+        it, the difference is recorded rather than rounded away.
+        """
+        over = max(exceeded.consumed - (exceeded.limit or exceeded.consumed), Decimal(0))
+        recorded = run.record_event(
+            self._event(
+                RunEventKind.BUDGET_EXCEEDED,
+                name=exceeded.breached or None,
+                detail=f"{exceeded}; over by {over}",
+            )
+        )
+        return _Terminal(recorded, RunState.BUDGET_EXHAUSTED, str(exceeded))
+
+    async def _settle_the_hold(self, bounds: _Bounds, spent: Usage) -> None:
+        """Charge what a stopped call had already sent, whatever that does to the ceiling.
+
+        A cancelled run reporting nothing spent is a bill nobody can reconcile. The
+        ceiling may well be passed by this, and it changes nothing: the caller's switch
+        decides how the run ended, so a breach discovered while unwinding is recorded on
+        the budget and not allowed to rewrite the terminal state.
+        """
+        with suppress(BudgetExceededError, BudgetUnavailableError):
+            await bounds.budget.record(spent, model_calls=1)
 
     def _tool_backoff(
         self, agent: Agent[Any], call: ToolCall, plan: RetryPlan, attempt: int, bounds: _Bounds

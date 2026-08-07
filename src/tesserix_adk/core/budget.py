@@ -340,6 +340,30 @@ class BudgetDecision(AdkModel):
     remaining: Decimal = Decimal(0)
     priced: bool = True
 
+    @property
+    def overshoot(self) -> Decimal:
+        """How far past the ceiling this went, which a reservation usually holds to zero.
+
+        A call dearer than the estimate that reserved for it lands the run marginally
+        over. That is a number whoever reconciles the invoice needs, and rounding it away
+        is how a ceiling comes to mean something other than what it says.
+        """
+        if self.limit is None:
+            return Decimal(0)
+        return max(self.consumed - self.limit, Decimal(0))
+
+    def as_error(self) -> BudgetExceededError:
+        """The typed refusal this decision amounts to. Whether to raise it is the caller's."""
+        return BudgetExceededError(
+            f"{self.breached} is {self.limit} at {self.scope} scope and this run has "
+            f"used {self.consumed}, leaving {self.remaining}",
+            breached=self.breached or "",
+            scope=self.scope,
+            limit=self.limit,
+            consumed=self.consumed,
+            remaining=self.remaining,
+        )
+
 
 @runtime_checkable
 class TenantLedger(Protocol):
@@ -573,17 +597,8 @@ class RunBudget:
 
     def _refuse_if_past(self, extra: Mapping[str, Decimal] | None = None) -> None:
         breach = self._breach(extra)
-        if breach is None:
-            return
-        raise BudgetExceededError(
-            f"{breach.breached} is {breach.limit} at {breach.scope} scope and this run has "
-            f"used {breach.consumed}, leaving {breach.remaining}",
-            breached=breach.breached or "",
-            scope=breach.scope,
-            limit=breach.limit,
-            consumed=breach.consumed,
-            remaining=breach.remaining,
-        )
+        if breach is not None:
+            raise breach.as_error()
 
 
 class _ChildBudget(RunBudget):

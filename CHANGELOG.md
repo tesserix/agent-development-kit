@@ -68,6 +68,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- The ceiling is enforced where the spend happens. The run loop reserves before a model call,
+  settles against what came back, charges every tool call before dispatch and re-checks every
+  dimension at the top of each iteration, so a ceiling reached on the fortieth turn ends the run
+  in `BUDGET_EXHAUSTED` with `run.output` empty and the work that did happen still on the run.
+  Nothing is truncated, dropped or downgraded to squeeze a call under a limit. A failed attempt
+  is charged, so retries and fallback cannot spend past a ceiling; a cancelled call settles what
+  it had sent and still ends `CANCELLED`; and a non-idempotent tool that ran on a run that did
+  not complete gets a `COMPENSATION_REQUIRED` event rather than being re-dispatched while
+  unwinding. `BudgetDecision.overshoot` says how far past a ceiling a call landed and
+  `as_error` turns a decision into its typed refusal. `budgeted_stream` holds a stream to the
+  same ceiling, charging each reported total as an increment and ending the stream with
+  `BudgetExceededError` rather than letting it trail off. New `RunEventKind` members:
+  `BUDGET_EXCEEDED`, `COMPENSATION_REQUIRED`, `FAN_OUT_REFUSED`. **Stability:** additive.
+  Documented in `docs/budget.md`, exercised by `examples/budget_enforcement.py`.
+
 - Prices are dated data rather than a constant. `PriceCard` carries the day a rate took
   effect, the request shape it answers for and a `Rate`; `PriceList.rate_for` picks the
   narrowest card the request clears — batch tier, then the highest long-context threshold —

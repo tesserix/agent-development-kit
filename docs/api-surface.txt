@@ -11,7 +11,7 @@ tesserix_adk.core.ApprovalGate :: class ApprovalGate(Protocol) {request(self, re
 tesserix_adk.core.ApprovalRecord :: class ApprovalRecord(AdkModel)
 tesserix_adk.core.AuthenticationError :: class AuthenticationError(ProviderError)
 tesserix_adk.core.BinaryPart :: class BinaryPart(AdkModel)
-tesserix_adk.core.BudgetDecision :: class BudgetDecision(AdkModel)
+tesserix_adk.core.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
 tesserix_adk.core.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.core.BudgetLimits :: class BudgetLimits(AdkModel) {filled(self) -> 'Self'}
 tesserix_adk.core.BudgetPolicy :: class BudgetPolicy(Protocol) {check(self) -> 'BudgetDecision'; child(self) -> 'BudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
@@ -135,7 +135,7 @@ tesserix_adk.core.Usage :: class Usage(AdkModel)
 tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
-tesserix_adk.core.budget.BudgetDecision :: class BudgetDecision(AdkModel)
+tesserix_adk.core.budget.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
 tesserix_adk.core.budget.BudgetLimits :: class BudgetLimits(AdkModel) {filled(self) -> 'Self'}
 tesserix_adk.core.budget.BudgetScope :: class BudgetScope(StrEnum)
 tesserix_adk.core.budget.Consumed :: class Consumed(AdkModel) {against(self, name: 'str') -> 'Decimal'}
@@ -394,6 +394,7 @@ tesserix_adk.runtime.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None) -> 'Prompt'
+tesserix_adk.runtime.budgeted_stream :: def budgeted_stream(events: 'AsyncIterator[StreamEvent]', budget: 'BudgetPolicy') -> 'AsyncIterator[StreamEvent]'
 tesserix_adk.runtime.cancellation.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.cancellation.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.canonical_digest :: def canonical_digest(value: 'Any') -> 'str'
@@ -411,6 +412,7 @@ tesserix_adk.runtime.prompt.assemble_prompt :: def assemble_prompt(agent: 'Agent
 tesserix_adk.runtime.prompt.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
 tesserix_adk.runtime.rate_limit.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
 tesserix_adk.runtime.retry.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
+tesserix_adk.runtime.spend.budgeted_stream :: def budgeted_stream(events: 'AsyncIterator[StreamEvent]', budget: 'BudgetPolicy') -> 'AsyncIterator[StreamEvent]'
 tesserix_adk.runtime.structured.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'; repair_prompt(self, violation: 'SchemaViolationError') -> 'str'}
 tesserix_adk.runtime.structured.unwrap_fenced :: def unwrap_fenced(content: 'str') -> 'tuple[str, bool]'
 tesserix_adk.runtime.unwrap_fenced :: def unwrap_fenced(content: 'str') -> 'tuple[str, bool]'
