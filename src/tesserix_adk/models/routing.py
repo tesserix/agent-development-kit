@@ -240,12 +240,22 @@ class TableRouter:
                 eligible.append(candidate)
         if not eligible:
             raise _nothing_eligible(task_class, rule, needed, rejected, tenant)
+        chosen, *alternatives = eligible
+        legal = [spec for spec in alternatives if chosen.trust.admits(spec.trust)]
+        outside = [spec for spec in alternatives if spec not in legal]
+        rejected.extend(
+            RejectedCandidate(ref=str(spec.ref), reason=_outside(chosen, spec)) for spec in outside
+        )
         return RoutingDecision(
             task_class=task_class,
-            chosen=eligible[0].ref,
+            chosen=chosen.ref,
             considered=tuple(str(spec.ref) for spec in rule.candidates),
-            chain=tuple(str(spec.ref) for spec in eligible),
+            chain=(str(chosen.ref), *(str(spec.ref) for spec in legal)),
             rejected=tuple(rejected),
+            excluded_by_boundary=tuple(str(spec.ref) for spec in outside),
+            required=needed.named,
+            min_context_window_tokens=needed.min_context_window_tokens or 0,
+            boundary=chosen.trust,
             rule=rule.scope,
         )
 
@@ -289,6 +299,9 @@ class TableRouter:
             chosen=candidate.ref,
             considered=(str(candidate.ref),),
             chain=(str(candidate.ref),),
+            required=needed.named,
+            min_context_window_tokens=needed.min_context_window_tokens or 0,
+            boundary=candidate.trust,
             rule=rule.scope,
             pinned=True,
         )
@@ -382,3 +395,9 @@ def _read(path: Path) -> dict[str, Any]:
             f"the routing table {path} is not readable TOML: {broken}"
         ) from broken
     return loaded
+
+
+def _outside(chosen: ModelSpec, candidate: ModelSpec) -> str:
+    """Why a capable candidate is still not a legal fallback."""
+    axes = ", ".join(chosen.trust.differs_from(candidate.trust))
+    return f"outside the trust boundary: {axes}"

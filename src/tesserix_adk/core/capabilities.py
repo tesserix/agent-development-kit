@@ -22,6 +22,7 @@ from pydantic import BeforeValidator, Field
 
 from tesserix_adk.core.errors import CapabilityError
 from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.trust import TrustBoundary
 
 __all__ = ["Capability", "CapabilitySet", "ModelCapabilities", "ModelRef", "ModelSpec"]
 
@@ -122,11 +123,20 @@ class ModelRef(AdkModel):
 
 
 class ModelSpec(AdkModel):
-    """A named model together with what it can do."""
+    """A named model together with what it can do and where it may be used.
+
+    Args:
+        provider: Who serves it.
+        model: Which model they serve.
+        capabilities: What it can do.
+        trust: The boundary it sits inside. A fallback is legal only between models that
+            share one; an unstated boundary constrains nothing and is admitted by nothing.
+    """
 
     provider: str = Field(min_length=1)
     model: str = Field(min_length=1)
     capabilities: ModelCapabilities = Field(default_factory=ModelCapabilities)
+    trust: TrustBoundary = Field(default_factory=TrustBoundary)
 
     @property
     def ref(self) -> ModelRef:

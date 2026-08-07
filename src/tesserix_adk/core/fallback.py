@@ -17,6 +17,7 @@ from tesserix_adk.core.errors import (
     ProviderUnavailableError,
     RateLimitError,
     StreamInterruptedError,
+    TrustBoundaryError,
 )
 from tesserix_adk.core.models import AdkModel
 
@@ -71,14 +72,37 @@ class FallbackChain(AdkModel):
 
     Args:
         links: Model references as `provider:model`, the chosen one first.
+        excluded: Candidates that could have done the work but sit outside the run's trust
+            boundary. They are never links; they are kept so exhaustion can say that an
+            alternative existed and was refused, rather than that none existed.
     """
 
     links: tuple[str, ...] = Field(default=())
+    excluded: tuple[str, ...] = Field(default=())
 
     @classmethod
     def of(cls, decision: RoutingDecision | None) -> FallbackChain:
         """The chain a routing decision implies, empty where there was no decision."""
-        return cls(links=decision.chain if decision is not None else ())
+        if decision is None:
+            return cls()
+        return cls(links=decision.chain, excluded=decision.excluded_by_boundary)
+
+    def refuse_the_excluded(self) -> None:
+        """Fail the run closed where the only alternatives left are out of boundary.
+
+        Raises:
+            TrustBoundaryError: Naming what would have been tried. Called when the chain is
+                spent, so that an unavailable self-hosted model ends the run rather than
+                promoting a vendor nobody approved for this data.
+        """
+        if not self.excluded:
+            return
+        raise TrustBoundaryError(
+            f"every model left sits outside this run's trust boundary: "
+            f"{', '.join(self.excluded)}. Falling back to one would trade a data-handling "
+            f"guarantee for an availability one",
+            excluded=self.excluded,
+        )
 
     def after(self, ref: str, *, failed: Collection[str] = ()) -> str | None:
         """The next link after `ref` that has not already failed, or nothing.

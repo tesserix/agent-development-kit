@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 from tesserix_adk.core.capabilities import CapabilitySet, ModelRef  # noqa: TC001
 from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.trust import TrustBoundary
 
 __all__ = [
     "CHEAP",
@@ -82,6 +83,11 @@ class ModelRequirements(AdkModel):
     capabilities: CapabilitySet = frozenset()
     min_context_window_tokens: int | None = Field(default=None, gt=0)
     min_output_tokens: int | None = Field(default=None, gt=0)
+
+    @property
+    def named(self) -> tuple[str, ...]:
+        """The capability names asked for, sorted, for recording alongside the choice."""
+        return tuple(capability.value for capability in sorted(self.capabilities))
 
     def unsatisfied_by(self, declared: object) -> tuple[str, ...]:
         """Name every requirement `declared` does not meet, in a stable order.
@@ -146,11 +152,27 @@ class RoutingDecision(AdkModel):
     rejected: tuple[RejectedCandidate, ...] = ()
     rule: str = ""
     pinned: bool = False
+    excluded_by_boundary: tuple[str, ...] = ()
+    required: tuple[str, ...] = ()
+    min_context_window_tokens: int = 0
+    boundary: TrustBoundary = Field(default_factory=TrustBoundary)
 
     def explain(self) -> str:
         """One line for a run event: what was asked, what answered, on whose authority."""
         how = "pinned" if self.pinned else f"rule {self.rule}"
-        return f"{self.task_class} -> {self.chosen} ({how}, {len(self.considered)} considered)"
+        asked = ", ".join(self.required) or "no capability floor"
+        window = (
+            f", >={self.min_context_window_tokens} tokens" if self.min_context_window_tokens else ""
+        )
+        excluded = (
+            f", {len(self.excluded_by_boundary)} excluded by trust boundary"
+            if self.excluded_by_boundary
+            else ""
+        )
+        return (
+            f"{self.task_class} -> {self.chosen} ({how}, {len(self.considered)} considered"
+            f"{excluded}; asked for {asked}{window})"
+        )
 
 
 @runtime_checkable

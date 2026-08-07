@@ -85,6 +85,7 @@ from tesserix_adk.core.errors import (
     StreamInterruptedError,
     ToolArgumentValidationError,
     ToolExecutionError,
+    TrustBoundaryError,
 )
 from tesserix_adk.core.extras import require_extra
 from tesserix_adk.core.fallback import FallbackChain, fallback_eligible
@@ -186,6 +187,7 @@ from tesserix_adk.core.streaming import (
     ToolCallDelta,
     UsageDelta,
 )
+from tesserix_adk.core.trust import TrustBoundary
 
 __all__ = [
     "CHEAP",
@@ -326,6 +328,8 @@ __all__ = [
     "ToolFailurePolicy",
     "ToolRegistry",
     "Tracer",
+    "TrustBoundary",
+    "TrustBoundaryError",
     "UnlimitedBudget",
     "Usage",
     "UsageDelta",

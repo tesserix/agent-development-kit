@@ -82,6 +82,7 @@ from tesserix_adk.core import (
     ToolCall,
     ToolExecutionError,
     ToolFailurePolicy,
+    TrustBoundaryError,
     Usage,
     deduplicate,
     fallback_eligible,
@@ -1029,6 +1030,11 @@ class AgentRunner:
         here = f"{bounds.provider.name}:{request.model}"
         spent.append((here, _named(failure) if isinstance(failure, AdkError) else str(failure)))
         nowhere = chain.after(here, failed={ref for ref, _ in spent}) is None
+        if nowhere and fallback_eligible(failure):
+            try:
+                chain.refuse_the_excluded()
+            except TrustBoundaryError as refused:
+                raise _Terminal(run, RunState.FAILED, _named(refused)) from refused
         if not fallback_eligible(failure) or (nowhere and len(spent) == 1):
             raise _Terminal(run, RunState.FAILED, f"{type(failure).__name__}: {failure}")
         if nowhere:

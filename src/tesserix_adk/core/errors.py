@@ -51,6 +51,7 @@ __all__ = [
     "StreamInterruptedError",
     "ToolArgumentValidationError",
     "ToolExecutionError",
+    "TrustBoundaryError",
 ]
 
 _DISTRIBUTION = "tesserix-adk"
@@ -107,6 +108,29 @@ class ConfigurationError(AdkError):
     Configuration failures are raised during construction, never on the first call
     that happens to exercise the broken setting.
     """
+
+
+class TrustBoundaryError(ConfigurationError):
+    """Raised when the only model left to try sits outside the run's trust boundary.
+
+    Fails the run closed rather than degrading it. A chain that promotes a hosted vendor
+    because the self-hosted endpoint is down has swapped a confidentiality guarantee for an
+    availability one, which is a decision nobody made and a breach nobody logged.
+
+    Args:
+        excluded: The references the boundary refused, in chain order.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        excluded: Sequence[str] = (),
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.excluded = tuple(excluded)
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
 
 
 class NoEligibleModelError(ConfigurationError):

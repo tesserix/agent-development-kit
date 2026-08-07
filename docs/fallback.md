@@ -107,3 +107,10 @@ failures would be a way to spend past a ceiling.
 
 See also [`docs/routing.md`](routing.md) for the table the chain comes from and
 [`docs/resilience.md`](resilience.md) for the per-vendor retry policy it waits on.
+
+## The boundary the chain may not cross
+
+Every link has passed the capability floor, and — where a boundary is declared — sits
+inside the same one as the chosen model. A chain spent with an out-of-boundary
+alternative left fails the run closed rather than promoting it. See
+[`trust-boundary.md`](trust-boundary.md).

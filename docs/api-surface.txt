@@ -54,7 +54,7 @@ tesserix_adk.core.DeclaresEmulation :: class DeclaresEmulation(Protocol)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
 tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
 tesserix_adk.core.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
-tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'}
+tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'; refuse_the_excluded(self) -> 'None'}
 tesserix_adk.core.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
 tesserix_adk.core.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
@@ -151,6 +151,8 @@ tesserix_adk.core.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
+tesserix_adk.core.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
+tesserix_adk.core.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
 tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.Usage :: class Usage(AdkModel)
 tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
@@ -247,8 +249,9 @@ tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkE
 tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
 tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
+tesserix_adk.core.errors.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
-tesserix_adk.core.fallback.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'}
+tesserix_adk.core.fallback.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'; refuse_the_excluded(self) -> 'None'}
 tesserix_adk.core.fallback.fallback_eligible :: def fallback_eligible(failure: 'BaseException') -> 'bool'
 tesserix_adk.core.fallback_eligible :: def fallback_eligible(failure: 'BaseException') -> 'bool'
 tesserix_adk.core.hooks.ApprovalDecision :: class ApprovalDecision(AdkModel)
@@ -341,6 +344,8 @@ tesserix_adk.core.streaming.TextDelta :: class TextDelta(StreamEvent)
 tesserix_adk.core.streaming.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.core.streaming.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.telemetry_dump :: def telemetry_dump(model: 'BaseModel') -> 'dict[str, Any]'
+tesserix_adk.core.trust.AXES :: AXES: tuple
+tesserix_adk.core.trust.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'

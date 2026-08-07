@@ -114,6 +114,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Fallback can no longer trade a data-handling guarantee for an availability one. A chain
+  that promotes a hosted vendor because the self-hosted endpoint is down, or the standard
+  tier because the sealed one is, has made a decision nobody approved. `TrustBoundary` states
+  where a model sits — `tier`, `hosting`, `residency` — and `ModelSpec` carries it; a
+  fallback is legal only between models that share one. Routing drops the rest from the chain
+  and records them in `RoutingDecision.excluded_by_boundary` and in `rejected` with the axes
+  that differ, and a spent chain whose only remaining alternatives are outside the boundary
+  fails the run closed with `TrustBoundaryError`, before any request reaches the
+  out-of-boundary provider. A boundary nobody declared constrains nothing, so existing
+  deployments route unchanged; declaring one on a single model is enough to protect it,
+  since an undeclared target is an unknown one and unknown is not equal. `RoutingDecision`
+  also records what chose the model — `required`, `min_context_window_tokens`, `boundary` —
+  all of it drawn from a closed vocabulary, so a rationale carries no prompt content and can
+  be kept for a sealed matter. Documented in `docs/trust-boundary.md`, exercised by
+  `examples/trust_boundary.py`.
+
 - An agent is now expressible as the artifact that was reviewed. `AgentDefinition` carries
   the declaration plus the `Owner` who answers for it, the evaluation suite that checks it,
   the prompt entry it was written for, the memory policy it runs under and the schema it
@@ -725,6 +741,10 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   step. The amount is unchanged; the total stops claiming to be counted.
 
 ### Changed
+
+- `RoutingDecision.explain()` names the capability and context floors the work asked for and
+  how many candidates the trust boundary excluded. **Stability:** breaking for a test
+  asserting the exact line; the fields it reads are additive.
 
 - Typed run results. `Agent[TripPlan]` runs to a `Run[TripPlan]`, and `run.output` is a
   `TripPlan` rather than a dict. `Agent` and `Run` take one type parameter bound to

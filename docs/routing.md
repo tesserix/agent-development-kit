@@ -169,3 +169,9 @@ before its first call — resolving twice would make one record describe two run
 
 See also [`docs/providers.md`](providers.md) for what a candidate declares, and
 [`examples/routing.py`](../examples/routing.py) for a runnable walk-through.
+
+## Where a model may be used
+
+Routing chooses among models that can do the work; the trust boundary decides which of
+them a run may be moved to when one is unavailable. See
+[`trust-boundary.md`](trust-boundary.md).

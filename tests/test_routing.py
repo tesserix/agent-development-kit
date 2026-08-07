@@ -179,7 +179,9 @@ class TestExplainingItAfterwards:
 
     def test_it_reads_as_one_line_in_a_run_record(self) -> None:
         decided = router(rule(CHEAP, spec("openai:gpt-4o-mini"))).resolve(CHEAP)
-        assert decided.explain() == "cheap -> openai:gpt-4o-mini (rule cheap, 1 considered)"
+        assert decided.explain() == (
+            "cheap -> openai:gpt-4o-mini (rule cheap, 1 considered; asked for no capability floor)"
+        )
 
 
 class TestPinningAModelOnPurpose:
