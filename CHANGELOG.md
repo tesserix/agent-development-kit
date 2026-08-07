@@ -114,6 +114,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Run streams buffer within a bound instead of without one. `AgentRunner.stream` takes
+  `backpressure=Backpressure(...)` — `high_water`, `byte_budget`, `stall_seconds` — and
+  defaults bound a stream nobody configured. Above either mark, an arriving `AnswerDelta` or
+  `StructuredDelta` is merged onto the one already waiting and `coalesced` says how many were
+  folded in, so a consumer still renders the whole answer and can measure the shape of what it
+  got. Lifecycle, tool, approval, usage and terminal events are never merged and never
+  dropped, and an event larger than the whole budget is admitted and counted in `oversize`,
+  because dropping it loses a tool call. The run never waits on the buffer: a queue that
+  blocks the run deadlocks the run whose own tool result feeds the stalled consumer. A reader
+  that stops reading past `stall_seconds` cancels the run through the same path a caller's
+  token uses, since a dead client that never disconnected otherwise bills indefinitely;
+  await-only attaches no reader and buffers nothing. `RunStream.pressure` reports occupancy
+  during the run, and `Backpressure.shared` divides a process-wide allowance into a per-run
+  budget. **Stability:** additive — `backpressure` is optional, and `coalesced` defaults to
+  zero on both delta events. Documented in `docs/run-progress.md`, exercised by
+  `examples/backpressure.py`.
+
 - A run can now be put on the wire without each product reinventing the bridge.
   `tesserix_adk.adapters` gains `RunBroker`, which drives one run once however many
   transports read it, `sse_events` for correctly framed server-sent events with `SSE_HEADERS`

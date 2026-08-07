@@ -99,6 +99,7 @@ from tesserix_adk.runtime.progress import (
     WATCHING,
     AnswerDelta,
     ApprovalRequired,
+    Backpressure,
     GuardrailDecision,
     IterationStarted,
     ProgressEvent,
@@ -390,6 +391,7 @@ class AgentRunner:
         deadline: Deadline | None = None,
         parent: RunContext | None = None,
         budget: BudgetPolicy | None = None,
+        backpressure: Backpressure | None = None,
     ) -> RunStream[OutputT]:
         """Watch `agent` run, event by event. Arguments are `run`'s.
 
@@ -400,6 +402,10 @@ class AgentRunner:
         The stream is also an async context manager, and leaving the block cancels a run
         nobody is reading any more — through `cancellation` where one was given, so the
         caller's own token and an abandoned consumer end the run by the same path.
+
+        A consumer that reads slowly is answered by `backpressure`: the buffer is bounded,
+        text deltas merge under pressure, and a reader that stops reading altogether stops
+        the run rather than paying for one nobody is watching.
 
         Returns:
             The stream. Nothing starts until it is iterated or awaited.
@@ -422,7 +428,7 @@ class AgentRunner:
                 budget=budget,
             )
 
-        return RunStream(identity, self._clock, drive, token.cancel)
+        return RunStream(identity, self._clock, drive, token.cancel, backpressure)
 
     def _emit(self, event: ProgressEvent) -> None:
         """Tell whoever is watching this run, where anybody is."""

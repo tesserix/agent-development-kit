@@ -140,12 +140,50 @@ falling over. A variant it *does* know and cannot parse raises instead — a del
 guesswork renders as an answer nobody wrote. Removing or renaming a variant, or a field on
 one, is breaking.
 
+## When the consumer cannot keep up
+
+The buffer is bounded, and the run never waits on it. Pass `backpressure=` to `stream`:
+
+```python
+stream = runner.stream(agent, question, tenant="acme", backpressure=Backpressure(high_water=64))
+```
+
+| Field | Default | Means |
+|---|---|---|
+| `high_water` | 256 | Events that may wait unread before deltas start merging. |
+| `byte_budget` | 8 MiB | Bytes that may wait, for the same reason. |
+| `stall_seconds` | 30 | How long a reader may hold an unread buffer before the run stops. |
+
+**Deltas merge; nothing else does.** Above either mark, an arriving `AnswerDelta` or
+`StructuredDelta` is concatenated onto the one already waiting and `coalesced` counts how
+many were folded in. Every character a consumer would have rendered still arrives, in order.
+Lifecycle, tool, approval, usage and terminal events are never merged and never dropped: a
+run missing one of those is a run nobody can account for.
+
+**The run never blocks on the buffer.** A queue that makes the run wait for its reader
+deadlocks the run whose own tool result feeds that reader, and turns a slow client into a
+slow answer for everyone. So pressure is answered by merging, not by waiting.
+
+**A reader that stops reading stops the run.** The stall clock runs from the last read, and
+only while something is waiting — a quiet run is not a stalled one. Past `stall_seconds` the
+run is cancelled through the same cancellation path a caller's own token uses, so a dead
+client that never disconnected stops costing provider spend. Await-only is not a slow
+consumer: with no reader attached, events are numbered and discarded rather than buffered.
+
+**Pressure is readable while it matters.** `stream.pressure` is a `Pressure` — `buffered`,
+`peak`, `coalesced`, `oversize`, `stalled` — during the run, not only after it. An event
+that alone exceeds the whole byte budget is admitted anyway and counted in `oversize`:
+dropping it would lose a tool call, and growing for it is the unbounded case this replaces.
+
+Sizing a process rather than a run: `Backpressure.shared(total_bytes=…, streams=…)` divides
+an aggregate allowance into a per-run budget, because a per-run bound multiplied by however
+many runs are in flight is not a bound on anything.
+
 ## Limits
 
-- **Unbounded buffering.** Events queue without limit, so a slow consumer costs memory
-  rather than slowing the run. Backpressure and slow-consumer policy are #41.
 - **One reader.** Events are consumed as they are read; iterating a stream twice raises
   rather than replaying a partial run.
-- **No transport helpers.** SSE and WebSocket adapters are #40.
+- **Transports.** SSE and websocket helpers live in `tesserix_adk.adapters` —
+  [`docs/transports.md`](transports.md).
 - **Cassettes do not record streams.** `RecordingProvider` and `ReplayingProvider` still
   refuse `stream`; recorded streaming is #150.

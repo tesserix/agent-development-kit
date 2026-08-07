@@ -17,8 +17,9 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+from collections import deque
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import Field, ValidationError
@@ -26,7 +27,7 @@ from pydantic import Field, ValidationError
 from tesserix_adk.core import AdkModel, RunState, StreamInterruptedError, Usage
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Mapping
+    from collections.abc import AsyncGenerator, Awaitable, Callable, Generator, Mapping
 
     from pydantic import BaseModel
 
@@ -35,8 +36,10 @@ if TYPE_CHECKING:
 __all__ = [
     "AnswerDelta",
     "ApprovalRequired",
+    "Backpressure",
     "GuardrailDecision",
     "IterationStarted",
+    "Pressure",
     "ProgressEvent",
     "Provisional",
     "RunCancelled",
@@ -99,6 +102,7 @@ class AnswerDelta(ProgressEvent):
 
     kind: Literal["answer_delta"] = "answer_delta"
     text: str
+    coalesced: int = Field(default=0, ge=0)
 
 
 class StructuredDelta(ProgressEvent):
@@ -110,6 +114,7 @@ class StructuredDelta(ProgressEvent):
 
     kind: Literal["structured_delta"] = "structured_delta"
     fragment: str
+    coalesced: int = Field(default=0, ge=0)
 
 
 class ToolCallStarted(ProgressEvent):
@@ -334,29 +339,151 @@ class Provisional[OutputT: BaseModel]:
         return {str(key): value for key, value in parsed.items()}
 
 
+@dataclass(frozen=True, slots=True)
+class Backpressure:
+    """What a run does when its consumer cannot keep up.
+
+    Args:
+        high_water: How many events may wait unread before text deltas start merging.
+        byte_budget: How many bytes of unread events may wait, for the same reason. Events
+            differ in size by three orders of magnitude, so a count alone is not a bound.
+        stall_seconds: How long a reader may hold an unread buffer before the run is
+            cancelled. Measured from the last read, and only while something is waiting:
+            a quiet run is not a stalled one.
+    """
+
+    high_water: int = 256
+    byte_budget: int = 8 * 1024 * 1024
+    stall_seconds: float = 30.0
+
+    @classmethod
+    def shared(cls, *, total_bytes: int, streams: int) -> Backpressure:
+        """A per-run budget derived from what the process as a whole may hold.
+
+        A per-run bound multiplied by however many runs are in flight is not a bound on the
+        process, which is the number an operator is actually sizing. Adjust the rest with
+        `dataclasses.replace`.
+        """
+        return cls(byte_budget=total_bytes // streams)
+
+
+@dataclass(frozen=True, slots=True)
+class Pressure:
+    """How close a stream came to its limits, and what it did about it.
+
+    Args:
+        buffered: Events waiting to be read right now.
+        peak: The most that ever waited at once.
+        coalesced: Text deltas merged into another delta rather than kept separate.
+        oversize: Events admitted despite exceeding the whole byte budget on their own.
+        stalled: Whether the run was cancelled because its reader stopped reading.
+    """
+
+    buffered: int = 0
+    peak: int = 0
+    coalesced: int = 0
+    oversize: int = 0
+    stalled: bool = False
+
+
 class _Sink:
     """Where the runtime posts events, and where the stream collects them.
 
-    Unbounded on purpose at this stage: a queue that blocks the run because a consumer is
-    slow changes what the run does, and choosing between that and dropping events is its
-    own decision (#41).
+    Bounded, and never blocking. A queue that blocks the run because a consumer is slow
+    deadlocks the run whose own tool result feeds that consumer, so pressure is answered by
+    merging text deltas rather than by making the run wait. Nothing that makes the run
+    attributable — lifecycle, tool, approval, usage, terminal — is ever merged or dropped.
     """
 
-    def __init__(self, run_id: str, clock: Clock) -> None:
+    def __init__(
+        self, run_id: str, clock: Clock, policy: Backpressure, stop: Callable[[str], None]
+    ) -> None:
         self._run_id = run_id
         self._clock = clock
-        self._queue: asyncio.Queue[ProgressEvent | None] = asyncio.Queue()
+        self._policy = policy
+        self._stop = stop
+        self._buffer: deque[ProgressEvent] = deque()
+        self._bytes = 0
+        self._arrived = asyncio.Event()
+        self._closed = False
+        self._reading = False
+        self._read_at = clock.now()
         self._next = 0
         self.structured = ""
+        self.pressure = Pressure()
+        self.stalled: str | None = None
 
     @property
     def emitted(self) -> int:
         """How many events have been numbered on this run."""
         return self._next
 
+    def reading(self) -> None:
+        """Say that a consumer has attached and is reading events as they arrive."""
+        self._reading = True
+        self._read_at = self._clock.now()
+
     def emit(self, event: ProgressEvent) -> None:
-        """Number `event` and hand it to whoever is watching."""
-        self._queue.put_nowait(self.number(event))
+        """Number `event` and hand it to whoever is watching.
+
+        Numbering happens whether or not anyone is reading: sequence numbers are the run's,
+        not the reader's, so an await-only caller and a reading one see the same numbering.
+        """
+        numbered = self.number(event)
+        if not self._reading:
+            return
+        self._admit(numbered)
+        self._arrived.set()
+        self._note_stall()
+
+    def _admit(self, event: ProgressEvent) -> None:
+        """Buffer `event`, merging it into the last delta where there is no room for it."""
+        size = _weight(event)
+        if self._under_pressure() and (merged := _merged(self._buffer, event)) is not None:
+            self._bytes += merged
+            self.pressure = replace(self.pressure, coalesced=self.pressure.coalesced + 1)
+            return
+        if size > self._policy.byte_budget:
+            self.pressure = replace(self.pressure, oversize=self.pressure.oversize + 1)
+        self._buffer.append(event)
+        self._bytes += size
+        self.pressure = replace(
+            self.pressure,
+            buffered=len(self._buffer),
+            peak=max(self.pressure.peak, len(self._buffer)),
+        )
+
+    def _under_pressure(self) -> bool:
+        return (
+            len(self._buffer) >= self._policy.high_water or self._bytes >= self._policy.byte_budget
+        )
+
+    def _note_stall(self) -> None:
+        """Record a reader that is holding an unread buffer for longer than it may."""
+        if self.stalled is not None or not self._buffer:
+            return
+        if self._clock.now() - self._read_at > self._policy.stall_seconds:
+            self.stalled = "the consumer stopped reading, so the run was not worth continuing"
+            self.pressure = replace(self.pressure, stalled=True)
+            self._stop(self.stalled)
+
+    def close(self) -> None:
+        """Say that the run is over and no further event will arrive."""
+        self._closed = True
+        self._arrived.set()
+
+    async def next_event(self) -> ProgressEvent | None:
+        """The next event, or `None` once the run is over."""
+        while not self._buffer:
+            if self._closed:
+                return None
+            self._arrived.clear()
+            await self._arrived.wait()
+        event = self._buffer.popleft()
+        self._bytes -= _weight(event)
+        self._read_at = self._clock.now()
+        self.pressure = replace(self.pressure, buffered=len(self._buffer))
+        return event
 
     def number(self, event: ProgressEvent) -> ProgressEvent:
         """Stamp identity, position and time onto an event built without them."""
@@ -368,13 +495,33 @@ class _Sink:
             self.structured += numbered.fragment
         return numbered
 
-    def close(self) -> None:
-        """Say that the run is over and no further event will arrive."""
-        self._queue.put_nowait(None)
 
-    async def next_event(self) -> ProgressEvent | None:
-        """The next event, or `None` once the run is over."""
-        return await self._queue.get()
+def _weight(event: ProgressEvent) -> int:
+    """What holding `event` costs, near enough to bound a buffer by."""
+    return len(event.model_dump_json())
+
+
+def _merged(buffer: deque[ProgressEvent], event: ProgressEvent) -> int | None:
+    """Fold `event` into the delta at the end of `buffer`, returning what that added.
+
+    Only text and structured deltas merge, and only into a delta of their own kind: their
+    content concatenates, so merging keeps every character a consumer would have rendered.
+    `None` where nothing merges, which is everything a run is accounted for by.
+    """
+    if not buffer:
+        return None
+    last = buffer[-1]
+    if isinstance(event, AnswerDelta) and isinstance(last, AnswerDelta):
+        buffer[-1] = last.model_copy(
+            update={"text": last.text + event.text, "coalesced": last.coalesced + 1}
+        )
+        return len(event.text)
+    if isinstance(event, StructuredDelta) and isinstance(last, StructuredDelta):
+        buffer[-1] = last.model_copy(
+            update={"fragment": last.fragment + event.fragment, "coalesced": last.coalesced + 1}
+        )
+        return len(event.fragment)
+    return None
 
 
 class RunStream[OutputT: BaseModel]:
@@ -398,10 +545,11 @@ class RunStream[OutputT: BaseModel]:
         clock: Clock,
         drive: Callable[[], Awaitable[Run[OutputT]]],
         cancel: Callable[[str], None],
+        backpressure: Backpressure | None = None,
     ) -> None:
         self._drive = drive
         self._cancel = cancel
-        self._sink = _Sink(run_id, clock)
+        self._sink = _Sink(run_id, clock, backpressure or Backpressure(), cancel)
         self._task: asyncio.Task[Run[OutputT]] | None = None
         self._run: Run[OutputT] | None = None
         self._abandoned = False
@@ -423,6 +571,11 @@ class RunStream[OutputT: BaseModel]:
         if self._run is None:
             raise RuntimeError("the run is still running; drain the stream before reading it")
         return self._run
+
+    @property
+    def pressure(self) -> Pressure:
+        """How close this stream is to its limits, readable while the run is still going."""
+        return self._sink.pressure
 
     @property
     def provisional(self) -> Provisional[OutputT]:
@@ -465,7 +618,7 @@ class RunStream[OutputT: BaseModel]:
             return
         self._run = await task
 
-    async def __aiter__(self) -> AsyncIterator[ProgressEvent]:
+    async def __aiter__(self) -> AsyncGenerator[ProgressEvent]:
         """Drive the run, yielding every event, terminal one last.
 
         Raises:
@@ -475,6 +628,7 @@ class RunStream[OutputT: BaseModel]:
         """
         if self._task is not None:
             raise RuntimeError("this stream has already been consumed; a run is watched once")
+        self._sink.reading()
         self._task = asyncio.create_task(self._watched())
         while (event := await self._sink.next_event()) is not None:
             yield event
