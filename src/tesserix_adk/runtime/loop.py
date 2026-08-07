@@ -34,6 +34,8 @@ from tesserix_adk.core import (
     ApprovalRecord,
     BinaryPart,
     BudgetExceededError,
+    BudgetScope,
+    BudgetUnavailableError,
     CancelledError,
     Capability,
     ConfigurationError,
@@ -65,11 +67,13 @@ from tesserix_adk.core import (
     RetryConfig,
     RoutingDecision,
     Run,
+    RunBudget,
     RunContext,
     RunEvent,
     RunEventKind,
     RunState,
     SchemaViolationError,
+    ScopedLimits,
     TaskClass,
     TextPart,
     ToolCall,
@@ -78,6 +82,7 @@ from tesserix_adk.core import (
     Usage,
     deduplicate,
     fallback_eligible,
+    most_restrictive,
     resolve_hooks,
     verify_conformance,
 )
@@ -143,6 +148,7 @@ class _Bounds:
     retry: RetryConfig
     loop: LoopConfig
     provider: ModelProvider
+    budget: BudgetPolicy
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,7 +186,9 @@ class AgentRunner:
         tools: The registry backing the agent's allowlist. Required if the agent names
             any tool.
         guardrails: Guardrails by name. Every name the agent declares must appear here.
-        budget: The spend policy. Required if the agent declares a budget.
+        budget: The spend policy. A runner given none is not a runner without a ceiling:
+            each run gets a `RunBudget` resolved from the agent's limits and the
+            conservative defaults. `UnlimitedBudget` is how a deployment says otherwise.
         deadlines: Wall-clock ceilings for runs this runner drives. An agent that
             declares its own overrides these; nothing is bounded by default.
         retry: Which failures are worth another attempt, and how long to wait first. An
@@ -340,6 +348,7 @@ class AgentRunner:
         cancellation: CancellationToken | None = None,
         deadline: Deadline | None = None,
         parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
     ) -> Run[OutputT]:
         """Drive `agent` until it reaches a terminal state, and return the run.
 
@@ -357,6 +366,9 @@ class AgentRunner:
                 agent's own and never extends it, so a sub-agent cannot outlive its parent.
             parent: The context of the run that called this one, where one did. It carries
                 the depth, so a chain of agents calling agents cannot outrun its ceiling.
+            budget: The ceiling for this run alone. A parent invoking a sub-agent passes
+                `bounds.budget.child()` here so the child spends what the parent has left;
+                a fresh allowance would be a way to spend one ceiling twice.
 
         Returns:
             The run, in a terminal state, carrying every event recorded on the way.
@@ -370,7 +382,7 @@ class AgentRunner:
         """
         self._refuse_an_unrouted_class(agent)
         decision = self._route(agent, tenant)
-        bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision))
+        bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision), budget)
         self._refuse_incomplete_wiring(agent, bounds.provider)
         depth = parent.depth + 1 if parent is not None else 0
         if depth > bounds.loop.max_depth:
@@ -387,6 +399,7 @@ class AgentRunner:
             agent_version=agent.version,
             model=model,
             depth=depth,
+            budget=bounds.budget.resolved,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
         if decision is not None:
             run = run.record_event(
@@ -629,11 +642,6 @@ class AgentRunner:
                 f"({', '.join(agent.approval_required_tools)}) but the runner was given no "
                 f"approval gate, so the call would go out unapproved"
             )
-        if agent.budget is not None and self._budget is None:
-            raise ConfigurationError(
-                f"agent {agent.name!r} declares a budget but the runner was given no "
-                f"budget policy, so the ceiling would not be enforced"
-            )
 
     def _require(self, capability: Capability, *, model: str, provider: ModelProvider) -> None:
         """Check the provider's own record. Raises `CapabilityError` naming all three."""
@@ -671,6 +679,7 @@ class AgentRunner:
         token: CancellationToken | None,
         caller: Deadline | None,
         provider: ModelProvider,
+        budget: BudgetPolicy | None = None,
     ) -> _Bounds:
         deadlines = agent.deadlines or self._deadlines
         ceiling = (
@@ -685,7 +694,24 @@ class AgentRunner:
             retry=agent.retry or self._retry,
             loop=self._loop.narrowed_to(agent.loop),
             provider=provider,
+            budget=budget or self._budget_for(agent),
         )
+
+    def _budget_for(self, agent: Agent[Any]) -> BudgetPolicy:
+        """The ceiling this run is held to. There is no path here that returns nothing.
+
+        A runner given no policy does not run unbounded: it resolves the agent's own
+        limits against the conservative defaults, which is a ceiling somebody can read off
+        the run afterwards. Removing it takes `UnlimitedBudget` and a stated reason.
+        """
+        if self._budget is not None:
+            return self._budget
+        stated = (
+            (ScopedLimits(scope=BudgetScope.AGENT, limits=agent.budget),)
+            if agent.budget is not None
+            else ()
+        )
+        return RunBudget(resolved=most_restrictive(*stated), clock=self._clock)
 
     def _stop_if_over(self, run: Run[Any], bounds: _Bounds) -> None:
         """Refuse to start a step nobody is waiting for the answer to.
@@ -886,8 +912,7 @@ class AgentRunner:
         attempt = 1
         while True:
             try:
-                if self._budget is not None:
-                    await self._budget.reserve(estimate)
+                await bounds.budget.reserve(estimate)
                 response: ModelResponse = await self._bounded(
                     bounds.provider.complete(request),
                     limit=self._limit(bounds, bounds.deadlines.model_call_seconds),
@@ -898,6 +923,8 @@ class AgentRunner:
                 raise self._cancelled(run, abort, name=request.model) from None
             except BudgetExceededError as exceeded:
                 raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
+            except BudgetUnavailableError as unavailable:
+                raise _Terminal(run, RunState.FAILED, str(unavailable)) from unavailable
             except CancelledError as cancelled:
                 raise _Terminal(run, RunState.CANCELLED, str(cancelled)) from cancelled
             except Exception as failure:
@@ -1099,8 +1126,7 @@ class AgentRunner:
                 usage=response.usage,
             )
         )
-        if self._budget is not None:
-            await self._budget.record(response.usage.input_tokens + response.usage.output_tokens)
+        await self._spent(run, bounds, response.usage, model_calls=1, iterations=1)
         if not response.content and not response.tool_calls:
             return await self._terminate(
                 run,
@@ -1406,7 +1432,7 @@ class AgentRunner:
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
     ) -> tuple[Run[Any], str, str]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
-        await self._reserve(run, len(_signature(call)) // _CHARS_PER_TOKEN)
+        await self._reserve(run, bounds, len(_signature(call)) // _CHARS_PER_TOKEN)
         plan = RetryPlan(bounds.retry, random=self._jitter)
         attempt = 1
         while True:
@@ -1446,22 +1472,58 @@ class AgentRunner:
                 )
             )
             text = text[: self._max_tool_result_chars] + _TRUNCATION_MARKER
-        if self._budget is not None:
-            await self._budget.record(len(text) // _CHARS_PER_TOKEN)
+        await self._spent(
+            run,
+            bounds,
+            Usage(
+                input_tokens=len(text) // _CHARS_PER_TOKEN,
+                output_tokens=0,
+                source=CountSource.HEURISTIC,
+            ),
+            tool_calls=1,
+        )
         return (
             run.record_event(self._event(RunEventKind.TOOL_RESULT, name=call.name)),
             text,
             "tool_result",
         )
 
-    async def _reserve(self, run: Run[Any], estimate: int) -> None:
-        """Spend is checked before it is incurred; reported after, it is a bill."""
-        if self._budget is None:
-            return
+    async def _spent(
+        self,
+        run: Run[Any],
+        bounds: _Bounds,
+        usage: Usage,
+        *,
+        model_calls: int = 0,
+        tool_calls: int = 0,
+        iterations: int = 0,
+    ) -> None:
+        """Put what was consumed on the ledger, and stop the run if that passed a ceiling.
+
+        Raises:
+            _Terminal: If the spend broke a ceiling, or if a shared ledger holding one
+                could not be reached — a run that cannot check its ceiling stops.
+        """
         try:
-            await self._budget.reserve(estimate)
+            await bounds.budget.record(
+                usage,
+                model_calls=model_calls,
+                tool_calls=tool_calls,
+                iterations=iterations,
+            )
         except BudgetExceededError as exceeded:
             raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
+        except BudgetUnavailableError as unavailable:
+            raise _Terminal(run, RunState.FAILED, str(unavailable)) from unavailable
+
+    async def _reserve(self, run: Run[Any], bounds: _Bounds, estimate: int) -> None:
+        """Spend is checked before it is incurred; reported after, it is a bill."""
+        try:
+            await bounds.budget.reserve(estimate)
+        except BudgetExceededError as exceeded:
+            raise _Terminal(run, RunState.BUDGET_EXHAUSTED, str(exceeded)) from exceeded
+        except BudgetUnavailableError as unavailable:
+            raise _Terminal(run, RunState.FAILED, str(unavailable)) from unavailable
 
     def _tool_backoff(
         self, agent: Agent[Any], call: ToolCall, plan: RetryPlan, attempt: int, bounds: _Bounds

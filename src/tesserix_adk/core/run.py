@@ -21,6 +21,7 @@ from typing import Generic, Self
 
 from pydantic import Field
 
+from tesserix_adk.core.budget import ResolvedBudget  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.models import AdkModel, OutputT
 from tesserix_adk.core.primitives import Message, ToolCall, Usage
 
@@ -192,6 +193,8 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
             checkpoint rehydrates through `Run[TripPlan].model_validate_json`, which is
             where the parameter earns its keep: the wrong payload does not fit.
         usage: What the run has consumed so far.
+        budget: The ceiling this run was held to, and the scope each dimension of it came
+            from. A run whose limits nobody can read afterwards is one nobody can audit.
         started_at: Unix seconds at the transition into `RUNNING`.
         ended_at: Unix seconds at the transition into a terminal state.
     """
@@ -210,6 +213,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
     events: list[RunEvent] = Field(default_factory=list)
     output: OutputT | None = None
     usage: Usage = Field(default_factory=lambda: Usage(input_tokens=0, output_tokens=0))
+    budget: ResolvedBudget | None = None
     started_at: float | None = None
     ended_at: float | None = None
 

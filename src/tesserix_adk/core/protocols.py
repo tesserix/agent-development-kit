@@ -21,8 +21,9 @@ from tesserix_adk.core.errors import ProtocolConformanceError
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
 
+    from tesserix_adk.core.budget import BudgetDecision, BudgetLimits, ResolvedBudget
     from tesserix_adk.core.capabilities import ModelCapabilities
-    from tesserix_adk.core.primitives import Message
+    from tesserix_adk.core.primitives import Message, Usage
     from tesserix_adk.core.provider import ModelRequest, ModelResponse
     from tesserix_adk.core.streaming import StreamEvent
 
@@ -233,18 +234,56 @@ class Guardrail(Protocol):
 
 @runtime_checkable
 class BudgetPolicy(Protocol):
-    """Spend and usage limits applied before and after a metered call."""
+    """Spend and usage limits applied before and after a metered call.
 
-    async def reserve(self, estimate: int) -> None:
-        """Reserve `estimate` units before a call.
+    Ceilings are checked before the spend, never reported after it, and an implementation
+    may keep its ledger in the process or in a shared store — the shape is the same either
+    way. See `tesserix_adk.core.budget` for the limits vocabulary and the default policy.
+    """
 
-        Raises:
-            BudgetExceededError: If the reservation would breach the limit.
+    @property
+    def resolved(self) -> ResolvedBudget:
+        """The effective ceiling and the scope each dimension of it came from."""
+        ...
+
+    def limits(self) -> BudgetLimits:
+        """What is left, as limits — the allowance a child run starts from."""
+        ...
+
+    def child(self) -> BudgetPolicy:
+        """A budget for a run this one called, spending what this one has left.
+
+        A sub-agent handed a fresh allowance is a way to spend one ceiling twice.
         """
         ...
 
-    async def record(self, actual: int) -> None:
-        """Record the `actual` units consumed, releasing any over-reservation."""
+    async def reserve(self, estimate: int) -> None:
+        """Reserve `estimate` input tokens before a call.
+
+        Raises:
+            BudgetExceededError: If the reservation would breach a ceiling.
+            BudgetUnavailableError: If a shared ledger holding a ceiling is unreachable.
+        """
+        ...
+
+    async def record(
+        self,
+        usage: Usage,
+        *,
+        model_calls: int = 0,
+        tool_calls: int = 0,
+        iterations: int = 0,
+    ) -> None:
+        """Record what was consumed, releasing any over-reservation.
+
+        Raises:
+            BudgetExceededError: If the run has now passed a ceiling.
+            BudgetUnavailableError: If a shared ledger holding a ceiling is unreachable.
+        """
+        ...
+
+    def check(self) -> BudgetDecision:
+        """Whether there is room left, and where there is not. Never raises."""
         ...
 
 

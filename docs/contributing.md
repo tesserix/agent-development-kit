@@ -203,8 +203,8 @@ turns a reproduction into a guess.
 
 | Layer | Written as | Wins over |
 |---|---|---|
-| code | `resolve_config({"budget.max_tokens_per_run": 5000})` | everything |
-| env | `TESSERIX_ADK_BUDGET__MAX_TOKENS_PER_RUN=5000` | file, default |
+| code | `resolve_config({"budget.max_input_tokens": 5000})` | everything |
+| env | `TESSERIX_ADK_BUDGET__MAX_INPUT_TOKENS=5000` | file, default |
 | file | `adk.toml`, or `[tool.tesserix-adk]` in `pyproject.toml` | default |
 | default | the field default on the model | — |
 

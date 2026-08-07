@@ -13,7 +13,7 @@ logic with no network by using the fake.
 | `ToolRegistry` | Declared tools and their invocation | *(pending — `tools`)* | *(pending)* | *(pending)* |
 | `MemoryStore` | Durable key-scoped record storage | *(pending — `adapters`)* | `FakeMemoryStore` | `MemoryStoreConformance` |
 | `Guardrail` | An inline check on the call path | *(pending — `guardrails`)* | *(pending)* | *(pending)* |
-| `BudgetPolicy` | Spend and usage limits around metered calls | *(pending — `guardrails`)* | `FakeBudgetPolicy` | `BudgetPolicyConformance` |
+| `BudgetPolicy` | Spend and usage limits around metered calls | `RunBudget`, `UnlimitedBudget` | `FakeBudgetPolicy` | `BudgetPolicyConformance` |
 | `Tracer` | Sideband spans and events | *(pending — `observability`)* | `FakeTracer` | `TracerConformance` |
 
 Rows marked pending are owned by the epic named in the cell. A story that adds an

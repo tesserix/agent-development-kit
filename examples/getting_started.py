@@ -18,6 +18,7 @@ from tesserix_adk.core import (
     ModelCapabilities,
     ModelProvider,
     Tracer,
+    Usage,
     resolve_config,
     verify_conformance,
 )
@@ -60,7 +61,7 @@ async def main() -> None:
     provider, memory, budget, tracer = (
         EchoProvider(),
         FakeMemoryStore(),
-        FakeBudgetPolicy(limit=config.budget.max_tokens_per_run),
+        FakeBudgetPolicy(limit=config.budget.max_input_tokens),
         FakeTracer(),
     )
 
@@ -77,7 +78,7 @@ async def main() -> None:
     with tracer.span("exchange", provider=provider.name):
         await budget.reserve(estimate=16)
         answer = await provider.complete("what is this kit for?")
-        await budget.record(actual=len(answer))
+        await budget.record(Usage(input_tokens=len(answer) // 4, output_tokens=0))
         await memory.put("last-answer", answer)
 
     print(f"tesserix-adk {__version__}")  # noqa: T201 — the example's output is the point

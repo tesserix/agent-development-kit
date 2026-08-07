@@ -16,8 +16,8 @@ from pydantic import BaseModel, ValidationError
 from tesserix_adk.core import (
     AdkError,
     Agent,
-    BudgetConfig,
     BudgetExceededError,
+    BudgetLimits,
     CancelledError,
     CapabilityError,
     GuardrailViolationError,
@@ -122,11 +122,11 @@ class TestAgent:
             instructions="Plan trips.",
             model="claude-sonnet-5",
             free_text=True,
-            budget=BudgetConfig(max_tokens_per_run=1000),
+            budget=BudgetLimits(max_input_tokens=1000),
             guardrails=("no_pii", "no_prompt_leak"),
         )
         assert agent.budget is not None
-        assert agent.budget.max_tokens_per_run == 1000
+        assert agent.budget.max_input_tokens == 1000
         assert agent.guardrails == ("no_pii", "no_prompt_leak")
 
     def test_the_guardrail_chain_keeps_its_order(self) -> None:

@@ -26,7 +26,7 @@ import pytest
 
 from tesserix_adk.core.capabilities import Capability, ModelCapabilities
 from tesserix_adk.core.errors import CapabilityError
-from tesserix_adk.core.primitives import Message, TextPart
+from tesserix_adk.core.primitives import Message, TextPart, Usage
 from tesserix_adk.core.protocols import (
     BudgetPolicy,
     Clock,
@@ -179,7 +179,16 @@ class BudgetPolicyConformance(ABC):
     async def test_recording_after_reserving_does_not_raise(self) -> None:
         policy = self.make_policy()
         await policy.reserve(10)
-        await policy.record(8)
+        await policy.record(Usage(input_tokens=8, output_tokens=0))
+
+    def test_a_ceiling_is_readable_off_the_policy(self) -> None:
+        """A limit nobody can read afterwards is a limit nobody can audit."""
+        assert self.make_policy().resolved.limits is not None
+
+    def test_a_child_spends_what_the_parent_has_left(self) -> None:
+        """A sub-agent handed a fresh allowance is a way to spend one ceiling twice."""
+        policy = self.make_policy()
+        assert policy.child().limits() == policy.limits()
 
 
 class TracerConformance(ABC):

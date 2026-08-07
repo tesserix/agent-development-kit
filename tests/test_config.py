@@ -41,34 +41,34 @@ def test_a_config_resolved_from_one_layer_reports_that_layer() -> None:
 def test_defaults_are_reported_as_defaults_not_as_absent() -> None:
     """Support needs to distinguish 'nobody set it' from 'someone set it to the default'."""
     resolution = resolve_config(env=MINIMAL_ENV, start=None)
-    assert resolution.provenance["budget.max_tokens_per_run"].layer == "default"
+    assert resolution.provenance["budget.max_input_tokens"].layer == "default"
 
 
 def test_the_environment_beats_the_file_and_the_file_is_recorded_as_overridden(
     tmp_path: Path,
 ) -> None:
     """The primary scenario: same key in two layers, and both are visible afterwards."""
-    (tmp_path / "adk.toml").write_text("[budget]\nmax_tokens_per_run = 111\n", encoding="utf-8")
+    (tmp_path / "adk.toml").write_text("[budget]\nmax_input_tokens = 111\n", encoding="utf-8")
 
     resolution = resolve_config(
-        env=MINIMAL_ENV | {f"{ENV_PREFIX}BUDGET__MAX_TOKENS_PER_RUN": "222"}, start=tmp_path
+        env=MINIMAL_ENV | {f"{ENV_PREFIX}BUDGET__MAX_INPUT_TOKENS": "222"}, start=tmp_path
     )
 
-    assert resolution.config.budget.max_tokens_per_run == 222
-    entry = resolution.provenance["budget.max_tokens_per_run"]
+    assert resolution.config.budget.max_input_tokens == 222
+    entry = resolution.provenance["budget.max_input_tokens"]
     assert entry.layer == "env"
     assert entry.overridden == (("file", "111"),)
 
 
 def test_code_beats_the_environment() -> None:
     resolution = resolve_config(
-        {"budget": {"max_tokens_per_run": 7}},
-        env=MINIMAL_ENV | {f"{ENV_PREFIX}BUDGET__MAX_TOKENS_PER_RUN": "222"},
+        {"budget": {"max_input_tokens": 7}},
+        env=MINIMAL_ENV | {f"{ENV_PREFIX}BUDGET__MAX_INPUT_TOKENS": "222"},
         start=None,
     )
-    assert resolution.config.budget.max_tokens_per_run == 7
-    assert resolution.provenance["budget.max_tokens_per_run"].layer == "code"
-    assert resolution.provenance["budget.max_tokens_per_run"].overridden == (("env", "222"),)
+    assert resolution.config.budget.max_input_tokens == 7
+    assert resolution.provenance["budget.max_input_tokens"].layer == "code"
+    assert resolution.provenance["budget.max_input_tokens"].overridden == (("env", "222"),)
 
 
 def test_the_full_precedence_order_holds_for_one_key(tmp_path: Path) -> None:
@@ -88,39 +88,39 @@ def test_the_full_precedence_order_holds_for_one_key(tmp_path: Path) -> None:
 
 def test_the_pyproject_tool_table_is_read_when_there_is_no_adk_toml(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "app"\n\n[tool.tesserix-adk.budget]\nmax_tokens_per_run = 55\n',
+        '[project]\nname = "app"\n\n[tool.tesserix-adk.budget]\nmax_input_tokens = 55\n',
         encoding="utf-8",
     )
     resolution = resolve_config(env=MINIMAL_ENV, start=tmp_path)
-    assert resolution.config.budget.max_tokens_per_run == 55
-    assert resolution.provenance["budget.max_tokens_per_run"].layer == "file"
+    assert resolution.config.budget.max_input_tokens == 55
+    assert resolution.provenance["budget.max_input_tokens"].layer == "file"
 
 
 def test_adk_toml_wins_over_a_pyproject_table_in_the_same_directory(tmp_path: Path) -> None:
-    (tmp_path / "adk.toml").write_text("[budget]\nmax_tokens_per_run = 1\n", encoding="utf-8")
+    (tmp_path / "adk.toml").write_text("[budget]\nmax_input_tokens = 1\n", encoding="utf-8")
     (tmp_path / "pyproject.toml").write_text(
-        "[tool.tesserix-adk.budget]\nmax_tokens_per_run = 2\n", encoding="utf-8"
+        "[tool.tesserix-adk.budget]\nmax_input_tokens = 2\n", encoding="utf-8"
     )
-    assert _load(start=tmp_path).budget.max_tokens_per_run == 1
+    assert _load(start=tmp_path).budget.max_input_tokens == 1
 
 
 def test_a_pyproject_without_the_tool_table_is_not_a_config_file(tmp_path: Path) -> None:
     """Otherwise a worker started one directory down resolves a different configuration."""
     (tmp_path / "pyproject.toml").write_text('[project]\nname = "app"\n', encoding="utf-8")
-    (tmp_path / "adk.toml").write_text("[budget]\nmax_tokens_per_run = 9\n", encoding="utf-8")
+    (tmp_path / "adk.toml").write_text("[budget]\nmax_input_tokens = 9\n", encoding="utf-8")
     nested = tmp_path / "src" / "worker"
     nested.mkdir(parents=True)
     (nested / "pyproject.toml").write_text('[project]\nname = "worker"\n', encoding="utf-8")
 
-    assert _load(start=nested).budget.max_tokens_per_run == 9
+    assert _load(start=nested).budget.max_input_tokens == 9
 
 
 def test_an_explicit_path_skips_discovery(tmp_path: Path) -> None:
-    (tmp_path / "adk.toml").write_text("[budget]\nmax_tokens_per_run = 1\n", encoding="utf-8")
+    (tmp_path / "adk.toml").write_text("[budget]\nmax_input_tokens = 1\n", encoding="utf-8")
     elsewhere = tmp_path / "other.toml"
-    elsewhere.write_text("[budget]\nmax_tokens_per_run = 2\n", encoding="utf-8")
+    elsewhere.write_text("[budget]\nmax_input_tokens = 2\n", encoding="utf-8")
 
-    assert _load(path=elsewhere, start=tmp_path).budget.max_tokens_per_run == 2
+    assert _load(path=elsewhere, start=tmp_path).budget.max_input_tokens == 2
 
 
 def test_an_explicit_path_that_does_not_exist_is_an_error_not_a_shrug(tmp_path: Path) -> None:
@@ -186,9 +186,9 @@ def test_an_unknown_code_key_is_rejected() -> None:
 
 def test_a_malformed_number_reports_the_literal_and_the_layer() -> None:
     with pytest.raises(ConfigError) as caught:
-        _load({f"{ENV_PREFIX}BUDGET__MAX_TOKENS_PER_RUN": "lots"})
+        _load({f"{ENV_PREFIX}BUDGET__MAX_INPUT_TOKENS": "lots"})
 
-    problem = next(p for p in caught.value.problems if p.key == "budget.max_tokens_per_run")
+    problem = next(p for p in caught.value.problems if p.key == "budget.max_input_tokens")
     assert problem.layer == "env"
     assert problem.literal == "lots"
 
@@ -220,8 +220,8 @@ def test_a_config_error_is_a_configuration_error() -> None:
 
 def test_the_error_message_lists_every_problem_with_its_layer() -> None:
     with pytest.raises(ConfigError) as caught:
-        _load({f"{ENV_PREFIX}BUDGET__MAX_TOKENS_PER_RUN": "lots"})
-    assert "budget.max_tokens_per_run" in str(caught.value)
+        _load({f"{ENV_PREFIX}BUDGET__MAX_INPUT_TOKENS": "lots"})
+    assert "budget.max_input_tokens" in str(caught.value)
     assert "env" in str(caught.value)
 
 
@@ -291,7 +291,7 @@ def test_two_processes_with_the_same_inputs_resolve_identical_config_and_provena
     tmp_path: Path,
 ) -> None:
     """Workers that disagree about configuration fail in ways nobody can reproduce."""
-    (tmp_path / "adk.toml").write_text("[budget]\nmax_tokens_per_run = 321\n", encoding="utf-8")
+    (tmp_path / "adk.toml").write_text("[budget]\nmax_input_tokens = 321\n", encoding="utf-8")
     script = (
         "import json,sys;from tesserix_adk.core import resolve_config;"
         "r=resolve_config(env={'TESSERIX_ADK_PROVIDER__ENDPOINT':'http://vllm:8000'},"
@@ -308,4 +308,4 @@ def test_two_processes_with_the_same_inputs_resolve_identical_config_and_provena
         for _ in range(2)
     ]
     assert runs[0] == runs[1]
-    assert '"max_tokens_per_run": 321' in runs[0]
+    assert '"max_input_tokens": 321' in runs[0]

@@ -12,11 +12,23 @@ import contextlib
 import inspect
 from collections import deque
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
+from tesserix_adk.core.budget import (
+    BudgetDecision,
+    BudgetLimits,
+    BudgetScope,
+    Consumed,
+    ResolvedBudget,
+)
 from tesserix_adk.core.capabilities import Capability, ModelCapabilities
-from tesserix_adk.core.errors import BudgetExceededError, ToolExecutionError
-from tesserix_adk.core.primitives import TextPart
+from tesserix_adk.core.errors import (
+    BudgetExceededError,
+    BudgetUnavailableError,
+    ToolExecutionError,
+)
+from tesserix_adk.core.primitives import TextPart, Usage
 from tesserix_adk.runtime import ModelRequest, ModelResponse, ToolDeclaration
 
 if TYPE_CHECKING:
@@ -33,6 +45,7 @@ __all__ = [
     "FakeGuardrail",
     "FakeMemoryStore",
     "FakeSecrets",
+    "FakeTenantLedger",
     "FakeToolRegistry",
     "FakeTracer",
     "RecordedEvent",
@@ -193,10 +206,10 @@ class FakeTracer:
 
 
 class FakeBudgetPolicy:
-    """A counting budget with a hard limit.
+    """A counting budget with a hard token limit, for tests that need no ledger.
 
     Args:
-        limit: Total units permitted across the lifetime of the policy.
+        limit: Total input plus output tokens permitted across the lifetime of the policy.
     """
 
     def __init__(self, limit: int = 1_000_000) -> None:
@@ -204,9 +217,29 @@ class FakeBudgetPolicy:
         self.reserved = 0
         self.spent = 0
         self.reservations: list[int] = []
+        self.recorded: list[Usage] = []
+        self.model_calls = 0
+        self.tool_calls = 0
+        self.iterations = 0
+
+    @property
+    def resolved(self) -> ResolvedBudget:
+        """The ceiling this fake enforces, stated in the kit's own vocabulary."""
+        return ResolvedBudget(
+            limits=BudgetLimits(max_input_tokens=self.limit),
+            sources={"max_input_tokens": BudgetScope.RUN},
+        )
+
+    def limits(self) -> BudgetLimits:
+        """What is left, as limits."""
+        return BudgetLimits(max_input_tokens=max(self.limit - self.spent - self.reserved, 1))
+
+    def child(self) -> FakeBudgetPolicy:
+        """The same policy, so a child run spends what the parent has left."""
+        return self
 
     async def reserve(self, estimate: int) -> None:
-        """Reserve `estimate` units.
+        """Reserve `estimate` tokens.
 
         Raises:
             BudgetExceededError: If the reservation would breach `limit`.
@@ -214,15 +247,80 @@ class FakeBudgetPolicy:
         if self.spent + self.reserved + estimate > self.limit:
             raise BudgetExceededError(
                 f"reserving {estimate} would exceed limit {self.limit} "
-                f"(spent {self.spent}, reserved {self.reserved})"
+                f"(spent {self.spent}, reserved {self.reserved})",
+                breached="max_input_tokens",
+                scope=BudgetScope.RUN,
+                limit=Decimal(self.limit),
+                consumed=Decimal(self.spent),
+                remaining=Decimal(max(self.limit - self.spent, 0)),
             )
         self.reserved += estimate
         self.reservations.append(estimate)
 
-    async def record(self, actual: int) -> None:
-        """Record `actual` consumption and release the outstanding reservation."""
-        self.spent += actual
+    async def record(
+        self,
+        usage: Usage,
+        *,
+        model_calls: int = 0,
+        tool_calls: int = 0,
+        iterations: int = 0,
+    ) -> None:
+        """Record consumption and release the outstanding reservation."""
+        self.recorded.append(usage)
+        self.spent += usage.input_tokens + usage.output_tokens
+        self.model_calls += model_calls
+        self.tool_calls += tool_calls
+        self.iterations += iterations
         self.reserved = 0
+
+    def check(self) -> BudgetDecision:
+        """Whether there is room left."""
+        if self.spent > self.limit:
+            return BudgetDecision(
+                permitted=False,
+                breached="max_input_tokens",
+                scope=BudgetScope.RUN,
+                limit=Decimal(self.limit),
+                consumed=Decimal(self.spent),
+            )
+        return BudgetDecision(permitted=True)
+
+
+class FakeTenantLedger:
+    """A tenant ledger held in one process, for tests that need no shared store.
+
+    Args:
+        reachable: Whether the store answers. `False` is how a test exercises the
+            fail-closed path without breaking a real one.
+    """
+
+    def __init__(self, reachable: bool = True) -> None:
+        self.reachable = reachable
+        self.totals: dict[tuple[str, str], Consumed] = {}
+
+    async def total(self, tenant: str, window: str) -> Consumed:
+        """What `tenant` has spent in `window`.
+
+        Raises:
+            BudgetUnavailableError: If this ledger was built unreachable.
+        """
+        self._answer_or_refuse(tenant)
+        return self.totals.get((tenant, window), Consumed())
+
+    async def consume(self, tenant: str, window: str, spent: Consumed) -> Consumed:
+        """Add `spent` to the total and return it.
+
+        Raises:
+            BudgetUnavailableError: If this ledger was built unreachable.
+        """
+        self._answer_or_refuse(tenant)
+        running = self.totals.get((tenant, window), Consumed()) + spent
+        self.totals[(tenant, window)] = running
+        return running
+
+    def _answer_or_refuse(self, tenant: str) -> None:
+        if not self.reachable:
+            raise BudgetUnavailableError(f"the ledger for {tenant} is not answering")
 
 
 class ScriptedProvider:

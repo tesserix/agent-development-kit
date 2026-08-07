@@ -16,7 +16,7 @@ from tesserix_adk.core import (
     Agent,
     ApprovalDecision,
     ApprovalRecord,
-    BudgetConfig,
+    BudgetLimits,
     ConfigurationError,
     DeadlineConfig,
     Hook,
@@ -808,8 +808,8 @@ class TestBudgetsAreCheckedBeforeSpending:
         assert tools.calls == []
 
 
-def _a_budget() -> BudgetConfig:
-    return BudgetConfig(max_tokens_per_run=1_000)
+def _a_budget() -> BudgetLimits:
+    return BudgetLimits(max_input_tokens=1_000)
 
 
 class TestConformance:

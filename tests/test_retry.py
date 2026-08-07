@@ -14,8 +14,8 @@ import pytest
 
 from tesserix_adk.core import (
     Agent,
-    BudgetConfig,
     BudgetExceededError,
+    BudgetLimits,
     CapabilityError,
     DeadlineConfig,
     GuardrailViolationError,
@@ -320,7 +320,7 @@ class TestRetryingAModelCall:
         budget = FakeBudgetPolicy(limit=8)
         runner = AgentRunner(provider=provider, clock=FakeClock(), retry=THREE, budget=budget)
 
-        run = await runner.run(agent(budget=BudgetConfig()), "plan a trip", tenant="acme")
+        run = await runner.run(agent(budget=BudgetLimits()), "plan a trip", tenant="acme")
 
         assert run.state is RunState.BUDGET_EXHAUSTED
         assert len(provider.requests) == 1

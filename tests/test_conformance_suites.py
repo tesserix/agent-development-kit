@@ -5,6 +5,7 @@ If a suite cannot be inherited and run here, no third party can run it either.
 
 import pytest
 
+from tesserix_adk.core import Usage
 from tesserix_adk.runtime import SystemClock
 from tesserix_adk.testing import (
     BudgetExceededError,
@@ -63,7 +64,7 @@ async def test_fake_budget_refuses_a_reservation_past_the_limit() -> None:
 async def test_recording_releases_the_outstanding_reservation() -> None:
     policy = FakeBudgetPolicy(limit=10)
     await policy.reserve(9)
-    await policy.record(2)
+    await policy.record(Usage(input_tokens=2, output_tokens=0))
     assert (policy.spent, policy.reserved) == (2, 0)
     await policy.reserve(8)
 

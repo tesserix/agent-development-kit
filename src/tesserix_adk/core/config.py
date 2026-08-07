@@ -25,9 +25,11 @@ from pydantic import (
     SecretStr,
     TypeAdapter,
     ValidationError,
+    field_validator,
     model_validator,
 )
 
+from tesserix_adk.core.budget import BudgetLimits
 from tesserix_adk.core.errors import ConfigurationError, SchemaViolationError
 from tesserix_adk.core.models import AdkModel, parsed_from_strings
 
@@ -37,7 +39,6 @@ if TYPE_CHECKING:
 __all__ = [
     "ENV_PREFIX",
     "AdkConfig",
-    "BudgetConfig",
     "ConfigError",
     "ConfigProblem",
     "ConfigResolution",
@@ -101,13 +102,6 @@ class ProviderConfig(AdkModel):
     endpoint: str
     api_key: SecretStr | None = None
     request_timeout: Duration = timedelta(seconds=30)
-
-
-class BudgetConfig(AdkModel):
-    """Spend ceilings enforced per run. Reaching one ends the run; it is never a warning."""
-
-    max_tokens_per_run: int = 100_000
-    max_cost_usd_per_run: float = 1.0
 
 
 class LoopConfig(AdkModel):
@@ -322,7 +316,7 @@ class AdkConfig(AdkModel):
     """The kit's resolved configuration. Frozen, fully typed, validated at startup."""
 
     provider: ProviderConfig
-    budget: BudgetConfig = BudgetConfig()
+    budget: BudgetLimits = BudgetLimits.conservative()
     deadlines: DeadlineConfig = DeadlineConfig()
     loop: LoopConfig = LoopConfig()
     retry: RetryConfig = RetryConfig()
@@ -330,13 +324,19 @@ class AdkConfig(AdkModel):
     redaction: RedactionConfig = RedactionConfig()
     stores: StoreConfig = StoreConfig()
 
+    @field_validator("budget")
+    @classmethod
+    def _a_stated_ceiling_does_not_remove_the_others(cls, budget: BudgetLimits) -> BudgetLimits:
+        """A file that names one dimension is not a file that unbounded the rest."""
+        return budget.filled()
+
 
 @dataclass(frozen=True)
 class ConfigProblem:
     """One reason the configuration cannot be used.
 
     Args:
-        key: Dotted key, e.g. `budget.max_tokens_per_run`.
+        key: Dotted key, e.g. `budget.max_input_tokens`.
         layer: Layer that supplied the offending value, or None when nothing supplied it.
         reason: What is wrong, in the words a reader can act on.
         literal: The offending value as written, masked for secret keys.

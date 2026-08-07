@@ -6,6 +6,7 @@ kit's failures without catching `Exception` and swallowing its own bugs alongsid
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
@@ -18,6 +19,7 @@ __all__ = [
     "ApprovalExpiredError",
     "AuthenticationError",
     "BudgetExceededError",
+    "BudgetUnavailableError",
     "CancelledError",
     "CapabilityError",
     "ConfigurationError",
@@ -644,7 +646,46 @@ class GuardrailViolationError(AdkError):
 
 
 class BudgetExceededError(AdkError):
-    """Raised when a run would exceed its ceiling. Raised before the spend, not after."""
+    """Raised when a run would exceed its ceiling. Raised before the spend, not after.
+
+    Args:
+        breached: Which limit stopped it, by field name.
+        scope: Where that limit was attached, so it is clear whose ceiling this is and
+            who could raise it.
+        limit: The ceiling, as a `Decimal` whatever dimension it counts.
+        consumed: What had been spent against it.
+        remaining: What was left, which is what the caller may still fit into.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        breached: str = "",
+        scope: object = None,
+        limit: Decimal | None = None,
+        consumed: Decimal = Decimal(0),
+        remaining: Decimal = Decimal(0),
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        super().__init__(message, run_id=run_id, tenant=tenant, details=details)
+        self.breached = breached
+        self.scope = scope
+        self.limit = limit
+        self.consumed = consumed
+        self.remaining = remaining
+
+
+class BudgetUnavailableError(AdkError):
+    """Raised when the ledger a shared ceiling lives in cannot be reached.
+
+    Distinct from exceeding a budget: nobody knows whether this run would exceed one. The
+    runtime fails closed on it, because carrying on without the ledger is how one outage
+    becomes an unbounded bill. Permitting degraded operation is an explicit configuration
+    choice and is recorded on the run.
+    """
 
 
 class CancelledError(AdkError):

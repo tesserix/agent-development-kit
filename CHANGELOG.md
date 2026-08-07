@@ -10,6 +10,25 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- A ceiling said once and honoured everywhere, and no way to build a runtime without one.
+  `BudgetLimits` replaces `BudgetConfig` on `Agent.budget` and `AdkConfig.budget` and states
+  money as `Decimal` with a currency alongside tokens, model calls, tool calls, iterations
+  and wall-clock seconds; every field is optional to write and none is optional in effect,
+  since `filled()` replaces what was left unsaid with `BudgetLimits.conservative()`. Limits
+  attach to a run, agent, tenant or tenant window and `most_restrictive` resolves them per
+  dimension with the winning scope recorded, refusing two scopes of one kind and two
+  currencies rather than converting. `BudgetPolicy.record` now takes a `Usage` and typed
+  counts rather than an integer, and the protocol gains `resolved`, `limits`, `child` and
+  `check`; `BudgetExceededError` names the limit breached, its scope, the ceiling, the
+  consumed amount and the remaining one, and the new `BudgetUnavailableError` is what a run
+  fails closed on when the ledger holding a shared ceiling cannot be reached. A runner given
+  no policy resolves one per run and records it on `run.budget`, so an agent declaring a
+  budget with no policy is no longer a `ConfigurationError`; removing the ceiling takes
+  `UnlimitedBudget(reason=...)`, which will not be built without a stated reason.
+  **Stability:** breaking for anything constructing `BudgetConfig`, setting
+  `budget.max_tokens_per_run`, or implementing `BudgetPolicy`. Documented in
+  `docs/budget.md`, exercised by `examples/budget.py`.
+
 - Usage and cost are two records, not one float. `Usage` is what a call consumed and `Cost`
   is what that came to; `Usage.cost` is now a `Cost` rather than a `float`, `Usage.currency`
   is gone because money without a currency is a number, and `Usage.estimated` is derived from

@@ -20,9 +20,9 @@ from typing import Generic, Self
 
 from pydantic import ConfigDict, Field, model_validator
 
+from tesserix_adk.core.budget import BudgetLimits  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.capabilities import CapabilitySet  # noqa: TC001
 from tesserix_adk.core.config import (  # noqa: TC001
-    BudgetConfig,
     DeadlineConfig,
     LoopConfig,
     RepairConfig,
@@ -112,7 +112,7 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
     approval_required_tools: tuple[str, ...] = ()
     output_type: type[OutputT] | None = Field(default=None, exclude=True)
     free_text: bool = False
-    budget: BudgetConfig | None = None
+    budget: BudgetLimits | None = None
     deadlines: DeadlineConfig | None = None
     loop: LoopConfig | None = None
     retry: RetryConfig | None = None

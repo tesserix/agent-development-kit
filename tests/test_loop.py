@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from tesserix_adk.core import (
     Agent,
-    BudgetConfig,
+    BudgetLimits,
     CancelledError,
     ConfigurationError,
     ProviderError,
@@ -316,7 +316,7 @@ class TestTerminalStates:
         """A budget ceiling and a provider outage are different failures."""
         run = await start(
             runner(answer(), budget=FakeBudgetPolicy(limit=1)),
-            agent(budget=BudgetConfig(max_tokens_per_run=1)),
+            agent(budget=BudgetLimits(max_input_tokens=1)),
         )
         assert run.state is RunState.BUDGET_EXHAUSTED
 
@@ -324,7 +324,7 @@ class TestTerminalStates:
         """A ceiling nobody reports against is a ceiling nobody can raise or lower."""
         policy = FakeBudgetPolicy(limit=1_000)
         run = await start(
-            runner(answer(), budget=policy), agent(budget=BudgetConfig(max_tokens_per_run=1_000))
+            runner(answer(), budget=policy), agent(budget=BudgetLimits(max_input_tokens=1_000))
         )
         assert run.state is RunState.COMPLETED
         assert policy.spent == 15
@@ -398,9 +398,10 @@ class TestFailingClosed:
         with pytest.raises(ConfigurationError, match="no_pii"):
             runner(answer(), guardrails={"no_pii": FakeGuardrail("no_prompt_leak")})
 
-    async def test_a_declared_budget_without_a_policy_is_refused(self) -> None:
-        with pytest.raises(ConfigurationError, match="budget"):
-            await start(runner(answer()), agent(budget=BudgetConfig(max_tokens_per_run=10)))
+    async def test_a_declared_budget_without_a_policy_is_still_enforced(self) -> None:
+        """A runner given no policy is not a runner without a ceiling."""
+        run = await start(runner(answer()), agent(budget=BudgetLimits(max_input_tokens=1)))
+        assert run.state is RunState.BUDGET_EXHAUSTED
 
     async def test_an_agent_routed_by_task_class_is_refused_until_there_is_a_router(self) -> None:
         """Guessing a model would attribute the run to one that never ran it."""
