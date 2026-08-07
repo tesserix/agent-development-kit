@@ -106,7 +106,7 @@ class FailingOnceProvider:
         return self._response
 
     async def stream(self, request: ModelRequest) -> Any:
-        raise NotImplementedError("see #38")
+        raise NotImplementedError("see #39")
 
 
 class Stamping:

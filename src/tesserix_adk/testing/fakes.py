@@ -10,6 +10,8 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import inspect
+import json
+import re
 from collections import deque
 from dataclasses import dataclass
 from decimal import Decimal
@@ -29,6 +31,13 @@ from tesserix_adk.core.errors import (
     ToolExecutionError,
 )
 from tesserix_adk.core.primitives import TextPart, Usage
+from tesserix_adk.core.streaming import (
+    ReasoningDelta,
+    StreamEnd,
+    TextDelta,
+    ToolCallDelta,
+    UsageDelta,
+)
 from tesserix_adk.runtime import ModelRequest, ModelResponse, ToolDeclaration
 
 if TYPE_CHECKING:
@@ -421,15 +430,18 @@ class ScriptedProvider:
             raise nxt
         return nxt
 
-    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:  # noqa: ARG002
-        """Not scripted. Streaming has its own epic (#38).
+    async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
+        """Replay the next scripted response a piece at a time, ending with `StreamEnd`.
+
+        The same script drives both paths, so a test asserting that the streamed and
+        buffered views of a run agree is asserting about the runtime rather than about
+        two fakes that were written to agree.
 
         Raises:
             CapabilityError: If this fake does not declare `streaming`.
-            NotImplementedError: Otherwise, until #38.
         """
-        self._capabilities.require(Capability.STREAMING, provider=self._name, model="scripted")
-        raise NotImplementedError("ScriptedProvider does not stream; see #38")
+        self._capabilities.require(Capability.STREAMING, provider=self._name, model=request.model)
+        return _replayed(await self.complete(request))
 
 
 class StallingProvider:
@@ -499,8 +511,8 @@ class StallingProvider:
         return ModelResponse(content="answered after all")
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
-        """Not scripted. Streaming has its own epic (#38)."""
-        raise NotImplementedError("StallingProvider does not stream; see #38")
+        """Stream the scripted answer, or stall mid-stream until released or cancelled."""
+        return _replayed(await self.complete(request))
 
 
 class FakeToolRegistry:
@@ -588,3 +600,25 @@ class FakeSecrets:
         """Return the value recorded for `name`, or `None`."""
         self.asked.append(name)
         return self._secrets.get(name)
+
+
+def _pieces(text: str) -> list[str]:
+    """A scripted answer cut where a vendor would cut it — word by word, spaces kept."""
+    return re.findall(r"\S+\s*", text)
+
+
+async def _replayed(response: ModelResponse) -> AsyncIterator[StreamEvent]:
+    """One already-decided response, told as the stream a vendor would have sent."""
+    for piece in _pieces(response.content):
+        yield TextDelta(text=piece)
+    if response.reasoning:
+        yield ReasoningDelta(text=response.reasoning)
+    for index, call in enumerate(response.tool_calls):
+        yield ToolCallDelta(
+            index=index,
+            id=call.id,
+            name=call.name,
+            arguments=json.dumps(call.arguments, sort_keys=True),
+        )
+    yield UsageDelta(usage=response.usage)
+    yield StreamEnd(response=response)

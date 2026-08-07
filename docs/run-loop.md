@@ -331,7 +331,9 @@ a loop wedges.
 
 ## Known limitations
 
-- **No streaming.** `run` returns a finished `Run`; incremental events are #38–#42.
+- **`run` itself does not stream.** It returns a finished `Run`; `stream` reports the same
+  run event by event — see [`run-progress.md`](run-progress.md). Transport helpers,
+  backpressure and cancellation through an active stream are #40–#42.
 - **No durable resumption.** A `Run` serialises, but nothing resumes one mid-flight yet —
   that is the durable orchestration epic.
 - **Tool arguments are not validated against the tool's schema before dispatch.** The

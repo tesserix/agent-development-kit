@@ -12,26 +12,13 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from tesserix_adk.core import AdkModel
+from tesserix_adk.core import MASK, SENSITIVE_SHAPES, AdkModel
 from tesserix_adk.observability.attribution import ATTRIBUTE_PREFIX
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
 __all__ = ["MASK", "Redaction", "Redactor"]
-
-MASK = "[redacted]"
-
-# Shapes that are never legitimate telemetry: an address, a vendor key, a bearer token, a
-# JWT, a long opaque hex string. Deliberately shape-based — a deny-list of known key names
-# only catches the exporters that already knew to be careful.
-_PATTERNS: tuple[str, ...] = (
-    r"[\w.+-]+@[\w-]+\.[\w.-]+",
-    r"\b(?:sk|pk|rk|api)[-_][A-Za-z0-9\-_]{8,}",
-    r"\bBearer\s+\S+",
-    r"\beyJ[A-Za-z0-9_-]{10,}",
-    r"\b[0-9a-f]{32,}\b",
-)
 
 
 class Redaction(AdkModel):
@@ -67,7 +54,7 @@ class Redactor:
     """
 
     def __init__(self, extra_patterns: Sequence[str] = ()) -> None:
-        self._patterns = tuple(re.compile(p) for p in (*_PATTERNS, *extra_patterns))
+        self._patterns = tuple(re.compile(p) for p in (*SENSITIVE_SHAPES, *extra_patterns))
 
     def scrub(self, attributes: Mapping[str, str]) -> tuple[dict[str, str], Redaction]:
         """Return `attributes` with sensitive values masked, and what was masked.

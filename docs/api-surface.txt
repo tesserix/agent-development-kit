@@ -79,6 +79,7 @@ tesserix_adk.core.LedgerFailure :: class LedgerFailure(StrEnum)
 tesserix_adk.core.LedgerKey :: class LedgerKey(AdkModel) {at(self, now: 'float') -> 'str'}
 tesserix_adk.core.LoopConfig :: class LoopConfig(AdkModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
 tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
+tesserix_adk.core.MASK :: MASK: str
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
 tesserix_adk.core.MemoryStore :: class MemoryStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.core.Message :: class Message(AdkModel)
@@ -120,6 +121,7 @@ tesserix_adk.core.RunContext :: class RunContext(AdkModel)
 tesserix_adk.core.RunEvent :: class RunEvent(AdkModel)
 tesserix_adk.core.RunEventKind :: class RunEventKind(StrEnum)
 tesserix_adk.core.RunState :: class RunState(StrEnum)
+tesserix_adk.core.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple
 tesserix_adk.core.SEPARATOR :: SEPARATOR: str
 tesserix_adk.core.SMART :: SMART: TaskClass
 tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
@@ -273,6 +275,7 @@ tesserix_adk.core.ledger.WindowKind :: class WindowKind(StrEnum)
 tesserix_adk.core.ledger.WindowSpend :: class WindowSpend(AdkModel) {remaining(self, ceiling: 'Decimal') -> 'Decimal'}
 tesserix_adk.core.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
 tesserix_adk.core.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
+tesserix_adk.core.looks_sensitive :: def looks_sensitive(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'bool'
 tesserix_adk.core.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
 tesserix_adk.core.models.AdkModel :: class AdkModel(BaseModel)
 tesserix_adk.core.models.NoOutput :: class NoOutput(AdkModel)
@@ -307,6 +310,10 @@ tesserix_adk.core.provider.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.core.provider.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.core.provider.StopReason :: class StopReason(StrEnum)
 tesserix_adk.core.provider.ToolDeclaration :: class ToolDeclaration(AdkModel)
+tesserix_adk.core.redaction.MASK :: MASK: str
+tesserix_adk.core.redaction.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple
+tesserix_adk.core.redaction.looks_sensitive :: def looks_sensitive(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'bool'
+tesserix_adk.core.redaction.scrub :: def scrub(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'str'
 tesserix_adk.core.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
 tesserix_adk.core.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
 tesserix_adk.core.resolve_hooks :: def resolve_hooks(decisions: 'Sequence[HookDecision] | Iterable[HookDecision]') -> 'HookDecision'
@@ -336,6 +343,7 @@ tesserix_adk.core.schema.schema_for :: def schema_for(target: 'type | Callable[.
 tesserix_adk.core.schema.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.core.schema_for :: def schema_for(target: 'type | Callable[..., Any]', *, dialect: 'SchemaDialect' = JsonSchema(name='json-schema', forbidden=frozenset()), max_bytes: 'int | None' = None) -> 'dict[str, Any]'
 tesserix_adk.core.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') -> 'str'
+tesserix_adk.core.scrub :: def scrub(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'str'
 tesserix_adk.core.streaming.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.core.streaming.StreamAccumulator :: class StreamAccumulator(object) {feed(self, event: 'StreamEvent') -> 'None'; finish(self, stop_reason: 'StopReason') -> 'ModelResponse'}
 tesserix_adk.core.streaming.StreamEnd :: class StreamEnd(StreamEvent)
@@ -481,7 +489,9 @@ tesserix_adk.observability.redaction.Redaction :: class Redaction(AdkModel)
 tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
 tesserix_adk.observability.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
-tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
+tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'RunStream[OutputT]'}
+tesserix_adk.runtime.AnswerDelta :: class AnswerDelta(ProgressEvent)
+tesserix_adk.runtime.ApprovalRequired :: class ApprovalRequired(ProgressEvent)
 tesserix_adk.runtime.Assumptions :: class Assumptions(AdkModel)
 tesserix_adk.runtime.Calibration :: class Calibration(AdkModel)
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
@@ -489,25 +499,39 @@ tesserix_adk.runtime.Confidence :: class Confidence(StrEnum)
 tesserix_adk.runtime.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.CostEstimate :: class CostEstimate(AdkModel) {as_limits(self, *, headroom: 'Decimal' = Decimal('1')) -> 'BudgetLimits'; with_children(self, *children: 'CostEstimate') -> 'CostEstimate'}
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
+tesserix_adk.runtime.GuardrailDecision :: class GuardrailDecision(ProgressEvent)
 tesserix_adk.runtime.InMemoryHistory :: class InMemoryHistory(object) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'; record(self, run: 'Run[OutputT]') -> 'None'}
+tesserix_adk.runtime.IterationStarted :: class IterationStarted(ProgressEvent)
 tesserix_adk.runtime.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.Observed :: class Observed(AdkModel)
 tesserix_adk.runtime.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'; repair_prompt(self, violation: 'SchemaViolationError') -> 'str'}
 tesserix_adk.runtime.PROMPT_LAYERS :: PROMPT_LAYERS: tuple
 tesserix_adk.runtime.Pricer :: class Pricer(Protocol)
+tesserix_adk.runtime.ProgressEvent :: class ProgressEvent(AdkModel)
 tesserix_adk.runtime.Prompt :: class Prompt(AdkModel)
 tesserix_adk.runtime.PromptLayer :: class PromptLayer(StrEnum)
 tesserix_adk.runtime.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
 tesserix_adk.runtime.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
+tesserix_adk.runtime.RunCancelled :: class RunCancelled(ProgressEvent)
+tesserix_adk.runtime.RunCompleted :: class RunCompleted(ProgressEvent)
+tesserix_adk.runtime.RunFailed :: class RunFailed(ProgressEvent)
 tesserix_adk.runtime.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.RunHistory :: class RunHistory(Protocol) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'}
+tesserix_adk.runtime.RunStarted :: class RunStarted(ProgressEvent)
+tesserix_adk.runtime.RunStream :: class RunStream(Generic)
 tesserix_adk.runtime.Scope :: class Scope(StrEnum)
 tesserix_adk.runtime.Segment :: class Segment(AdkModel)
+tesserix_adk.runtime.SequenceCheck :: class SequenceCheck(object) {accept(self, event: 'ProgressEvent') -> 'bool'}
 tesserix_adk.runtime.Spread :: class Spread(AdkModel)
+tesserix_adk.runtime.StructuredDelta :: class StructuredDelta(ProgressEvent)
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.Tokenizer :: class Tokenizer(Protocol)
+tesserix_adk.runtime.ToolCallFailed :: class ToolCallFailed(ProgressEvent)
+tesserix_adk.runtime.ToolCallFinished :: class ToolCallFinished(ProgressEvent)
+tesserix_adk.runtime.ToolCallStarted :: class ToolCallStarted(ProgressEvent)
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
+tesserix_adk.runtime.UsageUpdated :: class UsageUpdated(ProgressEvent)
 tesserix_adk.runtime.affordable :: def affordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'BudgetDecision'
 tesserix_adk.runtime.approval_for :: def approval_for(estimate: 'CostEstimate', agent: 'Agent[OutputT]', *, run_id: 'str', tenant: 'str', requested_at: 'float' = 0.0) -> 'ApprovalRecord'
 tesserix_adk.runtime.approximate_tokens :: def approximate_tokens(text: 'str') -> 'int'
@@ -519,6 +543,7 @@ tesserix_adk.runtime.cancellation.Deadline :: class Deadline(object) {expired(se
 tesserix_adk.runtime.canonical_digest :: def canonical_digest(value: 'Any') -> 'str'
 tesserix_adk.runtime.context.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.context.Segment :: class Segment(AdkModel)
+tesserix_adk.runtime.decode_progress :: def decode_progress(payload: 'Mapping[str, object]') -> 'ProgressEvent | None'
 tesserix_adk.runtime.determinism.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.determinism.canonical_digest :: def canonical_digest(value: 'Any') -> 'str'
 tesserix_adk.runtime.determinism.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
@@ -539,10 +564,27 @@ tesserix_adk.runtime.estimate.estimate_run :: def estimate_run(agent: 'Agent[Out
 tesserix_adk.runtime.estimate.refuse_unaffordable :: def refuse_unaffordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'None'
 tesserix_adk.runtime.estimate_run :: def estimate_run(agent: 'Agent[OutputT]', user_input: 'str', *, provider: 'ModelProvider', pricing: 'Pricer', history: 'RunHistory | None' = None, tools: 'Iterable[ToolDeclaration]' = (), allow_unknown: 'bool' = False) -> 'CostEstimate'
 tesserix_adk.runtime.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
-tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
+tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'RunStream[OutputT]'}
 tesserix_adk.runtime.loop.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.runtime.progress.AnswerDelta :: class AnswerDelta(ProgressEvent)
+tesserix_adk.runtime.progress.ApprovalRequired :: class ApprovalRequired(ProgressEvent)
+tesserix_adk.runtime.progress.GuardrailDecision :: class GuardrailDecision(ProgressEvent)
+tesserix_adk.runtime.progress.IterationStarted :: class IterationStarted(ProgressEvent)
+tesserix_adk.runtime.progress.ProgressEvent :: class ProgressEvent(AdkModel)
+tesserix_adk.runtime.progress.RunCancelled :: class RunCancelled(ProgressEvent)
+tesserix_adk.runtime.progress.RunCompleted :: class RunCompleted(ProgressEvent)
+tesserix_adk.runtime.progress.RunFailed :: class RunFailed(ProgressEvent)
+tesserix_adk.runtime.progress.RunStarted :: class RunStarted(ProgressEvent)
+tesserix_adk.runtime.progress.RunStream :: class RunStream(Generic)
+tesserix_adk.runtime.progress.SequenceCheck :: class SequenceCheck(object) {accept(self, event: 'ProgressEvent') -> 'bool'}
+tesserix_adk.runtime.progress.StructuredDelta :: class StructuredDelta(ProgressEvent)
+tesserix_adk.runtime.progress.ToolCallFailed :: class ToolCallFailed(ProgressEvent)
+tesserix_adk.runtime.progress.ToolCallFinished :: class ToolCallFinished(ProgressEvent)
+tesserix_adk.runtime.progress.ToolCallStarted :: class ToolCallStarted(ProgressEvent)
+tesserix_adk.runtime.progress.UsageUpdated :: class UsageUpdated(ProgressEvent)
+tesserix_adk.runtime.progress.decode_progress :: def decode_progress(payload: 'Mapping[str, object]') -> 'ProgressEvent | None'
 tesserix_adk.runtime.prompt.PROMPT_LAYERS :: PROMPT_LAYERS: tuple
 tesserix_adk.runtime.prompt.Prompt :: class Prompt(AdkModel)
 tesserix_adk.runtime.prompt.PromptLayer :: class PromptLayer(StrEnum)

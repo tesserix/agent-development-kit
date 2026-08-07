@@ -148,6 +148,12 @@ from tesserix_adk.core.provider import (
     StopReason,
     ToolDeclaration,
 )
+from tesserix_adk.core.redaction import (
+    MASK,
+    SENSITIVE_SHAPES,
+    looks_sensitive,
+    scrub,
+)
 from tesserix_adk.core.routing import (
     CHEAP,
     REASONING,
@@ -193,7 +199,9 @@ __all__ = [
     "CHEAP",
     "INLINE_REFS",
     "JSON_SCHEMA",
+    "MASK",
     "REASONING",
+    "SENSITIVE_SHAPES",
     "SEPARATOR",
     "SMART",
     "STRICT_SUBSET",
@@ -342,6 +350,7 @@ __all__ = [
     "fallback_eligible",
     "legal_transitions",
     "load_config",
+    "looks_sensitive",
     "members_of",
     "most_restrictive",
     "parsed_from_strings",
@@ -350,6 +359,7 @@ __all__ = [
     "resolve_hooks",
     "schema_for",
     "schema_hash",
+    "scrub",
     "telemetry_dump",
     "validated",
     "verify_conformance",

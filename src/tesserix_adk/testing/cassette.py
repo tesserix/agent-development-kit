@@ -222,8 +222,8 @@ class RecordingProvider:
         return response
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
-        """Not recorded yet — streaming is #38."""
-        raise NotImplementedError("RecordingProvider does not stream; see #38")
+        """Not recorded yet — recorded streaming is #39."""
+        raise NotImplementedError("RecordingProvider does not stream; see #39")
 
 
 class ReplayingProvider:
@@ -296,8 +296,8 @@ class ReplayingProvider:
         return interaction.response or ModelResponse()
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
-        """Not replayed yet — streaming is #38."""
-        raise NotImplementedError("ReplayingProvider does not stream; see #38")
+        """Not replayed yet — recorded streaming is #39."""
+        raise NotImplementedError("ReplayingProvider does not stream; see #39")
 
     def _next(self, fingerprint: RunFingerprint) -> Interaction:
         taken = sum(1 for served in self.served if served.fingerprint.digest == fingerprint.digest)

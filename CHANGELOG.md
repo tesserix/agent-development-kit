@@ -114,6 +114,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A run can now be watched while it happens. `AgentRunner.stream` returns a `RunStream` that
+  drives the same run `run` drives — same loop, same guardrails, same record — and yields a
+  discriminated `ProgressEvent` union rather than raw text chunks: `RunStarted`,
+  `IterationStarted`, `AnswerDelta`, `StructuredDelta`, the tool-call lifecycle,
+  `GuardrailDecision`, `ApprovalRequired`, `UsageUpdated` and the three terminal variants,
+  with `stream.run` giving the finished record once the stream is drained. Exactly one
+  terminal event is emitted and it is last, derived from the finished run, so a connection
+  that drops mid-answer fails the run instead of presenting accumulated text as an answer.
+  Every event carries its `run_id` and a gapless `sequence` from zero, and `SequenceCheck`
+  counts what was lost and rejects a late or duplicate event rather than reordering it into
+  place. Tool arguments are scrubbed inside the runtime before emission; the answer itself is
+  not, because deltas that no longer reassemble to the answer are a corrupted answer.
+  `decode_progress` skips a variant this version has never heard of, so adding one stays a
+  minor change, while a known variant that will not parse raises. **Stability:** additive —
+  `run` is unchanged and a consumer that only wants the answer keeps calling it. Documented
+  in `docs/run-progress.md`, exercised by `examples/run_progress.py`.
+
 - Fallback can no longer trade a data-handling guarantee for an availability one. A chain
   that promotes a hosted vendor because the self-hosted endpoint is down, or the standard
   tier because the sealed one is, has made a decision nobody approved. `TrustBoundary` states

@@ -88,10 +88,28 @@ from tesserix_adk.core import (
     fallback_eligible,
     most_restrictive,
     resolve_hooks,
+    scrub,
     verify_conformance,
 )
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
+from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
+from tesserix_adk.core.streaming import TextDelta as _StreamedText
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
+from tesserix_adk.runtime.progress import (
+    WATCHING,
+    AnswerDelta,
+    ApprovalRequired,
+    GuardrailDecision,
+    IterationStarted,
+    ProgressEvent,
+    RunStarted,
+    RunStream,
+    StructuredDelta,
+    ToolCallFailed,
+    ToolCallFinished,
+    ToolCallStarted,
+    UsageUpdated,
+)
 from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
 from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
@@ -358,6 +376,55 @@ class AgentRunner:
                 loop.close()
         raise RuntimeError("run_sync cannot be called from a running event loop; await run")
 
+    def stream[OutputT: BaseModel](
+        self,
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
+        user_input: str,
+        *,
+        tenant: str,
+        user: str | None = None,
+        run_id: str | None = None,
+        history: Iterable[Message] = (),
+        memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
+    ) -> RunStream[OutputT]:
+        """Watch `agent` run, event by event. Arguments are `run`'s.
+
+        The same run `run` would have driven, reported as it happens: iterating the stream
+        drives it, and `stream.run` is the finished record once the stream is drained. A
+        consumer that only wants the answer keeps calling `run`.
+
+        Returns:
+            The stream. Nothing starts until it is iterated.
+        """
+        identity = run_id or self._ids()
+
+        async def drive() -> Run[OutputT]:
+            return await self.run(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=identity,
+                history=history,
+                memory=memory,
+                cancellation=cancellation,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+            )
+
+        return RunStream(identity, self._clock, drive)
+
+    def _emit(self, event: ProgressEvent) -> None:
+        """Tell whoever is watching this run, where anybody is."""
+        sink = WATCHING.get()
+        if sink is not None:
+            sink.emit(event)
+
     async def run[OutputT: BaseModel](
         self,
         agent: Agent[OutputT] | AgentDefinition[OutputT],
@@ -435,6 +502,7 @@ class AgentRunner:
             path=path,
             budget=bounds.budget.resolved,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
+        self._emit(RunStarted(agent=agent.name, model=model, tenant=tenant))
         if decision is not None:
             run = run.model_copy(update={"task_class": str(decision.task_class)}).record_event(
                 self._event(
@@ -463,7 +531,8 @@ class AgentRunner:
                 )
             )
             messages = list(prompt.messages)
-            for _ in range(self._max_iterations):
+            for iteration in range(1, self._max_iterations + 1):
+                self._emit(IterationStarted(iteration=iteration))
                 self._stop_if_over(run, bounds)
                 await self._spent(run, bounds, _NOTHING, iterations=1)
                 run, messages = await self._before_the_call(run, agent, messages, bounds)
@@ -982,7 +1051,7 @@ class AgentRunner:
             try:
                 await bounds.budget.reserve(estimate)
                 response: ModelResponse = await self._bounded(
-                    bounds.provider.complete(request),
+                    self._answered(bounds, request),
                     limit=self._limit(bounds, bounds.deadlines.model_call_seconds),
                     bounds=bounds,
                     what="model call",
@@ -1008,7 +1077,47 @@ class AgentRunner:
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=request.model))
                 attempt += 1
             else:
-                return run, self._readable(response, bounds.provider)
+                answer = self._readable(response, bounds.provider)
+                if not _streamable(bounds):
+                    self._deltas(answer.content, structured=request.output_schema_hash is not None)
+                return run, answer
+
+    async def _answered(self, bounds: _Bounds, request: ModelRequest) -> ModelResponse:
+        """One answer, streamed to whoever is watching where both ends can stream.
+
+        The buffered path is not a lesser one: a provider without streaming, or a run
+        nobody is watching, still emits the answer as a single delta, so a consumer sees
+        the same event sequence either way.
+
+        Raises:
+            ModelResponseError: If the stream ended without a final response. Accumulated
+                text from a dropped connection is not an answer, and presenting it as one
+                is the failure this path exists to prevent.
+        """
+        if not _streamable(bounds):
+            return await bounds.provider.complete(request)
+
+        structured = request.output_schema_hash is not None
+        accumulator = StreamAccumulator()
+        finished: ModelResponse | None = None
+        async for event in await bounds.provider.stream(request):
+            if isinstance(event, StreamEnd):
+                finished = event.response
+                break
+            if isinstance(event, _StreamedText):
+                self._deltas(event.text, structured=structured)
+            accumulator.feed(event)
+        if finished is None:
+            raise ModelResponseError(
+                f"the stream from {bounds.provider.name} ended without a final response"
+            )
+        return finished
+
+    def _deltas(self, text: str, *, structured: bool) -> None:
+        """Hand the answer to whoever is watching, as prose or as JSON."""
+        if not text:
+            return
+        self._emit(StructuredDelta(fragment=text) if structured else AnswerDelta(text=text))
 
     def _fell_back(
         self,
@@ -1199,6 +1308,7 @@ class AgentRunner:
                 usage=response.usage,
             )
         )
+        self._emit(UsageUpdated(usage=run.usage))
         await self._spent(run, bounds, response.usage, model_calls=1)
         if not response.content and not response.tool_calls:
             return await self._terminate(
@@ -1235,6 +1345,11 @@ class AgentRunner:
             except _Aborted as abort:
                 raise self._cancelled(run, abort, name=name) from None
             except Exception as failure:
+                self._emit(
+                    GuardrailDecision(
+                        guardrail=name, allowed=False, detail=f"could not evaluate: {failure}"
+                    )
+                )
                 raise _Terminal(
                     run.record_event(
                         self._event(
@@ -1246,6 +1361,7 @@ class AgentRunner:
                     RunState.FAILED,
                     f"guardrail {name} could not be evaluated",
                 ) from failure
+            self._emit(GuardrailDecision(guardrail=name, allowed=bool(verdict)))
             if not verdict:
                 raise _Terminal(
                     run.record_event(self._event(RunEventKind.GUARDRAIL_REFUSAL, name=name)),
@@ -1286,6 +1402,14 @@ class AgentRunner:
         )
         for call in calls:
             if call.name not in agent.tools:
+                self._emit(
+                    ToolCallFailed(
+                        call_id=call.id,
+                        tool=call.name,
+                        error="ToolRefused",
+                        detail="not on the agent's allowlist",
+                    )
+                )
                 raise _Terminal(
                     run.record_event(self._event(RunEventKind.TOOL_REFUSED, name=call.name)),
                     RunState.FAILED,
@@ -1294,6 +1418,9 @@ class AgentRunner:
             run = await self._cleared_to_dispatch(run, agent, call, bounds)
             run = run.model_copy(update={"tool_calls": [*run.tool_calls, call]})
             run = run.record_event(self._event(RunEventKind.TOOL_CALL, name=call.name))
+            self._emit(
+                ToolCallStarted(call_id=call.id, tool=call.name, arguments=_shown(call.arguments))
+            )
             run, text, source = await self._invoke(run, agent, call, bounds)
             run, text, decision, _ = await self._ask_hooks(
                 run,
@@ -1472,6 +1599,7 @@ class AgentRunner:
         run = run.record_event(
             self._event(RunEventKind.APPROVAL_REQUIRED, name=call.name, detail=reason)
         )
+        self._emit(ApprovalRequired(call_id=call.id, tool=call.name, reason=reason))
         try:
             decision = await self._bounded(
                 self._approvals.request(record),
@@ -1567,7 +1695,8 @@ class AgentRunner:
                 break
 
         text = _render(result)
-        if len(text) > self._max_tool_result_chars:
+        truncated = len(text) > self._max_tool_result_chars
+        if truncated:
             run = run.record_event(
                 self._event(
                     RunEventKind.TOOL_RESULT_TRUNCATED,
@@ -1585,6 +1714,7 @@ class AgentRunner:
                 source=CountSource.HEURISTIC,
             ),
         )
+        self._emit(ToolCallFinished(call_id=call.id, tool=call.name, truncated=truncated))
         return (
             run.record_event(self._event(RunEventKind.TOOL_RESULT, name=call.name)),
             text,
@@ -1682,6 +1812,14 @@ class AgentRunner:
         )
         run = run.record_event(
             self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=f"{failure}{unretried}")
+        )
+        self._emit(
+            ToolCallFailed(
+                call_id=call.id,
+                tool=call.name,
+                error=type(failure).__name__,
+                detail=f"{failure}{unretried}",
+            )
         )
         if agent.on_tool_error is ToolFailurePolicy.FAIL_RUN:
             raise _Terminal(run, RunState.FAILED, str(wrapped)) from failure
@@ -1871,6 +2009,16 @@ def _same_call_count(calls: Iterable[ToolCall], call: ToolCall) -> int:
     """How many of `calls` are the same request: same tool, same arguments in any order."""
     signature = _signature(call)
     return sum(1 for made in calls if _signature(made) == signature)
+
+
+def _streamable(bounds: _Bounds) -> bool:
+    """Whether this answer can arrive in pieces: somebody watching, and a provider that can."""
+    return WATCHING.get() is not None and bounds.provider.capabilities.streaming
+
+
+def _shown(arguments: Mapping[str, Any]) -> str:
+    """Tool arguments as a consumer may see them: compact JSON, scrubbed of secret shapes."""
+    return scrub(json.dumps(arguments, sort_keys=True, default=repr))
 
 
 def _signature(call: ToolCall) -> str:
