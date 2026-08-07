@@ -83,16 +83,70 @@ the work to the tool's name. A body that hands back an awaitable is awaited, so 
 type is the one the signature promised either way.
 
 `Tool.__call__` is the typed path — `await fare("Osaka", nights=2)` type-checks against the
-original signature. `Tool.invoke` is the model-facing path, taking the mapping a provider
-chose. `invoke` does not validate that mapping against `parameters_schema`: validation is a
-separate step, and doing it inside `invoke` would put the check where a caller could skip it
-by calling the function directly.
+original signature. `Tool.invoke` is the model-facing path, taking whatever a provider chose
+to send, and it is the path that validates it.
+
+## What the model sends is checked before the body runs
+
+Tool arguments are model output, and model output is untrusted input. `invoke` reads the
+payload into the tool's own signature first, so the body is entered with the declared types
+or not at all:
+
+| The model sent | What happens |
+|---|---|
+| A field the tool does not declare | `ToolArgumentValidationError` — refused, never dropped |
+| A required field left out | `ToolArgumentValidationError` — nothing is filled in |
+| `"2"` where an `int` is declared | `ToolArgumentValidationError` under the default policy |
+| A nested object where a model is declared | Read into that model, so the body gets the type |
+| Arguments as JSON text, or inside an `{"arguments": ...}` envelope | Normalised, then validated |
+| Two of the same key | Refused: which one wins is the parser's opinion |
+| More bytes than `max_bytes` | Refused before it is parsed |
+
+The failure names every field that failed, not the first — one field per round trip is how a
+four-argument call takes four model calls to get right. It never repeats the values: a
+rejected argument may be a password or someone's address, and a repair prompt that quotes it
+back has copied it into the next request and the provider's logs. `error.payload` keeps what
+arrived for a debugger, and the kit never logs it.
+
+```python
+try:
+    await book_leg.invoke({"lg": {...}, "seats": "two", "class": "first"})
+except ToolArgumentValidationError as rejected:
+    rejected.paths        # ("class", "leg", "lg", "seats")
+    rejected.problems     # {"class": "Extra inputs are not permitted", ...}
+    rejected.feedback()   # what can be said back to the model
+```
+
+Inside a run, that is what happens: the tool did not run, so the refusal is correctable
+rather than fatal. `feedback()` goes back as the tool's result on the agent's
+[repair budget](repair.md), the attempt is recorded as `REPAIR_REQUESTED` and counted with
+every other repair the run has made, and a model that spends the budget still calling the
+tool wrongly fails the run rather than continuing without it. The call is never retried
+against the tool: the same payload is the same refusal.
+
+### The coercion policy is declared once
+
+Strict is the default. One provider sends `2` and another `"2"`, and a kit that quietly reads
+both makes a tool's contract depend on which vendor answered:
+
+```python
+from tesserix_adk.tools import ArgumentPolicy, LENIENT, tool
+
+@tool(arguments=LENIENT)                       # the documented JSON coercions
+@tool(arguments=ArgumentPolicy(max_bytes=8192))  # a tighter ceiling
+```
+
+`LENIENT` reads `"2"` as an integer and `"yes"` as a boolean — Pydantic's JSON coercions, and
+nothing else. It does not relax the unknown-field refusal, the missing-field refusal or the
+ceiling. `ToolArgumentValidator` is the same check, usable directly wherever a registry holds
+tools it did not build with `@tool`.
 
 ## Context is injected, never chosen
 
 A tool that needs the run's tenant asks for it by annotating a parameter `ToolContext`. That
 parameter is excluded from `parameters_schema`, so it is not in what the model is told, and
-`invoke` overwrites any argument of the same name the model sent anyway:
+an argument of that name the model sent anyway is a field the tool does not declare —
+refused with the rest of the call rather than quietly overwritten:
 
 ```python
 @tool
@@ -122,5 +176,8 @@ outside a run and receives `None`.
 | `is_async` | Whether the body is a coroutine function |
 | `function` | The undecorated callable |
 | `context_parameter` / `context_required` | The injected parameter, where there is one |
+| `validator` | What `invoke` holds the model's arguments to |
 
-Run [`examples/tools.py`](../examples/tools.py) for each of these end to end.
+Run [`examples/tools.py`](../examples/tools.py) for each of these end to end, and
+[`examples/tool_arguments.py`](../examples/tool_arguments.py) for the refusals and the
+feedback that goes back to the model.

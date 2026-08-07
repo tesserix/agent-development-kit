@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from tesserix_adk.core import (
     JSON_SCHEMA,
     CancelledError,
+    ToolArgumentValidationError,
     ToolDefinitionError,
     ToolExecutionError,
 )
@@ -425,14 +426,15 @@ class TestContextIsInjectedNeverChosen:
         assert "ctx" not in fare.parameters_schema["properties"]
         assert await fare.invoke({"leg": "Osaka"}, context()) == "Osaka for acme"
 
-    async def test_an_argument_named_like_the_context_cannot_displace_it(self) -> None:
+    async def test_an_argument_named_like_the_context_is_refused_not_absorbed(self) -> None:
         @tool(name="context_guarded")
         async def fare(leg: str, ctx: ToolContext) -> str:
             """Price a leg."""
             return f"{leg} for {ctx.tenant}"
 
-        answered = await fare.invoke({"leg": "Osaka", "ctx": "attacker"}, context())
-        assert answered == "Osaka for acme"
+        with pytest.raises(ToolArgumentValidationError) as refusal:
+            await fare.invoke({"leg": "Osaka", "ctx": "attacker"}, context())
+        assert refusal.value.paths == ("ctx",)
 
     async def test_the_ambient_run_supplies_a_context_nobody_passed(self) -> None:
         @tool(name="context_ambient")

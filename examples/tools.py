@@ -13,7 +13,12 @@ import asyncio
 import json
 from collections.abc import Iterator  # noqa: TC003 — annotates an example signature
 
-from tesserix_adk.core import AdkModel, ToolDefinitionError, ToolExecutionError
+from tesserix_adk.core import (
+    AdkModel,
+    ToolArgumentValidationError,
+    ToolDefinitionError,
+    ToolExecutionError,
+)
 from tesserix_adk.tools import ToolContext, tool
 
 
@@ -47,9 +52,8 @@ def derived() -> None:
     print("required:    ", price_leg.parameters_schema["required"])  # noqa: T201
     print("nested:      ", json.dumps(price_leg.parameters_schema["properties"]["leg"]))  # noqa: T201
     print("returns:     ", price_leg.returns_schema)  # noqa: T201
-    # `invoke` passes the arguments through: validating what the model sent is its own step.
-    chosen = {"leg": Leg.model_validate({"origin": "Osaka"})}
-    print("quote:       ", asyncio.run(price_leg.invoke(chosen)))  # noqa: T201
+    # `invoke` is the model-facing path, so it reads the payload into the declared types.
+    print("quote:       ", asyncio.run(price_leg.invoke({"leg": {"origin": "Osaka"}})))  # noqa: T201
 
 
 def refusals() -> None:
@@ -107,8 +111,11 @@ def injected() -> None:
     print("described:   ", sorted(archive.parameters_schema["properties"]))  # noqa: T201
     print("filed:       ", asyncio.run(archive.invoke({"document": "itinerary"}, context)))  # noqa: T201
 
-    forged = {"document": "itinerary", "ctx": ToolContext(run_id="run-2", tenant="rival")}
-    print("forged:      ", asyncio.run(archive.invoke(forged, context)))  # noqa: T201
+    forged = {"document": "itinerary", "ctx": {"run_id": "run-2", "tenant": "rival"}}
+    try:
+        asyncio.run(archive.invoke(forged, context))
+    except ToolArgumentValidationError as refused:
+        print("forged:      ", refused.paths)  # noqa: T201
 
     try:
         asyncio.run(archive.invoke({"document": "itinerary"}))

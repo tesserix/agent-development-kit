@@ -80,6 +80,7 @@ from tesserix_adk.core import (
     ScopedLimits,
     TaskClass,
     TextPart,
+    ToolArgumentValidationError,
     ToolCall,
     ToolExecutionError,
     ToolFailurePolicy,
@@ -1923,6 +1924,8 @@ class AgentRunner:
             except _Aborted as abort:
                 stopped = run.record_event(self._indeterminacy(agent, call))
                 raise self._cancelled(stopped, abort, name=call.name) from None
+            except ToolArgumentValidationError as rejected:
+                return self._arguments_rejected(run, agent, call, rejected)
             except Exception as failure:
                 delay = self._tool_backoff(agent, call, plan, attempt, bounds)
                 if delay is None:
@@ -2069,6 +2072,55 @@ class AgentRunner:
         if agent.on_tool_error is ToolFailurePolicy.FAIL_RUN:
             raise _Terminal(run, RunState.FAILED, str(wrapped)) from failure
         return run, f"error: {failure}", "tool_error"
+
+    def _arguments_rejected(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        call: ToolCall,
+        rejected: ToolArgumentValidationError,
+    ) -> tuple[Run[Any], str, str]:
+        """Arguments the tool refused: nothing ran, so this is correctable rather than failed.
+
+        Retrying the same payload would be the same refusal, so what goes back is the
+        failure itself, on the repair budget the agent declared. Running out fails the run
+        rather than dropping the call: a model that cannot address a tool correctly is not
+        a run that should quietly continue without it.
+
+        Raises:
+            _Terminal: If repair is off or its attempts are spent.
+        """
+        fields = ", ".join(rejected.paths) or "the whole payload"
+        run = run.record_event(
+            self._event(
+                RunEventKind.SCHEMA_VIOLATION,
+                name=call.name,
+                detail=f"{call.name} refused the arguments at {fields}; the tool did not run",
+            )
+        )
+        self._emit(
+            ToolCallFailed(
+                call_id=call.id,
+                tool=call.name,
+                error=type(rejected).__name__,
+                detail=f"arguments refused at {fields}",
+            )
+        )
+        policy = agent.repair
+        attempts = sum(1 for event in run.events if event.kind is RunEventKind.REPAIR_REQUESTED)
+        if policy is None or not policy.enabled or attempts >= policy.max_attempts:
+            raise _Terminal(run, RunState.FAILED, f"{_named(rejected)} at {fields}")
+        return (
+            run.record_event(
+                self._event(
+                    RunEventKind.REPAIR_REQUESTED,
+                    name=call.name,
+                    detail=f"attempt {attempts + 1} of {policy.max_attempts} at {fields}",
+                )
+            ),
+            rejected.feedback(),
+            "tool_error",
+        )
 
     def _indeterminacy(self, agent: Agent[Any], call: ToolCall) -> RunEvent:
         """A tool stopped mid-flight is unknown, not undone — unless it said it is safe to retry."""

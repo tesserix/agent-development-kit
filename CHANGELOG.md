@@ -10,6 +10,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- `Tool.invoke` now validates the arguments it is given before entering the body. It was
+  documented as a pass-through, so the check was something every caller had to remember;
+  a tool call is model output and the one path that carries it is the right place to hold
+  it to the schema the model was shown. Unknown fields are refused rather than dropped, no
+  absent field is filled in, values are read strictly by default, and the body receives the
+  declared types. **Stability:** breaking for anyone calling `invoke` with a payload that
+  did not match the signature and relied on it being splatted through — including an
+  argument named like the injected `ToolContext`, which was previously overwritten and is
+  now refused with the rest of the call. `Tool.__call__` is unchanged and unvalidated: the
+  type checker has already done it. `Tool` gains a `validator` field, so a `Tool`
+  constructed by hand rather than by `@tool` must supply one. New public names:
+  `ToolArgumentValidator`, `ArgumentPolicy`, `STRICT`, `LENIENT`, and
+  `ToolArgumentValidationError.feedback()`. `@tool(arguments=...)` selects the policy and
+  `invoke` also accepts the JSON text some providers send. Documented in `docs/tools.md`.
+
 - `Attribution` gains a required `definition` dimension, exported on every span as
   `adk.definition`. A bill broken down by `agent_version` cannot tell two runs of one version
   apart when the version was edited between them; the definition revision names the exact

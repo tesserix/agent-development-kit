@@ -277,3 +277,14 @@ any callable, because it is the one place every shape of tool arrives.
 """
 owner = "@sam123ben"
 review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.tools.validation.ToolArgumentValidator"
+kind = "json"
+reason = """
+`validate` returns an instance of a model built at decoration from the tool's own signature,
+which no static type can name, and the keywords it hands the function are that model's
+fields. The values arriving are JSON, because a provider is what sent them.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-08

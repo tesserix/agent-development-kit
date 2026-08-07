@@ -39,6 +39,7 @@ from tesserix_adk.core.schema import (
     schema_for,
 )
 from tesserix_adk.tools.context import ToolContext
+from tesserix_adk.tools.validation import STRICT, ArgumentPolicy, ToolArgumentValidator
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -72,6 +73,7 @@ class Tool[**P, R]:
         is_async: Whether the underlying function is a coroutine function. A synchronous
             one is run off the event loop rather than on it.
         function: The undecorated callable.
+        validator: What `invoke` holds the model's arguments to before the body runs.
         context_parameter: The parameter `invoke` fills with a `ToolContext`, where the
             function asked for one.
         context_required: Whether that parameter has to be filled. A context parameter
@@ -85,6 +87,7 @@ class Tool[**P, R]:
     returns_schema: dict[str, Any] | None
     is_async: bool
     function: Callable[P, Awaitable[R]] | Callable[P, R]
+    validator: ToolArgumentValidator
     context_parameter: str | None = None
     context_required: bool = False
 
@@ -99,31 +102,35 @@ class Tool[**P, R]:
 
     async def invoke(
         self,
-        arguments: Mapping[str, Any],
+        arguments: Mapping[str, Any] | str | bytes,
         context: ToolContext | None = None,
         *,
         workers: WorkerPool | None = None,
     ) -> R:
         """Call the tool with the arguments a model chose, and return its result.
 
-        The arguments are passed as the function's keywords unchanged: validating what the
-        model sent against `parameters_schema` is a separate step, and doing it here would
-        put the check where a caller could skip it by calling the function directly.
+        This is the untrusted path, so the arguments are held to the signature the model
+        was shown before the body is entered: unknown fields are refused, nothing absent
+        is filled in, and each argument arrives as its declared type. `__call__` is the
+        typed path, where the type checker has already done it.
 
         Args:
-            arguments: What the model asked for. A key the function does not take is its
-                own `TypeError`, which is a bug in the caller rather than in the model.
+            arguments: What the model asked for, as a mapping or as the JSON text some
+                providers send instead.
             context: The run this call belongs to. Defaults to the ambient the runtime
                 bound, so a tool invoked inside a run gets the right tenant.
             workers: Where a synchronous body runs. Without one it still leaves the event
                 loop, but nothing bounds how many bodies run at once.
 
         Raises:
+            ToolArgumentValidationError: If the arguments do not match the tool's schema.
+                The body is not entered and nothing is partially applied.
             ToolExecutionError: If the function requires a context and none was supplied
                 or bound. Guessing a tenant is worse than refusing the call.
             Exception: Whatever the function raised, unchanged.
         """
-        return await self._dispatch((), {**arguments, **self._injected(context)}, workers)
+        checked = self.validator.arguments(arguments)
+        return await self._dispatch((), {**checked, **self._injected(context)}, workers)
 
     def release(self) -> None:
         """Give up this tool's claim on its name, so another definition may take it.
@@ -190,7 +197,11 @@ def tool[**P, R](function: Callable[P, R], /) -> Tool[P, R]: ...
 
 @overload
 def tool(
-    *, name: str | None = ..., description: str | None = ..., dialect: SchemaDialect = ...
+    *,
+    name: str | None = ...,
+    description: str | None = ...,
+    dialect: SchemaDialect = ...,
+    arguments: ArgumentPolicy = ...,
 ) -> _Decorator: ...
 
 
@@ -201,6 +212,7 @@ def tool(
     name: str | None = None,
     description: str | None = None,
     dialect: SchemaDialect = INLINE_REFS,
+    arguments: ArgumentPolicy = STRICT,
 ) -> Tool[Any, Any] | _Decorator:
     """Turn a typed function into a tool, deriving its schema from the signature.
 
@@ -216,6 +228,8 @@ def tool(
             and to the tool's name where there is no docstring.
         dialect: The schema dialect to emit. Defaults to inlining every nested model,
             which is what providers that refuse `$ref` need.
+        arguments: How strictly `invoke` reads what the model sent. Strict by default, so
+            a tool's contract does not depend on which provider answered.
 
     Returns:
         The tool, or the decorator that builds it when overrides were given.
@@ -242,15 +256,25 @@ def tool(
         'Osaka to Kyoto: 40 EUR'
     """
     if function is None:
-        return _overriding(name=name, description=description, dialect=dialect)
-    return _built(function, name=name, description=description, dialect=dialect)
+        return _overriding(name=name, description=description, dialect=dialect, arguments=arguments)
+    return _built(
+        function, name=name, description=description, dialect=dialect, arguments=arguments
+    )
 
 
-def _overriding(*, name: str | None, description: str | None, dialect: SchemaDialect) -> _Decorator:
+def _overriding(
+    *,
+    name: str | None,
+    description: str | None,
+    dialect: SchemaDialect,
+    arguments: ArgumentPolicy,
+) -> _Decorator:
     """The decorator `@tool(...)` becomes, carrying the overrides to the function."""
 
     def decorate(function: Callable[..., Any]) -> Tool[Any, Any]:
-        return _built(function, name=name, description=description, dialect=dialect)
+        return _built(
+            function, name=name, description=description, dialect=dialect, arguments=arguments
+        )
 
     return cast("_Decorator", decorate)
 
@@ -261,6 +285,7 @@ def _built(
     name: str | None,
     description: str | None,
     dialect: SchemaDialect,
+    arguments: ArgumentPolicy,
 ) -> Tool[Any, Any]:
     """Describe one function, refusing anything the model could not be told about."""
     _refuse_unsuitable(function)
@@ -280,6 +305,12 @@ def _built(
         returns_schema=_returns(hints, called, dialect),
         is_async=inspect.iscoroutinefunction(function),
         function=function,
+        validator=ToolArgumentValidator(
+            function,
+            tool=called,
+            exclude=(injected,) if injected else (),
+            policy=arguments,
+        ),
         context_parameter=injected,
         context_required=required,
     )

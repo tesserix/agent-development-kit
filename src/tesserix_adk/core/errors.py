@@ -552,6 +552,21 @@ class ToolArgumentValidationError(SchemaViolationError):
             details=details,
         )
 
+    def feedback(self) -> str:
+        """What can be said back to the model: which fields failed, never what they held.
+
+        A rejected argument may be a password, a token or someone's address, and a repair
+        prompt that quotes it back has copied it into the next request, the provider's
+        logs and the transcript. The field and the reason are enough to correct a call.
+        """
+        named = "\n".join(f"- {path}: {problem}" for path, problem in sorted(self.problems.items()))
+        return (
+            f"The call to {self.tool or 'the tool'} did not run: {self}.\n"
+            f"{named or '- the arguments as a whole were not usable'}\n"
+            f"Send the call again with those arguments corrected. The values you sent are "
+            f"not repeated back here."
+        )
+
 
 class StreamInterruptedError(ProviderError):
     """Raised when a stream stopped before the model had finished answering.
