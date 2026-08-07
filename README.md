@@ -105,6 +105,7 @@ code lands here as the kit is built.
 | The agent definition — owner, evaluation suite, revision, pinning | [`docs/agent-definition.md`](docs/agent-definition.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output | [`docs/run-progress.md`](docs/run-progress.md) |
+| Transports — SSE framing, websocket control channel, reconnection, the boundary | [`docs/transports.md`](docs/transports.md) |
 | The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |
 | Determinism, cassettes & replay | [`docs/determinism.md`](docs/determinism.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |

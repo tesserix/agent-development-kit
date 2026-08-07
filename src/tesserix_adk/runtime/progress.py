@@ -405,6 +405,12 @@ class RunStream[OutputT: BaseModel]:
         self._task: asyncio.Task[Run[OutputT]] | None = None
         self._run: Run[OutputT] | None = None
         self._abandoned = False
+        self._run_id = run_id
+
+    @property
+    def run_id(self) -> str:
+        """Which run this is, before it has produced anything to read it from."""
+        return self._run_id
 
     @property
     def run(self) -> Run[OutputT]:
@@ -452,11 +458,11 @@ class RunStream[OutputT: BaseModel]:
         record stays readable on `run`.
         """
         task = self._task
-        if task is None:
-            return
-        if not task.done():
+        if task is None or not task.done():
             self._abandoned = True
             self._cancel("the consumer stopped reading the stream")
+        if task is None:
+            return
         self._run = await task
 
     async def __aiter__(self) -> AsyncIterator[ProgressEvent]:

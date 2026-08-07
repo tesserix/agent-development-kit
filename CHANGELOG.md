@@ -114,6 +114,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A run can now be put on the wire without each product reinventing the bridge.
+  `tesserix_adk.adapters` gains `RunBroker`, which drives one run once however many
+  transports read it, `sse_events` for correctly framed server-sent events with `SSE_HEADERS`
+  and heartbeats that survive an intermediary, and `WebSocketBridge` for the same payloads
+  plus a control channel carrying cancellation and approval decisions. A reconnecting client
+  presents its last sequence id and receives what it missed or an explicit `StreamGap` —
+  silently closing the gap is how a UI ends up showing a run that never happened. The
+  boundary authorises the tenant before framing anything and gives one refusal for an unknown
+  run id and another tenant's, since which ids exist is itself tenant information. Every
+  event is re-scrubbed on its way out and an oversized one becomes a `PayloadElided`
+  reference rather than truncated into invalid JSON. Framework-neutral: the websocket bridge
+  asks for `send_text`, `receive_text` and `close`, so no web framework enters the core path.
+  **Stability:** additive; nothing existing changes. `RunStream` gains `run_id`, readable
+  before the run has produced anything, and abandoning a stream nobody ever read now cancels
+  it rather than leaving a run to start later with no reader. Documented in
+  `docs/transports.md`, exercised by `examples/transports.py`.
+
 - A stream can now be consumed three ways, and what it holds mid-flight cannot be mistaken
   for a result. `RunStream` is awaitable and an async context manager: iterate then await
   for progress plus the authoritative record, await alone for the answer with no progress,
