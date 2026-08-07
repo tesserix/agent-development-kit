@@ -1,6 +1,7 @@
 """Run loop, caps, cancellation, timeout, checkpointing, streaming."""
 
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
+from tesserix_adk.runtime.context import ContextWindow, Segment
 from tesserix_adk.runtime.determinism import RunFingerprint, canonical_digest, fingerprint_of
 from tesserix_adk.runtime.estimate import (
     Assumptions,
@@ -42,6 +43,7 @@ __all__ = [
     "Calibration",
     "CancellationToken",
     "Confidence",
+    "ContextWindow",
     "CostEstimate",
     "Deadline",
     "InMemoryHistory",
@@ -57,6 +59,7 @@ __all__ = [
     "RunFingerprint",
     "RunHistory",
     "Scope",
+    "Segment",
     "Spread",
     "SystemClock",
     "Tokenizer",

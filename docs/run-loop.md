@@ -42,7 +42,8 @@ turn.
 So the layer order is guarded by a test rather than left to convention. Anything that
 reorders the prefix fails `tests/test_prompt.py::TestTheLayerOrderIsFixed` by name, instead
 of doubling a bill quietly. Retrieved context deliberately sits *outside* the prefix:
-documents fetched per turn would invalidate the cache per turn.
+documents fetched per turn would invalidate the cache per turn. What is worth retrieving at
+all, and what leaves when it no longer fits, is [`context.md`](context.md).
 
 `Prompt.prefix` is the messages that digest covers, and `Prompt.prefix_tokens` is how large
 they are. The count comes from `approximate_tokens` — four characters to a token, which is

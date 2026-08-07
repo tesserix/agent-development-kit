@@ -103,6 +103,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `ContextWindow` decides what goes into the context and what leaves it when there is no
+  room, so a retrieval loop holds the most useful tokens rather than the most recent ones.
+  Admission is keyed: a `Segment` whose `key` is already held in any layer is refused, and
+  `admit` returns `False` to say so — re-injecting a chunk the model already has is a
+  rounding error on a GPU and seconds of prefill per turn on CPU. `key=None` is never
+  deduplicated. `fit()` evicts until what is held fits `limit_tokens` and returns what left,
+  in the order it left: conversation first, oldest first; then retrieval, lowest-scored
+  first. The cacheable prefix — system, tools, pinned — is never evicted even where dropping
+  it would free the most tokens fastest, because trimming it invalidates the prefix and every
+  downstream turn pays the refill; a prefix that cannot fit alone raises
+  `ContextWindowExceededError` instead. Eviction frees the key, so a chunk dropped for room
+  is admissible again later. `texts(layer)` hands what survived to `assemble_prompt`.
+  **Stability:** additive. Documented in `docs/context.md`, exercised by
+  `examples/context_window.py`.
+
 - Agents now run on a machine with no GPU. `LlamaCppProvider` puts `llama-server` behind the
   OpenAI-compatible client, so an agent written against vLLM runs on CPU unchanged — same
   runner, same structured output, same usage accounting. Its timeout is minutes rather than

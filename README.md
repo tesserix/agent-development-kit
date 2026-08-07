@@ -102,6 +102,7 @@ code lands here as the kit is built.
 | Repair — bounded correction, what goes back, what it costs | [`docs/repair.md`](docs/repair.md) |
 | Typing — the answer type, the escape-hatch policy, third-party boundaries | [`docs/typing.md`](docs/typing.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
+| The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |
 | Determinism, cassettes & replay | [`docs/determinism.md`](docs/determinism.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |
