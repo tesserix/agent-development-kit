@@ -21,8 +21,12 @@ from tesserix_adk.runtime.estimate import (
 )
 from tesserix_adk.runtime.loop import AgentRunner, ModelRequest, ModelResponse, SystemClock
 from tesserix_adk.runtime.prompt import (
+    PROMPT_LAYERS,
     Prompt,
+    PromptLayer,
+    Tokenizer,
     ToolDeclaration,
+    approximate_tokens,
     assemble_prompt,
     wrap_untrusted,
 )
@@ -32,6 +36,7 @@ from tesserix_adk.runtime.spend import budgeted_stream
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
 __all__ = [
+    "PROMPT_LAYERS",
     "AgentRunner",
     "Assumptions",
     "Calibration",
@@ -46,6 +51,7 @@ __all__ = [
     "OutputContract",
     "Pricer",
     "Prompt",
+    "PromptLayer",
     "RateLimiter",
     "RetryPlan",
     "RunFingerprint",
@@ -53,9 +59,11 @@ __all__ = [
     "Scope",
     "Spread",
     "SystemClock",
+    "Tokenizer",
     "ToolDeclaration",
     "affordable",
     "approval_for",
+    "approximate_tokens",
     "assemble_prompt",
     "budgeted_stream",
     "calibrate",

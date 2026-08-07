@@ -10,6 +10,25 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- The prompt's cacheable prefix is now an invariant with a name. `assemble_prompt` assembles
+  five documented layers — `PROMPT_LAYERS`: system, tools, pinned, retrieved, conversation —
+  and `Prompt.layers` labels every assembled message with the one it came from, so a change
+  that reorders the prefix fails a test naming the regression instead of quietly doubling a
+  bill. `Prompt.fingerprint` digests the prefix *as bytes*, pinned context included: equal
+  fingerprints across two turns mean the inference server reuses the prefix it already
+  evaluated, which on CPU is the difference between usable and unusable, since prefill
+  dominates and a prompt that costs a second on an H100 costs tens of seconds without one.
+  `Prompt.prefix` is the messages that digest covers and `Prompt.prefix_tokens` is how large
+  they are, counted by `approximate_tokens` — four characters to a token, fine for a log line
+  and wrong for a context-window check — or by any `Tokenizer` passed as `tokenizer=`. The
+  `PROMPT_ASSEMBLED` run event carries the fingerprint and the prefix size, so a cache-hit
+  ratio is measurable from the audit trail. Tool declarations are sorted by name rather than
+  kept in registry order, and two tools sharing a name are refused.
+  `assemble_prompt(memory=...)` is replaced by `pinned=` and `retrieved=`.
+  **Stability:** breaking for callers passing `memory=`, for anything depending on tool
+  declaration order, and for a persisted `Prompt`, which gains three fields. Documented in
+  `docs/run-loop.md`, exercised by `examples/prompt_prefix.py`.
+
 - How deep and how wide a run may go are caps on spend, so they live with the money.
   `BudgetLimits` gains `max_delegation_depth`, `max_parallel_tool_calls` and
   `max_peer_invocations`; `LoopConfig` loses `max_depth`, `max_tool_calls_per_turn` and

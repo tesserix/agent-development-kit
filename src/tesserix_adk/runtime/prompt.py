@@ -1,9 +1,14 @@
 """Deterministic prompt assembly.
 
 The order is fixed and stated here, not left to whichever call site got there first:
-instructions, then memory, then history, then the new input. Tool declarations keep the
-order the registry gave them, because they are part of the cacheable prefix and
-reordering them refills it.
+system, tools, pinned context, retrieved context, conversation. Tool declarations are
+sorted by name, because they are part of the cacheable prefix and a registry that
+iterates a dict in a different order must not cost a refill.
+
+The prefix — everything up to and including the pinned layer — is byte-stable across the
+turns of a conversation, and `Prompt.fingerprint` is its identity. On CPU inference that
+is not a micro-optimisation: prefill dominates, and a prefix that shifts by one byte is
+tens of seconds spent re-evaluating what the server already had.
 
 Content the agent did not author — recalled memory, retrieved documents, tool results —
 is wrapped as data. A model cannot be relied on to ignore an instruction handed to it as
@@ -18,7 +23,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from typing import TYPE_CHECKING, Any
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any, Protocol
 
 from pydantic import Field
 
@@ -32,7 +38,16 @@ if TYPE_CHECKING:
     from tesserix_adk.core import Agent
     from tesserix_adk.runtime.structured import OutputContract
 
-__all__ = ["Prompt", "ToolDeclaration", "assemble_prompt", "wrap_untrusted"]
+__all__ = [
+    "PROMPT_LAYERS",
+    "Prompt",
+    "PromptLayer",
+    "Tokenizer",
+    "ToolDeclaration",
+    "approximate_tokens",
+    "assemble_prompt",
+    "wrap_untrusted",
+]
 
 
 _BEGIN = "<untrusted-data"
@@ -40,6 +55,59 @@ _END = "</untrusted-data>"
 _ESCAPED = {_BEGIN: "&lt;untrusted-data", _END: "&lt;/untrusted-data&gt;"}
 _SOURCE = re.compile(r"^[a-z0-9_-]+$")
 _VERSION_LENGTH = 12
+
+# Roughly four characters to a token across English prose and JSON alike. Wrong by up to a
+# fifth on either, which is why it is an estimate with a name that says so.
+_CHARACTERS_PER_TOKEN = 4
+
+
+class PromptLayer(StrEnum):
+    """A band of the prompt, in the order the kit assembles them.
+
+    `TOOLS` labels the declarations rather than a message: they travel in their own field
+    and each provider renders them where its wire format puts them. They sit in the prefix
+    all the same, which is why they are sorted and fingerprinted with it.
+    """
+
+    SYSTEM = "system"
+    TOOLS = "tools"
+    PINNED = "pinned"
+    RETRIEVED = "retrieved"
+    CONVERSATION = "conversation"
+
+
+PROMPT_LAYERS = (
+    PromptLayer.SYSTEM,
+    PromptLayer.TOOLS,
+    PromptLayer.PINNED,
+    PromptLayer.RETRIEVED,
+    PromptLayer.CONVERSATION,
+)
+
+# Everything from here up is assembled fresh each turn, so the prefix ends before it.
+_FIRST_VARIABLE_LAYER = PromptLayer.RETRIEVED
+
+
+class Tokenizer(Protocol):
+    """Counts the tokens in a string, by whatever rule the model behind it uses."""
+
+    def __call__(self, text: str) -> int:
+        """Return how many tokens `text` occupies."""
+        ...
+
+
+def approximate_tokens(text: str) -> int:
+    """Estimate the tokens in `text` at four characters each.
+
+    The default, because it needs no model and no download. It is an estimate: good enough
+    for a log line or a cache-hit ratio, and wrong for a context-window check, where the
+    server's own tokenizer should be passed to `assemble_prompt` instead.
+
+    Example:
+        >>> approximate_tokens("a" * 40)
+        10
+    """
+    return len(text) // _CHARACTERS_PER_TOKEN
 
 
 def wrap_untrusted(content: str, *, source: str) -> str:
@@ -71,15 +139,34 @@ class Prompt(AdkModel):
 
     Args:
         messages: The conversation in assembly order.
-        tools: The tools the model is told about, in registry order.
-        version: A short digest of the prefix — instructions and tool declarations. Two
-            runs sharing a version were shaped by the same prompt, whatever was asked of
-            it, which is what makes a regression attributable.
+        tools: The tools the model is told about, sorted by name.
+        layers: Which layer each message belongs to, parallel to `messages`.
+        version: A short digest of the prompt's design — instructions, tool declarations
+            and the output contract. Two runs sharing a version were shaped by the same
+            prompt, whatever was asked of it, which is what makes a regression
+            attributable.
+        fingerprint: A short digest of the prefix as it goes on the wire, pinned context
+            included. Equal fingerprints on two turns mean the server can reuse its
+            evaluated prefix; unequal ones mean prefill runs again.
+        prefix_tokens: How much of the prompt the fingerprint covers, as counted by the
+            tokenizer assembly was given.
     """
 
     messages: tuple[Message, ...]
     tools: tuple[ToolDeclaration, ...] = ()
+    layers: tuple[PromptLayer, ...] = ()
     version: str = Field(min_length=1)
+    fingerprint: str = Field(min_length=1)
+    prefix_tokens: int = Field(ge=0)
+
+    @property
+    def prefix(self) -> tuple[Message, ...]:
+        """The messages the fingerprint covers — the part a cache can hold between turns."""
+        return tuple(
+            message
+            for message, layer in zip(self.messages, self.layers, strict=True)
+            if PROMPT_LAYERS.index(layer) < PROMPT_LAYERS.index(_FIRST_VARIABLE_LAYER)
+        )
 
 
 def _digest(
@@ -96,14 +183,40 @@ def _digest(
     return hashlib.sha256(prefix.encode()).hexdigest()[:_VERSION_LENGTH]
 
 
+def _fingerprint(prefix: Sequence[Message], tools: Sequence[ToolDeclaration]) -> str:
+    """Digest the prefix as bytes, because bytes are what the server's cache compares."""
+    rendered = json.dumps(
+        {
+            "messages": [message.model_dump(mode="json") for message in prefix],
+            "tools": [tool.model_dump(mode="json") for tool in tools],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(rendered.encode()).hexdigest()[:_VERSION_LENGTH]
+
+
+def _declared(tools: Iterable[ToolDeclaration]) -> tuple[ToolDeclaration, ...]:
+    sorted_tools = tuple(sorted(tools, key=lambda tool: tool.name))
+    names = [tool.name for tool in sorted_tools]
+    duplicated = {name for name in names if names.count(name) > 1}
+    if duplicated:
+        raise ValueError(
+            f"tool names must be unique; got {', '.join(sorted(duplicated))} more than once"
+        )
+    return sorted_tools
+
+
 def assemble_prompt(
     agent: Agent[Any],
     user_input: str,
     *,
     history: Iterable[Message] = (),
-    memory: Iterable[str] = (),
+    pinned: Iterable[str] = (),
+    retrieved: Iterable[str] = (),
     tools: Iterable[ToolDeclaration] = (),
     output: OutputContract | None = None,
+    tokenizer: Tokenizer | None = None,
 ) -> Prompt:
     """Compose one turn's prompt in the documented order.
 
@@ -111,18 +224,26 @@ def assemble_prompt(
         agent: The declaration whose instructions open the prompt.
         user_input: What is being asked this turn.
         history: The conversation so far, in order.
-        memory: Recalled text, wrapped as untrusted data.
-        tools: Tool declarations, in the registry's order.
+        pinned: Context that holds for the whole conversation — a case file, a style
+            guide, a schema. Part of the cacheable prefix, and wrapped as untrusted data.
+        retrieved: Context fetched for this turn — recalled memory, retrieved documents.
+            Outside the prefix, because content that changes per turn would invalidate it
+            per turn. Wrapped as untrusted data.
+        tools: Tool declarations. Sorted by name here, so the order a registry happens to
+            iterate in cannot cost a prefix refill.
         output: The answer's declared shape. Where the provider does not enforce a schema
             itself, it is stated in the prompt instead; either way it is part of the
             version, because a changed schema is a changed prompt.
+        tokenizer: How to count `prefix_tokens`. `None` uses `approximate_tokens`; pass
+            the server's own where the count has to be right.
 
     Returns:
         The assembled `Prompt`.
 
     Raises:
         ValueError: If `user_input` is blank — a run with nothing asked of it has no
-            terminal state that means anything.
+            terminal state that means anything — or if two tools share a name, which
+            sorting would hide and the model could not disambiguate.
 
     Example:
         >>> from tesserix_adk.core import Agent
@@ -138,23 +259,55 @@ def assemble_prompt(
     if not user_input.strip():
         raise ValueError("user_input is empty; a run with nothing asked of it cannot finish")
 
-    declared = tuple(tools)
-    messages: list[Message] = [Message(role="system", content=[TextPart(text=agent.instructions)])]
+    declared = _declared(tools)
+    layered: list[tuple[PromptLayer, Message]] = [
+        (
+            PromptLayer.SYSTEM,
+            Message(role="system", content=[TextPart(text=agent.instructions)]),
+        )
+    ]
     if output is not None and not output.native:
-        messages.append(Message(role="system", content=[TextPart(text=output.instruction)]))
-    recalled = tuple(memory)
-    if recalled:
-        messages.append(
-            Message(
-                role="system",
-                content=[
-                    TextPart(text=wrap_untrusted("\n".join(recalled), source="memory")),
-                ],
+        layered.append(
+            (
+                PromptLayer.SYSTEM,
+                Message(role="system", content=[TextPart(text=output.instruction)]),
             )
         )
-    messages.extend(history)
-    messages.append(Message(role="user", content=[TextPart(text=user_input)]))
+    for layer, content in ((PromptLayer.PINNED, pinned), (PromptLayer.RETRIEVED, retrieved)):
+        block = tuple(content)
+        if block:
+            wrapped = wrap_untrusted("\n".join(block), source=layer.value)
+            layered.append((layer, Message(role="system", content=[TextPart(text=wrapped)])))
+    layered.extend((PromptLayer.CONVERSATION, message) for message in history)
+    layered.append(
+        (
+            PromptLayer.CONVERSATION,
+            Message(role="user", content=[TextPart(text=user_input)]),
+        )
+    )
+
+    messages = tuple(message for _, message in layered)
+    layers = tuple(layer for layer, _ in layered)
+    variable = PROMPT_LAYERS.index(_FIRST_VARIABLE_LAYER)
+    prefix = tuple(message for (layer, message) in layered if PROMPT_LAYERS.index(layer) < variable)
 
     return Prompt(
-        messages=tuple(messages), tools=declared, version=_digest(agent, declared, output)
+        messages=messages,
+        tools=declared,
+        layers=layers,
+        version=_digest(agent, declared, output),
+        fingerprint=_fingerprint(prefix, declared),
+        prefix_tokens=_prefix_tokens(prefix, declared, tokenizer or approximate_tokens),
     )
+
+
+def _prefix_tokens(
+    prefix: Sequence[Message], tools: Sequence[ToolDeclaration], tokenizer: Tokenizer
+) -> int:
+    text = "".join(
+        part.text for message in prefix for part in message.content if isinstance(part, TextPart)
+    )
+    declarations = "".join(
+        json.dumps(tool.model_dump(mode="json"), sort_keys=True) for tool in tools
+    )
+    return tokenizer(text + declarations)

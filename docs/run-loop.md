@@ -14,21 +14,46 @@ A worked end-to-end run, tool call included and no network: `examples/run_loop.p
 
 ## Prompt assembly is fixed and documented
 
-`assemble_prompt` composes one turn in this order, always:
+`assemble_prompt` composes one turn in this order, always — `PROMPT_LAYERS` is the same
+list in code, and `Prompt.layers` labels each assembled message with the one it belongs to:
 
-| # | Part | Notes |
-|---|---|---|
-| 1 | `agent.instructions` | The system message. |
-| 2 | Memory | Wrapped as untrusted data. |
-| 3 | History | In the order given. |
-| 4 | The new input | Always last. |
+| # | Layer | Notes | In the prefix |
+|---|---|---|---|
+| 1 | `PromptLayer.SYSTEM` | `agent.instructions`, then the output contract where the provider cannot enforce it. | Yes |
+| 2 | `PromptLayer.TOOLS` | Declarations, **sorted by name**. They travel in their own field, not as a message. | Yes |
+| 3 | `PromptLayer.PINNED` | Context that holds for the conversation — a case file, a style guide. Wrapped as untrusted data. | Yes |
+| 4 | `PromptLayer.RETRIEVED` | Context fetched for this turn — recalled memory, retrieved documents. Wrapped as untrusted data. | No |
+| 5 | `PromptLayer.CONVERSATION` | History in the order given, then the new input, always last. | No |
 
-Tool declarations keep the registry's order and are filtered to `agent.tools` — the model
-is never told about a tool it may not call.
+Declarations are filtered to `agent.tools` — the model is never told about a tool it may
+not call — and sorted by name, so a registry that iterates a dict in a different order
+cannot cost a prefix refill. Two tools sharing a name are refused: sorting would hide the
+duplicate and the model could not tell which it was calling.
 
-`Prompt.version` is a short digest of the *cacheable prefix* (instructions plus tool
-declarations) and lands on `Run.prompt_version`. Two runs sharing a version were shaped by
-the same prompt whatever was asked of them, which is what makes a regression attributable.
+### The prefix, and why the order is an invariant
+
+`Prompt.fingerprint` is a short digest of the prefix **as bytes** — the layers marked above,
+pinned context included. Equal fingerprints across two turns mean the inference server can
+reuse the prefix it already evaluated. On CPU that is the difference between usable and
+unusable: prefill dominates, and a 40k-token prompt that costs about a second on an H100
+costs tens of seconds on a CPU. A prefix that shifts by one byte pays that again, every
+turn.
+
+So the layer order is guarded by a test rather than left to convention. Anything that
+reorders the prefix fails `tests/test_prompt.py::TestTheLayerOrderIsFixed` by name, instead
+of doubling a bill quietly. Retrieved context deliberately sits *outside* the prefix:
+documents fetched per turn would invalidate the cache per turn.
+
+`Prompt.prefix` is the messages that digest covers, and `Prompt.prefix_tokens` is how large
+they are. The count comes from `approximate_tokens` — four characters to a token, which is
+fine for a log line and wrong for a context-window check. Pass the server's own tokenizer
+as `tokenizer=` where the number has to be right; anything matching the `Tokenizer`
+protocol will do.
+
+`Prompt.version` is the other digest, and answers a different question: not "will the cache
+hit" but "which prompt design produced this run". It covers instructions, tool declarations
+and the output contract, and lands on `Run.prompt_version`, which is what makes a regression
+attributable.
 
 ### Untrusted content is handed over as data
 

@@ -480,8 +480,10 @@ tesserix_adk.runtime.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.Observed :: class Observed(AdkModel)
 tesserix_adk.runtime.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'; repair_prompt(self, violation: 'SchemaViolationError') -> 'str'}
+tesserix_adk.runtime.PROMPT_LAYERS :: PROMPT_LAYERS: tuple
 tesserix_adk.runtime.Pricer :: class Pricer(Protocol)
 tesserix_adk.runtime.Prompt :: class Prompt(AdkModel)
+tesserix_adk.runtime.PromptLayer :: class PromptLayer(StrEnum)
 tesserix_adk.runtime.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
 tesserix_adk.runtime.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.runtime.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
@@ -489,10 +491,12 @@ tesserix_adk.runtime.RunHistory :: class RunHistory(Protocol) {observed(self, ag
 tesserix_adk.runtime.Scope :: class Scope(StrEnum)
 tesserix_adk.runtime.Spread :: class Spread(AdkModel)
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.runtime.Tokenizer :: class Tokenizer(Protocol)
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.runtime.affordable :: def affordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'BudgetDecision'
 tesserix_adk.runtime.approval_for :: def approval_for(estimate: 'CostEstimate', agent: 'Agent[OutputT]', *, run_id: 'str', tenant: 'str', requested_at: 'float' = 0.0) -> 'ApprovalRecord'
-tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None) -> 'Prompt'
+tesserix_adk.runtime.approximate_tokens :: def approximate_tokens(text: 'str') -> 'int'
+tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), pinned: 'Iterable[str]' = (), retrieved: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None, tokenizer: 'Tokenizer | None' = None) -> 'Prompt'
 tesserix_adk.runtime.budgeted_stream :: def budgeted_stream(events: 'AsyncIterator[StreamEvent]', budget: 'BudgetPolicy') -> 'AsyncIterator[StreamEvent]'
 tesserix_adk.runtime.calibrate :: def calibrate(estimate: 'CostEstimate', run: 'Run[OutputT]') -> 'Calibration'
 tesserix_adk.runtime.cancellation.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
@@ -522,9 +526,13 @@ tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {reload(self,
 tesserix_adk.runtime.loop.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.runtime.prompt.PROMPT_LAYERS :: PROMPT_LAYERS: tuple
 tesserix_adk.runtime.prompt.Prompt :: class Prompt(AdkModel)
+tesserix_adk.runtime.prompt.PromptLayer :: class PromptLayer(StrEnum)
+tesserix_adk.runtime.prompt.Tokenizer :: class Tokenizer(Protocol)
 tesserix_adk.runtime.prompt.ToolDeclaration :: class ToolDeclaration(AdkModel)
-tesserix_adk.runtime.prompt.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None) -> 'Prompt'
+tesserix_adk.runtime.prompt.approximate_tokens :: def approximate_tokens(text: 'str') -> 'int'
+tesserix_adk.runtime.prompt.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), pinned: 'Iterable[str]' = (), retrieved: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None, tokenizer: 'Tokenizer | None' = None) -> 'Prompt'
 tesserix_adk.runtime.prompt.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
 tesserix_adk.runtime.rate_limit.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
 tesserix_adk.runtime.refuse_unaffordable :: def refuse_unaffordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'None'

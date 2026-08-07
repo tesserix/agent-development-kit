@@ -441,12 +441,16 @@ class AgentRunner:
                 agent,
                 asked,
                 history=history,
-                memory=memory,
+                retrieved=memory,
                 tools=self._declarations_for(agent),
                 output=contract,
             )
             run = run.model_copy(update={"prompt_version": prompt.version}).record_event(
-                self._event(RunEventKind.PROMPT_ASSEMBLED, name=prompt.version)
+                self._event(
+                    RunEventKind.PROMPT_ASSEMBLED,
+                    name=prompt.version,
+                    detail=f"prefix {prompt.fingerprint}, {prompt.prefix_tokens} tokens",
+                )
             )
             messages = list(prompt.messages)
             for _ in range(self._max_iterations):

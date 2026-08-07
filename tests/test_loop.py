@@ -101,6 +101,14 @@ class TestTheHappyPath:
             RunEventKind.TERMINATED,
         ]
 
+    async def test_the_prompt_event_carries_the_prefix_fingerprint(self) -> None:
+        """A cache-hit ratio is only measurable if the prefix identity is on the run."""
+        run = await start(runner(answer()), agent())
+        assembled = next(e for e in run.events if e.kind is RunEventKind.PROMPT_ASSEMBLED)
+        assert assembled.name == run.prompt_version
+        assert assembled.detail is not None
+        assert "prefix" in assembled.detail
+
     async def test_the_model_call_event_carries_what_it_cost(self) -> None:
         run = await start(runner(answer()), agent())
         response = next(e for e in run.events if e.kind is RunEventKind.MODEL_RESPONSE)
