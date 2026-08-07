@@ -69,6 +69,10 @@ _HEADER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 _SUBJECT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?: (?P<text>.+)$")
 _ISSUE = re.compile(r"#(\d+)")
 
+# Commit messages contain newlines, so the log is delimited by characters they cannot.
+_UNIT = "\x1f"
+_RECORD = "\x1e"
+
 _INTERNAL = "internal"
 # An unrecognised type is not housekeeping, it is an unreadable subject: treating
 # `core: tidy up` as internal would let an undocumented change through the gate.
@@ -113,11 +117,16 @@ class Commit:
 
     sha: str
     subject: str
+    body: str = ""
 
     @property
     def issues(self) -> frozenset[str]:
-        """Issue numbers referenced in the subject, which a fragment can document."""
-        return frozenset(_ISSUE.findall(self.subject))
+        """Issue numbers this commit references, which a fragment can document.
+
+        The body counts as well as the subject: `Closes #42` is where the convention puts
+        the link, and a subject already pushed cannot be edited to move it there.
+        """
+        return frozenset(_ISSUE.findall(f"{self.subject}\n{self.body}"))
 
 
 @dataclass(frozen=True)
@@ -303,7 +312,7 @@ def _history() -> tuple[Commit, ...]:
     tag = latest_tag()
     span = f"{tag}..HEAD" if tag else "HEAD"
     result = subprocess.run(  # noqa: S603
-        ["git", "log", "--no-merges", "--format=%h %s", span],  # noqa: S607
+        ["git", "log", "--no-merges", f"--format=%h %s{_UNIT}%b{_RECORD}", span],  # noqa: S607
         capture_output=True,
         text=True,
         check=False,
@@ -312,10 +321,16 @@ def _history() -> tuple[Commit, ...]:
     if result.returncode:
         return ()
     return tuple(
-        Commit(sha=sha, subject=subject)
-        for sha, _, subject in (line.partition(" ") for line in result.stdout.splitlines())
+        Commit(sha=sha, subject=subject, body=body)
+        for sha, subject, body in (_split(record) for record in result.stdout.split(_RECORD))
         if sha
     )
+
+
+def _split(record: str) -> tuple[str, str, str]:
+    sha, _, rest = record.strip().partition(" ")
+    subject, _, body = rest.partition(_UNIT)
+    return sha, subject, body.strip()
 
 
 def _surface_diff_against_last_release() -> dict[str, list[str]]:

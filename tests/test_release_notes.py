@@ -138,6 +138,14 @@ class TestUndocumentedChanges:
         commits = (Commit(sha="abc1234", subject="feat(core)!: replace load_config (#42)"),)
         assert release_notes.undocumented(commits, (BREAKING_FRAGMENT,)) == []
 
+    def test_a_trailer_links_a_commit_to_its_fragment(self) -> None:
+        """`Closes #42` is where the convention puts the link, and a pushed subject cannot
+        be edited to move it."""
+        commits = (
+            Commit(sha="abc1234", subject="feat(core)!: replace load_config", body="Closes #42"),
+        )
+        assert release_notes.undocumented(commits, (BREAKING_FRAGMENT,)) == []
+
     def test_every_undocumented_change_is_reported_at_once(self) -> None:
         commits = (
             Commit(sha="abc1234", subject="fixed a thing"),
