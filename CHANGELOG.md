@@ -114,6 +114,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Stopping a stream stops the work. `run_cancelled` now carries the `usage` accrued by the
+  time the run stopped and `last_sequence`, the sequence of the last event before it, beside
+  the reason — a run whose spend is knowable only on completion is unattributable exactly
+  when it did not complete, and a client that cannot tell where the stream ended cannot tell
+  a stop from a dropped connection. A stop racing a natural completion gives one outcome: the
+  terminal event is derived from the state the loop reached, so a stop arriving afterwards
+  does not rewrite it, and an event posted after the run ended is dropped rather than
+  delivered behind the terminal one. A new `ToolCallIndeterminate` reports a tool stopped
+  after dispatch — whether its effect landed cannot be known, and a tool the agent named in
+  `idempotent_tools` is reported failed and safe to retry instead. `RunBroker.cancel` drives
+  a run nobody ever attached to as far as a cancelled record, since attribution cannot depend
+  on a client being there to be told, and is idempotent under a retrying client.
+  **Stability:** additive — the new fields default and the new variant is skipped by
+  `decode_progress` on an older kit. Documented in `docs/run-progress.md`, exercised by
+  `examples/stream_cancellation.py`.
+
 - Run streams buffer within a bound instead of without one. `AgentRunner.stream` takes
   `backpressure=Backpressure(...)` — `high_water`, `byte_budget`, `stall_seconds` — and
   defaults bound a stream nobody configured. Above either mark, an arriving `AnswerDelta` or

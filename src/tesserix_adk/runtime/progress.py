@@ -51,6 +51,7 @@ __all__ = [
     "StructuredDelta",
     "ToolCallFailed",
     "ToolCallFinished",
+    "ToolCallIndeterminate",
     "ToolCallStarted",
     "UsageUpdated",
     "decode_progress",
@@ -180,6 +181,19 @@ class ApprovalRequired(ProgressEvent):
     reason: str = ""
 
 
+class ToolCallIndeterminate(ProgressEvent):
+    """A tool was stopped after dispatch, so whether its effect landed is unknown.
+
+    Not a failure: a failure says nothing happened. Only a tool the agent declared
+    idempotent escapes this, and it is reported as failed and safe to retry instead.
+    """
+
+    kind: Literal["tool_call_indeterminate"] = "tool_call_indeterminate"
+    call_id: str
+    tool: str
+    detail: str = ""
+
+
 class UsageUpdated(ProgressEvent):
     """What the run has consumed so far.
 
@@ -211,11 +225,18 @@ class RunFailed(ProgressEvent):
 
 
 class RunCancelled(ProgressEvent):
-    """The run was stopped by its caller or by a deadline."""
+    """The run was stopped by its caller, its transport or a deadline.
+
+    Carries the reason, what the run had spent by the time it stopped and the sequence of
+    the last event before this one, so a client can reconcile what it received against what
+    the server sent rather than guess where the stream ended.
+    """
 
     kind: Literal["run_cancelled"] = "run_cancelled"
     state: RunState
     reason: str = ""
+    usage: Usage = Field(default_factory=lambda: Usage(input_tokens=0, output_tokens=0))
+    last_sequence: int = -1
 
 
 Progress = Annotated[
@@ -226,6 +247,7 @@ Progress = Annotated[
     | ToolCallStarted
     | ToolCallFinished
     | ToolCallFailed
+    | ToolCallIndeterminate
     | GuardrailDecision
     | ApprovalRequired
     | UsageUpdated
@@ -245,6 +267,7 @@ _BY_KIND: dict[str, type[ProgressEvent]] = {
         ToolCallStarted,
         ToolCallFinished,
         ToolCallFailed,
+        ToolCallIndeterminate,
         GuardrailDecision,
         ApprovalRequired,
         UsageUpdated,
@@ -428,7 +451,11 @@ class _Sink:
 
         Numbering happens whether or not anyone is reading: sequence numbers are the run's,
         not the reader's, so an await-only caller and a reading one see the same numbering.
+        An event posted after the run ended is dropped rather than numbered — the terminal
+        event is last because teardown makes it last, not because the runtime is well behaved.
         """
+        if self._closed:
+            return
         numbered = self.number(event)
         if not self._reading:
             return
@@ -633,7 +660,7 @@ class RunStream[OutputT: BaseModel]:
         while (event := await self._sink.next_event()) is not None:
             yield event
         self._run = await self._task
-        yield self._sink.number(terminal_for(self._run))
+        yield self._sink.number(terminal_for(self._run, last_sequence=self._sink.emitted - 1))
 
     async def _result(self) -> Run[OutputT]:
         """The run, or a refusal to call an interrupted one a result.
@@ -666,15 +693,27 @@ class RunStream[OutputT: BaseModel]:
             self._sink.close()
 
 
-def terminal_for(run: Run[Any]) -> ProgressEvent:
-    """The one event that closes a stream, derived from the run's own terminal state."""
+def terminal_for(run: Run[Any], *, last_sequence: int = -1) -> ProgressEvent:
+    """The one event that closes a stream, derived from the run's own terminal state.
+
+    The run's own record decides which terminal event this is. A stop that arrives after the
+    loop recorded a state does not rewrite it, so a stop racing a natural completion gives
+    one outcome rather than a client that saw both.
+
+    Args:
+        run: The finished run, whatever state it reached.
+        last_sequence: The sequence of the last event emitted before this one, for a client
+            reconciling what it received. Left unset where nothing was counting.
+    """
     detail = next(
         (event.detail or "" for event in reversed(run.events) if event.detail is not None), ""
     )
     if run.state is RunState.COMPLETED:
         return RunCompleted(state=run.state, usage=run.usage)
     if run.state is RunState.CANCELLED:
-        return RunCancelled(state=run.state, reason=detail)
+        return RunCancelled(
+            state=run.state, reason=detail, usage=run.usage, last_sequence=last_sequence
+        )
     error, _, rest = detail.partition(": ")
     named = error.endswith("Error") and rest != ""
     return RunFailed(

@@ -108,6 +108,7 @@ from tesserix_adk.runtime.progress import (
     StructuredDelta,
     ToolCallFailed,
     ToolCallFinished,
+    ToolCallIndeterminate,
     ToolCallStarted,
     UsageUpdated,
 )
@@ -1839,16 +1840,14 @@ class AgentRunner:
     def _indeterminacy(self, agent: Agent[Any], call: ToolCall) -> RunEvent:
         """A tool stopped mid-flight is unknown, not undone — unless it said it is safe to retry."""
         if call.name in agent.idempotent_tools:
-            return self._event(
-                RunEventKind.TOOL_ERROR,
-                name=call.name,
-                detail="stopped before it returned; declared idempotent, so safe to retry",
+            retryable = "stopped before it returned; declared idempotent, so safe to retry"
+            self._emit(
+                ToolCallFailed(call_id=call.id, tool=call.name, error="Cancelled", detail=retryable)
             )
-        return self._event(
-            RunEventKind.TOOL_INDETERMINATE,
-            name=call.name,
-            detail="stopped after dispatch; whether its effect landed cannot be known",
-        )
+            return self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=retryable)
+        unknown = "stopped after dispatch; whether its effect landed cannot be known"
+        self._emit(ToolCallIndeterminate(call_id=call.id, tool=call.name, detail=unknown))
+        return self._event(RunEventKind.TOOL_INDETERMINATE, name=call.name, detail=unknown)
 
     def _contract_for(self, agent: Agent[Any], provider: ModelProvider) -> OutputContract | None:
         """The shape of the answer, and whether this provider enforces it itself.

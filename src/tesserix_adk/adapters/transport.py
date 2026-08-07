@@ -154,10 +154,11 @@ class RunBroker[OutputT: BaseModel]:
         self._rooms[stream.run_id] = _Room(stream, tenant, self._history)
         return stream.run_id
 
-    def _driving(self, room: _Room[OutputT]) -> None:
+    def _driving(self, room: _Room[OutputT]) -> asyncio.Task[None]:
         """Make sure the run is being driven, exactly once, however many are listening."""
         if room.task is None:
             room.task = asyncio.create_task(self._drain(room))
+        return room.task
 
     async def _drain(self, room: _Room[OutputT]) -> None:
         async for event in room.stream:
@@ -206,16 +207,18 @@ class RunBroker[OutputT: BaseModel]:
     async def cancel(self, run_id: str, *, tenant: str) -> None:
         """Stop a run this tenant owns, through the run's own cancellation path.
 
-        A run nobody ever attached to is cancelled before it starts, so it never calls a
-        provider at all.
+        Idempotent: a retrying client that sends stop twice gets one cancelled run, and the
+        first reason is the one that stands. A run nobody ever attached to is driven so that
+        it reaches a cancelled record — attribution cannot depend on a client still being
+        there to be told — and a token cancelled this early reaches no provider.
 
         Raises:
             TransportAuthorizationError: If the run is not this tenant's.
         """
         room = self._authorised(run_id, tenant)
+        driving = self._driving(room)
         await room.stream.aclose()
-        if room.task is not None:
-            await room.task
+        await driving
 
     def authorise(self, run_id: str, *, tenant: str) -> None:
         """Check this tenant may speak about this run, before anything is framed.

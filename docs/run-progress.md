@@ -32,19 +32,22 @@ switches on a value rather than on the shape of a payload.
 | `tool_call_started` | `call_id`, `tool`, `arguments` | A call cleared policy and is about to run. |
 | `tool_call_finished` | `call_id`, `tool`, `truncated` | A tool returned. |
 | `tool_call_failed` | `call_id`, `tool`, `error`, `detail` | A call was refused or raised. |
+| `tool_call_indeterminate` | `call_id`, `tool`, `detail` | A call was stopped after dispatch. |
 | `guardrail_decision` | `guardrail`, `allowed`, `detail` | A guardrail was asked. |
 | `approval_required` | `call_id`, `tool`, `reason` | A call is held for a human. |
 | `usage_updated` | `usage` | After each model response. |
 | `run_completed` | `state`, `usage` | Terminal, good. |
 | `run_failed` | `state`, `error`, `detail` | Terminal, bad. |
-| `run_cancelled` | `state`, `reason` | Terminal, stopped. |
+| `run_cancelled` | `state`, `reason`, `usage`, `last_sequence` | Terminal, stopped. |
 
 Three properties hold whatever the run does.
 
 **Exactly one terminal event, and it is last.** It is derived from the finished `Run`, not
 emitted from inside the loop, so a stream that ends early cannot read as a finished answer.
-A provider connection that drops mid-response fails the run: accumulated text from a
-dropped connection is not an answer, and the kit never presents it as one.
+Teardown enforces the ordering rather than trusting it: an event posted after the run ended
+is dropped, not delivered behind the terminal one. A provider connection that drops
+mid-response fails the run: accumulated text from a dropped connection is not an answer, and
+the kit never presents it as one.
 
 **Every event is numbered.** `run_id` and a gapless `sequence` from zero travel on every
 event, so a multiplexed transport needs no envelope of its own and a consumer can tell a
@@ -139,6 +142,48 @@ version has never heard of, so a consumer pinned to an older kit skips it rather
 falling over. A variant it *does* know and cannot parse raises instead — a delta decoded by
 guesswork renders as an answer nobody wrote. Removing or renaming a variant, or a field on
 one, is breaking.
+
+## Stopping a stream
+
+A stop propagates in both directions: the client's stop reaches the run, and the run's
+termination reaches the client as an event it can close its own view on.
+
+Stopping goes through `CancellationToken` — the caller's own if one was passed to `stream`,
+and over a transport through `RunBroker.cancel`, which authorises the tenant first. Leaving
+an `async with` block, a websocket peer vanishing without a close frame, and a reader that
+stopped reading all take the same path: a run nobody is watching still calls providers and
+still bills.
+
+```python
+token = CancellationToken()
+stream = runner.stream(agent, question, tenant="acme", cancellation=token)
+...
+token.cancel("the client pressed stop")
+```
+
+**The terminal event is reconcilable.** `run_cancelled` carries `reason`, `usage` accrued by
+the time it stopped, and `last_sequence` — the sequence of the last event before it. A run
+whose spend is knowable only on completion is unattributable exactly when it did not
+complete, and a client that cannot tell where the stream ended cannot tell a stop from a
+dropped connection.
+
+**A stop racing a natural completion gives one outcome.** The run's own record decides: the
+terminal event is derived from the state the loop reached, so a stop arriving after that does
+not rewrite it. A client never sees both `run_completed` and `run_cancelled`.
+
+**Teardown is idempotent.** Cancelling is a one-way switch and the first reason stands, so a
+retrying client sending stop twice gets one cancelled run and one explanation rather than two
+callers disagreeing about why it stopped.
+
+**A tool caught in flight is indeterminate, not undone.** A tool stopped after dispatch emits
+`tool_call_indeterminate`: whether its side effect landed cannot be known, and claiming it
+was rolled back when nobody rolled it back is the worse answer. A tool the agent named in
+`idempotent_tools` is reported failed and safe to retry instead. The stream says exactly what
+the run record says — `tool_indeterminate` — because two accounts of one call is one too many.
+
+**A client that is gone is still accounted for.** `RunBroker.cancel` drives the run to a
+cancelled record even where nothing ever attached to it, so attribution does not depend on
+someone being there to be told.
 
 ## When the consumer cannot keep up
 

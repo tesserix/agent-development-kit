@@ -557,6 +557,7 @@ tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'flo
 tesserix_adk.runtime.Tokenizer :: class Tokenizer(Protocol)
 tesserix_adk.runtime.ToolCallFailed :: class ToolCallFailed(ProgressEvent)
 tesserix_adk.runtime.ToolCallFinished :: class ToolCallFinished(ProgressEvent)
+tesserix_adk.runtime.ToolCallIndeterminate :: class ToolCallIndeterminate(ProgressEvent)
 tesserix_adk.runtime.ToolCallStarted :: class ToolCallStarted(ProgressEvent)
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.runtime.UsageUpdated :: class UsageUpdated(ProgressEvent)
@@ -613,6 +614,7 @@ tesserix_adk.runtime.progress.SequenceCheck :: class SequenceCheck(object) {acce
 tesserix_adk.runtime.progress.StructuredDelta :: class StructuredDelta(ProgressEvent)
 tesserix_adk.runtime.progress.ToolCallFailed :: class ToolCallFailed(ProgressEvent)
 tesserix_adk.runtime.progress.ToolCallFinished :: class ToolCallFinished(ProgressEvent)
+tesserix_adk.runtime.progress.ToolCallIndeterminate :: class ToolCallIndeterminate(ProgressEvent)
 tesserix_adk.runtime.progress.ToolCallStarted :: class ToolCallStarted(ProgressEvent)
 tesserix_adk.runtime.progress.UsageUpdated :: class UsageUpdated(ProgressEvent)
 tesserix_adk.runtime.progress.decode_progress :: def decode_progress(payload: 'Mapping[str, object]') -> 'ProgressEvent | None'
