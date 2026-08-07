@@ -18,10 +18,14 @@ from tesserix_adk.core import AdkModel
 if TYPE_CHECKING:
     from tesserix_adk.observability.attribution import SpendRecord
 
-__all__ = ["CALLS", "COST", "TOKENS", "Dimensions", "Meter"]
+__all__ = ["CACHED_TOKENS", "CALLS", "COST", "INPUT_TOKENS", "TOKENS", "Dimensions", "Meter"]
 
 COST = "adk.cost"
 TOKENS = "adk.tokens"
+# Input and cache reads are counted apart so a hit ratio is a division in the store. A
+# ratio emitted as a counter cannot be re-aggregated across series without lying.
+INPUT_TOKENS = "adk.input_tokens"
+CACHED_TOKENS = "adk.cached_tokens"
 CALLS = "adk.calls"
 
 

@@ -251,9 +251,8 @@ def _cost(usage: Usage, pricing: Pricing) -> Cost:
             else pricing.cached_input_usd_per_mtok
         )
     )
-    fresh = max(usage.input_tokens - usage.cached_tokens, 0)
     return Cost(
-        input=fresh * Decimal(str(pricing.input_usd_per_mtok)) / _PER_MILLION,
+        input=usage.fresh_input_tokens * Decimal(str(pricing.input_usd_per_mtok)) / _PER_MILLION,
         output=usage.output_tokens * Decimal(str(pricing.output_usd_per_mtok)) / _PER_MILLION,
         cache_read=usage.cached_tokens * cached_rate / _PER_MILLION,
         confidence=CostConfidence.ESTIMATED if usage.estimated else CostConfidence.COUNTED,

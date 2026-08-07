@@ -17,7 +17,14 @@ from tesserix_adk.observability.attribution import (
     attributes_of,
     spend_of,
 )
-from tesserix_adk.observability.metrics import CALLS, COST, TOKENS, Dimensions
+from tesserix_adk.observability.metrics import (
+    CACHED_TOKENS,
+    CALLS,
+    COST,
+    INPUT_TOKENS,
+    TOKENS,
+    Dimensions,
+)
 from tesserix_adk.observability.redaction import Redactor
 
 if TYPE_CHECKING:
@@ -85,5 +92,7 @@ def record_spend[OutputT: BaseModel](
             meter.count(
                 TOKENS, float(record.usage.input_tokens + record.usage.output_tokens), **under
             )
+            meter.count(INPUT_TOKENS, float(record.usage.input_tokens), **under)
+            meter.count(CACHED_TOKENS, float(record.usage.cached_tokens), **under)
             meter.count(CALLS, 1.0, **under)
     return records

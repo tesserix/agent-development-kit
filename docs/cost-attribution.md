@@ -60,6 +60,45 @@ Common questions, as one call each:
 | Where is the reasoning spend going? | `totals_by(records, "task_class", "tenant")` |
 | Did the new prompt get cheaper? | `totals_by(records, "prompt_version")` |
 
+## The prompt-cache hit ratio
+
+```python
+totals = totals_by(records, "agent")
+totals[("clerk",)].cached_tokens    # 900
+totals[("clerk",)].hit_ratio        # 0.45
+totals[("clerk",)].measured         # True
+```
+
+Cache hit ratio is the single number that says whether the context-engineering work is
+paying off. Without it, prefix stability is unfalsifiable — every change to prompt
+assembly reads as an improvement if nothing counts what the server re-evaluated. On CPU
+that is not a cost-optimisation nicety: prefill dominates, so a prefix that stopped being
+stable is a deployment that stopped being usable.
+
+Cached input is tracked apart from fresh input at every level:
+
+| Level | Where |
+|---|---|
+| One call | `Usage.cached_tokens`, `Usage.fresh_input_tokens`, `Usage.cache_hit_ratio` |
+| One group | `Totals.cached_tokens`, `Totals.cache_write_tokens`, `Totals.hit_ratio` |
+| A metric store | `adk.input_tokens` and `adk.cached_tokens`, divided in the query |
+
+The counters are emitted separately rather than as one ratio because a ratio cannot be
+re-aggregated: averaging the hit ratios of two series of different sizes gives a number
+that is true of neither. Two counters divide correctly at any grouping.
+
+`fresh_input_tokens` never goes negative. Vendors disagree about whether a cache read sits
+inside the reported input count, and a negative token count is believed by whatever divides
+it next.
+
+**Nothing read is a ratio of zero, not a division error** — and `measured` says which of
+the two you are looking at. `hit_ratio == 0.0` with `measured is False` means nobody sent
+anything; with `measured is True` it means the cache missed every time. A dashboard that
+cannot tell those apart reports an outage as perfect behaviour, or the reverse.
+
+Cache *writes* total apart from reads because they are priced apart, often at a premium: a
+total that folds them together makes caching look free on the turn that is paying for it.
+
 ## Reconciling with an invoice
 
 `Totals.estimated` is true when any row behind the number was counted rather than metered —
@@ -92,8 +131,9 @@ step, outcome, input and output tokens, cost, currency and whether it was estima
 set of names rather than one per product: a cost question that has to know which team
 exported the span is one nobody answers twice the same way.
 
-**Counters** are emitted whatever the trace did. `adk.cost`, `adk.tokens` and `adk.calls`
-carry a deliberately smaller dimension set — tenant, agent, model, task class, outcome,
+**Counters** are emitted whatever the trace did. `adk.cost`, `adk.tokens`,
+`adk.input_tokens`, `adk.cached_tokens` and `adk.calls` carry a deliberately smaller
+dimension set — tenant, agent, model, task class, outcome,
 estimated, currency — because a tenant id per series is a metric store that falls over at
 the worst possible moment. `Dimensions` states which tenants, agents and models a
 deployment wants kept as their own series; everything else lands in `other` and is still
@@ -124,6 +164,8 @@ prompt content never reaches them in the first place.
 - Spend is read from a finished run. A long run reports nothing until it ends; streaming
   partial attribution is a separate story.
 - Latency is not attributed here. It is a span duration, and the exporter already has it.
+- The hit ratio is only as good as what the vendor reports. A provider that sends no cache
+  fields reads as a total miss, which is why `estimated` travels with every group.
 
 Exercised by [`examples/cost_attribution.py`](../examples/cost_attribution.py) and
 `tests/test_cost_attribution.py`.

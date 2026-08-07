@@ -105,8 +105,15 @@ class SpendRecord(AdkModel):
 
     @property
     def cost(self) -> Cost:
-        """What the step came to, or nothing where the step had no price."""
-        return self.usage.cost or Cost.nothing()
+        """What the step came to.
+
+        A model step nobody priced is `Cost.unknown()`, not zero: a model call that
+        reported no usage is a call at a price nobody knows, and recording it as free is a
+        false statement that totals up into a bill. A tool step genuinely has no price.
+        """
+        if self.usage.cost is not None:
+            return self.usage.cost
+        return Cost.nothing() if self.step is Step.TOOL else Cost.unknown()
 
     @property
     def estimated(self) -> bool:
@@ -130,6 +137,9 @@ class Totals(AdkModel):
         cost: The money, kept in one currency.
         input_tokens: Tokens sent, cache reads included.
         output_tokens: Tokens generated.
+        cached_tokens: Of the input, how much the providers served from their caches.
+        cache_write_tokens: Tokens charged to write into a provider cache, totalled apart
+            because they are priced apart and often at a premium.
         calls: How many metered steps are behind the number.
         estimated: Whether any part of it was counted rather than metered.
     """
@@ -137,8 +147,32 @@ class Totals(AdkModel):
     cost: Cost
     input_tokens: int
     output_tokens: int
+    cached_tokens: int = 0
+    cache_write_tokens: int = 0
     calls: int
     estimated: bool
+
+    @property
+    def measured(self) -> bool:
+        """Whether anything was sent, so the hit ratio over this group means something."""
+        return self.input_tokens > 0
+
+    @property
+    def hit_ratio(self) -> float:
+        """How much of this group's input came from a provider cache, from 0 to 1.
+
+        The one number that says whether prefix stability is paying off. Zero rather than
+        a division error where nothing was sent — check `measured` to tell "no hits" from
+        "no data", which a dashboard otherwise draws identically.
+
+        Example:
+            >>> Totals(cost=Cost.nothing(), input_tokens=1000, output_tokens=0,
+            ...        cached_tokens=450, calls=1, estimated=False).hit_ratio
+            0.45
+        """
+        if not self.measured:
+            return 0.0
+        return min(self.cached_tokens / self.input_tokens, 1.0)
 
 
 def _named(value: str | None) -> str:
@@ -278,6 +312,8 @@ def _totalled(group: Sequence[SpendRecord]) -> Totals:
         cost=reduce(lambda one, two: one + two, (record.cost for record in group)),
         input_tokens=sum(record.usage.input_tokens for record in group),
         output_tokens=sum(record.usage.output_tokens for record in group),
+        cached_tokens=sum(record.usage.cached_tokens for record in group),
+        cache_write_tokens=sum(record.usage.cache_write_tokens for record in group),
         calls=len(group),
         estimated=any(record.estimated for record in group),
     )

@@ -269,7 +269,6 @@ def cost_of(
             stacklevel=2,
         )
         return Cost.unknown()
-    fresh = max(usage.input_tokens - usage.cached_tokens, 0)
     cache_read_rate = (
         rate.input_per_mtok if rate.cache_read_per_mtok is None else rate.cache_read_per_mtok
     )
@@ -277,7 +276,7 @@ def cost_of(
         rate.output_per_mtok if rate.reasoning_per_mtok is None else rate.reasoning_per_mtok
     )
     return Cost(
-        input=fresh * rate.input_per_mtok / _PER_MILLION,
+        input=usage.fresh_input_tokens * rate.input_per_mtok / _PER_MILLION,
         output=usage.output_tokens * rate.output_per_mtok / _PER_MILLION,
         cache_read=usage.cached_tokens * cache_read_rate / _PER_MILLION,
         cache_write=usage.cache_write_tokens * (rate.cache_write_per_mtok or 0) / _PER_MILLION,

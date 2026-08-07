@@ -123,6 +123,42 @@ class Usage(AdkModel):
         return self.source.is_estimate
 
     @property
+    def fresh_input_tokens(self) -> int:
+        """Input the server actually evaluated, cache reads taken out.
+
+        Never negative: vendors disagree about whether a cache read is counted inside the
+        input total, and a negative token count would be believed by whatever divides it.
+
+        Example:
+            >>> Usage(input_tokens=1000, output_tokens=50, cached_tokens=800).fresh_input_tokens
+            200
+        """
+        return max(self.input_tokens - self.cached_tokens, 0)
+
+    @property
+    def measured(self) -> bool:
+        """Whether anything was sent, so a hit ratio over this means something.
+
+        Zero over zero is "nobody looked", which a dashboard must not draw as "no hits".
+        """
+        return self.input_tokens > 0
+
+    @property
+    def cache_hit_ratio(self) -> float:
+        """How much of the input the provider served from its own cache, from 0 to 1.
+
+        Zero rather than a division error where nothing was sent. Read it beside
+        `measured`, and beside `estimated` where the counts are the kit's own.
+
+        Example:
+            >>> Usage(input_tokens=1000, output_tokens=50, cached_tokens=800).cache_hit_ratio
+            0.8
+        """
+        if not self.measured:
+            return 0.0
+        return min(self.cached_tokens / self.input_tokens, 1.0)
+
+    @property
     def _is_nothing(self) -> bool:
         """Whether this records no spend at all, as opposed to spend at an unknown price."""
         return (

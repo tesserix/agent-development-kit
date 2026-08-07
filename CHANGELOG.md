@@ -103,6 +103,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Prompt-cache hit ratio is a first-class number at every level, because prefix stability is
+  unfalsifiable without one: every change to prompt assembly reads as an improvement if
+  nothing counts what the server re-evaluated, and on CPU prefill dominates. `Usage` gains
+  `fresh_input_tokens` — input with cache reads taken out, never negative, since vendors
+  disagree about whether a read sits inside the input count — plus `cache_hit_ratio` and
+  `measured`. `Totals` gains `cached_tokens`, `cache_write_tokens`, `hit_ratio` and
+  `measured`, so `totals_by` aggregates the cache question along the same dimensions as the
+  money; writes total apart from reads because they are priced apart. Nothing read is a
+  ratio of zero rather than a division error, and `measured` separates "the cache missed"
+  from "nobody sent anything", which a dashboard otherwise draws identically. `record_spend`
+  emits `adk.input_tokens` and `adk.cached_tokens` under the existing dimensions — two
+  counters rather than one ratio, because a ratio cannot be re-aggregated across series.
+  **Stability:** additive. Documented in `docs/cost-attribution.md`, exercised by
+  `examples/cache_hit_ratio.py`.
+
 - `ContextWindow` decides what goes into the context and what leaves it when there is no
   room, so a retrieval loop holds the most useful tokens rather than the most recent ones.
   Admission is keyed: a `Segment` whose `key` is already held in any layer is refused, and
@@ -671,6 +686,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   quarantine marker requiring owner, expiry and reason.
 - `tesserix_adk.core`: protocols, error hierarchy, `verify_conformance`, and shipped
   conformance suites and fakes in `tesserix_adk.testing`.
+
+### Fixed
+
+- A model step whose provider reported no usage is recorded as `Cost.unknown()` rather than
+  a counted zero. A call at a price nobody knows is not a call that was free, and recording
+  it as free is a false statement that totals up into a bill; the group it lands in now
+  reads `UNKNOWN` confidence instead of quietly understating. A tool step has no price
+  rather than an unknown one and stays `Cost.nothing()`.
+  **Stability:** `Totals.cost.confidence` changes for groups containing an unpriced model
+  step. The amount is unchanged; the total stops claiming to be counted.
 
 ### Changed
 

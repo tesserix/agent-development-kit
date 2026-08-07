@@ -13,13 +13,23 @@ from tesserix_adk.observability.attribution import (
     totals_by,
 )
 from tesserix_adk.observability.emit import REDACTED_EVENT, SPAN_NAMES, record_spend
-from tesserix_adk.observability.metrics import CALLS, COST, TOKENS, Dimensions, Meter
+from tesserix_adk.observability.metrics import (
+    CACHED_TOKENS,
+    CALLS,
+    COST,
+    INPUT_TOKENS,
+    TOKENS,
+    Dimensions,
+    Meter,
+)
 from tesserix_adk.observability.redaction import MASK, Redaction, Redactor
 
 __all__ = [
     "ATTRIBUTE_PREFIX",
+    "CACHED_TOKENS",
     "CALLS",
     "COST",
+    "INPUT_TOKENS",
     "MASK",
     "REDACTED_EVENT",
     "SPAN_NAMES",

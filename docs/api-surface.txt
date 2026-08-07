@@ -428,9 +428,11 @@ tesserix_adk.models.routing.TableRouter :: class TableRouter(object) {reloaded(s
 tesserix_adk.models.routing.routing_table :: def routing_table(path: 'Path | str | None' = None, *, env: 'Mapping[str, str] | None' = None) -> 'RoutingTable'
 tesserix_adk.observability.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
 tesserix_adk.observability.Attribution :: class Attribution(AdkModel)
+tesserix_adk.observability.CACHED_TOKENS :: CACHED_TOKENS: str
 tesserix_adk.observability.CALLS :: CALLS: str
 tesserix_adk.observability.COST :: COST: str
 tesserix_adk.observability.Dimensions :: class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] | None') -> 'str'; of(self, record: 'SpendRecord') -> 'dict[str, str]'}
+tesserix_adk.observability.INPUT_TOKENS :: INPUT_TOKENS: str
 tesserix_adk.observability.MASK :: MASK: str
 tesserix_adk.observability.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
 tesserix_adk.observability.Outcome :: class Outcome(StrEnum)
@@ -457,9 +459,11 @@ tesserix_adk.observability.attribution.totals_by :: def totals_by(records: 'Iter
 tesserix_adk.observability.emit.REDACTED_EVENT :: REDACTED_EVENT: str
 tesserix_adk.observability.emit.SPAN_NAMES :: SPAN_NAMES: dict
 tesserix_adk.observability.emit.record_spend :: def record_spend(run: 'Run[OutputT]', *, tracer: 'Tracer | None' = None, meter: 'Meter | None' = None, dimensions: 'Dimensions | None' = None, redactor: 'Redactor | None' = None, extra: 'Mapping[str, str] | None' = None, sampled: 'bool' = True) -> 'tuple[SpendRecord, ...]'
+tesserix_adk.observability.metrics.CACHED_TOKENS :: CACHED_TOKENS: str
 tesserix_adk.observability.metrics.CALLS :: CALLS: str
 tesserix_adk.observability.metrics.COST :: COST: str
 tesserix_adk.observability.metrics.Dimensions :: class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] | None') -> 'str'; of(self, record: 'SpendRecord') -> 'dict[str, str]'}
+tesserix_adk.observability.metrics.INPUT_TOKENS :: INPUT_TOKENS: str
 tesserix_adk.observability.metrics.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
 tesserix_adk.observability.metrics.TOKENS :: TOKENS: str
 tesserix_adk.observability.record_spend :: def record_spend(run: 'Run[OutputT]', *, tracer: 'Tracer | None' = None, meter: 'Meter | None' = None, dimensions: 'Dimensions | None' = None, redactor: 'Redactor | None' = None, extra: 'Mapping[str, str] | None' = None, sampled: 'bool' = True) -> 'tuple[SpendRecord, ...]'
