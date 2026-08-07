@@ -239,6 +239,7 @@ class TestWhatIsExported:
             run(*answered(cost=money("0.20"))),
             tracer=tracer,
             meter=meter,
+            # a fixture, not a credential; gitleaks:allow
             extra={"requested_by": "ada@example.com", "key": "sk-live-4Kx9pQ2mZ7"},
         )
         (span,) = [r for r in tracer.recorded if r.kind == "span"]
