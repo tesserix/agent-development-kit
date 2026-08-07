@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from tesserix_adk.core.provider import ModelRequest, ModelResponse, StopReason
     from tesserix_adk.core.streaming import StreamEvent
     from tesserix_adk.models.catalogue import ModelCard
+    from tesserix_adk.models.pool import ClientKey, ClientPool
     from tesserix_adk.runtime.rate_limit import RateLimiter
 
 __all__ = ["PHASE_DEFAULTS", "HttpProvider", "PhaseTimeouts", "VendorStream"]
@@ -126,6 +127,9 @@ class HttpProvider:
         connect_timeout: Seconds to wait for the connection to open.
         transport: An injected `httpx` transport. This is how the recorded tests run with
             no network, and how a consumer supplies its own proxy or retry layer.
+        pool: A shared client registry. Providers on one pool that resolve to the same
+            provider, endpoint, credential and transport settings share connections across
+            runs; a provider without one owns its client and closes it on `aclose`.
         limiter: A shared allowance to spend before each call. One limiter across every
             provider holding one key is the point: separate limiters each believe they
             have the whole allowance.
@@ -151,6 +155,7 @@ class HttpProvider:
         connect_timeout: float = PHASE_DEFAULTS.connect,
         transport: httpx.AsyncBaseTransport | None = None,
         limiter: RateLimiter | None = None,
+        pool: ClientPool | None = None,
         redact_vendor_messages: bool = True,
     ) -> None:
         self.model = model
@@ -162,15 +167,22 @@ class HttpProvider:
         self._credential = Credential(
             api_key_variable or self.default_key_variable, secrets=secrets
         )
-        self._client = httpx.AsyncClient(
-            base_url=base_url or self.default_base_url,
-            timeout=httpx.Timeout(
-                connect=self.timeouts.connect,
-                read=self.timeouts.read,
-                write=self.timeouts.write,
-                pool=self.timeouts.pool,
-            ),
-            transport=transport,
+        self.base_url = base_url or self.default_base_url
+        self._pool = pool
+        self._key: ClientKey | None = None
+        self._owned = (
+            None
+            if pool is not None
+            else httpx.AsyncClient(
+                base_url=self.base_url,
+                timeout=httpx.Timeout(
+                    connect=self.timeouts.connect,
+                    read=self.timeouts.read,
+                    write=self.timeouts.write,
+                    pool=self.timeouts.pool,
+                ),
+                transport=transport,
+            )
         )
 
     @property
@@ -182,6 +194,39 @@ class HttpProvider:
     def capabilities(self) -> ModelCapabilities:
         """What this model declares. Read before each request rather than found out."""
         return self._capabilities
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        """The client this provider sends on: its own, or the pool's for its current key.
+
+        Resolved per request rather than at construction, because the credential is too:
+        a rotated key is a different key, and a different key is a different connection.
+        """
+        if self._pool is None:
+            return cast("httpx.AsyncClient", self._owned)
+        return self._pool._client(
+            provider=self.provider_name,
+            base_url=self.base_url,
+            credential=self._credential.value(),
+            timeout_seconds=self.timeouts.read,
+            connect_seconds=self.timeouts.connect,
+        )
+
+    async def _current(self) -> httpx.AsyncClient:
+        """The client to send on, retiring the one the previous credential opened."""
+        if self._pool is None:
+            return cast("httpx.AsyncClient", self._owned)
+        key = self._pool._key_for(
+            provider=self.provider_name,
+            base_url=self.base_url,
+            credential=self._credential.value(),
+            timeout_seconds=self.timeouts.read,
+            connect_seconds=self.timeouts.connect,
+        )
+        if self._key is not None and self._key != key:
+            await self._pool._retire_key(self._key)
+        self._key = key
+        return self.client
 
     def count_tokens(self, messages: Sequence[Message]) -> int:
         """Estimate the tokens in `messages` by character count.
@@ -199,8 +244,9 @@ class HttpProvider:
         return len(text) // _CHARS_PER_TOKEN
 
     async def aclose(self) -> None:
-        """Close the underlying connection pool."""
-        await self._client.aclose()
+        """Close the connection pool this provider owns, leaving a shared one alone."""
+        if self._owned is not None:
+            await self._owned.aclose()
 
     async def __aenter__(self) -> Self:
         """Return self, so a provider can own its pool for the length of a block."""
@@ -221,8 +267,9 @@ class HttpProvider:
             cost: What the call is estimated to cost in tokens, for the shared allowance.
         """
         await self._shaped(cost)
+        client = await self._current()
         try:
-            response = await self._client.post(path, json=dict(payload), headers=self._headers())
+            response = await self._sent(client, path, dict(payload))
         except httpx.TimeoutException as timeout:
             raise ProviderTimeoutError(
                 f"{self.provider_name} did not answer in time",
@@ -236,6 +283,25 @@ class HttpProvider:
         self._refuse(response)
         return _object(response, self.provider_name)
 
+    async def _sent(
+        self, client: httpx.AsyncClient, path: str, payload: dict[str, Any]
+    ) -> httpx.Response:
+        """POST through the pool where there is one, so saturation is counted and named."""
+        if self._pool is None:
+            return await client.post(path, json=payload, headers=self._headers())
+        return await self._pool._request(
+            client, "POST", path, provider=self.provider_name, json=payload, headers=self._headers()
+        )
+
+    def _saturated(self, timeout: httpx.PoolTimeout, path: str) -> Exception:
+        """A pool timeout is exhaustion where the pool is shared, and a timeout otherwise."""
+        if self._pool is None:
+            return ProviderTimeoutError(
+                f"{self.provider_name} did not answer in time",
+                details={"path": path, "phase": _phase_of(timeout)},
+            )
+        return self._pool._exhausted(self.provider_name)
+
     async def _post_sse(
         self, path: str, payload: Mapping[str, Any]
     ) -> AsyncGenerator[dict[str, Any]]:
@@ -246,11 +312,12 @@ class HttpProvider:
                 way through. A truncated answer returned as a whole one is a wrong answer
                 with nothing to show that it is wrong.
         """
-        request = self._client.build_request(
-            "POST", path, json=dict(payload), headers=self._headers()
-        )
+        client = await self._current()
+        request = client.build_request("POST", path, json=dict(payload), headers=self._headers())
         try:
-            response = await self._client.send(request, stream=True)
+            response = await client.send(request, stream=True)
+        except httpx.PoolTimeout as saturated:
+            raise self._saturated(saturated, path) from saturated
         except httpx.TimeoutException as timeout:
             raise ProviderTimeoutError(
                 f"{self.provider_name} did not answer in time",

@@ -40,6 +40,7 @@ __all__ = [
     "MissingExtraError",
     "ModelResponseError",
     "NoEligibleModelError",
+    "PoolExhaustedError",
     "ProtocolConformanceError",
     "ProviderError",
     "ProviderTimeoutError",
@@ -462,6 +463,21 @@ class ProviderUnavailableError(ProviderError):
     @property
     def retryable(self) -> bool:
         """Always. Nothing about the request was refused, only about this moment."""
+        return True
+
+
+class PoolExhaustedError(ProviderError):
+    """Raised when every connection to a provider was in use and none came free in time.
+
+    A local condition rather than the provider's, and its own type because the answer to
+    it is different: the endpoint is fine and the process is over-subscribed. Retryable,
+    since a connection freeing up is the ordinary outcome — but the wait is bounded, so
+    the caller finds out inside its own deadline rather than queueing past it.
+    """
+
+    @property
+    def retryable(self) -> bool:
+        """Yes. Nothing about the request was refused, only the moment it was made in."""
         return True
 
 

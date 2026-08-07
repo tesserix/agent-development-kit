@@ -106,6 +106,7 @@ code lands here as the kit is built.
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
 | Tool concurrency — bounded fan-out, per-tool and per-tenant lanes, per-call failure | [`docs/tool-concurrency.md`](docs/tool-concurrency.md) |
+| Connection pooling — client reuse across runs, credential rotation, bounded exhaustion | [`docs/connection-pooling.md`](docs/connection-pooling.md) |
 | Transports — SSE framing, websocket control channel, reconnection, the boundary | [`docs/transports.md`](docs/transports.md) |
 | Async and sync — the sync surface, the running-loop refusal, worker pools, stall detection | [`docs/async-and-sync.md`](docs/async-and-sync.md) |
 | The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |

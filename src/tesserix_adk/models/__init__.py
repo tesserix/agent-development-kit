@@ -28,11 +28,14 @@ from tesserix_adk.models.catalogue import (
     priced,
 )
 from tesserix_adk.models.credentials import Credential, EnvironmentSecrets
+from tesserix_adk.models.pool import ClientKey, ClientPool, PoolConfig, PoolMetrics
 
 __all__ = [
     "CATALOGUE_VERSION",
     "Capability",
     "CapabilityError",
+    "ClientKey",
+    "ClientPool",
     "ContextWindowExceededError",
     "Credential",
     "EnvironmentSecrets",
@@ -44,6 +47,8 @@ __all__ = [
     "ModelResponse",
     "ModelResponseError",
     "ModelSpec",
+    "PoolConfig",
+    "PoolMetrics",
     "Pricing",
     "ReasoningDelta",
     "SecretProvider",

@@ -114,6 +114,27 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Provider connections now outlive the run that opened them. `ClientPool` keys clients by
+  provider, endpoint, credential and transport settings and hands the same warm client back
+  across runs; a provider takes one with `pool=` and a provider given none still owns and
+  closes its own client. The key carries a truncated digest of the credential rather than the
+  credential, so two tenants against one endpoint can never be handed each other's connection
+  and a key stays safe to log and to use as a metric label. The credential is resolved per
+  request, so a rotation opens a pool on the new key while the old client is retired — not
+  handed out again, not closed until what is already on it has finished. Waiting for a free
+  connection is bounded by `acquire_seconds` and reported as the new, retryable
+  `PoolExhaustedError`; a client inherited across a `fork` is discarded rather than used; and
+  `PoolMetrics` reports opened, reused, retired, inherited, exhausted and currently held as
+  one snapshot.
+  **Stability:** additive. `pool=` is optional and defaults to the previous behaviour of a
+  client per provider, so no existing call site changes. The pool's public surface is
+  deliberately narrow — construction, `config_for`, `retire`, `metrics`, `keys` and closing —
+  because handing out `httpx` clients in a public signature would couple every consumer to
+  that vendor's releases; the client-handing seam is internal to the kit's own adapters.
+  `PoolExhaustedError` is a `ProviderError`, so an existing `except ProviderError` keeps
+  catching it. Documented in `docs/connection-pooling.md`, exercised by
+  `examples/connection_pooling.py`.
+
 - The tool calls in one model response now run as one bounded batch rather than one after
   another, so a turn that asked for four independent lookups costs roughly one lookup.
   `ConcurrencyConfig` declares the lanes they stand in — `max_concurrent_tools` for the turn,
