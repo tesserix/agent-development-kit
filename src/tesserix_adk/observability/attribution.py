@@ -67,6 +67,8 @@ class Attribution(AdkModel):
         user: The acting principal, where there was one.
         agent: Which agent ran.
         agent_version: Which version of it, so a cost change is attributable to a change.
+        definition: The `AgentDefinition` revision the run declared, where it ran from one.
+            A version can be edited in place; a revision names the exact reviewed artifact.
         model: The model that actually answered, not the one first asked for.
         prompt_version: Which prompt produced the call.
         task_class: The kind of work routing was asked for.
@@ -77,6 +79,7 @@ class Attribution(AdkModel):
     user: str
     agent: str
     agent_version: str
+    definition: str
     model: str
     prompt_version: str
     task_class: str
@@ -185,6 +188,7 @@ def _attribution(run: Run[Any], model: str) -> Attribution:
         user=_named(run.user),
         agent=_named(run.agent_name),
         agent_version=_named(run.agent_version),
+        definition=_named(run.definition_revision),
         model=_named(model),
         prompt_version=_named(run.prompt_version),
         task_class=_named(run.task_class),

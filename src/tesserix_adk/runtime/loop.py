@@ -29,6 +29,7 @@ from pydantic import BaseModel
 
 from tesserix_adk.core import (
     AdkError,
+    AgentDefinition,
     ApprovalDecision,
     ApprovalDeniedError,
     ApprovalExpiredError,
@@ -164,6 +165,7 @@ class _Started:
     tenant: str
     user: str | None
     run_id: str | None
+    revision: str | None = None
 
     @property
     def trail(self) -> str:
@@ -311,7 +313,7 @@ class AgentRunner:
 
     def run_sync[OutputT: BaseModel](
         self,
-        agent: Agent[OutputT],
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
         user_input: str,
         *,
         tenant: str,
@@ -357,7 +359,7 @@ class AgentRunner:
 
     async def run[OutputT: BaseModel](
         self,
-        agent: Agent[OutputT],
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
         user_input: str,
         *,
         tenant: str,
@@ -373,7 +375,8 @@ class AgentRunner:
         """Drive `agent` until it reaches a terminal state, and return the run.
 
         Args:
-            agent: What to run.
+            agent: What to run. An `AgentDefinition` pins its revision to the run and to
+                every span, so a past run names the exact artifact that produced it.
             user_input: What is being asked.
             tenant: The isolation boundary. Every record of the run keys off it.
             user: The acting principal, where there is one.
@@ -400,13 +403,18 @@ class AgentRunner:
                 swallowed — a cancelled task that returns normally leaves its canceller
                 waiting forever.
         """
+        revision = agent.revision if isinstance(agent, AgentDefinition) else None
+        if isinstance(agent, AgentDefinition):
+            agent = agent.agent
         self._refuse_an_unrouted_class(agent)
         decision = self._route(agent, tenant)
         bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision), budget)
         self._refuse_incomplete_wiring(agent, bounds.provider)
         depth = parent.depth + 1 if parent is not None else 0
         path = (*parent.path, agent.name) if parent is not None else (agent.name,)
-        started = _Started(agent, depth, path, tenant=tenant, user=user, run_id=run_id)
+        started = _Started(
+            agent, depth, path, tenant=tenant, user=user, run_id=run_id, revision=revision
+        )
         refused = await self._refused_before_it_started(
             started, bounds, delegated=parent is not None
         )
@@ -420,6 +428,7 @@ class AgentRunner:
             user=user,
             agent_name=agent.name,
             agent_version=agent.version,
+            definition_revision=revision,
             model=model,
             depth=depth,
             path=path,
@@ -1398,6 +1407,7 @@ class AgentRunner:
             user=started.user,
             agent_name=started.agent.name,
             agent_version=started.agent.version,
+            definition_revision=started.revision,
             model=started.agent.model or "",
             depth=started.depth,
             path=started.path,

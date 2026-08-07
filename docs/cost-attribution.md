@@ -59,6 +59,7 @@ Common questions, as one call each:
 | What did the model change cost us? | `totals_by(records, "model", "agent_version")` |
 | Where is the reasoning spend going? | `totals_by(records, "task_class", "tenant")` |
 | Did the new prompt get cheaper? | `totals_by(records, "prompt_version")` |
+| Which reviewed artifact spent it? | `totals_by(records, "definition")` |
 
 ## The prompt-cache hit ratio
 
@@ -169,3 +170,11 @@ prompt content never reaches them in the first place.
 
 Exercised by [`examples/cost_attribution.py`](../examples/cost_attribution.py) and
 `tests/test_cost_attribution.py`.
+
+## The definition dimension
+
+`agent_version` is declared and can be edited in place, so two runs claiming one version
+may not be the same agent. `definition` is the `AgentDefinition` revision the run
+declared — a digest of everything that definition says — so a cost change is attributable
+to an exact reviewed artifact. A run started from a bare agent reports `unknown` and says
+so through `unknowns`. See [`agent-definition.md`](agent-definition.md).

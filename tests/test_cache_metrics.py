@@ -50,6 +50,7 @@ def record(usage: Usage, *, model: str = "llama-3.1-8b") -> SpendRecord:
             user="ada",
             agent="clerk",
             agent_version="1",
+            definition="rev0",
             model=model,
             prompt_version="p1",
             task_class="cheap",

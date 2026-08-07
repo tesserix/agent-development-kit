@@ -10,6 +10,17 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- `Attribution` gains a required `definition` dimension, exported on every span as
+  `adk.definition`. A bill broken down by `agent_version` cannot tell two runs of one version
+  apart when the version was edited between them; the definition revision names the exact
+  reviewed artifact that spent the money. Required rather than defaulted, because attribution
+  is derived from the run and a silent default is how a dimension quietly stops being
+  populated. **Stability:** breaking for callers constructing an `Attribution` by hand — pass
+  `definition=`, or `UNKNOWN` where the run had no definition — and for anything asserting on
+  `Attribution.unknowns`, which now names `definition` for runs started from a bare agent.
+  Attribution derived through `spend_of` needs no change. Documented in
+  `docs/agent-definition.md` and `docs/cost-attribution.md`.
+
 - The prompt's cacheable prefix is now an invariant with a name. `assemble_prompt` assembles
   five documented layers — `PROMPT_LAYERS`: system, tools, pinned, retrieved, conversation —
   and `Prompt.layers` labels every assembled message with the one it came from, so a change
@@ -102,6 +113,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   `examples/providers.py`.
 
 ### Added
+
+- An agent is now expressible as the artifact that was reviewed. `AgentDefinition` carries
+  the declaration plus the `Owner` who answers for it, the evaluation suite that checks it,
+  the prompt entry it was written for, the memory policy it runs under and the schema it
+  answers in — none of which can be diffed in review or named by a finished run while they
+  live in the call sites that construct the agent.
+  `AgentDefinition.declared(..., known_tools=...)` refuses an allowlist naming a tool nobody
+  registered, at construction rather than at the first production execution that reaches for
+  it, and `Owner` refuses a contact nobody can be paged at. `revision` is a content-derived
+  digest, so editing the instructions, the allowlist, the owner or the answer schema produces
+  a new revision rather than moving what an old run pointed at; `output_schema` is stored as
+  data precisely because `output_type` is a Python class the digest and the store both lose.
+  `AgentRunner.run` and `run_sync` accept a definition wherever they accept an agent and pin
+  its revision onto `Run.definition_revision` and every span. A run from a bare agent records
+  `None`, attributed as `unknown`. Documented in `docs/agent-definition.md`, exercised by
+  `examples/agent_definition.py`.
 
 - Prompt-cache hit ratio is a first-class number at every level, because prefix stability is
   unfalsifiable without one: every change to prompt assembly reads as an improvement if

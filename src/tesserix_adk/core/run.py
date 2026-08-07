@@ -184,6 +184,9 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
         user: The acting principal, where there is one.
         agent_name: Which agent ran.
         agent_version: Which version of it, so a behaviour change is attributable.
+        definition_revision: The `AgentDefinition` revision this ran from, where it ran
+            from one. A version can be edited in place; a revision is derived from the
+            content, so it names the exact artifact that produced this run.
         model: The model actually used, not the one requested.
         prompt_version: Which prompt produced this run, where prompts are versioned.
         task_class: What was asked for, where routing decided it. Spend groups by the kind
@@ -213,6 +216,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
     user: str | None = None
     agent_name: str = Field(min_length=1)
     agent_version: str = Field(min_length=1)
+    definition_revision: str | None = None
     model: str = Field(min_length=1)
     prompt_version: str | None = None
     task_class: str | None = None

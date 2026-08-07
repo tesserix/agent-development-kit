@@ -18,6 +18,7 @@ tesserix_adk.core.AdkDeprecationWarning :: class AdkDeprecationWarning(Deprecati
 tesserix_adk.core.AdkError :: class AdkError(Exception)
 tesserix_adk.core.AdkModel :: class AdkModel(BaseModel)
 tesserix_adk.core.Agent :: class Agent(AdkModel, Generic)
+tesserix_adk.core.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
 tesserix_adk.core.ApprovalDecision :: class ApprovalDecision(AdkModel)
 tesserix_adk.core.ApprovalDeniedError :: class ApprovalDeniedError(AdkError)
 tesserix_adk.core.ApprovalExpiredError :: class ApprovalExpiredError(AdkError)
@@ -93,6 +94,7 @@ tesserix_adk.core.ModelRouter :: class ModelRouter(Protocol) {resolve(self, task
 tesserix_adk.core.ModelSpec :: class ModelSpec(AdkModel) {with_capabilities(self, **overrides: 'object') -> 'Self'}
 tesserix_adk.core.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.NoOutput :: class NoOutput(AdkModel)
+tesserix_adk.core.Owner :: class Owner(AdkModel)
 tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.Provenance :: class Provenance(object)
 tesserix_adk.core.ProviderConfig :: class ProviderConfig(AdkModel)
@@ -197,6 +199,8 @@ tesserix_adk.core.cost.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.cost.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.cost.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
 tesserix_adk.core.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
+tesserix_adk.core.definition.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
+tesserix_adk.core.definition.Owner :: class Owner(AdkModel)
 tesserix_adk.core.deprecate :: def deprecate(*, since: 'str', removal: 'str', alternative: 'str', reason: 'str | None' = None) -> 'Callable[[_T], _T]'
 tesserix_adk.core.deprecation.AdkDeprecationWarning :: class AdkDeprecationWarning(DeprecationWarning)
 tesserix_adk.core.deprecation.Deprecation :: class Deprecation(object)
@@ -472,7 +476,7 @@ tesserix_adk.observability.redaction.Redaction :: class Redaction(AdkModel)
 tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
 tesserix_adk.observability.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
-tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
+tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
 tesserix_adk.runtime.Assumptions :: class Assumptions(AdkModel)
 tesserix_adk.runtime.Calibration :: class Calibration(AdkModel)
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
@@ -530,7 +534,7 @@ tesserix_adk.runtime.estimate.estimate_run :: def estimate_run(agent: 'Agent[Out
 tesserix_adk.runtime.estimate.refuse_unaffordable :: def refuse_unaffordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'None'
 tesserix_adk.runtime.estimate_run :: def estimate_run(agent: 'Agent[OutputT]', user_input: 'str', *, provider: 'ModelProvider', pricing: 'Pricer', history: 'RunHistory | None' = None, tools: 'Iterable[ToolDeclaration]' = (), allow_unknown: 'bool' = False) -> 'CostEstimate'
 tesserix_adk.runtime.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
-tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
+tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
 tesserix_adk.runtime.loop.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}

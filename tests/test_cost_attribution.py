@@ -89,6 +89,7 @@ class TestAttributionComesFromTheRun:
             user="ada",
             agent="planner",
             agent_version="1.0.0",
+            definition=UNKNOWN,
             model="scripted-1",
             prompt_version="p1",
             task_class=UNKNOWN,
@@ -105,7 +106,7 @@ class TestAttributionComesFromTheRun:
         """A blank where a tenant should be is a number nobody can chase, so it is named."""
         (record,) = spend_of(run(*answered(cost=money("0.20")), user=None, prompt_version=None))
         assert record.attribution.user == UNKNOWN
-        assert record.attribution.unknowns == ("prompt_version", "task_class", "user")
+        assert record.attribution.unknowns == ("definition", "prompt_version", "task_class", "user")
 
     def test_the_task_class_is_taken_from_the_routing_decision(self) -> None:
         (record,) = spend_of(
@@ -219,6 +220,7 @@ class TestWhatIsExported:
             "adk.agent_version",
             "adk.cost",
             "adk.currency",
+            "adk.definition",
             "adk.estimated",
             "adk.input_tokens",
             "adk.model",
@@ -352,5 +354,5 @@ class TestAConsumerWiresNothing:
         assert record.attribution.agent == "planner"
         assert record.attribution.model == "scripted-1"
         assert record.attribution.prompt_version == finished.prompt_version
-        assert record.attribution.unknowns == ("task_class",)
+        assert record.attribution.unknowns == ("definition", "task_class")
         assert meter.total("adk.cost", tenant="acme") == pytest.approx(0.11)

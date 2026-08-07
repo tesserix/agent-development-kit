@@ -39,6 +39,7 @@ from tesserix_adk.core.config import (
     resolve_config,
 )
 from tesserix_adk.core.cost import Cost, CostConfidence, CountSource, weaker_source
+from tesserix_adk.core.definition import AgentDefinition, Owner
 from tesserix_adk.core.deprecation import (
     AdkDeprecationWarning,
     Deprecation,
@@ -199,6 +200,7 @@ __all__ = [
     "AdkError",
     "AdkModel",
     "Agent",
+    "AgentDefinition",
     "ApprovalDecision",
     "ApprovalDeniedError",
     "ApprovalExpiredError",
@@ -271,6 +273,7 @@ __all__ = [
     "ModelSpec",
     "NoEligibleModelError",
     "NoOutput",
+    "Owner",
     "ProtocolConformanceError",
     "Provenance",
     "ProviderConfig",
