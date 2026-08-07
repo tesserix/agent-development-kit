@@ -221,6 +221,35 @@ jobs:
             cat notes.md
           } >> "$GITHUB_STEP_SUMMARY"
 
+  benchmarks:
+    name: performance against the committed baseline
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Exit 1 is a regression and fails the job; exit 2 means the runner was too noisy to
+      # say, which is reported and passed rather than blocking a merge on the weather.
+      - name: benchmark
+        run: |
+          set +e
+          uv run python -m tools.benchmark > report.txt
+          code=$?
+          {
+            echo "## Benchmarks"
+            echo
+            echo '```'
+            cat report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat report.txt
+          [ "$code" = 2 ] && exit 0
+          exit "$code"
+
   layering:
     name: RFC 0001 layering contracts
     runs-on: ubuntu-latest

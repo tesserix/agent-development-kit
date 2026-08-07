@@ -112,6 +112,7 @@ code lands here as the kit is built.
 | Transports — SSE framing, websocket control channel, reconnection, the boundary | [`docs/transports.md`](docs/transports.md) |
 | Async and sync — the sync surface, the running-loop refusal, worker pools, stall detection | [`docs/async-and-sync.md`](docs/async-and-sync.md) |
 | The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |
+| Benchmarks — the gated metrics, variance controls, updating a baseline | [`docs/benchmarks.md`](docs/benchmarks.md) |
 | Determinism, cassettes & replay | [`docs/determinism.md`](docs/determinism.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |

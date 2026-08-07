@@ -114,6 +114,30 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A benchmark harness whose verdicts survive a shared runner. `measure` runs a `Scenario`
+  over warm-up, rounds and iterations, drops the slowest round where there are three to
+  spare, and records the run's own spread beside the numbers; `compare` judges a
+  `Measurement` against a committed `Baseline` per metric and per interpreter;
+  `make bench` exits 0 held, 1 regressed, 2 too noisy to say, 3 suite unloadable. Where the
+  spread exceeds the ceiling *and* covers the delta, the verdict is `INCONCLUSIVE` with what
+  a conclusive run would need, and CI reports it rather than blocking a merge on the
+  weather. Memory is measured apart from the timings, with tracing started after the warm-up
+  and a collection before the count. Six scenarios ship in `benchmarks/suite.py`, over
+  scripted providers and local fakes.
+  **Stability:** additive — one new module and fifteen new names, no existing signature
+  changed. Exported from `tesserix_adk.testing.benchmarks` rather than re-exported from
+  `tesserix_adk.testing`, because this is a maintainer's harness and a consumer reaching for
+  a fake should not have to read past it. The committed baseline gates only `tokens` and
+  `peak_bytes`: wall clock is a property of the runner as much as of the code, and a gate
+  that cries wolf on a shared runner is a gate somebody deletes. Everything else is measured
+  and printed on every run as `unrecorded`, so it is visible without being load-bearing.
+  Recording more is a `--only` argument, not a code change. Each metric carries an absolute
+  floor beside its percentage threshold, because two blocks becoming three is not a
+  fifty-percent regression. A check run never writes the baseline — not on success, not on
+  failure, and it does not create one that was absent — since a harness that re-records what
+  it just measured ratchets performance downwards and calls it green. Documented in
+  `docs/benchmarks.md` and exercised by `examples/benchmarks.py`.
+
 - Response caching with the correctness rules written down rather than assumed.
   `CachingProvider` wraps any `ModelProvider`, so caching is a change to where the provider
   is built and nothing else. An entry is served only when every determinant of the answer

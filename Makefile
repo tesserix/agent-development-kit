@@ -31,6 +31,15 @@ test: ## Run the test suite
 cov: ## Run the test suite with coverage enforcement
 	uv run pytest --cov --cov-report=term-missing
 
+bench: ## Measure the benchmark suite against the committed baseline
+	uv run python -m tools.benchmark
+
+bench-quick: ## The same, cut down for a fast local check before opening a change
+	uv run python -m tools.benchmark --rounds 3 --iterations 10
+
+bench-record: ## Record a new baseline, which belongs in a reviewed commit of its own
+	uv run python -m tools.benchmark --write --only tokens,peak_bytes
+
 api-snapshot: ## Regenerate docs/api-surface.txt after a deliberate surface change
 	uv run python -m tools.api_surface --write
 

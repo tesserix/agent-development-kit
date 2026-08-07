@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "scenarios": {
+    "embedding-batch": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 5,
+        "spread": 0.042,
+        "metrics": {
+          "peak_bytes": 460173.0
+        }
+      },
+      "3.12": {
+        "rounds": 4,
+        "iterations": 5,
+        "spread": 0.0082,
+        "metrics": {
+          "peak_bytes": 466925.0
+        }
+      }
+    },
+    "run-fanout": {
+      "3.13": {
+        "rounds": 2,
+        "iterations": 5,
+        "spread": 0.0152,
+        "metrics": {
+          "peak_bytes": 675907.0
+        }
+      },
+      "3.12": {
+        "rounds": 2,
+        "iterations": 5,
+        "spread": 0.0151,
+        "metrics": {
+          "peak_bytes": 676123.0
+        }
+      }
+    },
+    "single-turn": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0349,
+        "metrics": {
+          "peak_bytes": 46284.0,
+          "tokens": 25.0
+        }
+      },
+      "3.12": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.3827,
+        "metrics": {
+          "peak_bytes": 47125.0,
+          "tokens": 25.0
+        }
+      }
+    },
+    "streaming": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0463,
+        "metrics": {
+          "peak_bytes": 53699.0
+        }
+      },
+      "3.12": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0451,
+        "metrics": {
+          "peak_bytes": 52489.0
+        }
+      }
+    },
+    "structured-output": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0416,
+        "metrics": {
+          "peak_bytes": 267813.0
+        }
+      },
+      "3.12": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0574,
+        "metrics": {
+          "peak_bytes": 143696.0
+        }
+      }
+    },
+    "tool-turn": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0095,
+        "metrics": {
+          "peak_bytes": 110958.0,
+          "tokens": 134.0
+        }
+      },
+      "3.12": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.005,
+        "metrics": {
+          "peak_bytes": 111990.0,
+          "tokens": 134.0
+        }
+      }
+    }
+  }
+}

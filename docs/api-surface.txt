@@ -752,6 +752,21 @@ tesserix_adk.testing.StallingProvider :: class StallingProvider(object) {complet
 tesserix_adk.testing.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.testing.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Tracer'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
 tesserix_adk.testing.assert_same_run :: def assert_same_run(first: 'Run', second: 'Run', *, message: 'str' = '') -> 'None'
+tesserix_adk.testing.benchmarks.Baseline :: class Baseline(object) {size(self, scenario: 'str', python: 'str') -> 'int | None'; value(self, scenario: 'str', python: 'str', metric: 'Metric') -> 'float | None'}
+tesserix_adk.testing.benchmarks.BenchmarkReport :: class BenchmarkReport(object) {render(self) -> 'str'}
+tesserix_adk.testing.benchmarks.Comparison :: class Comparison(object)
+tesserix_adk.testing.benchmarks.DEFAULT_FLOORS :: DEFAULT_FLOORS: dict
+tesserix_adk.testing.benchmarks.DEFAULT_LIMITS :: DEFAULT_LIMITS: dict
+tesserix_adk.testing.benchmarks.Measurement :: class Measurement(object)
+tesserix_adk.testing.benchmarks.Metric :: class Metric(StrEnum)
+tesserix_adk.testing.benchmarks.Scenario :: class Scenario(object)
+tesserix_adk.testing.benchmarks.Thresholds :: class Thresholds(object) {floor(self, metric: 'Metric') -> 'float'; limit(self, metric: 'Metric') -> 'float'}
+tesserix_adk.testing.benchmarks.Verdict :: class Verdict(StrEnum)
+tesserix_adk.testing.benchmarks.compare :: def compare(measurements: 'Sequence[Measurement]', baseline: 'Baseline', thresholds: 'Thresholds | None' = None) -> 'BenchmarkReport'
+tesserix_adk.testing.benchmarks.load_baseline :: def load_baseline(path: 'Path') -> 'Baseline'
+tesserix_adk.testing.benchmarks.measure :: def measure(scenario: 'Scenario', *, timer: 'Callable[[], float]' = <built-in function perf_counter>, python: 'str | None' = None) -> 'Measurement'
+tesserix_adk.testing.benchmarks.run_suite :: def run_suite(scenarios: 'Sequence[Scenario]', *, timer: 'Callable[[], float]' = <built-in function perf_counter>, python: 'str | None' = None) -> 'tuple[Measurement, ...]'
+tesserix_adk.testing.benchmarks.write_baseline :: def write_baseline(path: 'Path', measurements: 'Iterable[Measurement]') -> 'None'
 tesserix_adk.testing.cassette.Cassette :: class Cassette(AdkModel) {save(self, path: 'Path') -> 'None'}
 tesserix_adk.testing.cassette.CassetteMissError :: class CassetteMissError(AdkError)
 tesserix_adk.testing.cassette.CassetteVersionError :: class CassetteVersionError(AdkError)
