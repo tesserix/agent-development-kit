@@ -52,16 +52,20 @@ from tesserix_adk.core import (
     MaxIterationsError,
     Message,
     ModelProvider,
+    ModelRequirements,
     ModelResponseError,
+    ModelRouter,
     RecursionLimitError,
     RepeatedCallError,
     RetryConfig,
+    RoutingDecision,
     Run,
     RunContext,
     RunEvent,
     RunEventKind,
     RunState,
     SchemaViolationError,
+    TaskClass,
     TextPart,
     ToolCall,
     ToolExecutionError,
@@ -132,13 +136,19 @@ class _Bounds:
     deadlines: DeadlineConfig
     retry: RetryConfig
     loop: LoopConfig
+    provider: ModelProvider
 
 
 class AgentRunner:
     """Drives one agent to one terminal state.
 
     Args:
-        provider: Where completions come from.
+        provider: Where completions come from when the agent names its own model.
+        providers: Every vendor the router may resolve to, by provider name. A routed run
+            calls the one the table chose; an agent that names a model outright keeps
+            `provider`.
+        router: How a `task_class` becomes a model. Required for any agent that declares
+            one — guessing a model would attribute the run to one that never ran it.
         tools: The registry backing the agent's allowlist. Required if the agent names
             any tool.
         guardrails: Guardrails by name. Every name the agent declares must appear here.
@@ -173,6 +183,8 @@ class AgentRunner:
         self,
         *,
         provider: ModelProvider,
+        providers: Mapping[str, ModelProvider] | None = None,
+        router: ModelRouter | None = None,
         tools: ToolRegistry | None = None,
         guardrails: Mapping[str, Guardrail] | None = None,
         budget: BudgetPolicy | None = None,
@@ -190,6 +202,10 @@ class AgentRunner:
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
+        for vendor in (providers or {}).values():
+            verify_conformance(vendor, ModelProvider)
+        self._providers = dict(providers or {})
+        self._router = router
         if tools is not None:
             provider.capabilities.require(
                 Capability.TOOL_CALLING, provider=provider.name, model="<any>"
@@ -218,6 +234,24 @@ class AgentRunner:
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
         self._orphans: set[asyncio.Task[Any]] = set()
+
+    def reload(self, router: ModelRouter) -> None:
+        """Route subsequent runs by `router`.
+
+        A run already in flight keeps the model it resolved before its first call, because
+        a run whose model changed halfway is two runs in one record.
+
+        Raises:
+            ConfigurationError: If this runner was built without a router. Adding routing
+                to a running process changes what every agent resolves to, so it is a
+                decision made at construction rather than by a reload.
+        """
+        if self._router is None:
+            raise ConfigurationError(
+                "this runner has no router to reload; construct it with one rather than "
+                "having a reload change what every agent already running resolves to"
+            )
+        self._router = router
 
     def run_sync[OutputT: BaseModel](
         self,
@@ -306,14 +340,16 @@ class AgentRunner:
                 swallowed — a cancelled task that returns normally leaves its canceller
                 waiting forever.
         """
-        self._refuse_incomplete_wiring(agent)
-        bounds = self._bounds_for(agent, cancellation, deadline)
+        self._refuse_an_unrouted_class(agent)
+        decision = self._route(agent, tenant)
+        bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision))
+        self._refuse_incomplete_wiring(agent, bounds.provider)
         depth = parent.depth + 1 if parent is not None else 0
         if depth > bounds.loop.max_depth:
             return await self._too_deep(
                 agent, depth, bounds, tenant=tenant, user=user, run_id=run_id
             )
-        model = agent.model or ""
+        model = agent.model or (decision.chosen.model if decision is not None else "")
         run: Run[Any] = _carrier_for(agent.output_type)(
             id=run_id or self._ids(),
             tenant=tenant,
@@ -323,10 +359,18 @@ class AgentRunner:
             model=model,
             depth=depth,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
+        if decision is not None:
+            run = run.record_event(
+                self._event(
+                    RunEventKind.MODEL_ROUTED,
+                    name=str(decision.chosen),
+                    detail=decision.explain(),
+                )
+            )
 
         try:
             run, asked = await self._asked(run, agent, user_input, bounds)
-            contract = self._contract_for(agent)
+            contract = self._contract_for(agent, bounds.provider)
             prompt = assemble_prompt(
                 agent,
                 asked,
@@ -342,7 +386,7 @@ class AgentRunner:
             for _ in range(self._max_iterations):
                 self._stop_if_over(run, bounds)
                 run, messages = await self._before_the_call(run, agent, messages, bounds)
-                self._refuse_unreadable_prompt(messages, model)
+                self._refuse_unreadable_prompt(messages, model, bounds.provider)
                 request = ModelRequest(
                     model=model,
                     messages=tuple(messages),
@@ -492,20 +536,55 @@ class AgentRunner:
         if decision.action in (HookAction.REFUSE, HookAction.REQUIRE_APPROVAL):
             raise _Terminal(run, RunState.FAILED, _named(HookRefusedError(decision.reason)))
 
-    def _refuse_incomplete_wiring(self, agent: Agent[Any]) -> None:
-        if agent.task_class:
+    def _route(self, agent: Agent[Any], tenant: str) -> RoutingDecision | None:
+        """Resolve the agent's task class, once, before anything is spent.
+
+        Raises:
+            NoEligibleModelError: If nothing configured can do the work.
+        """
+        if not agent.task_class or self._router is None:
+            return None
+        return self._router.resolve(
+            TaskClass(agent.task_class),
+            requirements=ModelRequirements(capabilities=agent.requires),
+            tenant=tenant,
+            agent=agent.name,
+        )
+
+    def _vendor_for(self, decision: RoutingDecision | None) -> ModelProvider:
+        """The provider that answers this run.
+
+        Raises:
+            ConfigurationError: If the table resolved to a vendor the runner was not
+                given a client for, which is a wiring gap rather than a routing one.
+        """
+        if decision is None:
+            return self._provider
+        vendor = self._providers.get(decision.chosen.provider)
+        if vendor is None:
+            raise ConfigurationError(
+                f"the routing table chose {decision.chosen}, but this runner was given no "
+                f"provider named {decision.chosen.provider!r} "
+                f"(it has: {', '.join(sorted(self._providers)) or 'none'})"
+            )
+        return vendor
+
+    def _refuse_an_unrouted_class(self, agent: Agent[Any]) -> None:
+        if agent.task_class and self._router is None:
             raise ConfigurationError(
                 f"agent {agent.name!r} selects its model by task_class "
-                f"{agent.task_class!r}; this runner has no router (#53), and guessing a "
+                f"{agent.task_class!r}; this runner was given no router, and guessing a "
                 f"model would attribute the run to one that never ran it"
             )
+
+    def _refuse_incomplete_wiring(self, agent: Agent[Any], provider: ModelProvider) -> None:
         if agent.tools and self._tools is None:
             raise ConfigurationError(
                 f"agent {agent.name!r} declares tools ({', '.join(agent.tools)}) but the "
                 f"runner was given no registry"
             )
         if agent.tools:
-            self._require(Capability.TOOL_CALLING, model=agent.model or "")
+            self._require(Capability.TOOL_CALLING, model=agent.model or "", provider=provider)
         missing = [name for name in agent.guardrails if name not in self._guardrails]
         if missing:
             raise ConfigurationError(
@@ -525,11 +604,13 @@ class AgentRunner:
                 f"budget policy, so the ceiling would not be enforced"
             )
 
-    def _require(self, capability: Capability, *, model: str) -> None:
+    def _require(self, capability: Capability, *, model: str, provider: ModelProvider) -> None:
         """Check the provider's own record. Raises `CapabilityError` naming all three."""
-        self._provider.capabilities.require(capability, provider=self._provider.name, model=model)
+        provider.capabilities.require(capability, provider=provider.name, model=model)
 
-    def _refuse_unreadable_prompt(self, messages: Sequence[Message], model: str) -> None:
+    def _refuse_unreadable_prompt(
+        self, messages: Sequence[Message], model: str, provider: ModelProvider
+    ) -> None:
         """Refuse a prompt past the declared window rather than letting the vendor cut it.
 
         Raises:
@@ -537,24 +618,28 @@ class AgentRunner:
             ContextWindowExceededError: If the provider's own count is over its own window.
         """
         if any(isinstance(part, BinaryPart) for message in messages for part in message.content):
-            self._require(Capability.VISION, model=model)
-        window = self._provider.capabilities.context_window_tokens
+            self._require(Capability.VISION, model=model, provider=provider)
+        window = provider.capabilities.context_window_tokens
         if window is None:
             return
-        counted = self._provider.count_tokens(messages)
+        counted = provider.count_tokens(messages)
         if counted > window:
             raise ContextWindowExceededError(
-                f"the prompt counts {counted} tokens against {self._provider.name}:{model}'s "
+                f"the prompt counts {counted} tokens against {provider.name}:{model}'s "
                 f"declared window of {window}. Sending it would have the vendor truncate it "
                 f"and answer anyway",
                 counted=counted,
                 limit=window,
-                provider=self._provider.name,
+                provider=provider.name,
                 model=model,
             )
 
     def _bounds_for(
-        self, agent: Agent[Any], token: CancellationToken | None, caller: Deadline | None
+        self,
+        agent: Agent[Any],
+        token: CancellationToken | None,
+        caller: Deadline | None,
+        provider: ModelProvider,
     ) -> _Bounds:
         deadlines = agent.deadlines or self._deadlines
         ceiling = (
@@ -568,6 +653,7 @@ class AgentRunner:
             deadlines=deadlines,
             retry=agent.retry or self._retry,
             loop=self._loop.narrowed_to(agent.loop),
+            provider=provider,
         )
 
     def _stop_if_over(self, run: Run[Any], bounds: _Bounds) -> None:
@@ -746,7 +832,7 @@ class AgentRunner:
                 if self._budget is not None:
                     await self._budget.reserve(estimate)
                 response: ModelResponse = await self._bounded(
-                    self._provider.complete(request),
+                    bounds.provider.complete(request),
                     limit=self._limit(bounds, bounds.deadlines.model_call_seconds),
                     bounds=bounds,
                     what="model call",
@@ -767,9 +853,9 @@ class AgentRunner:
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=request.model))
                 attempt += 1
             else:
-                return run, self._readable(response)
+                return run, self._readable(response, bounds.provider)
 
-    def _readable(self, payload: object) -> ModelResponse:
+    def _readable(self, payload: object, provider: ModelProvider) -> ModelResponse:
         """Refuse an answer that is not one.
 
         Distinct from a schema violation, which is a well-formed answer in the wrong shape
@@ -781,9 +867,9 @@ class AgentRunner:
         """
         if not isinstance(payload, ModelResponse):
             raise ModelResponseError(
-                f"{self._provider.name} returned {type(payload).__name__}, not a ModelResponse",
+                f"{provider.name} returned {type(payload).__name__}, not a ModelResponse",
                 payload=payload,
-                provider=self._provider.name,
+                provider=provider.name,
             )
         return payload
 
@@ -839,7 +925,7 @@ class AgentRunner:
         run = run.record(response.usage).record_event(
             self._event(
                 RunEventKind.MODEL_RESPONSE,
-                name=self._provider.name,
+                name=bounds.provider.name,
                 usage=response.usage,
             )
         )
@@ -1252,7 +1338,7 @@ class AgentRunner:
             detail="stopped after dispatch; whether its effect landed cannot be known",
         )
 
-    def _contract_for(self, agent: Agent[Any]) -> OutputContract | None:
+    def _contract_for(self, agent: Agent[Any], provider: ModelProvider) -> OutputContract | None:
         """The shape of the answer, and whether this provider enforces it itself.
 
         A provider that has not declared the capability does not have it: assuming it does
@@ -1260,9 +1346,9 @@ class AgentRunner:
         """
         if agent.output_type is None:
             return None
-        native = self._provider.capabilities.supports(Capability.STRUCTURED_OUTPUT)
-        if not native and not _emulation_allowed(self._provider):
-            self._require(Capability.STRUCTURED_OUTPUT, model=agent.model or "")
+        native = provider.capabilities.supports(Capability.STRUCTURED_OUTPUT)
+        if not native and not _emulation_allowed(provider):
+            self._require(Capability.STRUCTURED_OUTPUT, model=agent.model or "", provider=provider)
         return OutputContract.of(agent.output_type, native=native)
 
     async def _finish(
@@ -1278,7 +1364,7 @@ class AgentRunner:
             run, agent, HookPoint.BEFORE_OUTPUT_VALIDATION, bounds, content=response.content
         )
         self._stop_on_refusal(run, decision)
-        contract = self._contract_for(agent)
+        contract = self._contract_for(agent, bounds.provider)
         if contract is None:
             return await self._terminate(run, agent, RunState.COMPLETED, None, bounds), True
 

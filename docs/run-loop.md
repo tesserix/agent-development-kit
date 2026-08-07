@@ -301,8 +301,9 @@ a loop wedges.
   inside the kit threads it automatically once the workflows epic owns the call.
 - **Repetition is exact-match only.** Two calls that differ by a whitespace-only argument
   read as different requests. Semantic near-duplicate detection is not planned.
-- **`task_class` is refused.** Routing by task class needs a router (#53); guessing a
-  model would attribute the run to one that never ran it.
+- **`task_class` is refused without a router.** A runner given no router cannot resolve a
+  class, and guessing a model would attribute the run to one that never ran it. Wire a
+  router and a provider per vendor it can choose — see [`docs/routing.md`](routing.md).
 - **`ModelRequest`, `ModelResponse` and `ToolDeclaration` are provisional**, owned by the
   runtime until the provider protocol (#49) and the tool registry (#130) land theirs.
 - **A rehydrated run needs its type parameter named.** Nothing on the wire says which type

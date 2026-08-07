@@ -14,9 +14,11 @@ tesserix_adk.core.BinaryPart :: class BinaryPart(AdkModel)
 tesserix_adk.core.BudgetConfig :: class BudgetConfig(AdkModel)
 tesserix_adk.core.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.core.BudgetPolicy :: class BudgetPolicy(Protocol) {record(self, actual: 'int') -> 'None'; reserve(self, estimate: 'int') -> 'None'}
+tesserix_adk.core.CHEAP :: CHEAP: TaskClass
 tesserix_adk.core.CancelledError :: class CancelledError(AdkError)
 tesserix_adk.core.Capability :: class Capability(StrEnum)
 tesserix_adk.core.CapabilityError :: class CapabilityError(AdkError)
+tesserix_adk.core.CapabilitySet :: CapabilitySet = typing.Annotated[frozenset[tesserix_adk.core.capabilities.Capability], BeforeValidator(func=<class 'frozenset'>, json_schema_input_type=PydanticUndefined)]
 tesserix_adk.core.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.core.ConfigError :: class ConfigError(ConfigurationError)
 tesserix_adk.core.ConfigProblem :: class ConfigProblem(object)
@@ -57,9 +59,12 @@ tesserix_adk.core.ModelCapabilities :: class ModelCapabilities(AdkModel) {declar
 tesserix_adk.core.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.core.ModelRef :: class ModelRef(AdkModel)
 tesserix_adk.core.ModelRequest :: class ModelRequest(AdkModel)
+tesserix_adk.core.ModelRequirements :: class ModelRequirements(AdkModel) {unsatisfied_by(self, declared: 'object') -> 'tuple[str, ...]'}
 tesserix_adk.core.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.core.ModelResponseError :: class ModelResponseError(AdkError)
+tesserix_adk.core.ModelRouter :: class ModelRouter(Protocol) {resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
 tesserix_adk.core.ModelSpec :: class ModelSpec(AdkModel) {with_capabilities(self, **overrides: 'object') -> 'Self'}
+tesserix_adk.core.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.NoOutput :: class NoOutput(AdkModel)
 tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.Provenance :: class Provenance(object)
@@ -67,19 +72,23 @@ tesserix_adk.core.ProviderConfig :: class ProviderConfig(AdkModel)
 tesserix_adk.core.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
 tesserix_adk.core.ProviderUnavailableError :: class ProviderUnavailableError(ProviderError)
+tesserix_adk.core.REASONING :: REASONING: TaskClass
 tesserix_adk.core.RateLimitError :: class RateLimitError(ProviderError)
 tesserix_adk.core.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.core.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.RedactionConfig :: class RedactionConfig(AdkModel)
+tesserix_adk.core.RejectedCandidate :: class RejectedCandidate(AdkModel)
 tesserix_adk.core.RepairConfig :: class RepairConfig(AdkModel)
 tesserix_adk.core.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
 tesserix_adk.core.RetryConfig :: class RetryConfig(AdkModel)
 tesserix_adk.core.Role :: Role = typing.Literal['system', 'user', 'assistant', 'tool']
+tesserix_adk.core.RoutingDecision :: class RoutingDecision(AdkModel) {explain(self) -> 'str'}
 tesserix_adk.core.Run :: class Run(AdkModel, Generic) {record(self, usage: 'Usage') -> 'Self'; record_event(self, event: 'RunEvent') -> 'Self'; transition_to(self, state: 'RunState', *, at: 'float | None' = None) -> 'Self'; with_output(self, output: 'OutputT') -> 'Self'}
 tesserix_adk.core.RunContext :: class RunContext(AdkModel)
 tesserix_adk.core.RunEvent :: class RunEvent(AdkModel)
 tesserix_adk.core.RunEventKind :: class RunEventKind(StrEnum)
 tesserix_adk.core.RunState :: class RunState(StrEnum)
+tesserix_adk.core.SMART :: SMART: TaskClass
 tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
 tesserix_adk.core.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
@@ -93,6 +102,7 @@ tesserix_adk.core.StreamEnd :: class StreamEnd(StreamEvent)
 tesserix_adk.core.StreamEvent :: class StreamEvent(AdkModel)
 tesserix_adk.core.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
 tesserix_adk.core.StrictSubset :: class StrictSubset(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.TaskClass :: class TaskClass(str)
 tesserix_adk.core.TelemetryConfig :: class TelemetryConfig(AdkModel)
 tesserix_adk.core.TenantContext :: class TenantContext(AdkModel)
 tesserix_adk.core.TextDelta :: class TextDelta(StreamEvent)
@@ -110,6 +120,7 @@ tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.capabilities.Capability :: class Capability(StrEnum)
+tesserix_adk.core.capabilities.CapabilitySet :: CapabilitySet = typing.Annotated[frozenset[tesserix_adk.core.capabilities.Capability], BeforeValidator(func=<class 'frozenset'>, json_schema_input_type=PydanticUndefined)]
 tesserix_adk.core.capabilities.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
 tesserix_adk.core.capabilities.ModelRef :: class ModelRef(AdkModel)
 tesserix_adk.core.capabilities.ModelSpec :: class ModelSpec(AdkModel) {with_capabilities(self, **overrides: 'object') -> 'Self'}
@@ -162,6 +173,7 @@ tesserix_adk.core.errors.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
 tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
 tesserix_adk.core.errors.ModelResponseError :: class ModelResponseError(AdkError)
+tesserix_adk.core.errors.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.errors.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.errors.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
@@ -224,6 +236,14 @@ tesserix_adk.core.provider.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.core.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
 tesserix_adk.core.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
 tesserix_adk.core.resolve_hooks :: def resolve_hooks(decisions: 'Sequence[HookDecision] | Iterable[HookDecision]') -> 'HookDecision'
+tesserix_adk.core.routing.CHEAP :: CHEAP: TaskClass
+tesserix_adk.core.routing.ModelRequirements :: class ModelRequirements(AdkModel) {unsatisfied_by(self, declared: 'object') -> 'tuple[str, ...]'}
+tesserix_adk.core.routing.ModelRouter :: class ModelRouter(Protocol) {resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
+tesserix_adk.core.routing.REASONING :: REASONING: TaskClass
+tesserix_adk.core.routing.RejectedCandidate :: class RejectedCandidate(AdkModel)
+tesserix_adk.core.routing.RoutingDecision :: class RoutingDecision(AdkModel) {explain(self) -> 'str'}
+tesserix_adk.core.routing.SMART :: SMART: TaskClass
+tesserix_adk.core.routing.TaskClass :: class TaskClass(str)
 tesserix_adk.core.run.Run :: class Run(AdkModel, Generic) {record(self, usage: 'Usage') -> 'Self'; record_event(self, event: 'RunEvent') -> 'Self'; transition_to(self, state: 'RunState', *, at: 'float | None' = None) -> 'Self'; with_output(self, output: 'OutputT') -> 'Self'}
 tesserix_adk.core.run.RunContext :: class RunContext(AdkModel)
 tesserix_adk.core.run.RunEvent :: class RunEvent(AdkModel)
@@ -309,7 +329,13 @@ tesserix_adk.models.providers.compatible.VLLM :: VLLM: CompatibilityPreset
 tesserix_adk.models.providers.gemini.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.normalised_tool_calls :: def normalised_tool_calls(calls: 'Sequence[ToolCall]', *, request: 'ModelRequest', capabilities: 'ModelCapabilities', provider: 'str') -> 'tuple[ToolCall, ...]'
 tesserix_adk.models.providers.openai.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
-tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
+tesserix_adk.models.routing.ROUTING_TABLE_ENV :: ROUTING_TABLE_ENV: str
+tesserix_adk.models.routing.RoutingRule :: class RoutingRule(AdkModel) {answers(self, task_class: 'TaskClass', tenant: 'str | None', agent: 'str | None') -> 'bool'}
+tesserix_adk.models.routing.RoutingTable :: class RoutingTable(AdkModel) {matching(self, task_class: 'TaskClass', tenant: 'str | None', agent: 'str | None') -> 'RoutingRule | None'}
+tesserix_adk.models.routing.TABLE_VERSION :: TABLE_VERSION: int
+tesserix_adk.models.routing.TableRouter :: class TableRouter(object) {reloaded(self, table: 'RoutingTable') -> 'TableRouter'; resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
+tesserix_adk.models.routing.routing_table :: def routing_table(path: 'Path | str | None' = None, *, env: 'Mapping[str, str] | None' = None) -> 'RoutingTable'
+tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.ModelRequest :: class ModelRequest(AdkModel)
@@ -329,7 +355,7 @@ tesserix_adk.runtime.determinism.RunFingerprint :: class RunFingerprint(AdkModel
 tesserix_adk.runtime.determinism.canonical_digest :: def canonical_digest(value: 'Any') -> 'str'
 tesserix_adk.runtime.determinism.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
 tesserix_adk.runtime.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
-tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
+tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; run(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None) -> 'Run[OutputT]'}
 tesserix_adk.runtime.loop.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}

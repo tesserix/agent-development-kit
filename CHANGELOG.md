@@ -34,6 +34,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- An agent can name the job instead of the model. `Agent.task_class` names the kind of
+  work — `CHEAP`, `SMART`, `REASONING`, or any `TaskClass` a deployment invents — and
+  `Agent.requires` names what it needs of whatever answers, so retuning a deployment is an
+  edit to a file rather than a code change in every consumer that wrote a model id at a
+  call site. `RoutingTable` holds the rules (`task_class`, optional `tenant` and `agent`,
+  candidates in preference order), `routing_table()` reads it from TOML at a given path or
+  at `ADK_ROUTING_TABLE`, and `TableRouter` resolves against it with optional per-tenant
+  `entitlements`. The narrowest rule wins; within it the first candidate meeting the
+  requirements answers. A table that would fail on a later request fails at construction
+  instead — no rules, two rules at one scope, a candidate declaring no capabilities, a
+  candidate the catalogue no longer lists. Nothing falls back: an unrouted class, a rule
+  nothing eligible answers and an unknown pin all raise `NoEligibleModelError`, carrying
+  the unsatisfied requirements and every rejected candidate with its reason. `AgentRunner`
+  takes `router` and a `providers` map, resolves once before the first call, records a
+  `MODEL_ROUTED` event, and `reload()` applies a new table to the next run. Routing is
+  opt-in — an agent naming `model` outright keeps the runner's single provider unchanged.
+  See `docs/routing.md` and `examples/routing.py`.
 - One error taxonomy over every vendor, and the two things now done in front of a call
   rather than after it. `RateLimitError`, `AuthenticationError`, `ContentFilteredError`
   and `InvalidRequestError` join the existing provider errors, and each adapter classifies

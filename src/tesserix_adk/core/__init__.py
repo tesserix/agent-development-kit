@@ -3,6 +3,7 @@
 from tesserix_adk.core.agent import Agent, ToolFailurePolicy
 from tesserix_adk.core.capabilities import (
     Capability,
+    CapabilitySet,
     ModelCapabilities,
     ModelRef,
     ModelSpec,
@@ -53,6 +54,7 @@ from tesserix_adk.core.errors import (
     MaxIterationsError,
     MissingExtraError,
     ModelResponseError,
+    NoEligibleModelError,
     ProtocolConformanceError,
     ProviderError,
     ProviderTimeoutError,
@@ -117,6 +119,16 @@ from tesserix_adk.core.provider import (
     StopReason,
     ToolDeclaration,
 )
+from tesserix_adk.core.routing import (
+    CHEAP,
+    REASONING,
+    SMART,
+    ModelRequirements,
+    ModelRouter,
+    RejectedCandidate,
+    RoutingDecision,
+    TaskClass,
+)
 from tesserix_adk.core.run import (
     Run,
     RunContext,
@@ -148,8 +160,11 @@ from tesserix_adk.core.streaming import (
 )
 
 __all__ = [
+    "CHEAP",
     "INLINE_REFS",
     "JSON_SCHEMA",
+    "REASONING",
+    "SMART",
     "STRICT_SUBSET",
     "AdkConfig",
     "AdkDeprecationWarning",
@@ -169,6 +184,7 @@ __all__ = [
     "CancelledError",
     "Capability",
     "CapabilityError",
+    "CapabilitySet",
     "Clock",
     "ConfigError",
     "ConfigProblem",
@@ -207,9 +223,12 @@ __all__ = [
     "ModelProvider",
     "ModelRef",
     "ModelRequest",
+    "ModelRequirements",
     "ModelResponse",
     "ModelResponseError",
+    "ModelRouter",
     "ModelSpec",
+    "NoEligibleModelError",
     "NoOutput",
     "ProtocolConformanceError",
     "Provenance",
@@ -221,10 +240,12 @@ __all__ = [
     "ReasoningDelta",
     "RecursionLimitError",
     "RedactionConfig",
+    "RejectedCandidate",
     "RepairConfig",
     "RepeatedCallError",
     "RetryConfig",
     "Role",
+    "RoutingDecision",
     "Run",
     "RunContext",
     "RunEvent",
@@ -242,6 +263,7 @@ __all__ = [
     "StreamEvent",
     "StreamInterruptedError",
     "StrictSubset",
+    "TaskClass",
     "TelemetryConfig",
     "TenantContext",
     "TextDelta",

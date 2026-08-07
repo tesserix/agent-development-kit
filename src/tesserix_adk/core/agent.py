@@ -20,6 +20,7 @@ from typing import Generic, Self
 
 from pydantic import ConfigDict, Field, model_validator
 
+from tesserix_adk.core.capabilities import CapabilitySet  # noqa: TC001
 from tesserix_adk.core.config import (  # noqa: TC001
     BudgetConfig,
     DeadlineConfig,
@@ -57,6 +58,9 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
         model: The model to use. Mutually exclusive with `task_class`.
         task_class: The kind of work, for a router to resolve to a model. Naming the job
             rather than the model is what lets the routing decision live in one place.
+        requires: What this agent needs of whatever model answers, for a router to filter
+            candidates by. A run is refused rather than routed to a model that cannot do
+            the work, because discovering that from the answer is discovering it late.
         tools: Tool names this agent may call. Empty by default — a tool a consumer did
             not name is a tool the agent may not call.
         idempotent_tools: Which of those tools are safe to call again. A tool cancelled
@@ -102,6 +106,7 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
     instructions: str = Field(min_length=1)
     model: str | None = None
     task_class: str | None = None
+    requires: CapabilitySet = frozenset()
     tools: tuple[str, ...] = ()
     idempotent_tools: tuple[str, ...] = ()
     approval_required_tools: tuple[str, ...] = ()

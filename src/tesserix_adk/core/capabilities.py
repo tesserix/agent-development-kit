@@ -16,14 +16,14 @@ change to it shows up in a pull request's diff and follows `docs/versioning.md`.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import Field
+from pydantic import BeforeValidator, Field
 
 from tesserix_adk.core.errors import CapabilityError
 from tesserix_adk.core.models import AdkModel
 
-__all__ = ["Capability", "ModelCapabilities", "ModelRef", "ModelSpec"]
+__all__ = ["Capability", "CapabilitySet", "ModelCapabilities", "ModelRef", "ModelSpec"]
 
 _SEPARATOR = ":"
 
@@ -36,6 +36,10 @@ class Capability(StrEnum):
     PARALLEL_TOOL_CALLS = "parallel_tool_calls"
     VISION = "vision"
     STREAMING = "streaming"
+
+
+CapabilitySet = Annotated[frozenset[Capability], BeforeValidator(frozenset)]
+"""A set of capabilities, readable from the set or list a config file writes."""
 
 
 class ModelCapabilities(AdkModel):

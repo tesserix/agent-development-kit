@@ -6,10 +6,10 @@ kit's failures without catching `Exception` and swallowing its own bugs alongsid
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
 __all__ = [
     "RETRYABLE_STATUS",
@@ -33,6 +33,7 @@ __all__ = [
     "MaxIterationsError",
     "MissingExtraError",
     "ModelResponseError",
+    "NoEligibleModelError",
     "ProtocolConformanceError",
     "ProviderError",
     "ProviderTimeoutError",
@@ -101,6 +102,44 @@ class ConfigurationError(AdkError):
     Configuration failures are raised during construction, never on the first call
     that happens to exercise the broken setting.
     """
+
+
+class NoEligibleModelError(ConfigurationError):
+    """Raised when nothing the routing table offers can do the work asked of it.
+
+    A `ConfigurationError`, because that is what it is: the table is missing a model, not
+    the request malformed. Never a downgrade — a model that cannot do the job is not a
+    cheaper way of doing it, and quietly substituting one moves the failure to whichever
+    step needed the capability.
+
+    Args:
+        task_class: What was asked for.
+        unsatisfied: The requirement names nothing could meet.
+        rejected: Each candidate considered and what it could not do, as
+            `(ref, reason)` pairs.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        task_class: str = "",
+        unsatisfied: Sequence[str] = (),
+        rejected: Sequence[tuple[str, str]] = (),
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.task_class = task_class
+        self.unsatisfied = tuple(unsatisfied)
+        self.rejected = tuple(_Rejection(ref, reason) for ref, reason in rejected)
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
+
+
+class _Rejection(NamedTuple):
+    """One candidate the router passed over, on an error rather than in a decision."""
+
+    ref: str
+    reason: str
 
 
 class MissingExtraError(AdkError, ImportError):
