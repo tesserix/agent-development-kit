@@ -1,5 +1,14 @@
 """Run loop, caps, cancellation, timeout, checkpointing, streaming."""
 
+from tesserix_adk.runtime.blocking import (
+    Ambient,
+    LoopMonitor,
+    WorkerPool,
+    Workers,
+    carrying,
+    current_ambient,
+    drive,
+)
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.context import ContextWindow, Segment
 from tesserix_adk.runtime.determinism import RunFingerprint, canonical_digest, fingerprint_of
@@ -62,6 +71,7 @@ from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 __all__ = [
     "PROMPT_LAYERS",
     "AgentRunner",
+    "Ambient",
     "AnswerDelta",
     "ApprovalRequired",
     "Assumptions",
@@ -75,6 +85,7 @@ __all__ = [
     "GuardrailDecision",
     "InMemoryHistory",
     "IterationStarted",
+    "LoopMonitor",
     "ModelRequest",
     "ModelResponse",
     "Observed",
@@ -107,6 +118,8 @@ __all__ = [
     "ToolCallStarted",
     "ToolDeclaration",
     "UsageUpdated",
+    "WorkerPool",
+    "Workers",
     "affordable",
     "approval_for",
     "approximate_tokens",
@@ -114,7 +127,10 @@ __all__ = [
     "budgeted_stream",
     "calibrate",
     "canonical_digest",
+    "carrying",
+    "current_ambient",
     "decode_progress",
+    "drive",
     "estimate_run",
     "fingerprint_of",
     "refuse_unaffordable",

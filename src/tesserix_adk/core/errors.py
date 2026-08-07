@@ -26,6 +26,7 @@ __all__ = [
     "ContentFilteredError",
     "ContextWindowExceededError",
     "EstimateUnavailableError",
+    "EventLoopStalledError",
     "FallbackExhaustedError",
     "FallbackUnsafeError",
     "FanOutLimitError",
@@ -46,12 +47,14 @@ __all__ = [
     "RateLimitError",
     "RecursionLimitError",
     "RepeatedCallError",
+    "RunningLoopError",
     "SchemaGenerationError",
     "SchemaViolationError",
     "StreamInterruptedError",
     "ToolArgumentValidationError",
     "ToolExecutionError",
     "TrustBoundaryError",
+    "WorkersBusyError",
 ]
 
 _DISTRIBUTION = "tesserix-adk"
@@ -805,4 +808,57 @@ class ApprovalExpiredError(AdkError):
 
     An approval is permission at a moment, not a standing licence: honouring a stale one
     runs what nobody currently agrees to.
+    """
+
+
+class RunningLoopError(AdkError, RuntimeError):
+    """Raised when a synchronous helper is called from inside a running event loop.
+
+    Also a `RuntimeError`, so callers already guarding against 'this event loop is
+    already running' keep working. It refuses rather than nesting a second loop or
+    blocking the one it is standing on, and the message names the async call to use
+    instead: a deadlock says nothing about which line caused it.
+
+    Args:
+        sync_name: The helper that was called.
+        async_name: What to await in its place.
+    """
+
+    def __init__(self, sync_name: str, async_name: str) -> None:
+        self.sync_name = sync_name
+        self.async_name = async_name
+        super().__init__(
+            f"{sync_name} cannot be called from a running event loop; "
+            f"await {async_name} instead, or call {sync_name} from a thread that has no "
+            f"loop of its own"
+        )
+
+
+class EventLoopStalledError(AdkError):
+    """Raised when work blocked the event loop instead of awaiting on it.
+
+    A blocking body does not slow its own run: it slows every run sharing the loop, and
+    the latency lands on requests that did nothing wrong. So it is attributed to whoever
+    caused it rather than left as unexplained tail latency.
+
+    Args:
+        tool: What was running while the loop stopped turning.
+        blocked_seconds: How far behind the loop fell.
+    """
+
+    def __init__(self, tool: str, blocked_seconds: float) -> None:
+        self.tool = tool
+        self.blocked_seconds = blocked_seconds
+        super().__init__(
+            f"{tool} stalled the event loop for {blocked_seconds:.3f}s; run a blocking "
+            f"body on a worker pool rather than on the loop",
+            details={"tool": tool, "blocked_seconds": f"{blocked_seconds:.3f}"},
+        )
+
+
+class WorkersBusyError(AdkError):
+    """Raised when a synchronous body could not be given a worker in time.
+
+    Growing the pool instead would trade a bounded wait for unbounded threads, which
+    fails later, harder and on someone else's request.
     """

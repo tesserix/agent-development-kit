@@ -114,6 +114,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Both crossings between the async core and synchronous code now have a name. `run_sync` and
+  the new `stream_sync` drive the same run `run` and `stream` drive, and refuse from inside a
+  running event loop with `RunningLoopError`, which names the async call to use instead of
+  nesting a second loop or deadlocking against the work it is waiting for. It is also a
+  `RuntimeError`, so existing guards against 'this event loop is already running' keep working,
+  and it is raised before any coroutine is created, so a refused call leaves nothing
+  un-awaited. `run_sync` now carries `budget=` as `run` does. Going the other way, `WorkerPool`
+  runs a blocking body on a bounded set of threads and refuses with `WorkersBusyError` rather
+  than growing past its bound, and every tool call is watched by a `LoopMonitor` that measures
+  the loop's own lag, so a body nobody declared fails with `EventLoopStalledError` naming the
+  tool instead of leaving unattributed tail latency on the next request. Identity crosses the
+  hop as an `Ambient` — run, tenant, user, cancellation — bound for the call and copied per
+  worker, so two runs sharing a thread cannot read each other's tenant.
+  **Stability:** additive. `run_sync` raising `RunningLoopError` is a narrowing of the
+  `RuntimeError` it already documented, so existing handlers keep working. Documented in
+  `docs/async-and-sync.md`, exercised by `examples/sync_surface.py`.
+
 - Stopping a stream stops the work. `run_cancelled` now carries the `usage` accrued by the
   time the run stopped and `last_sequence`, the sequence of the last event before it, beside
   the reason — a run whose spend is knowable only on completion is unattributable exactly

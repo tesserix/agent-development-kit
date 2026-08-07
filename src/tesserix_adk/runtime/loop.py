@@ -94,6 +94,7 @@ from tesserix_adk.core import (
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
+from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.progress import (
     WATCHING,
@@ -138,6 +139,9 @@ _DEFAULT_MAX_TOOL_RESULT_CHARS = 8_000
 _CHARS_PER_TOKEN = 4
 _NOTHING = Usage(input_tokens=0, output_tokens=0)
 _TRUNCATION_MARKER = "\n[truncated]"
+# Instrumentation is on unless a deployment turns it off, because a stall nobody measures
+# is charged to whichever request happened to be next rather than to what caused it.
+_WATCHING = LoopMonitor()
 
 # A cancelled coroutine needs a loop turn or two to unwind; only then is the grace window
 # the honest measure of whether it is going to stop at all.
@@ -248,6 +252,9 @@ class AgentRunner:
         jitter: The source the backoff is drawn from. Injected so a test can seed it and
             assert the exact schedule instead of waiting it out.
         clock: Injected time. Defaults to wall-clock.
+        monitor: How a tool that blocks the event loop is caught. Defaults to a
+            `LoopMonitor` with its own defaults; `None` turns the instrumentation off,
+            which is a decision to take the tail latency rather than attribute it.
         max_iterations: How many model calls one run may make before it is capped.
         max_tool_result_chars: Where an oversized tool result is cut. Truncation is
             recorded as its own event; silently dropping half a result is a wrong answer
@@ -275,6 +282,7 @@ class AgentRunner:
         approval_ttl_seconds: float | None = None,
         jitter: Random | None = None,
         clock: Clock | None = None,
+        monitor: LoopMonitor | None = _WATCHING,
         ids: IdFactory | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
@@ -309,6 +317,7 @@ class AgentRunner:
         self._approval_ttl = approval_ttl_seconds
         self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
+        self._monitor = monitor
         self._ids: IdFactory = ids or _random_id
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
@@ -345,38 +354,81 @@ class AgentRunner:
         cancellation: CancellationToken | None = None,
         deadline: Deadline | None = None,
         parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
     ) -> Run[OutputT]:
         """Run `agent` from a synchronous caller. Arguments are `run`'s.
 
-        A deliberate wrapper, not an afterthought: not every consumer is async. It drives
-        a loop of its own rather than `asyncio.run`, which clears the thread's event loop
-        on exit and so would break whatever else had set one.
+        A deliberate wrapper, not an afterthought: not every consumer is async. It is the
+        same run `run` drives, on a loop of its own, so there is one implementation and
+        not a second one that drifts.
 
         Raises:
-            RuntimeError: If called from inside a running event loop. Await `run` there.
+            RunningLoopError: If called from inside a running event loop. Await `run`
+                there, or call this from a thread that has no loop of its own.
         """
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            try:
-                return loop.run_until_complete(
-                    self.run(
-                        agent,
-                        user_input,
-                        tenant=tenant,
-                        user=user,
-                        run_id=run_id,
-                        history=history,
-                        memory=memory,
-                        cancellation=cancellation,
-                        deadline=deadline,
-                        parent=parent,
-                    )
-                )
-            finally:
-                loop.close()
-        raise RuntimeError("run_sync cannot be called from a running event loop; await run")
+        return drive(
+            lambda: self.run(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=run_id,
+                history=history,
+                memory=memory,
+                cancellation=cancellation,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+            ),
+            sync_name="run_sync",
+            async_name="AgentRunner.run",
+        )
+
+    def stream_sync[OutputT: BaseModel](
+        self,
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
+        user_input: str,
+        *,
+        tenant: str,
+        user: str | None = None,
+        run_id: str | None = None,
+        history: Iterable[Message] = (),
+        memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
+        backpressure: Backpressure | None = None,
+    ) -> tuple[ProgressEvent, ...]:
+        """Drive `agent` and return every progress event it produced. Arguments are `stream`'s.
+
+        The whole run, collected — a sync caller cannot be handed events as they happen
+        without a thread and a queue it did not ask for. Where progress has to be acted on
+        while the run is still going, that is `stream`, awaited.
+
+        Raises:
+            RunningLoopError: If called from inside a running event loop. Iterate `stream`
+                there, or call this from a thread that has no loop of its own.
+        """
+
+        async def collected() -> tuple[ProgressEvent, ...]:
+            stream = self.stream(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=run_id,
+                history=history,
+                memory=memory,
+                cancellation=cancellation,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+                backpressure=backpressure,
+            )
+            return tuple([event async for event in stream])
+
+        return drive(collected, sync_name="stream_sync", async_name="AgentRunner.stream")
 
     def stream[OutputT: BaseModel](
         self,
@@ -1669,6 +1721,25 @@ class AgentRunner:
             self._event(RunEventKind.APPROVAL_DENIED, name=call.name, detail=why)
         )
 
+    async def _dispatched(self, run: Run[Any], call: ToolCall, bounds: _Bounds) -> object:
+        """Invoke the tool with the run's identity bound and the loop's lag watched.
+
+        The ambient is bound here rather than around the whole run: this is the hop where
+        a body can leave the loop for a thread, and identity that is not carried across it
+        is identity a tool has to be trusted to have been passed.
+        """
+        assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
+        registry = self._tools
+        ambient = Ambient(
+            run_id=run.id, tenant=run.tenant, user=run.user, cancellation=bounds.token
+        )
+        with carrying(ambient):
+            if self._monitor is None:
+                return await registry.invoke(call.name, call.arguments)
+            return await self._monitor.watching(
+                f"tool {call.name}", lambda: registry.invoke(call.name, call.arguments)
+            )
+
     async def _invoke(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
     ) -> tuple[Run[Any], str, str]:
@@ -1682,7 +1753,7 @@ class AgentRunner:
         while True:
             try:
                 result = await self._bounded(
-                    self._tools.invoke(call.name, call.arguments),
+                    self._dispatched(run, call, bounds),
                     limit=self._limit(bounds, bounds.deadlines.tool_call_seconds),
                     bounds=bounds,
                     what=f"tool {call.name}",
