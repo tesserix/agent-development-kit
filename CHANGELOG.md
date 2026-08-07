@@ -114,6 +114,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A stream can now be consumed three ways, and what it holds mid-flight cannot be mistaken
+  for a result. `RunStream` is awaitable and an async context manager: iterate then await
+  for progress plus the authoritative record, await alone for the answer with no progress,
+  or iterate and leave once you have seen enough. Awaiting the same stream from two places
+  drives the run once and hands both the same `Run`. `stream.provisional` is a
+  `Provisional[OutputT]`, which the type checker refuses everywhere an `OutputT` is required
+  — half a JSON object is shaped exactly like a whole one, so the distinction cannot be left
+  to a naming convention; `snapshot()` gives a plain mapping, and `None` while the object is
+  still half-arrived. Only the run's own `output` is schema-validated. Leaving the context
+  manager cancels a run nobody is reading any more, through the same cancellation path a
+  caller's own token uses, and awaiting an abandoned stream raises `StreamInterruptedError`
+  carrying what arrived rather than promoting it to a result. **Stability:** additive —
+  `RunStream` gains `__await__`, `__aenter__`/`__aexit__`, `aclose` and `provisional`, and
+  existing iteration is unchanged. Documented in `docs/run-progress.md`, exercised by
+  `examples/stream_consumption.py`.
+
 - A run can now be watched while it happens. `AgentRunner.stream` returns a `RunStream` that
   drives the same run `run` drives — same loop, same guardrails, same record — and yields a
   discriminated `ProgressEvent` union rather than raw text chunks: `RunStarted`,

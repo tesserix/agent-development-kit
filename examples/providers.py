@@ -56,10 +56,10 @@ class EchoProvider:
 
         Raises:
             CapabilityError: If this provider does not declare `streaming`.
-            NotImplementedError: Otherwise — the recorded streamed path is #39.
+            NotImplementedError: Otherwise — the recorded streamed path is #150.
         """
         self._capabilities.require(Capability.STREAMING, provider=self.name, model="echo-1")
-        raise NotImplementedError("the recorded streamed path is #39")
+        raise NotImplementedError("the recorded streamed path is #150")
 
     def count_tokens(self, messages: Sequence[Message]) -> int:
         """Estimated, since this example ships no tokeniser."""

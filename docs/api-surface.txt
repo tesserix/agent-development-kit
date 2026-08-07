@@ -511,6 +511,7 @@ tesserix_adk.runtime.Pricer :: class Pricer(Protocol)
 tesserix_adk.runtime.ProgressEvent :: class ProgressEvent(AdkModel)
 tesserix_adk.runtime.Prompt :: class Prompt(AdkModel)
 tesserix_adk.runtime.PromptLayer :: class PromptLayer(StrEnum)
+tesserix_adk.runtime.Provisional :: class Provisional(Generic) {snapshot(self) -> 'dict[str, object] | None'}
 tesserix_adk.runtime.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
 tesserix_adk.runtime.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.runtime.RunCancelled :: class RunCancelled(ProgressEvent)
@@ -519,7 +520,7 @@ tesserix_adk.runtime.RunFailed :: class RunFailed(ProgressEvent)
 tesserix_adk.runtime.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.RunHistory :: class RunHistory(Protocol) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'}
 tesserix_adk.runtime.RunStarted :: class RunStarted(ProgressEvent)
-tesserix_adk.runtime.RunStream :: class RunStream(Generic)
+tesserix_adk.runtime.RunStream :: class RunStream(Generic) {aclose(self) -> 'None'}
 tesserix_adk.runtime.Scope :: class Scope(StrEnum)
 tesserix_adk.runtime.Segment :: class Segment(AdkModel)
 tesserix_adk.runtime.SequenceCheck :: class SequenceCheck(object) {accept(self, event: 'ProgressEvent') -> 'bool'}
@@ -573,11 +574,12 @@ tesserix_adk.runtime.progress.ApprovalRequired :: class ApprovalRequired(Progres
 tesserix_adk.runtime.progress.GuardrailDecision :: class GuardrailDecision(ProgressEvent)
 tesserix_adk.runtime.progress.IterationStarted :: class IterationStarted(ProgressEvent)
 tesserix_adk.runtime.progress.ProgressEvent :: class ProgressEvent(AdkModel)
+tesserix_adk.runtime.progress.Provisional :: class Provisional(Generic) {snapshot(self) -> 'dict[str, object] | None'}
 tesserix_adk.runtime.progress.RunCancelled :: class RunCancelled(ProgressEvent)
 tesserix_adk.runtime.progress.RunCompleted :: class RunCompleted(ProgressEvent)
 tesserix_adk.runtime.progress.RunFailed :: class RunFailed(ProgressEvent)
 tesserix_adk.runtime.progress.RunStarted :: class RunStarted(ProgressEvent)
-tesserix_adk.runtime.progress.RunStream :: class RunStream(Generic)
+tesserix_adk.runtime.progress.RunStream :: class RunStream(Generic) {aclose(self) -> 'None'}
 tesserix_adk.runtime.progress.SequenceCheck :: class SequenceCheck(object) {accept(self, event: 'ProgressEvent') -> 'bool'}
 tesserix_adk.runtime.progress.StructuredDelta :: class StructuredDelta(ProgressEvent)
 tesserix_adk.runtime.progress.ToolCallFailed :: class ToolCallFailed(ProgressEvent)

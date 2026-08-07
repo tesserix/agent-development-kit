@@ -75,7 +75,7 @@ class FlakyProvider:
 
     async def stream(self, request: ModelRequest) -> object:
         """Not streamed here."""
-        raise NotImplementedError("see #39")
+        raise NotImplementedError("see #150")
 
 
 def agent(**overrides: object) -> Agent:

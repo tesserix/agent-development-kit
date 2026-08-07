@@ -104,7 +104,7 @@ code lands here as the kit is built.
 | Typing — the answer type, the escape-hatch policy, third-party boundaries | [`docs/typing.md`](docs/typing.md) |
 | The agent definition — owner, evaluation suite, revision, pinning | [`docs/agent-definition.md`](docs/agent-definition.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
-| Watching a run — typed progress events, sequencing, redaction | [`docs/run-progress.md`](docs/run-progress.md) |
+| Watching a run — typed progress events, consumption patterns, provisional output | [`docs/run-progress.md`](docs/run-progress.md) |
 | The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |
 | Determinism, cassettes & replay | [`docs/determinism.md`](docs/determinism.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |

@@ -15,15 +15,18 @@ value to whatever it logs to.
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import json
 from contextvars import ContextVar
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import Field, ValidationError
 
-from tesserix_adk.core import AdkModel, RunState, Usage
+from tesserix_adk.core import AdkModel, RunState, StreamInterruptedError, Usage
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Mapping
 
     from pydantic import BaseModel
 
@@ -35,6 +38,7 @@ __all__ = [
     "GuardrailDecision",
     "IterationStarted",
     "ProgressEvent",
+    "Provisional",
     "RunCancelled",
     "RunCompleted",
     "RunFailed",
@@ -299,6 +303,37 @@ class SequenceCheck:
         return True
 
 
+@dataclass(frozen=True, slots=True)
+class Provisional[OutputT: BaseModel]:
+    """Structured content that has arrived so far, and is not a result.
+
+    Half a JSON object parses into something that looks exactly like the declared output
+    type, so a consumer holding one cannot tell by inspection whether acting on it is safe.
+    It can tell by type: `Provisional[TripPlan]` is not a `TripPlan`, the checker refuses it
+    everywhere one is required, and `snapshot` deliberately hands back a plain mapping
+    rather than a validated model.
+
+    Args:
+        text: The structured text emitted so far, exactly as it arrived.
+    """
+
+    text: str = ""
+
+    def snapshot(self) -> dict[str, object] | None:
+        """What has arrived, if it is currently a whole JSON object; otherwise nothing.
+
+        A half-arrived object reads as nothing rather than as a guess: filling in the
+        missing half would be inventing content the model never sent.
+        """
+        try:
+            parsed: object = json.loads(self.text)
+        except ValueError:
+            return None
+        if not isinstance(parsed, dict):
+            return None
+        return {str(key): value for key, value in parsed.items()}
+
+
 class _Sink:
     """Where the runtime posts events, and where the stream collects them.
 
@@ -312,6 +347,12 @@ class _Sink:
         self._clock = clock
         self._queue: asyncio.Queue[ProgressEvent | None] = asyncio.Queue()
         self._next = 0
+        self.structured = ""
+
+    @property
+    def emitted(self) -> int:
+        """How many events have been numbered on this run."""
+        return self._next
 
     def emit(self, event: ProgressEvent) -> None:
         """Number `event` and hand it to whoever is watching."""
@@ -323,6 +364,8 @@ class _Sink:
             update={"run_id": self._run_id, "sequence": self._next, "at": self._clock.now()}
         )
         self._next += 1
+        if isinstance(numbered, StructuredDelta):
+            self.structured += numbered.fragment
         return numbered
 
     def close(self) -> None:
@@ -350,16 +393,22 @@ class RunStream[OutputT: BaseModel]:
     """
 
     def __init__(
-        self, run_id: str, clock: Clock, drive: Callable[[], Awaitable[Run[OutputT]]]
+        self,
+        run_id: str,
+        clock: Clock,
+        drive: Callable[[], Awaitable[Run[OutputT]]],
+        cancel: Callable[[str], None],
     ) -> None:
         self._drive = drive
+        self._cancel = cancel
         self._sink = _Sink(run_id, clock)
         self._task: asyncio.Task[Run[OutputT]] | None = None
         self._run: Run[OutputT] | None = None
+        self._abandoned = False
 
     @property
     def run(self) -> Run[OutputT]:
-        """The finished run.
+        """The finished run, whatever state it reached.
 
         Raises:
             RuntimeError: If the stream has not been drained. A half-run reported as a run
@@ -368,6 +417,47 @@ class RunStream[OutputT: BaseModel]:
         if self._run is None:
             raise RuntimeError("the run is still running; drain the stream before reading it")
         return self._run
+
+    @property
+    def provisional(self) -> Provisional[OutputT]:
+        """The structured content that has arrived so far. Never a result."""
+        return Provisional(text=self._sink.structured)
+
+    def __await__(self) -> Generator[Any, None, Run[OutputT]]:
+        """Drive the run to its end and give back the authoritative record.
+
+        The await-only pattern, and the one a consumer that iterated then wants the result
+        uses too: the run is driven once however many callers await it.
+        """
+        return self._result().__await__()
+
+    async def __aenter__(self) -> RunStream[OutputT]:
+        """Take the stream, guaranteeing it is closed however the block is left."""
+        return self
+
+    async def __aexit__(self, kind: object, value: BaseException | None, traceback: object) -> None:
+        """Close the stream, without replacing what the consumer's own body raised."""
+        if value is None:
+            await self.aclose()
+            return
+        with contextlib.suppress(Exception):
+            await self.aclose()
+
+    async def aclose(self) -> None:
+        """Stop a run nobody is reading any more, and wait for it to let go of what it holds.
+
+        A consumer that stops reading has stopped paying attention, not stopped paying: a
+        run left driving in the background still calls providers and still bills. So the
+        run is cancelled through the same path a caller's own token uses, and the cancelled
+        record stays readable on `run`.
+        """
+        task = self._task
+        if task is None:
+            return
+        if not task.done():
+            self._abandoned = True
+            self._cancel("the consumer stopped reading the stream")
+        self._run = await task
 
     async def __aiter__(self) -> AsyncIterator[ProgressEvent]:
         """Drive the run, yielding every event, terminal one last.
@@ -384,6 +474,27 @@ class RunStream[OutputT: BaseModel]:
             yield event
         self._run = await self._task
         yield self._sink.number(terminal_for(self._run))
+
+    async def _result(self) -> Run[OutputT]:
+        """The run, or a refusal to call an interrupted one a result.
+
+        Raises:
+            StreamInterruptedError: If the stream was abandoned before the run reached a
+                terminal event. What arrived is carried on the error rather than returned:
+                partial content handed back as a result is a wrong answer that looks right.
+        """
+        if self._task is None:
+            self._task = asyncio.create_task(self._watched())
+        if self._run is None:
+            self._run = await self._task
+        if self._abandoned:
+            raise StreamInterruptedError(
+                "the stream was abandoned before the run finished, so the run was cancelled "
+                "and has no result",
+                partial=self._sink.structured,
+                received=self._sink.emitted,
+            )
+        return self._run
 
     async def _watched(self) -> Run[OutputT]:
         """Run with this stream's sink in scope, and close it however the run ends."""

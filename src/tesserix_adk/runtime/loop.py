@@ -394,13 +394,18 @@ class AgentRunner:
         """Watch `agent` run, event by event. Arguments are `run`'s.
 
         The same run `run` would have driven, reported as it happens: iterating the stream
-        drives it, and `stream.run` is the finished record once the stream is drained. A
-        consumer that only wants the answer keeps calling `run`.
+        drives it, awaiting it gives the finished record, and `stream.run` is that record
+        once either has happened. A consumer that only wants the answer keeps calling `run`.
+
+        The stream is also an async context manager, and leaving the block cancels a run
+        nobody is reading any more — through `cancellation` where one was given, so the
+        caller's own token and an abandoned consumer end the run by the same path.
 
         Returns:
-            The stream. Nothing starts until it is iterated.
+            The stream. Nothing starts until it is iterated or awaited.
         """
         identity = run_id or self._ids()
+        token = cancellation or CancellationToken()
 
         async def drive() -> Run[OutputT]:
             return await self.run(
@@ -411,13 +416,13 @@ class AgentRunner:
                 run_id=identity,
                 history=history,
                 memory=memory,
-                cancellation=cancellation,
+                cancellation=token,
                 deadline=deadline,
                 parent=parent,
                 budget=budget,
             )
 
-        return RunStream(identity, self._clock, drive)
+        return RunStream(identity, self._clock, drive, token.cancel)
 
     def _emit(self, event: ProgressEvent) -> None:
         """Tell whoever is watching this run, where anybody is."""

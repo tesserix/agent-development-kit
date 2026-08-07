@@ -90,7 +90,7 @@ fails on the `hook_rewrite` event rather than passing quietly.
 - **Providers are recorded, tools are not.** A cassette holds provider exchanges only. Tool
   results come from the registry, so an offline test fakes the registry as it always did.
 - **Streaming is not recorded.** `stream` raises `NotImplementedError` on both the
-  recording and replaying providers until recorded streaming lands (#39).
+  recording and replaying providers until recorded streaming lands (#150).
 - **Recording is per-provider-instance, not per-process.** `RecordingProvider.cassette` is
   what *that* wrapper saw; there is no ambient recorder collecting every call in a process.
 - **A replay serves one run.** The provider tracks how much of the cassette it has served,

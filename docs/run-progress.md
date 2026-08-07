@@ -63,6 +63,63 @@ already handed the value to whatever it logs to. The answer itself is *not* scru
 deltas that no longer reassemble to the answer are a corrupted answer, and a consumer that
 must not see the content must not be given the run.
 
+## Consuming a stream
+
+Three patterns, all on the same object. Nothing starts until one of them does.
+
+**Iterate then await** — progress while it happens, then the authoritative record.
+
+```python
+async with runner.stream(agent, "Four nights near Kyoto.", tenant="acme") as stream:
+    async for event in stream:
+        render(event)
+run = await stream
+```
+
+**Await only** — the answer, no progress. The stream drains itself.
+
+```python
+run = await runner.stream(agent, "Four nights near Kyoto.", tenant="acme")
+```
+
+**Iterate and discard** — read until you have seen enough, and leave.
+
+```python
+async with runner.stream(agent, "Four nights near Kyoto.", tenant="acme") as stream:
+    async for event in stream:
+        if isinstance(event, ToolCallStarted):
+            break
+```
+
+Leaving the block cancels a run nobody is reading any more, through the same cancellation
+path a caller's own token uses; `stream.run` is then the cancelled record. A run left
+driving in the background still calls providers and still bills. An exception in the loop
+body takes the same exit, and the consumer's own exception is the one that propagates.
+
+Awaiting the same stream from two places drives the run once and gives both the same `Run`.
+Awaiting a stream that was abandoned raises `StreamInterruptedError` rather than handing
+back what had accumulated — partial content returned as a result is a wrong answer that
+looks right, and what arrived is on the error for a caller that deliberately wants it.
+
+## Provisional is not final
+
+Half a JSON object parses into something shaped exactly like the declared output type. A
+consumer holding one cannot tell by inspection whether acting on it is safe, so it tells by
+type: `stream.provisional` is a `Provisional[OutputT]`, which the checker refuses wherever
+an `OutputT` is required.
+
+```python
+async for event in stream:
+    draft = stream.provisional.snapshot()   # dict | None — never a TripPlan
+    if draft is not None:
+        preview(draft)
+plan: TripPlan | None = (await stream).output
+```
+
+`snapshot` hands back a plain mapping, and `None` while the object is half-arrived — filling
+in the missing half would be inventing content the model never sent. Only the run's own
+`output` is schema-validated, and it exists only once the run reached a terminal event.
+
 ## What a consumer sees, and what it does not
 
 Provider-level stream events — `TextDelta`, `ToolCallDelta`, `UsageDelta`, `StreamEnd` in
@@ -91,4 +148,4 @@ one, is breaking.
   rather than replaying a partial run.
 - **No transport helpers.** SSE and WebSocket adapters are #40.
 - **Cassettes do not record streams.** `RecordingProvider` and `ReplayingProvider` still
-  refuse `stream`; recorded streaming is #39.
+  refuse `stream`; recorded streaming is #150.
