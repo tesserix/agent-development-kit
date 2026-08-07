@@ -28,16 +28,29 @@ from tesserix_adk.models.catalogue import (
     priced,
 )
 from tesserix_adk.models.credentials import Credential, EnvironmentSecrets
+from tesserix_adk.models.embeddings import (
+    BatchConfig,
+    BatchingEmbedder,
+    EmbeddingLimits,
+    EmbeddingMetrics,
+    EmbeddingProvider,
+    Vector,
+)
 from tesserix_adk.models.pool import ClientKey, ClientPool, PoolConfig, PoolMetrics
 
 __all__ = [
     "CATALOGUE_VERSION",
+    "BatchConfig",
+    "BatchingEmbedder",
     "Capability",
     "CapabilityError",
     "ClientKey",
     "ClientPool",
     "ContextWindowExceededError",
     "Credential",
+    "EmbeddingLimits",
+    "EmbeddingMetrics",
+    "EmbeddingProvider",
     "EnvironmentSecrets",
     "ModelCapabilities",
     "ModelCard",
@@ -62,6 +75,7 @@ __all__ = [
     "ToolCallDelta",
     "ToolDeclaration",
     "UsageDelta",
+    "Vector",
     "known_models",
     "model_card",
     "priced",

@@ -114,6 +114,29 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Concurrent single-text embedding calls are coalesced into provider batches.
+  `BatchingEmbedder` wraps any `EmbeddingProvider` and turns the few hundred sequential
+  round trips that indexing a document costs into a handful of calls, while each caller
+  still asks for one text and gets one vector. Identity is what makes that safe: a waiting
+  caller is answered by the digest of its own text rather than by a position in a list, the
+  provider's answer is verified for count and width before anyone is given anything, and a
+  short or wrong-width response raises `ModelResponseError` instead of yielding a padded
+  vector — the kit never substitutes a zero vector or a neighbour's. A failed batch is
+  bisected until the failure is isolated to the one text that caused it; duplicate texts are
+  sent once and both callers answered; a cancelled caller drops out without disturbing its
+  siblings. Batches are keyed by model, tenant and dimensionality, sent when full, when the
+  next item would cross a byte ceiling, when the window expires or when the embedder closes.
+  `interactive=True` skips the window, and `EmbeddingMetrics` reports requests, batches,
+  deduplicated, bypassed, isolated and how each batch was triggered.
+  **Stability:** additive — a new module and six new names, no existing signature changed.
+  `EmbeddingProvider` is a runtime-checkable `Protocol` rather than a base class, so a
+  vendor client already shaped like it needs no adapter, and `Vector` is `tuple[float, ...]`
+  rather than a wrapper type: an embedding is a number sequence, and a nominal type around
+  one buys nothing a consumer cannot get from the protocol. Ceilings are read from
+  `provider.limits(model)` rather than hardcoded, so a vendor raising its batch size needs
+  no release here; `BatchConfig` may narrow them and never widen them. Documented in
+  `docs/embedding-batching.md`, exercised by `examples/embedding_batching.py`.
+
 - Provider connections now outlive the run that opened them. `ClientPool` keys clients by
   provider, endpoint, credential and transport settings and hands the same warm client back
   across runs; a provider takes one with `pool=` and a provider given none still owns and

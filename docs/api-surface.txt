@@ -393,6 +393,8 @@ tesserix_adk.core.trust.TrustBoundary :: class TrustBoundary(AdkModel) {admits(s
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
+tesserix_adk.models.BatchConfig :: class BatchConfig(object)
+tesserix_adk.models.BatchingEmbedder :: class BatchingEmbedder(object) {aclose(self) -> 'None'; embed(self, text: 'str', *, model: 'str', tenant: 'str' = 'default', interactive: 'bool' = False) -> 'Vector'}
 tesserix_adk.models.CATALOGUE_VERSION :: CATALOGUE_VERSION: str
 tesserix_adk.models.Capability :: class Capability(StrEnum)
 tesserix_adk.models.CapabilityError :: class CapabilityError(AdkError)
@@ -400,6 +402,9 @@ tesserix_adk.models.ClientKey :: class ClientKey(object)
 tesserix_adk.models.ClientPool :: class ClientPool(object) {aclose(self) -> 'None'; config_for(self, provider: 'str') -> 'PoolConfig'; retire(self, *, provider: 'str', base_url: 'str', credential: 'str' = '', timeout_seconds: 'float | None' = None, connect_seconds: 'float | None' = None) -> 'None'}
 tesserix_adk.models.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
 tesserix_adk.models.Credential :: class Credential(object) {value(self) -> 'str'}
+tesserix_adk.models.EmbeddingLimits :: class EmbeddingLimits(object)
+tesserix_adk.models.EmbeddingMetrics :: class EmbeddingMetrics(object)
+tesserix_adk.models.EmbeddingProvider :: class EmbeddingProvider(Protocol) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
 tesserix_adk.models.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.models.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
 tesserix_adk.models.ModelCard :: class ModelCard(AdkModel)
@@ -424,6 +429,7 @@ tesserix_adk.models.ToolArgumentValidationError :: class ToolArgumentValidationE
 tesserix_adk.models.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.models.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.models.UsageDelta :: class UsageDelta(StreamEvent)
+tesserix_adk.models.Vector :: Vector: TypeAliasType
 tesserix_adk.models.catalogue.CATALOGUE_VERSION :: CATALOGUE_VERSION: str
 tesserix_adk.models.catalogue.ModelCard :: class ModelCard(AdkModel)
 tesserix_adk.models.catalogue.Pricing :: class Pricing(AdkModel)
@@ -432,6 +438,12 @@ tesserix_adk.models.catalogue.model_card :: def model_card(ref: 'str | ModelRef'
 tesserix_adk.models.catalogue.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
 tesserix_adk.models.credentials.Credential :: class Credential(object) {value(self) -> 'str'}
 tesserix_adk.models.credentials.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
+tesserix_adk.models.embeddings.BatchConfig :: class BatchConfig(object)
+tesserix_adk.models.embeddings.BatchingEmbedder :: class BatchingEmbedder(object) {aclose(self) -> 'None'; embed(self, text: 'str', *, model: 'str', tenant: 'str' = 'default', interactive: 'bool' = False) -> 'Vector'}
+tesserix_adk.models.embeddings.EmbeddingLimits :: class EmbeddingLimits(object)
+tesserix_adk.models.embeddings.EmbeddingMetrics :: class EmbeddingMetrics(object)
+tesserix_adk.models.embeddings.EmbeddingProvider :: class EmbeddingProvider(Protocol) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
+tesserix_adk.models.embeddings.Vector :: Vector: TypeAliasType
 tesserix_adk.models.gguf.DEFAULT_KV_BYTES_PER_TOKEN :: DEFAULT_KV_BYTES_PER_TOKEN: int
 tesserix_adk.models.gguf.DEFAULT_QUANTIZATION :: DEFAULT_QUANTIZATION: Quantization
 tesserix_adk.models.gguf.GgufModel :: class GgufModel(AdkModel) {at(self, quantization: 'Quantization') -> 'GgufModel'; footprint(self, *, context_tokens: 'int') -> 'MemoryEstimate'}
