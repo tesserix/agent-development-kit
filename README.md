@@ -91,6 +91,7 @@ code lands here as the kit is built.
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | Resilience — the error taxonomy, redaction, phase timeouts, rate limiting | [`docs/resilience.md`](docs/resilience.md) |
 | Routing — task classes, the routing table, precedence, entitlements | [`docs/routing.md`](docs/routing.md) |
+| Fallback — the chain, eligible failures, side-effect safety, attribution | [`docs/fallback.md`](docs/fallback.md) |
 | Structured output — declared answer shapes, provider fallback, violations | [`docs/structured-output.md`](docs/structured-output.md) |
 | Repair — bounded correction, what goes back, what it costs | [`docs/repair.md`](docs/repair.md) |
 | Typing — the answer type, the escape-hatch policy, third-party boundaries | [`docs/typing.md`](docs/typing.md) |

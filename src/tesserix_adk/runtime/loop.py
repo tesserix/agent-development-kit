@@ -20,7 +20,7 @@ import hashlib
 import json
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from pydantic import BaseModel
@@ -40,6 +40,9 @@ from tesserix_adk.core import (
     ContextWindowExceededError,
     DeadlineConfig,
     DeclaresEmulation,
+    FallbackChain,
+    FallbackExhaustedError,
+    FallbackUnsafeError,
     FanOutLimitError,
     HookAction,
     HookChain,
@@ -52,6 +55,7 @@ from tesserix_adk.core import (
     MaxIterationsError,
     Message,
     ModelProvider,
+    ModelRef,
     ModelRequirements,
     ModelResponseError,
     ModelRouter,
@@ -72,6 +76,7 @@ from tesserix_adk.core import (
     ToolFailurePolicy,
     Usage,
     deduplicate,
+    fallback_eligible,
     resolve_hooks,
     verify_conformance,
 )
@@ -137,6 +142,28 @@ class _Bounds:
     retry: RetryConfig
     loop: LoopConfig
     provider: ModelProvider
+
+
+@dataclass(frozen=True, slots=True)
+class _Answered:
+    """One answer and where it came from, which is not always where the run started."""
+
+    run: Run[Any]
+    response: ModelResponse
+    bounds: _Bounds
+    request: ModelRequest
+
+
+# The kinds that mean a tool did something. A tool that errored or was orphaned may still
+# have landed its side effect, so both count against a transparent fallback.
+_SIDE_EFFECTS = frozenset(
+    {
+        RunEventKind.TOOL_RESULT,
+        RunEventKind.TOOL_RESULT_TRUNCATED,
+        RunEventKind.TOOL_ERROR,
+        RunEventKind.TOOL_INDETERMINATE,
+    }
+)
 
 
 class AgentRunner:
@@ -350,6 +377,7 @@ class AgentRunner:
                 agent, depth, bounds, tenant=tenant, user=user, run_id=run_id
             )
         model = agent.model or (decision.chosen.model if decision is not None else "")
+        chain = FallbackChain.of(decision) if agent.model is None else FallbackChain()
         run: Run[Any] = _carrier_for(agent.output_type)(
             id=run_id or self._ids(),
             tenant=tenant,
@@ -398,7 +426,9 @@ class AgentRunner:
                 )
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
 
-                run, response = await self._call_model(run, request, bounds)
+                answered = await self._call_model(run, agent, request, bounds, chain)
+                run, response, bounds = answered.run, answered.response, answered.bounds
+                model = answered.request.model
                 run, response = await self._after_the_response(run, agent, response, bounds)
                 run = await self._settle(run, agent, response, messages, bounds)
                 if run.state.is_terminal:
@@ -822,8 +852,34 @@ class AgentRunner:
         return run
 
     async def _call_model(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        request: ModelRequest,
+        bounds: _Bounds,
+        chain: FallbackChain,
+    ) -> _Answered:
+        """Get one answer, from this model or from the next one the chain offers."""
+        spent: list[tuple[str, str]] = []
+        while True:
+            try:
+                run, response = await self._attempted(run, request, bounds)
+            except _Refused as refusal:
+                run, bounds, request = self._fell_back(
+                    refusal.run, agent, chain, spent, refusal.failure, bounds, request
+                )
+            else:
+                return _Answered(run=run, response=response, bounds=bounds, request=request)
+
+    async def _attempted(
         self, run: Run[Any], request: ModelRequest, bounds: _Bounds
     ) -> tuple[Run[Any], ModelResponse]:
+        """Ask this model, retrying it as its own policy allows.
+
+        Raises:
+            _Refused: When this model's attempts are spent. Whether that ends the run is
+                the chain's decision, not this one's.
+        """
         estimate = sum(_length(message) for message in request.messages) // _CHARS_PER_TOKEN
         plan = RetryPlan(bounds.retry, random=self._jitter)
         attempt = 1
@@ -846,14 +902,119 @@ class AgentRunner:
             except Exception as failure:
                 run, delay = self._after_failure(run, plan, attempt, failure, bounds, request.model)
                 if delay is None:
-                    raise _Terminal(
-                        run, RunState.FAILED, f"{type(failure).__name__}: {failure}"
-                    ) from failure
+                    raise _Refused(run, failure) from failure
                 await self._backoff(run, delay, bounds, name=request.model)
                 run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=request.model))
                 attempt += 1
             else:
                 return run, self._readable(response, bounds.provider)
+
+    def _fell_back(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        chain: FallbackChain,
+        spent: list[tuple[str, str]],
+        failure: Exception,
+        bounds: _Bounds,
+        request: ModelRequest,
+    ) -> tuple[Run[Any], _Bounds, ModelRequest]:
+        """Move the run to the next model in the chain, or end it saying why it could not.
+
+        Raises:
+            _Terminal: If nothing may be tried next — an alternative that does not exist,
+                a failure another vendor would give the same answer to, a side effect that
+                must not be repeated, a cancelled run, or a chain with nothing left.
+        """
+        here = f"{bounds.provider.name}:{request.model}"
+        spent.append((here, _named(failure) if isinstance(failure, AdkError) else str(failure)))
+        nowhere = chain.after(here, failed={ref for ref, _ in spent}) is None
+        if not fallback_eligible(failure) or (nowhere and len(spent) == 1):
+            raise _Terminal(run, RunState.FAILED, f"{type(failure).__name__}: {failure}")
+        if nowhere:
+            raise _Terminal(run, RunState.FAILED, _named(_exhausted(spent)))
+        self._refuse_a_repeatable_side_effect(run, agent, chain.after(here) or "")
+        self._stop_if_cancelled(run, bounds)
+        return self._next_link(run, chain, spent, bounds, request)
+
+    def _next_link(
+        self,
+        run: Run[Any],
+        chain: FallbackChain,
+        spent: list[tuple[str, str]],
+        bounds: _Bounds,
+        request: ModelRequest,
+    ) -> tuple[Run[Any], _Bounds, ModelRequest]:
+        """The first remaining link this runner can actually call, with the run moved to it."""
+        here = f"{bounds.provider.name}:{request.model}"
+        tried = {ref for ref, _ in spent}
+        while (link := chain.after(here, failed=tried)) is not None:
+            ref = ModelRef.parse(link)
+            vendor = self._providers.get(ref.provider)
+            unusable = self._unusable(vendor, ref, request)
+            if unusable:
+                spent.append((link, unusable))
+                tried.add(link)
+                continue
+            assert vendor is not None  # noqa: S101 — _unusable answers for a missing vendor
+            moved = request.model_copy(update={"model": ref.model})
+            run = run.model_copy(update={"model": ref.model}).record_event(
+                self._event(
+                    RunEventKind.MODEL_FELL_BACK, name=link, detail=f"after {here}: {spent[0][1]}"
+                )
+            )
+            return run, replace(bounds, provider=vendor), moved
+        raise _Terminal(run, RunState.FAILED, _named(_exhausted(spent)))
+
+    def _unusable(self, vendor: ModelProvider | None, ref: ModelRef, request: ModelRequest) -> str:
+        """Why this link cannot answer, or an empty string where it can."""
+        if vendor is None:
+            return f"the runner was given no provider named {ref.provider!r}"
+        window = vendor.capabilities.context_window_tokens
+        needed = sum(_length(message) for message in request.messages) // _CHARS_PER_TOKEN
+        if window is not None and window < needed:
+            return f"its window holds {window} tokens and the prompt is already {needed}"
+        return ""
+
+    def _refuse_a_repeatable_side_effect(self, run: Run[Any], agent: Agent[Any], link: str) -> None:
+        """Refuse a fallback that would move a run past a side effect nobody can undo.
+
+        Raises:
+            _Terminal: If a tool that ran is not declared idempotent. The recorded results
+                are replayed to the next model, which is sound only where being invoked
+                once is the whole story.
+        """
+        ran = [
+            event.name
+            for event in run.events
+            if event.kind in _SIDE_EFFECTS and event.name is not None
+        ]
+        risky = next((name for name in ran if name not in agent.idempotent_tools), None)
+        if risky is None:
+            return
+        raise _Terminal(
+            run,
+            RunState.FAILED,
+            _named(
+                FallbackUnsafeError(
+                    f"{risky} already ran and is not declared idempotent, so continuing on "
+                    f"{link} could repeat a side effect nobody can undo",
+                    tool=risky,
+                    ref=link,
+                )
+            ),
+        )
+
+    def _stop_if_cancelled(self, run: Run[Any], bounds: _Bounds) -> None:
+        """A chain that runs on after the caller let go bills them for changing their mind.
+
+        Raises:
+            _Terminal: If the caller's switch was flipped while this model was failing.
+        """
+        try:
+            bounds.token.raise_if_cancelled()
+        except CancelledError as cancelled:
+            raise _Terminal(run, RunState.CANCELLED, str(cancelled)) from cancelled
 
     def _readable(self, payload: object, provider: ModelProvider) -> ModelResponse:
         """Refuse an answer that is not one.
@@ -1479,6 +1640,24 @@ class _Terminal(Exception):  # noqa: N818 — control flow, not an error the cal
         self.run = run
         self.state = state
         self.detail = detail
+
+
+class _Refused(Exception):  # noqa: N818 — control flow, not an error the caller sees
+    """One model is out of attempts. Whether the run is over is the chain's decision."""
+
+    def __init__(self, run: Run[Any], failure: Exception) -> None:
+        super().__init__(str(failure))
+        self.run = run
+        self.failure = failure
+
+
+def _exhausted(spent: Sequence[tuple[str, str]]) -> FallbackExhaustedError:
+    """The one error that names every model asked, so the last refusal is not the whole story."""
+    return FallbackExhaustedError(
+        f"every model in the chain refused this run: "
+        f"{'; '.join(f'{ref} {reason}' for ref, reason in spent)}",
+        attempts=spent,
+    )
 
 
 def _named(error: AdkError) -> str:

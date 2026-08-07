@@ -34,6 +34,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A run survives a vendor that will not answer it. `FallbackChain` is the eligible
+  candidates of the routing rule that already matched, chosen one first, so the fallback
+  order and the routing order cannot drift and every link has already passed the run's
+  capability floor. The chain moves only after that vendor's own retries are spent and only
+  for failures another vendor could answer differently — rate limits, overloads and timeouts
+  — while a bad key, an invalid request, a filtered prompt, a capability mismatch, an
+  exhausted budget and anything unmapped stay terminal. Falling back after a tool has run
+  replays the recorded result rather than re-invoking it, and a tool not listed in
+  `Agent.idempotent_tools` blocks the fallback with `FallbackUnsafeError` instead. Every
+  attempt is on the run, the run names the model that actually answered, failed attempts
+  still charge the budget, and `FallbackExhaustedError` names every candidate that refused
+  rather than only the last. See `docs/fallback.md`.
 - An agent can name the job instead of the model. `Agent.task_class` names the kind of
   work — `CHEAP`, `SMART`, `REASONING`, or any `TaskClass` a deployment invents — and
   `Agent.requires` names what it needs of whatever answers, so retuning a deployment is an

@@ -23,6 +23,8 @@ __all__ = [
     "ConfigurationError",
     "ContentFilteredError",
     "ContextWindowExceededError",
+    "FallbackExhaustedError",
+    "FallbackUnsafeError",
     "FanOutLimitError",
     "GuardrailViolationError",
     "HookEvaluationError",
@@ -537,6 +539,74 @@ class StreamInterruptedError(ProviderError):
             tenant=tenant,
             details=details,
         )
+
+
+class FallbackExhaustedError(ProviderError):
+    """Raised when every model in a run's chain refused it.
+
+    Carries all of them rather than only the last, because the last is rarely the
+    interesting one: a chain that failed on a rate limit, then an outage, then a rate limit
+    again is a different incident from one that failed on the same key three times.
+
+    Args:
+        attempts: Each model tried and why it did not answer, as `(ref, reason)` pairs, in
+            the order they were tried.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        attempts: Sequence[tuple[str, str]] = (),
+        status: int | None = None,
+        retry_after: float | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        request_id: str | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.attempts = tuple(_Rejection(ref, reason) for ref, reason in attempts)
+        super().__init__(
+            *args,
+            status=status,
+            retry_after=retry_after,
+            provider=provider,
+            model=model,
+            request_id=request_id,
+            run_id=run_id,
+            tenant=tenant,
+            details=details,
+        )
+
+
+class FallbackUnsafeError(AdkError):
+    """Raised when another model cannot be tried without risking a repeated side effect.
+
+    A fallback replays the tool results already recorded rather than calling the tools
+    again, so the second model sees what the first saw. That is sound only where every tool
+    already invoked is safe to have been invoked once. If the run charged a card and the
+    model then became unreachable, nothing in the record proves the charge did not land,
+    and a second provider finishing the run is how a customer is billed twice. The run
+    fails closed and the caller decides.
+
+    Args:
+        tool: The tool whose side effect cannot be assumed repeatable.
+        ref: The model that would have been tried next.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        tool: str = "",
+        ref: str = "",
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        self.tool = tool
+        self.ref = ref
+        super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
 
 
 class SchemaGenerationError(ConfigurationError):

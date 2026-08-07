@@ -131,6 +131,9 @@ class RoutingDecision(AdkModel):
         task_class: What was asked for.
         chosen: What answered.
         considered: Every candidate the matching rule offered, in order.
+        chain: The eligible candidates, chosen one first — what a run may fall back to when
+            a vendor will not answer. A pin has a chain of one: it names the model on
+            purpose, and falling off it answers a different question.
         rejected: The ones ruled out, with the requirement each failed.
         rule: Which rule answered, as `class@tenant/agent`.
         pinned: Whether the caller named the model directly, bypassing the order.
@@ -139,6 +142,7 @@ class RoutingDecision(AdkModel):
     task_class: TaskClass
     chosen: ModelRef
     considered: tuple[str, ...] = ()
+    chain: tuple[str, ...] = ()
     rejected: tuple[RejectedCandidate, ...] = ()
     rule: str = ""
     pinned: bool = False

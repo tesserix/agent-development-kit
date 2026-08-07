@@ -44,6 +44,8 @@ from tesserix_adk.core.errors import (
     ConfigurationError,
     ContentFilteredError,
     ContextWindowExceededError,
+    FallbackExhaustedError,
+    FallbackUnsafeError,
     FanOutLimitError,
     GuardrailViolationError,
     HookEvaluationError,
@@ -69,6 +71,7 @@ from tesserix_adk.core.errors import (
     ToolExecutionError,
 )
 from tesserix_adk.core.extras import require_extra
+from tesserix_adk.core.fallback import FallbackChain, fallback_eligible
 from tesserix_adk.core.hooks import (
     ApprovalDecision,
     ApprovalGate,
@@ -197,6 +200,9 @@ __all__ = [
     "DeclaresEmulation",
     "Deprecation",
     "DeprecationPolicyError",
+    "FallbackChain",
+    "FallbackExhaustedError",
+    "FallbackUnsafeError",
     "FanOutLimitError",
     "Guardrail",
     "GuardrailViolationError",
@@ -281,6 +287,7 @@ __all__ = [
     "deduplicate",
     "deprecate",
     "deprecations",
+    "fallback_eligible",
     "legal_transitions",
     "load_config",
     "members_of",

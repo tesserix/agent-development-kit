@@ -95,6 +95,7 @@ class RunEventKind(StrEnum):
     """
 
     MODEL_ROUTED = "model_routed"
+    MODEL_FELL_BACK = "model_fell_back"
     PROMPT_ASSEMBLED = "prompt_assembled"
     MODEL_CALL = "model_call"
     MODEL_RESPONSE = "model_response"

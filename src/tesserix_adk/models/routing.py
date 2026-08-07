@@ -231,18 +231,23 @@ class TableRouter:
         tenant: str | None,
     ) -> RoutingDecision:
         rejected: list[RejectedCandidate] = []
+        eligible: list[ModelSpec] = []
         for candidate in rule.candidates:
             reason = self._ineligible(candidate, needed, tenant)
-            if not reason:
-                return RoutingDecision(
-                    task_class=task_class,
-                    chosen=candidate.ref,
-                    considered=tuple(str(spec.ref) for spec in rule.candidates),
-                    rejected=tuple(rejected),
-                    rule=rule.scope,
-                )
-            rejected.append(RejectedCandidate(ref=str(candidate.ref), reason=reason))
-        raise _nothing_eligible(task_class, rule, needed, rejected, tenant)
+            if reason:
+                rejected.append(RejectedCandidate(ref=str(candidate.ref), reason=reason))
+            else:
+                eligible.append(candidate)
+        if not eligible:
+            raise _nothing_eligible(task_class, rule, needed, rejected, tenant)
+        return RoutingDecision(
+            task_class=task_class,
+            chosen=eligible[0].ref,
+            considered=tuple(str(spec.ref) for spec in rule.candidates),
+            chain=tuple(str(spec.ref) for spec in eligible),
+            rejected=tuple(rejected),
+            rule=rule.scope,
+        )
 
     def _ineligible(
         self, candidate: ModelSpec, needed: ModelRequirements, tenant: str | None
@@ -283,6 +288,7 @@ class TableRouter:
             task_class=task_class,
             chosen=candidate.ref,
             considered=(str(candidate.ref),),
+            chain=(str(candidate.ref),),
             rule=rule.scope,
             pinned=True,
         )

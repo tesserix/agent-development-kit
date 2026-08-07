@@ -31,6 +31,9 @@ tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(AdkModel)
 tesserix_adk.core.DeclaresEmulation :: class DeclaresEmulation(Protocol)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
 tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
+tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'}
+tesserix_adk.core.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
+tesserix_adk.core.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
 tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
 tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(AdkError)
@@ -163,6 +166,8 @@ tesserix_adk.core.errors.CapabilityError :: class CapabilityError(AdkError)
 tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.errors.ContentFilteredError :: class ContentFilteredError(ProviderError)
 tesserix_adk.core.errors.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
+tesserix_adk.core.errors.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
+tesserix_adk.core.errors.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.errors.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
 tesserix_adk.core.errors.GuardrailViolationError :: class GuardrailViolationError(AdkError)
 tesserix_adk.core.errors.HookEvaluationError :: class HookEvaluationError(AdkError)
@@ -188,6 +193,9 @@ tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(
 tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
+tesserix_adk.core.fallback.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'}
+tesserix_adk.core.fallback.fallback_eligible :: def fallback_eligible(failure: 'BaseException') -> 'bool'
+tesserix_adk.core.fallback_eligible :: def fallback_eligible(failure: 'BaseException') -> 'bool'
 tesserix_adk.core.hooks.ApprovalDecision :: class ApprovalDecision(AdkModel)
 tesserix_adk.core.hooks.ApprovalGate :: class ApprovalGate(Protocol) {request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
 tesserix_adk.core.hooks.ApprovalRecord :: class ApprovalRecord(AdkModel)
