@@ -295,7 +295,7 @@ class TestToolActivity:
 class TestWhatNeverReachesAConsumer:
     async def test_a_credential_in_a_tool_argument_is_masked_before_it_is_emitted(self) -> None:
         """Redaction is the runtime's job: a transport that redacts has already logged it."""
-        credential = "sk-live-01234567890abcdef"
+        credential = "sk-live-01234567890abcdef"  # a fixture, not a credential; gitleaks:allow
         called = answer(
             "", tool_calls=(ToolCall(id="c1", name="lookup", arguments={"token": credential}),)
         )
