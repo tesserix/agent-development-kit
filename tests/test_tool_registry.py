@@ -172,6 +172,21 @@ class TestAnAgentsAllowlistIsResolvedOnceAndCannotWiden:
         assert refused.value.agent == "planner"
         assert entered == []
 
+    def test_resolving_a_tool_outside_the_allowlist_is_refused_like_calling_it(self) -> None:
+        view = registry_of().view(allow=("look_up_fare",), agent="planner")
+
+        with pytest.raises(ToolNotPermittedError) as refused:
+            view.resolve("refund_fare")
+
+        assert refused.value.tool == "refund_fare"
+
+    def test_resolving_a_permitted_tool_hands_back_what_the_registry_holds(self) -> None:
+        registry = registry_of()
+
+        assert registry.view(allow=("look_up_fare",)).resolve("look_up_fare").name == (
+            "look_up_fare"
+        )
+
     async def test_a_tool_inside_the_allowlist_runs_and_returns_its_result(self) -> None:
         view = registry_of().view(allow=("look_up_fare",), agent="planner")
 

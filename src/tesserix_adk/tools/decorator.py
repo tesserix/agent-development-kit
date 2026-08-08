@@ -85,6 +85,9 @@ class Tool[**P, R]:
         parallel_safe: Whether two of this tool's calls may be in flight together. A tool
             whose effect depends on the order it is called in declares itself here; no
             signature says it.
+        returns_type: What the function annotated its result as, awaited, or `None` where
+            it annotated nothing. The schema is what a model reads; this is what a result
+            can actually be held to before it enters a conversation.
     """
 
     name: str
@@ -98,6 +101,7 @@ class Tool[**P, R]:
     context_required: bool = False
     timeout: float | None = None
     parallel_safe: bool = True
+    returns_type: Any = None
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """Call the function with its own signature, awaiting it either way.
@@ -329,6 +333,7 @@ def _built(function: Callable[..., Any], overrides: _Overrides) -> Tool[Any, Any
         context_required=required,
         timeout=overrides.timeout,
         parallel_safe=overrides.parallel_safe,
+        returns_type=_awaited(hints["return"]) if "return" in hints else None,
     )
     _claim(called, function, built)
     return built

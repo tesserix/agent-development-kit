@@ -120,6 +120,7 @@ from tesserix_adk.runtime.progress import (
     UsageUpdated,
 )
 from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
+from tesserix_adk.runtime.results import ReturningTool, ToolResult, ToolResultBoundary
 from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
@@ -203,6 +204,7 @@ class _Outcome:
     text: str = ""
     source: str = "tool_error"
     failure: _Terminal | None = None
+    result: ToolResult | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -284,6 +286,10 @@ class AgentRunner:
         max_tool_result_chars: Where an oversized tool result is cut. Truncation is
             recorded as its own event; silently dropping half a result is a wrong answer
             nobody can account for. Compaction rather than cutting is #192.
+        results: What every tool result is held to before it enters the conversation. The
+            default holds each result to the type its tool declared, neutralises what can
+            forge a turn, and flags instruction-shaped content; a consumer that needs a
+            tool to fail closed on suspicion says so here rather than in a prompt.
 
     Raises:
         ProtocolConformanceError: If a collaborator is missing a member its protocol
@@ -312,6 +318,7 @@ class AgentRunner:
         ids: IdFactory | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
+        results: ToolResultBoundary | None = None,
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
@@ -349,6 +356,7 @@ class AgentRunner:
         self._ids: IdFactory = ids or _random_id
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
+        self._results = results or ToolResultBoundary()
         self._orphans: set[asyncio.Task[Any]] = set()
 
     def reload(self, router: ModelRouter) -> None:
@@ -1516,6 +1524,7 @@ class AgentRunner:
                     RunState.FAILED,
                     f"model called {call.name!r}, which is not on the agent's allowlist",
                 )
+            self._refuse_what_a_flagged_result_may_have_asked_for(run, agent, call)
             run = await self._cleared_to_dispatch(run, agent, call, bounds)
             run = run.model_copy(update={"tool_calls": [*run.tool_calls, call]})
             run = run.record_event(self._event(RunEventKind.TOOL_CALL, name=call.name))
@@ -1544,7 +1553,7 @@ class AgentRunner:
                 Message(
                     role="tool",
                     tool_call_id=call.id,
-                    content=[TextPart(text=wrap_untrusted(text, source=outcome.source))],
+                    content=[TextPart(text=_as_data(text, outcome))],
                 )
             )
             run = _carrying(run, messages)
@@ -1619,12 +1628,17 @@ class AgentRunner:
         async with self._lanes.held(ticket.call.name, tenant=run.tenant, turn=turn):
             ticket.dispatched = True
             try:
-                after, text, source = await self._invoke(run, agent, ticket.call, bounds)
+                after, text, source, checked = await self._invoke(run, agent, ticket.call, bounds)
             except _Terminal as terminal:
                 return _Outcome(
                     events=tuple(terminal.run.events[len(run.events) :]), failure=terminal
                 )
-            return _Outcome(events=tuple(after.events[len(run.events) :]), text=text, source=source)
+            return _Outcome(
+                events=tuple(after.events[len(run.events) :]),
+                text=text,
+                source=source,
+                result=checked,
+            )
 
     def _never_dispatched(self, call: ToolCall, why: str) -> _Outcome:
         """A call the batch stopped before it was made — undone, not unknown."""
@@ -1644,6 +1658,44 @@ class AgentRunner:
             return self._never_dispatched(ticket.call, why)
         stopped = self._indeterminacy(agent, ticket.call)
         return _Outcome(events=(stopped,), text=f"error: {stopped.detail}")
+
+    def _returning(self, name: str) -> ReturningTool:
+        """What the boundary needs to know about the tool, for buses that can say."""
+        resolve = getattr(self._tools, "resolve", None)
+        return _Unannotated(name) if resolve is None else cast("ReturningTool", resolve(name))
+
+    def _refuse_what_a_flagged_result_may_have_asked_for(
+        self, run: Run[Any], agent: Agent[Any], call: ToolCall
+    ) -> None:
+        """Stop a privileged call once anything in this conversation has been flagged.
+
+        A result that tried to issue instructions is in the context from the turn it
+        arrived until the run ends, so "the very next call" is a window an attacker waits
+        out. Approval exists to put a person between the model and an irreversible action,
+        and asking that person to adjudicate a call that a scraped page may have written is
+        asking them to launder it. The run fails instead, and a consumer that wants this
+        call made says so out of band rather than through the result.
+
+        Raises:
+            _Terminal: If the call needs approval and a flagged result reached the model.
+        """
+        if call.name not in agent.approval_required_tools:
+            return
+        flagged = [event for event in run.events if event.kind is RunEventKind.TOOL_RESULT_FLAGGED]
+        if not flagged:
+            return
+        detail = (
+            f"{call.name} requires approval, and {flagged[-1].name}'s result was flagged "
+            f"earlier in this run. A tool result cannot authorise a privileged call"
+        )
+        self._emit(
+            ToolCallFailed(call_id=call.id, tool=call.name, error="ToolRefused", detail=detail)
+        )
+        raise _Terminal(
+            run.record_event(self._event(RunEventKind.TOOL_REFUSED, name=call.name, detail=detail)),
+            RunState.FAILED,
+            detail,
+        )
 
     def _refuse_a_turn_that_would_break_a_cap(
         self, run: Run[Any], agent: Agent[Any], calls: Sequence[ToolCall], bounds: _Bounds
@@ -1907,7 +1959,7 @@ class AgentRunner:
 
     async def _invoke(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
-    ) -> tuple[Run[Any], str, str]:
+    ) -> tuple[Run[Any], str, str, ToolResult | None]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
         await self._reserve(run, bounds, len(_signature(call)) // _CHARS_PER_TOKEN)
         # Charged before dispatch: a tool counted afterwards is one whose side effect has
@@ -1944,8 +1996,20 @@ class AgentRunner:
             else:
                 break
 
-        text = _render(result)
-        truncated = len(text) > self._max_tool_result_chars
+        checked = self._results.checked(self._returning(call.name), result, tenant=run.tenant)
+        if checked.findings:
+            run = run.record_event(
+                self._event(
+                    RunEventKind.TOOL_RESULT_FLAGGED,
+                    name=call.name,
+                    detail=(
+                        f"matched {', '.join(sorted({f.heuristic for f in checked.findings}))} "
+                        f"at {', '.join(sorted({f.path or 'result' for f in checked.findings}))}"
+                    ),
+                )
+            )
+        text = checked.text
+        truncated = checked.truncated or len(text) > self._max_tool_result_chars
         if truncated:
             run = run.record_event(
                 self._event(
@@ -1954,6 +2018,7 @@ class AgentRunner:
                     detail=f"{len(text)} chars cut to {self._max_tool_result_chars}",
                 )
             )
+        if len(text) > self._max_tool_result_chars:
             text = text[: self._max_tool_result_chars] + _TRUNCATION_MARKER
         await self._spent(
             run,
@@ -1969,6 +2034,7 @@ class AgentRunner:
             run.record_event(self._event(RunEventKind.TOOL_RESULT, name=call.name)),
             text,
             "tool_result",
+            checked,
         )
 
     async def _spent(
@@ -2061,7 +2127,7 @@ class AgentRunner:
 
     def _tool_failed(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, failure: Exception, bounds: _Bounds
-    ) -> tuple[Run[Any], str, str]:
+    ) -> tuple[Run[Any], str, str, ToolResult | None]:
         wrapped = ToolExecutionError(
             f"tool {call.name!r} failed: {failure}", run_id=run.id, tenant=run.tenant
         )
@@ -2083,7 +2149,7 @@ class AgentRunner:
         )
         if agent.on_tool_error is ToolFailurePolicy.FAIL_RUN:
             raise _Terminal(run, RunState.FAILED, str(wrapped)) from failure
-        return run, f"error: {failure}", "tool_error"
+        return run, f"error: {failure}", "tool_error", None
 
     def _arguments_rejected(
         self,
@@ -2091,7 +2157,7 @@ class AgentRunner:
         agent: Agent[Any],
         call: ToolCall,
         rejected: ToolArgumentValidationError,
-    ) -> tuple[Run[Any], str, str]:
+    ) -> tuple[Run[Any], str, str, ToolResult | None]:
         """Arguments the tool refused: nothing ran, so this is correctable rather than failed.
 
         Retrying the same payload would be the same refusal, so what goes back is the
@@ -2132,6 +2198,7 @@ class AgentRunner:
             ),
             rejected.feedback(),
             "tool_error",
+            None,
         )
 
     def _indeterminacy(self, agent: Agent[Any], call: ToolCall) -> RunEvent:
@@ -2373,10 +2440,22 @@ def _length(message: Message) -> int:
     return sum(len(part.text) for part in message.content if isinstance(part, TextPart))
 
 
-def _render(result: object) -> str:
-    if isinstance(result, str):
-        return result
-    try:
-        return json.dumps(result, default=str)
-    except (TypeError, ValueError):
-        return str(result)
+@dataclass(frozen=True, slots=True)
+class _Unannotated:
+    """A tool a bus cannot describe, held to nothing but the boundary's own ceilings."""
+
+    name: str
+    returns_type: Any = None
+
+
+def _as_data(text: str, outcome: _Outcome) -> str:
+    """Render what a tool produced as data, keeping the envelope's own annotations.
+
+    The text is taken after the hooks rather than before: a hook that rewrote a result
+    rewrote what the model reads, and wrapping the original would deliver something nobody
+    approved. What the boundary decided about the result — flagged, truncated — travels
+    with it, because a warning the reader cannot see is not a warning.
+    """
+    if outcome.result is None:
+        return wrap_untrusted(text, source=outcome.source)
+    return replace(outcome.result, text=text).rendered()

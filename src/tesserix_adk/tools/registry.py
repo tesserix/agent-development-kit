@@ -334,6 +334,17 @@ class AgentToolView:
         """The permitted tools as the model is told about them, in a stable order."""
         return tuple(_declared(self.registry.resolve(name)) for name in self.names)
 
+    def resolve(self, name: str) -> Tool[Any, Any]:
+        """The tool behind `name`, if this agent may call it.
+
+        Raises:
+            ToolNotPermittedError: If the allowlist does not name it.
+            ToolNotFoundError: If nothing is registered under `name`.
+        """
+        if name not in self.names:
+            raise ToolNotPermittedError(name, agent=self.agent, permitted=self.names)
+        return self.registry.resolve(name)
+
     async def invoke(self, name: str, arguments: Any) -> Any:  # noqa: ANN401 — the tool's own
         """Call `name` on this agent's behalf, if this agent may.
 

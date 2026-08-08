@@ -129,6 +129,27 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `ToolResultBoundary`, so everything a tool returns crosses a boundary before it reaches the
+  model. It validates the value against the tool's declared return type, walks the whole
+  structure for injection heuristics, neutralises structural forgery, applies size and depth
+  ceilings, and returns a `ToolResult` rendered as an explicitly untrusted-data envelope
+  carrying tool, source, tenant and trust label. The run loop uses it by default. Structural
+  forgery — chat-template turn markers, envelope escapes, null bytes, bidi reordering — is
+  removed outright; instruction-shaped prose is flagged and delivered, because a refund policy
+  discusses ignoring instructions in the same words an injection does, with
+  `ResultPolicy.on_suspicion` choosing `annotate`, `truncate` or `fail` per tool. A value that
+  does not match the declared type raises `ToolResultError` naming the tool and the violation
+  and never quoting the value; nothing is repaired or summarised into something plausible.
+  Once a run has a flagged result, a call to an approval-required tool is refused before the
+  approval gate is asked. `tesserix_adk.testing.INJECTION_FIXTURES` publishes the payloads a
+  boundary must survive as a reusable conformance kit. **Stability:** additive. New public
+  names: `ToolResultBoundary`, `ToolResult`, `ResultPolicy`, `ResultFinding`, `ReturningTool`,
+  `ToolResultError`, `INJECTION_FIXTURES`, `InjectionFixture`, `AgentToolView.resolve`, and
+  the `tool_result_flagged` run event. Existing runs gain the envelope and the ceilings
+  without configuration, which changes what a model reads for a tool that was returning
+  instruction-shaped text; that is the point of the change. Documented in
+  `docs/tool-results.md`.
+
 - `ToolRegistry`, which makes what an agent may call declared configuration rather than a
   filtered dict and a dispatch check. It holds the tools a process has;
   `registry.view(allow=..., agent=...)` returns an immutable `AgentToolView` of the subset

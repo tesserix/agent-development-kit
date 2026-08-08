@@ -188,6 +188,7 @@ tesserix_adk.core.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.ToolNotFoundError :: class ToolNotFoundError(AdkError)
 tesserix_adk.core.ToolNotPermittedError :: class ToolNotPermittedError(AdkError)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
+tesserix_adk.core.ToolResultError :: class ToolResultError(AdkError)
 tesserix_adk.core.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
 tesserix_adk.core.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
@@ -295,6 +296,7 @@ tesserix_adk.core.errors.ToolDefinitionError :: class ToolDefinitionError(Config
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.errors.ToolNotFoundError :: class ToolNotFoundError(AdkError)
 tesserix_adk.core.errors.ToolNotPermittedError :: class ToolNotPermittedError(AdkError)
+tesserix_adk.core.errors.ToolResultError :: class ToolResultError(AdkError)
 tesserix_adk.core.errors.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.errors.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
 tesserix_adk.core.errors.WorkersBusyError :: class WorkersBusyError(AdkError)
@@ -612,7 +614,10 @@ tesserix_adk.runtime.Prompt :: class Prompt(AdkModel)
 tesserix_adk.runtime.PromptLayer :: class PromptLayer(StrEnum)
 tesserix_adk.runtime.Provisional :: class Provisional(Generic) {snapshot(self) -> 'dict[str, object] | None'}
 tesserix_adk.runtime.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
+tesserix_adk.runtime.ResultFinding :: class ResultFinding(object)
+tesserix_adk.runtime.ResultPolicy :: class ResultPolicy(object)
 tesserix_adk.runtime.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
+tesserix_adk.runtime.ReturningTool :: class ReturningTool(Protocol)
 tesserix_adk.runtime.RunCancelled :: class RunCancelled(ProgressEvent)
 tesserix_adk.runtime.RunCompleted :: class RunCompleted(ProgressEvent)
 tesserix_adk.runtime.RunFailed :: class RunFailed(ProgressEvent)
@@ -632,6 +637,8 @@ tesserix_adk.runtime.ToolCallFinished :: class ToolCallFinished(ProgressEvent)
 tesserix_adk.runtime.ToolCallIndeterminate :: class ToolCallIndeterminate(ProgressEvent)
 tesserix_adk.runtime.ToolCallStarted :: class ToolCallStarted(ProgressEvent)
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
+tesserix_adk.runtime.ToolResult :: class ToolResult(object) {rendered(self) -> 'str'}
+tesserix_adk.runtime.ToolResultBoundary :: class ToolResultBoundary(object) {checked(self, tool: 'ReturningTool', value: 'object', *, tenant: 'str' = '') -> 'ToolResult'}
 tesserix_adk.runtime.UsageUpdated :: class UsageUpdated(ProgressEvent)
 tesserix_adk.runtime.WorkerPool :: class WorkerPool(object) {call(self, what: 'str', body: 'Callable[[], T]') -> 'T'; close(self) -> 'None'}
 tesserix_adk.runtime.Workers :: class Workers(object)
@@ -715,6 +722,11 @@ tesserix_adk.runtime.prompt.assemble_prompt :: def assemble_prompt(agent: 'Agent
 tesserix_adk.runtime.prompt.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
 tesserix_adk.runtime.rate_limit.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
 tesserix_adk.runtime.refuse_unaffordable :: def refuse_unaffordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'None'
+tesserix_adk.runtime.results.ResultFinding :: class ResultFinding(object)
+tesserix_adk.runtime.results.ResultPolicy :: class ResultPolicy(object)
+tesserix_adk.runtime.results.ReturningTool :: class ReturningTool(Protocol)
+tesserix_adk.runtime.results.ToolResult :: class ToolResult(object) {rendered(self) -> 'str'}
+tesserix_adk.runtime.results.ToolResultBoundary :: class ToolResultBoundary(object) {checked(self, tool: 'ReturningTool', value: 'object', *, tenant: 'str' = '') -> 'ToolResult'}
 tesserix_adk.runtime.retry.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.runtime.spend.budgeted_stream :: def budgeted_stream(events: 'AsyncIterator[StreamEvent]', budget: 'BudgetPolicy') -> 'AsyncIterator[StreamEvent]'
 tesserix_adk.runtime.structured.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'; repair_prompt(self, violation: 'SchemaViolationError') -> 'str'}
@@ -741,6 +753,8 @@ tesserix_adk.testing.HTTP_CASSETTE_FORMAT :: HTTP_CASSETTE_FORMAT: str
 tesserix_adk.testing.HttpCassette :: class HttpCassette(AdkModel) {save(self, path: 'Path') -> 'None'}
 tesserix_adk.testing.HttpExchange :: class HttpExchange(AdkModel)
 tesserix_adk.testing.HttpReplay :: class HttpReplay(object)
+tesserix_adk.testing.INJECTION_FIXTURES :: INJECTION_FIXTURES: tuple
+tesserix_adk.testing.InjectionFixture :: class InjectionFixture(object)
 tesserix_adk.testing.Interaction :: class Interaction(AdkModel)
 tesserix_adk.testing.MemoryStoreConformance :: class MemoryStoreConformance(ABC) {make_store(self) -> 'MemoryStore'; test_delete_removes_the_key(self) -> 'None'; test_deleting_an_absent_key_is_not_an_error(self) -> 'None'; test_get_returns_none_for_an_absent_key(self) -> 'None'; test_keys_do_not_collide_across_distinct_values(self) -> 'None'; test_put_replaces_rather_than_merges(self) -> 'None'; test_put_then_get_round_trips(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
 tesserix_adk.testing.MetricPoint :: class MetricPoint(object)
@@ -812,10 +826,12 @@ tesserix_adk.testing.http_cassette.HttpCassette :: class HttpCassette(AdkModel) 
 tesserix_adk.testing.http_cassette.HttpExchange :: class HttpExchange(AdkModel)
 tesserix_adk.testing.http_cassette.HttpReplay :: class HttpReplay(object)
 tesserix_adk.testing.http_cassette.SentRequest :: class SentRequest(AdkModel)
+tesserix_adk.testing.injection.INJECTION_FIXTURES :: INJECTION_FIXTURES: tuple
+tesserix_adk.testing.injection.InjectionFixture :: class InjectionFixture(object)
 tesserix_adk.testing.pytest_plugin.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.redacted :: def redacted(text: 'str') -> 'str'
-tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
+tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.LENIENT :: LENIENT: ArgumentPolicy
 tesserix_adk.tools.STRICT :: STRICT: ArgumentPolicy
@@ -827,7 +843,7 @@ tesserix_adk.tools.ToolRegistry :: class ToolRegistry(object) {declarations(self
 tesserix_adk.tools.context.ToolContext :: class ToolContext(object) {raise_if_cancelled(self) -> 'None'}
 tesserix_adk.tools.decorator.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any] | str | bytes', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'}
 tesserix_adk.tools.decorator.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True) -> 'Tool[Any, Any] | _Decorator'
-tesserix_adk.tools.registry.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
+tesserix_adk.tools.registry.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.registry.ToolCallSpan :: class ToolCallSpan(object)
 tesserix_adk.tools.registry.ToolRegistry :: class ToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; observe(self, observer: 'Callable[[ToolCallSpan], None]') -> 'None'; register(self, tool: 'Tool[Any, Any]', *, origin: 'str' = '') -> 'None'; resolve(self, name: 'str') -> 'Tool[Any, Any]'; timeout_for(self, name: 'str') -> 'float | None'; view(self, *, allow: 'Sequence[str]', agent: 'str' = '') -> 'AgentToolView'}
 tesserix_adk.tools.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True) -> 'Tool[Any, Any] | _Decorator'

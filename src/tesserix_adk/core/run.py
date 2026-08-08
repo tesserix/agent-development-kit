@@ -104,6 +104,7 @@ class RunEventKind(StrEnum):
     TOOL_CALL = "tool_call"
     TOOL_RESULT = "tool_result"
     TOOL_RESULT_TRUNCATED = "tool_result_truncated"
+    TOOL_RESULT_FLAGGED = "tool_result_flagged"
     TOOL_ERROR = "tool_error"
     TOOL_REFUSED = "tool_refused"
     TOOL_INDETERMINATE = "tool_indeterminate"

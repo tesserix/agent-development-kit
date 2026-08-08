@@ -57,6 +57,7 @@ __all__ = [
     "ToolExecutionError",
     "ToolNotFoundError",
     "ToolNotPermittedError",
+    "ToolResultError",
     "ToolTimedOutError",
     "TrustBoundaryError",
     "WorkersBusyError",
@@ -773,6 +774,30 @@ class ToolNotPermittedError(AdkError):
             f"{tool!r} is not in {whose} allowlist, so it was not called"
             + (f". It may call {', '.join(self.permitted)}" if self.permitted else ""),
             details={"tool": tool, "agent": agent},
+        )
+
+
+class ToolResultError(AdkError):
+    """Raised when what a tool returned may not cross into the run as it stands.
+
+    Failing closed is the point. A result that does not match the type the tool declared,
+    that outruns a ceiling, or that a policy refuses, is not summarised or repaired into
+    something plausible — an invented result is indistinguishable from a real one once it
+    is in the conversation.
+
+    Args:
+        tool: What returned it.
+        violation: What was wrong, in terms of the rule rather than the content. The value
+            itself is never quoted: a rejected result may be someone's address, and quoting
+            it copies it into the logs the refusal was meant to keep it out of.
+    """
+
+    def __init__(self, tool: str, violation: str) -> None:
+        self.tool = tool
+        self.violation = violation
+        super().__init__(
+            f"{tool!r} returned something that may not enter the run: {violation}",
+            details={"tool": tool},
         )
 
 
