@@ -21,16 +21,19 @@ import json
 import time
 import uuid
 from contextlib import suppress
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Never, TypeVar, cast
 
 from pydantic import BaseModel
 
 from tesserix_adk.core import (
     AdkError,
     AgentDefinition,
+    ApprovalBindingError,
     ApprovalDecision,
+    ApprovalDenial,
     ApprovalDeniedError,
     ApprovalExpiredError,
     ApprovalGate,
@@ -101,6 +104,7 @@ from tesserix_adk.core import (
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
+from tesserix_adk.runtime.approvals import ApprovalLedger
 from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.fanout import Lanes, Turn, phased
@@ -178,6 +182,9 @@ class SystemClock:
         await asyncio.sleep(seconds)
 
 
+_NO_REFUSALS: Mapping[str, ToolRefusal] = MappingProxyType({})
+
+
 @dataclass(frozen=True, slots=True)
 class _Bounds:
     """What limits one run: the caller's switch, the run's instant, the step ceilings."""
@@ -190,6 +197,8 @@ class _Bounds:
     concurrency: ConcurrencyConfig
     provider: ModelProvider
     budget: BudgetPolicy
+    approvals: ApprovalLedger = field(default_factory=ApprovalLedger)
+    granted: dict[str, ApprovalRecord] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -277,6 +286,8 @@ class AgentRunner:
             starts with is the chain it is judged by.
         approvals: Where a held tool call waits for a human decision. Required if any
             agent this runner drives declares `approval_required_tools`.
+        approval_denial: What a denied or expired approval means. By default the call is
+            refused and the agent may answer; `FAIL_RUN` stops the run instead.
         approval_ttl_seconds: How long a request stays answerable. A decision outside the
             window is refused, because an approval is permission at a moment rather than
             a standing licence. Unbounded by default.
@@ -319,6 +330,7 @@ class AgentRunner:
         hooks: HookChain | Iterable[Hook] | None = None,
         approvals: ApprovalGate | None = None,
         approval_ttl_seconds: float | None = None,
+        approval_denial: ApprovalDenial = ApprovalDenial.REFUSE_CALL,
         jitter: Random | None = None,
         clock: Clock | None = None,
         monitor: LoopMonitor | None = _WATCHING,
@@ -358,6 +370,7 @@ class AgentRunner:
         )
         self._approvals = approvals
         self._approval_ttl = approval_ttl_seconds
+        self._approval_denial = ApprovalDenial(approval_denial)
         self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
         self._monitor = monitor
@@ -1065,6 +1078,7 @@ class AgentRunner:
     async def _terminate(
         self, run: Run[Any], agent: Agent[Any], state: RunState, detail: str | None, bounds: _Bounds
     ) -> Run[Any]:
+        bounds.approvals.void()
         run = await self._notify(run, agent, state, bounds)
         run = self._to_compensate(run, agent, state)
         recorded = run.record_event(self._event(RunEventKind.TERMINATED, detail=detail))
@@ -1518,6 +1532,7 @@ class AgentRunner:
                 tool_calls=tuple(calls),
             )
         )
+        refused: dict[str, ToolRefusal] = {}
         for call in calls:
             if call.name not in agent.tools:
                 self._emit(
@@ -1534,14 +1549,18 @@ class AgentRunner:
                     f"model called {call.name!r}, which is not on the agent's allowlist",
                 )
             self._refuse_what_a_flagged_result_may_have_asked_for(run, agent, call)
-            run = await self._cleared_to_dispatch(run, agent, call, bounds)
+            try:
+                run = await self._cleared_to_dispatch(run, agent, call, bounds)
+            except _Declined as declined:
+                run, refused[call.id] = declined.run, declined.refusal
+                continue
             run = run.model_copy(update={"tool_calls": [*run.tool_calls, call]})
             run = run.record_event(self._event(RunEventKind.TOOL_CALL, name=call.name))
             self._emit(
                 ToolCallStarted(call_id=call.id, tool=call.name, arguments=_shown(call.arguments))
             )
 
-        outcomes = await self._fanned_out(run, agent, calls, bounds)
+        outcomes = await self._fanned_out(run, agent, calls, bounds, refused)
         recorded = [event for call in calls for event in outcomes[call.id].events]
         run = run.model_copy(update={"events": [*run.events, *recorded]})
         for call in calls:
@@ -1569,7 +1588,12 @@ class AgentRunner:
         return run
 
     async def _fanned_out(
-        self, run: Run[Any], agent: Agent[Any], calls: Sequence[ToolCall], bounds: _Bounds
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        calls: Sequence[ToolCall],
+        bounds: _Bounds,
+        refused: Mapping[str, ToolRefusal] = _NO_REFUSALS,
     ) -> dict[str, _Outcome]:
         """Run the batch inside its lanes, and return one outcome per call.
 
@@ -1583,9 +1607,13 @@ class AgentRunner:
             if not declaration.parallel_safe
         )
         turn = Turn(bounds.concurrency)
-        outcomes: dict[str, _Outcome] = {}
+        outcomes: dict[str, _Outcome] = {
+            call.id: self._gate_refused(call, refused[call.id])
+            for call in calls
+            if call.id in refused
+        }
         stopped: str | None = None
-        for phase in phased(calls, serial=serial):
+        for phase in phased([call for call in calls if call.id not in refused], serial=serial):
             if stopped is not None:
                 outcomes |= {call.id: self._never_dispatched(call, stopped) for call in phase}
                 continue
@@ -1649,6 +1677,18 @@ class AgentRunner:
                 result=checked,
             )
 
+    def _gate_refused(self, call: ToolCall, declined: ToolRefusal) -> _Outcome:
+        """A call a human declined: nothing ran, and the agent is told so as data."""
+        detail = f"{declined.code}: {declined.message}"
+        self._emit(
+            ToolCallFailed(call_id=call.id, tool=call.name, error="ToolRefusal", detail=detail)
+        )
+        return _Outcome(
+            events=(self._event(RunEventKind.TOOL_REFUSED, name=call.name, detail=detail),),
+            text=detail,
+            source="tool_refusal",
+        )
+
     def _never_dispatched(self, call: ToolCall, why: str) -> _Outcome:
         """A call the batch stopped before it was made — undone, not unknown."""
         detail = f"never dispatched: {why}"
@@ -1688,7 +1728,7 @@ class AgentRunner:
         Raises:
             _Terminal: If the call needs approval and a flagged result reached the model.
         """
-        if call.name not in agent.approval_required_tools:
+        if not self._declares_approval(agent, call):
             return
         flagged = [event for event in run.events if event.kind is RunEventKind.TOOL_RESULT_FLAGGED]
         if not flagged:
@@ -1828,7 +1868,7 @@ class AgentRunner:
         )
         if decision.action is HookAction.REFUSE:
             raise _Terminal(run, RunState.FAILED, _named(HookRefusedError(decision.reason)))
-        declared = call.name in agent.approval_required_tools
+        declared = self._declares_approval(agent, call)
         if not declared and decision.action is not HookAction.REQUIRE_APPROVAL:
             return run
         reason = (
@@ -1837,6 +1877,28 @@ class AgentRunner:
             else f"{call.name} is declared to require approval"
         )
         return await self._approved(run, agent, call, reason, bounds)
+
+    def _declares_approval(self, agent: Agent[Any], call: ToolCall) -> bool:
+        """Whether a human must decide this call, per the agent or per the tool itself.
+
+        The tool is asked too, because the tool is what knows it moves money: an agent that
+        adopts a refund tool and forgets to list it is the common case, and a gate that
+        depends on every consumer remembering is a gate that is missing somewhere.
+        """
+        if call.name in agent.approval_required_tools:
+            return True
+        asks = getattr(self._resolved(call.name), "requires_approval", None)
+        return bool(asks(call.arguments)) if callable(asks) else False
+
+    def _resolved(self, name: str) -> object:
+        """The tool behind `name`, where the bus can say, and nothing where it cannot."""
+        resolve = getattr(self._tools, "resolve", None)
+        if resolve is None:
+            return None
+        try:
+            return resolve(name)
+        except Exception:
+            return None
 
     async def _approved(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, reason: str, bounds: _Bounds
@@ -1879,7 +1941,31 @@ class AgentRunner:
                 RunState.FAILED,
                 _named(ApprovalDeniedError(f"approval for {call.name!r} could not be obtained")),
             ) from failure
-        return self._honoured(run, record, decision, call)
+        run = self._honoured(run, record, decision, call)
+        bounds.approvals.bind(record)
+        bounds.granted[call.id] = record
+        return run
+
+    def _spend_the_approval(self, run: Run[Any], call: ToolCall, bounds: _Bounds) -> None:
+        """Use the grant this call is holding, for the payload it was granted over.
+
+        No path in today's loop can alter the arguments between the decision and the
+        dispatch, and duplicate call ids are collapsed before either happens. The check is
+        here so that a future one has to notice.
+
+        Raises:
+            ApprovalBindingError: If the arguments changed after the human saw them, or the
+                same decision is being cashed twice. Both fail closed rather than dispatch.
+        """
+        record = bounds.granted.get(call.id)
+        if record is None:
+            return
+        try:
+            bounds.approvals.spend(record, call.arguments)
+        except ApprovalBindingError as unbound:  # pragma: no cover - defended, not reachable
+            raise _Terminal(
+                self._denied(run, call, str(unbound)), RunState.FAILED, _named(unbound)
+            ) from unbound
 
     def _honoured(
         self, run: Run[Any], record: ApprovalRecord, decision: ApprovalDecision, call: ToolCall
@@ -1894,9 +1980,12 @@ class AgentRunner:
         if self._approval_ttl is not None and not (
             record.requested_at <= decision.decided_at <= record.requested_at + self._approval_ttl
         ):
-            raise _Terminal(
-                self._denied(run, call, "the decision arrived outside the request's window"),
-                RunState.FAILED,
+            why = "the decision arrived outside the request's window"
+            self._refuse_the_call(
+                self._denied(run, call, why),
+                call,
+                "approval_expired",
+                f"permission at a moment is not a standing licence: {why}",
                 _named(
                     ApprovalExpiredError(
                         f"approval for {call.name!r} was decided outside its window; permission "
@@ -1905,9 +1994,12 @@ class AgentRunner:
                 ),
             )
         if not decision.granted:
-            raise _Terminal(
-                self._denied(run, call, decision.reason or f"declined by {decision.decided_by}"),
-                RunState.FAILED,
+            why = decision.reason or f"declined by {decision.decided_by}"
+            self._refuse_the_call(
+                self._denied(run, call, why),
+                call,
+                "approval_denied",
+                why,
                 _named(ApprovalDeniedError(f"approval for {call.name!r} was declined")),
             )
         return run.record_event(
@@ -1915,6 +2007,23 @@ class AgentRunner:
                 RunEventKind.APPROVAL_GRANTED, name=call.name, detail=f"by {decision.decided_by}"
             )
         )
+
+    def _refuse_the_call(
+        self, run: Run[Any], call: ToolCall, code: str, why: str, terminal: str
+    ) -> Never:
+        """A human said no. By default that is an answer the agent can work with.
+
+        A denial that kills the run leaves the agent unable to say "then let me propose
+        something smaller", which is the conversation approval exists to make possible. A
+        consumer that would rather stop dead asks for `ApprovalDenial.FAIL_RUN`.
+
+        Raises:
+            ToolRefusal: Under the default policy.
+            _Terminal: Under `ApprovalDenial.FAIL_RUN`.
+        """
+        if self._approval_denial is ApprovalDenial.FAIL_RUN:
+            raise _Terminal(run, RunState.FAILED, terminal)
+        raise _Declined(run, ToolRefusal(call.name, code, why))
 
     def _denied(self, run: Run[Any], call: ToolCall, why: str) -> Run[Any]:
         return run.record_event(
@@ -1970,6 +2079,7 @@ class AgentRunner:
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
     ) -> tuple[Run[Any], str, str, ToolResult | None]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
+        self._spend_the_approval(run, call, bounds)
         await self._reserve(run, bounds, len(_signature(call)) // _CHARS_PER_TOKEN)
         # Charged before dispatch: a tool counted afterwards is one whose side effect has
         # already landed by the time the ceiling refuses it.
@@ -2407,6 +2517,15 @@ class _Terminal(Exception):  # noqa: N818 — control flow, not an error the cal
         self.run = run
         self.state = state
         self.detail = detail
+
+
+class _Declined(Exception):  # noqa: N818 — control flow, not an error the caller sees
+    """A gate said no before dispatch, carrying what was recorded and what to tell the agent."""
+
+    def __init__(self, run: Run[Any], refusal: ToolRefusal) -> None:
+        super().__init__(str(refusal))
+        self.run = run
+        self.refusal = refusal
 
 
 class _Refused(Exception):  # noqa: N818 — control flow, not an error the caller sees

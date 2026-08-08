@@ -10,6 +10,15 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- A denied approval no longer fails the run. It reaches the agent as a `ToolRefusal` — code
+  `approval_denied`, or `approval_expired` for a decision that arrived outside its window — so
+  the agent can propose something the human will accept instead of losing everything the run has
+  done because a person said no to one call. Nothing dispatches either way and the
+  `APPROVAL_DENIED` event is unchanged. **Stability:** breaking for anyone asserting on
+  `RunState.FAILED` after a denial; `AgentRunner(approval_denial=ApprovalDenial.FAIL_RUN)`
+  restores the previous behaviour exactly. A gate that cannot be *reached* still fails the run —
+  an unanswered request is not a denial. Documented in `docs/tool-approval.md`.
+
 - `Tool.invoke` now validates the arguments it is given before entering the body. It was
   documented as a pass-through, so the check was something every caller had to remember;
   a tool call is model output and the one path that carries it is the right place to hold
@@ -128,6 +137,20 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   `examples/providers.py`.
 
 ### Added
+
+- A tool can declare its own approval gate: `@tool(requires_approval=True)`, or a predicate over
+  the arguments for the calls that cross a threshold. The requirement was previously the agent's
+  to remember, which put it furthest from whoever knows what the tool does. The predicate is
+  asked with validated arguments, and both a predicate that raises and arguments the validator
+  refuses hold the call rather than release it. `ApprovalRecord.summary` is what the approver is
+  shown — numbers and booleans in full, everything else by type and length — and `ApprovalLedger`
+  binds the grant to the argument digest, so altered arguments, a replayed decision, an
+  unrecorded grant and a grant belonging to a finished run all raise `ApprovalBindingError`
+  rather than dispatch. A tool result that reads like an approval satisfies nothing.
+  **Stability:** additive. New public names: `ApprovalPolicy`, `ApprovalPredicate`,
+  `ApprovalDenial`, `ApprovalBindingError` on `tesserix_adk.core`, `ApprovalLedger` on
+  `tesserix_adk.runtime`, and `Tool.requires_approval`. See the breaking entry above for the
+  change to what a denial does. Documented in `docs/tool-approval.md`.
 
 - A tool error taxonomy the run loop can branch on. `ToolFailure` carries a stable `code`, a
   `retryable` flag and an optional `retry_after`; `ToolRefusal` is the tool working and saying

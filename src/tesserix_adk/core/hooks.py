@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
@@ -24,14 +25,18 @@ from pydantic import Field, model_validator
 from tesserix_adk.core.errors import HookRegistrationError, ProtocolConformanceError
 from tesserix_adk.core.models import AdkModel
 from tesserix_adk.core.protocols import verify_conformance
+from tesserix_adk.core.redaction import scrub
 from tesserix_adk.core.run import RunState  # noqa: TC001 — pydantic resolves this annotation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
 __all__ = [
     "ApprovalDecision",
+    "ApprovalDenial",
     "ApprovalGate",
+    "ApprovalPolicy",
+    "ApprovalPredicate",
     "ApprovalRecord",
     "Hook",
     "HookAction",
@@ -191,6 +196,54 @@ class Hook(Protocol):
         ...
 
 
+class ApprovalDenial(StrEnum):
+    """What a denied or expired approval means to the run.
+
+    Refusing the call is the default: a denial that kills the run leaves the agent unable
+    to propose something smaller, which is the conversation approval exists to make
+    possible. `FAIL_RUN` is for consumers who would rather stop dead than continue.
+    """
+
+    REFUSE_CALL = "refuse_call"
+    FAIL_RUN = "fail_run"
+
+
+type ApprovalPredicate = Callable[[Mapping[str, Any]], bool]
+"""What decides, from validated arguments alone, whether one call needs a human."""
+
+
+@dataclass(frozen=True, slots=True)
+class ApprovalPolicy:
+    """When a tool may not run without a human, decided by code rather than by the model.
+
+    A predicate is evaluated over validated arguments — the model proposes the call, it
+    never decides whether the call needs approving, because a model that can waive the gate
+    can be talked into waiving it.
+
+    Args:
+        required: Whether every call needs approval.
+        when: A predicate over the validated arguments, for a conditional gate such as a
+            value threshold. A predicate that raises is read as requiring approval: a gate
+            that errors open is not there on the day it matters.
+        reason: What the approver is told about why they are being asked.
+    """
+
+    required: bool = False
+    when: ApprovalPredicate | None = None
+    reason: str = ""
+
+    def applies_to(self, arguments: Mapping[str, Any]) -> bool:
+        """Whether this call needs a human before it runs."""
+        if self.required:
+            return True
+        if self.when is None:
+            return False
+        try:
+            return bool(self.when(arguments))
+        except Exception:
+            return True
+
+
 @runtime_checkable
 class ApprovalGate(Protocol):
     """Where a run waits for a human to decide about a tool call."""
@@ -215,6 +268,10 @@ class ApprovalRecord(AdkModel):
         agent_name: Which agent asked.
         tool_name: What it wants to call.
         arguments_digest: SHA-256 over the canonical arguments.
+        summary: What the approver is shown. Numbers and booleans in full, because an
+            approver who cannot see the amount cannot approve it; strings as a type and a
+            length, because a card token or an account number is a string and an approval
+            queue is the wrong place for one.
         reason: Why approval is required — the tool's declaration or a hook's decision.
         requested_at: Unix seconds.
     """
@@ -225,6 +282,7 @@ class ApprovalRecord(AdkModel):
     agent_name: str = Field(min_length=1)
     tool_name: str = Field(min_length=1)
     arguments_digest: str = Field(min_length=64, max_length=64)
+    summary: str = ""
     reason: str = Field(min_length=1)
     requested_at: float = 0.0
 
@@ -249,6 +307,7 @@ class ApprovalRecord(AdkModel):
             agent_name=agent_name,
             tool_name=tool_name,
             arguments_digest=digest_of(arguments),
+            summary=summarise(arguments),
             reason=reason,
             requested_at=requested_at,
         )
@@ -367,3 +426,21 @@ def digest_of(arguments: Mapping[str, Any]) -> str:
     """SHA-256 over the arguments, key order independent, so equal calls digest equally."""
     canonical = json.dumps(dict(arguments), sort_keys=True, default=repr)
     return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def summarise(arguments: Mapping[str, Any]) -> str:
+    """What an approver may be shown about a call, without the values that must not travel.
+
+    Numbers and booleans are shown; anything else is described by type and size. A
+    deny-list of key names only catches the callers who already knew to be careful, so the
+    rule is by kind: an amount is a number, and a card token is not.
+    """
+    return ", ".join(f"{name}={_shown(value)}" for name, value in sorted(arguments.items()))
+
+
+def _shown(value: object) -> str:
+    if isinstance(value, bool | int | float) and not isinstance(value, complex):
+        return scrub(str(value))
+    if isinstance(value, str):
+        return f"<str:{len(value)}>"
+    return f"<{type(value).__name__}:{len(value)}>" if hasattr(value, "__len__") else "<value>"

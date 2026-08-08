@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 __all__ = [
     "RETRYABLE_STATUS",
     "AdkError",
+    "ApprovalBindingError",
     "ApprovalDeniedError",
     "ApprovalExpiredError",
     "AuthenticationError",
@@ -1022,6 +1023,15 @@ class ApprovalExpiredError(AdkError):
 
     An approval is permission at a moment, not a standing licence: honouring a stale one
     runs what nobody currently agrees to.
+    """
+
+
+class ApprovalBindingError(AdkError):
+    """Raised when a grant is asked to cover something other than what it was shown.
+
+    An approval is permission for one payload, once. Altered arguments, a second execution
+    on one decision, or a grant belonging to a run that has been cancelled all fail closed
+    here rather than executing an unapproved variant.
     """
 
 

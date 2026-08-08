@@ -584,7 +584,7 @@ class TestApprovalGates:
             tenant="acme",
         )
 
-        assert run.state is RunState.FAILED
+        assert run.state is RunState.COMPLETED
         assert tools.calls == []
         assert RunEventKind.APPROVAL_DENIED in kinds(run)
 
@@ -667,8 +667,11 @@ class TestApprovalGates:
             tenant="acme",
         )
 
-        assert run.state is RunState.FAILED
-        assert "ApprovalExpiredError" in (run.events[-1].detail or "")
+        assert run.state is RunState.COMPLETED
+        assert "approval_expired" in (
+            next(event for event in run.events if event.kind is RunEventKind.TOOL_REFUSED).detail
+            or ""
+        )
         assert tools.calls == []
 
     async def test_a_decision_for_another_record_is_refused(self) -> None:

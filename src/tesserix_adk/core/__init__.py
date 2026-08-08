@@ -50,6 +50,7 @@ from tesserix_adk.core.deprecation import (
 )
 from tesserix_adk.core.errors import (
     AdkError,
+    ApprovalBindingError,
     ApprovalDeniedError,
     ApprovalExpiredError,
     AuthenticationError,
@@ -104,7 +105,10 @@ from tesserix_adk.core.extras import require_extra
 from tesserix_adk.core.fallback import FallbackChain, fallback_eligible
 from tesserix_adk.core.hooks import (
     ApprovalDecision,
+    ApprovalDenial,
     ApprovalGate,
+    ApprovalPolicy,
+    ApprovalPredicate,
     ApprovalRecord,
     Hook,
     HookAction,
@@ -224,10 +228,14 @@ __all__ = [
     "AdkModel",
     "Agent",
     "AgentDefinition",
+    "ApprovalBindingError",
     "ApprovalDecision",
+    "ApprovalDenial",
     "ApprovalDeniedError",
     "ApprovalExpiredError",
     "ApprovalGate",
+    "ApprovalPolicy",
+    "ApprovalPredicate",
     "ApprovalRecord",
     "AuthenticationError",
     "BinaryPart",

@@ -22,7 +22,7 @@ import functools
 import inspect
 import weakref
 from collections.abc import Awaitable, Coroutine
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import UnionType
 from typing import TYPE_CHECKING, Any, Protocol, Union, cast, get_args, get_origin, overload
 
@@ -32,6 +32,7 @@ from tesserix_adk.core.errors import (
     ToolDefinitionError,
     ToolExecutionError,
 )
+from tesserix_adk.core.hooks import ApprovalPolicy, ApprovalPredicate
 from tesserix_adk.core.schema import (
     INLINE_REFS,
     SchemaDialect,
@@ -85,6 +86,9 @@ class Tool[**P, R]:
         parallel_safe: Whether two of this tool's calls may be in flight together. A tool
             whose effect depends on the order it is called in declares itself here; no
             signature says it.
+        approval: When a human must decide before the body runs. Declared here rather than
+            per agent, because the tool knows it moves money and every agent that adopts it
+            would otherwise have to remember.
         returns_type: What the function annotated its result as, awaited, or `None` where
             it annotated nothing. The schema is what a model reads; this is what a result
             can actually be held to before it enters a conversation.
@@ -101,6 +105,7 @@ class Tool[**P, R]:
     context_required: bool = False
     timeout: float | None = None
     parallel_safe: bool = True
+    approval: ApprovalPolicy = field(default_factory=ApprovalPolicy)
     returns_type: Any = None
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
@@ -143,6 +148,24 @@ class Tool[**P, R]:
         """
         checked = self.validator.arguments(arguments)
         return await self._dispatch((), {**checked, **self._injected(context)}, workers)
+
+    def requires_approval(self, arguments: Mapping[str, Any] | str | bytes) -> bool:
+        """Whether this call may not run without a human.
+
+        The policy's predicate is evaluated over validated arguments, so a threshold reads
+        the number the body would receive rather than the string a provider sent.
+        Arguments that will not validate are read as requiring approval: a call the gate
+        cannot understand is not a call to wave through.
+        """
+        if self.approval.required:
+            return True
+        if self.approval.when is None:
+            return False
+        try:
+            checked = self.validator.arguments(arguments)
+        except Exception:
+            return True
+        return self.approval.applies_to(checked)
 
     def release(self) -> None:
         """Give up this tool's claim on its name, so another definition may take it.
@@ -216,6 +239,7 @@ def tool(
     arguments: ArgumentPolicy = ...,
     timeout: float | None = ...,
     parallel_safe: bool = ...,
+    requires_approval: bool | ApprovalPredicate | ApprovalPolicy = ...,
 ) -> _Decorator: ...
 
 
@@ -229,6 +253,7 @@ def tool(
     arguments: ArgumentPolicy = STRICT,
     timeout: float | None = None,
     parallel_safe: bool = True,
+    requires_approval: bool | ApprovalPredicate | ApprovalPolicy = False,
 ) -> Tool[Any, Any] | _Decorator:
     """Turn a typed function into a tool, deriving its schema from the signature.
 
@@ -251,6 +276,9 @@ def tool(
             only by whatever ceiling the run itself has.
         parallel_safe: Whether two of its calls may be in flight together. Declare `False`
             for a tool whose effect depends on the order it is called in.
+        requires_approval: Whether a human must decide before the body runs. `True` gates
+            every call; a predicate over the validated arguments gates conditionally, for a
+            threshold. Evaluated by this code and never by the model.
 
     Returns:
         The tool, or the decorator that builds it when overrides were given.
@@ -276,7 +304,9 @@ def tool(
         >>> asyncio.run(fare.invoke({"leg": "Osaka to Kyoto"}))
         'Osaka to Kyoto: 40 EUR'
     """
-    overrides = _Overrides(name, description, dialect, arguments, timeout, parallel_safe)
+    overrides = _Overrides(
+        name, description, dialect, arguments, timeout, parallel_safe, _policy(requires_approval)
+    )
     if function is None:
         return _overriding(overrides)
     return _built(function, overrides)
@@ -292,6 +322,7 @@ class _Overrides:
     arguments: ArgumentPolicy
     timeout: float | None
     parallel_safe: bool
+    approval: ApprovalPolicy
 
 
 def _overriding(overrides: _Overrides) -> _Decorator:
@@ -333,10 +364,20 @@ def _built(function: Callable[..., Any], overrides: _Overrides) -> Tool[Any, Any
         context_required=required,
         timeout=overrides.timeout,
         parallel_safe=overrides.parallel_safe,
+        approval=overrides.approval,
         returns_type=_awaited(hints["return"]) if "return" in hints else None,
     )
     _claim(called, function, built)
     return built
+
+
+def _policy(declared: bool | ApprovalPredicate | ApprovalPolicy) -> ApprovalPolicy:
+    """Read what `requires_approval=` was given as the policy it describes."""
+    if isinstance(declared, ApprovalPolicy):
+        return declared
+    if isinstance(declared, bool):
+        return ApprovalPolicy(required=declared)
+    return ApprovalPolicy(when=declared)
 
 
 def _refuse_an_impossible_ceiling(called: str, timeout: float | None) -> None:

@@ -1,5 +1,6 @@
 """Run loop, caps, cancellation, timeout, checkpointing, streaming."""
 
+from tesserix_adk.runtime.approvals import ApprovalLedger
 from tesserix_adk.runtime.blocking import (
     Ambient,
     LoopMonitor,
@@ -80,6 +81,7 @@ __all__ = [
     "AgentRunner",
     "Ambient",
     "AnswerDelta",
+    "ApprovalLedger",
     "ApprovalRequired",
     "Assumptions",
     "Backpressure",

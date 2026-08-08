@@ -91,6 +91,7 @@ code lands here as the kit is built.
 | Tools — the `@tool` decorator, import-time refusals, argument validation, injected context, per-agent allowlists and ceilings | [`docs/tools.md`](docs/tools.md) |
 | Tool results — the untrusted-data envelope, return-type enforcement, injection heuristics, suspicion policy, conformance fixtures | [`docs/tool-results.md`](docs/tool-results.md) |
 | Tool errors — failure vs refusal, reason codes, declarative exception mapping, what the loop retries | [`docs/tool-errors.md`](docs/tool-errors.md) |
+| Tool approval — declaring a gate on the tool, redacted summaries, grants bound to one payload, what a denial means | [`docs/tool-approval.md`](docs/tool-approval.md) |
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |
 | Resilience — the error taxonomy, redaction, phase timeouts, rate limiting | [`docs/resilience.md`](docs/resilience.md) |

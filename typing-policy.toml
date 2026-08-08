@@ -309,3 +309,23 @@ and results are the tools' rather than its own.
 """
 owner = "@sam123ben"
 review_by = 2027-08-08
+
+[[any]]
+symbol = "tesserix_adk.core.hooks.ApprovalPolicy"
+kind = "json"
+reason = """
+The predicate is handed the call's arguments, which are whatever a provider sent: the tool's
+own validator is where they become typed, and the policy is asked before that has run.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-08
+
+[[any]]
+symbol = "tesserix_adk.runtime.approvals.ApprovalLedger"
+kind = "json"
+reason = """
+The ledger compares the arguments a grant was raised over with the ones about to dispatch;
+both are the provider's payload, and it hashes them rather than reading them.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-08
