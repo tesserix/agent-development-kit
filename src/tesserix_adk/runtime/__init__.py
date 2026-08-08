@@ -30,6 +30,7 @@ from tesserix_adk.runtime.estimate import (
     estimate_run,
     refuse_unaffordable,
 )
+from tesserix_adk.runtime.idempotency import MemoryIdempotencyStore
 from tesserix_adk.runtime.loop import AgentRunner, ModelRequest, ModelResponse, SystemClock
 from tesserix_adk.runtime.progress import (
     AnswerDelta,
@@ -95,6 +96,7 @@ __all__ = [
     "InMemoryHistory",
     "IterationStarted",
     "LoopMonitor",
+    "MemoryIdempotencyStore",
     "ModelRequest",
     "ModelResponse",
     "Observed",

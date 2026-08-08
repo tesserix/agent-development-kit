@@ -329,3 +329,13 @@ both are the provider's payload, and it hashes them rather than reading them.
 """
 owner = "@sam123ben"
 review_by = 2027-08-08
+
+[[any]]
+symbol = "tesserix_adk.core.idempotency.idempotency_key"
+kind = "json"
+reason = """
+The key is derived from a provider's tool-call arguments, which are JSON of whatever shape the
+model sent; the function canonicalises and digests them rather than reading them as a type.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-08

@@ -63,12 +63,14 @@ class Ambient:
         user: The acting principal, where there is one.
         cancellation: The caller's switch, where the work can cooperate with it. A thread
             cannot be interrupted, so a long body is told and decides.
+        idempotency_key: The key identifying the side effect in hand, where one was derived.
     """
 
     run_id: str
     tenant: str
     user: str | None = None
     cancellation: CancellationToken | None = None
+    idempotency_key: str | None = None
 
     def raise_if_cancelled(self) -> None:
         """Raise if the run has been cancelled, otherwise do nothing.

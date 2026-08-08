@@ -1,6 +1,11 @@
 """Concrete backing stores and transports."""
 
 from tesserix_adk.adapters.cache import DEFAULT_NAMESPACE, RedisCacheStore
+from tesserix_adk.adapters.idempotency import (
+    IN_FLIGHT,
+    PostgresIdempotencyStore,
+    RedisIdempotencyStore,
+)
 from tesserix_adk.adapters.ledger import (
     DEFAULT_LEASE_SECONDS,
     CoalescingLedger,
@@ -32,14 +37,17 @@ __all__ = [
     "DEFAULT_NAMESPACE",
     "DEFAULT_PAYLOAD_LIMIT_BYTES",
     "DEFAULT_RETRY_MILLISECONDS",
+    "IN_FLIGHT",
     "SSE_HEADERS",
     "ApprovalInbox",
     "CoalescingLedger",
     "InMemoryLedger",
     "PayloadElided",
+    "PostgresIdempotencyStore",
     "PostgresLedger",
     "RedisCacheStore",
     "RedisClient",
+    "RedisIdempotencyStore",
     "RedisLedger",
     "RunBroker",
     "SqlExecutor",

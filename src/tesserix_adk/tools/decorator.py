@@ -33,6 +33,7 @@ from tesserix_adk.core.errors import (
     ToolExecutionError,
 )
 from tesserix_adk.core.hooks import ApprovalPolicy, ApprovalPredicate
+from tesserix_adk.core.idempotency import Idempotency, IdempotencyPolicy
 from tesserix_adk.core.schema import (
     INLINE_REFS,
     SchemaDialect,
@@ -86,6 +87,8 @@ class Tool[**P, R]:
         parallel_safe: Whether two of this tool's calls may be in flight together. A tool
             whose effect depends on the order it is called in declares itself here; no
             signature says it.
+        idempotency: What repeating this call does, and which arguments identify it.
+            `None` is undeclared: no record is held and retries behave as they always have.
         approval: When a human must decide before the body runs. Declared here rather than
             per agent, because the tool knows it moves money and every agent that adopts it
             would otherwise have to remember.
@@ -106,6 +109,7 @@ class Tool[**P, R]:
     timeout: float | None = None
     parallel_safe: bool = True
     approval: ApprovalPolicy = field(default_factory=ApprovalPolicy)
+    idempotency: IdempotencyPolicy | None = None
     returns_type: Any = None
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
@@ -240,6 +244,7 @@ def tool(
     timeout: float | None = ...,
     parallel_safe: bool = ...,
     requires_approval: bool | ApprovalPredicate | ApprovalPolicy = ...,
+    idempotency: Idempotency | str | IdempotencyPolicy | None = ...,
 ) -> _Decorator: ...
 
 
@@ -254,6 +259,7 @@ def tool(
     timeout: float | None = None,
     parallel_safe: bool = True,
     requires_approval: bool | ApprovalPredicate | ApprovalPolicy = False,
+    idempotency: Idempotency | str | IdempotencyPolicy | None = None,
 ) -> Tool[Any, Any] | _Decorator:
     """Turn a typed function into a tool, deriving its schema from the signature.
 
@@ -276,6 +282,9 @@ def tool(
             only by whatever ceiling the run itself has.
         parallel_safe: Whether two of its calls may be in flight together. Declare `False`
             for a tool whose effect depends on the order it is called in.
+        idempotency: What repeating a call does — `"read_only"`, `"idempotent"` or
+            `"effectful"`, or an `IdempotencyPolicy` naming the arguments that identify one
+            call. Undeclared by default, which changes nothing about how the tool is run.
         requires_approval: Whether a human must decide before the body runs. `True` gates
             every call; a predicate over the validated arguments gates conditionally, for a
             threshold. Evaluated by this code and never by the model.
@@ -305,7 +314,14 @@ def tool(
         'Osaka to Kyoto: 40 EUR'
     """
     overrides = _Overrides(
-        name, description, dialect, arguments, timeout, parallel_safe, _policy(requires_approval)
+        name,
+        description,
+        dialect,
+        arguments,
+        timeout,
+        parallel_safe,
+        _policy(requires_approval),
+        _repeatable(idempotency),
     )
     if function is None:
         return _overriding(overrides)
@@ -323,6 +339,7 @@ class _Overrides:
     timeout: float | None
     parallel_safe: bool
     approval: ApprovalPolicy
+    idempotency: IdempotencyPolicy | None
 
 
 def _overriding(overrides: _Overrides) -> _Decorator:
@@ -346,6 +363,7 @@ def _built(function: Callable[..., Any], overrides: _Overrides) -> Tool[Any, Any
     hints = _hints(function, called)
     injected, required = _context_parameter(function, called, hints)
     parameters = _parameters(function, called, overrides.dialect, injected)
+    _refuse_a_key_over_arguments_that_do_not_exist(called, overrides.idempotency, parameters)
     _refuse_an_impossible_ceiling(called, overrides.timeout)
     built = Tool[Any, Any](
         name=called,
@@ -365,6 +383,7 @@ def _built(function: Callable[..., Any], overrides: _Overrides) -> Tool[Any, Any
         timeout=overrides.timeout,
         parallel_safe=overrides.parallel_safe,
         approval=overrides.approval,
+        idempotency=overrides.idempotency,
         returns_type=_awaited(hints["return"]) if "return" in hints else None,
     )
     _claim(called, function, built)
@@ -378,6 +397,32 @@ def _policy(declared: bool | ApprovalPredicate | ApprovalPolicy) -> ApprovalPoli
     if isinstance(declared, bool):
         return ApprovalPolicy(required=declared)
     return ApprovalPolicy(when=declared)
+
+
+def _repeatable(declared: Idempotency | str | IdempotencyPolicy | None) -> IdempotencyPolicy | None:
+    """Read what `idempotency=` was given as the policy it describes.
+
+    `None` stays `None`: a tool that has not been classified is not the same as one
+    classified as safe, and the dispatcher treats it as it always has.
+    """
+    if declared is None or isinstance(declared, IdempotencyPolicy):
+        return declared
+    return IdempotencyPolicy(Idempotency(declared))
+
+
+def _refuse_a_key_over_arguments_that_do_not_exist(
+    called: str, policy: IdempotencyPolicy | None, parameters: Mapping[str, Any]
+) -> None:
+    """A key over an argument the tool does not take is a key that never derives."""
+    if policy is None or not policy.key_arguments:
+        return
+    stray = sorted(set(policy.key_arguments) - set(parameters.get("properties", {})))
+    if stray:
+        raise ToolDefinitionError(
+            f"{called} keys its idempotency on {', '.join(stray)}, which it does not take, "
+            f"so no call could ever derive a key and every one would fail closed.",
+            tool=called,
+        )
 
 
 def _refuse_an_impossible_ceiling(called: str, timeout: float | None) -> None:

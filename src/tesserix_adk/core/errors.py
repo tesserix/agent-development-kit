@@ -1035,6 +1035,16 @@ class ApprovalBindingError(AdkError):
     """
 
 
+class IndeterminateOutcomeError(AdkError):
+    """Raised when nobody can say whether a side effect happened.
+
+    A tool declared effectful whose key cannot be derived, or whose record cannot be
+    reached, leaves the runtime with two wrong answers: retry and risk a second booking,
+    or report a success it did not see. It raises instead, naming the tool and the
+    guarantee it is missing, so a human or an approval path resolves it.
+    """
+
+
 class RunningLoopError(AdkError, RuntimeError):
     """Raised when a synchronous helper is called from inside a running event loop.
 

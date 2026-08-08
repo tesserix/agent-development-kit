@@ -149,6 +149,12 @@ ignore = [
 # owner: @sam123ben — reason: a Redis reply and a database row are whatever the server sent,
 # so the two client protocols are honestly Any rather than falsely narrow.
 "src/tesserix_adk/adapters/ledger.py" = ["ANN401"]
+# owner: @sam123ben — reason: mirrors the ledger adapter above; a store reply is
+# whatever the client library hands back.
+"src/tesserix_adk/adapters/idempotency.py" = ["ANN401"]
+# owner: @sam123ben — reason: the key is a digest over arbitrary validated tool
+# arguments, honestly Any rather than falsely narrow. Same as determinism.py.
+"src/tesserix_adk/core/idempotency.py" = ["ANN401"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tesserix_adk", "tests"]

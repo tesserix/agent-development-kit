@@ -61,6 +61,9 @@ from tesserix_adk.core import (
     HookPoint,
     HookRefusedError,
     HookSubject,
+    Idempotency,
+    IdempotencyStore,
+    IndeterminateOutcomeError,
     LoopConfig,
     MaxIterationsError,
     Message,
@@ -96,6 +99,7 @@ from tesserix_adk.core import (
     Usage,
     deduplicate,
     fallback_eligible,
+    idempotency_key,
     most_restrictive,
     resolve_hooks,
     scrub,
@@ -153,6 +157,10 @@ _DEFAULT_MAX_TOOL_ATTEMPTS = 12
 """How often one tool may be retried in a run, so one flaky dependency cannot own it."""
 _CHARS_PER_TOKEN = 4
 _NOTHING = Usage(input_tokens=0, output_tokens=0)
+_DEFAULT_IDEMPOTENCY_TTL_SECONDS = 86_400.0
+"""How long a side effect stays remembered — a day covers a retry, a redeploy and a replay."""
+_EFFECT_POLL_SECONDS = 0.05
+_EFFECT_POLLS = 200
 _TRUNCATION_MARKER = "\n[truncated]"
 # Instrumentation is on unless a deployment turns it off, because a stall nobody measures
 # is charged to whichever request happened to be next rather than to what caused it.
@@ -199,6 +207,16 @@ class _Bounds:
     budget: BudgetPolicy
     approvals: ApprovalLedger = field(default_factory=ApprovalLedger)
     granted: dict[str, ApprovalRecord] = field(default_factory=dict)
+    keys: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class _Effect:
+    """A side effect this call holds the key to, until it records one or fails closed."""
+
+    key: str
+    tenant: str
+    kind: Idempotency
 
 
 @dataclass(slots=True)
@@ -291,6 +309,13 @@ class AgentRunner:
         approval_ttl_seconds: How long a request stays answerable. A decision outside the
             window is refused, because an approval is permission at a moment rather than
             a standing licence. Unbounded by default.
+        idempotency: Where the record of an executed side effect lives. Required by any
+            tool declaring `effectful` or `idempotent`: without a store the runtime cannot
+            tell a retry from a first attempt, and the call fails closed rather than
+            booking a second seat.
+        idempotency_ttl_seconds: How long that record is kept. The guarantee is
+            at-most-once within this window; a retry arriving after it is a call nobody
+            has a record of, and is treated as one.
         jitter: The source the backoff is drawn from. Injected so a test can seed it and
             assert the exact schedule instead of waiting it out.
         clock: Injected time. Defaults to wall-clock.
@@ -331,6 +356,8 @@ class AgentRunner:
         approvals: ApprovalGate | None = None,
         approval_ttl_seconds: float | None = None,
         approval_denial: ApprovalDenial = ApprovalDenial.REFUSE_CALL,
+        idempotency: IdempotencyStore | None = None,
+        idempotency_ttl_seconds: float = _DEFAULT_IDEMPOTENCY_TTL_SECONDS,
         jitter: Random | None = None,
         clock: Clock | None = None,
         monitor: LoopMonitor | None = _WATCHING,
@@ -371,6 +398,10 @@ class AgentRunner:
         self._approvals = approvals
         self._approval_ttl = approval_ttl_seconds
         self._approval_denial = ApprovalDenial(approval_denial)
+        if idempotency is not None:
+            verify_conformance(idempotency, IdempotencyStore)
+        self._idempotency = idempotency
+        self._idempotency_ttl = idempotency_ttl_seconds
         self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
         self._monitor = monitor
@@ -2040,7 +2071,11 @@ class AgentRunner:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
         registry = self._tools
         ambient = Ambient(
-            run_id=run.id, tenant=run.tenant, user=run.user, cancellation=bounds.token
+            run_id=run.id,
+            tenant=run.tenant,
+            user=run.user,
+            cancellation=bounds.token,
+            idempotency_key=bounds.keys.get(call.id),
         )
         with carrying(ambient):
             if self._monitor is None:
@@ -2075,11 +2110,154 @@ class AgentRunner:
         await asyncio.gather(work, return_exceptions=True)
         raise ToolTimedOutError(call.name, ceiling)
 
+    async def _holding(
+        self, run: Run[Any], call: ToolCall, bounds: _Bounds
+    ) -> tuple[_Effect | None, str | None]:
+        """Claim this call's side effect, or return what a previous call already recorded.
+
+        Returns the effect this call now holds and nothing, or nothing and the outcome of
+        the call that already ran. A tool that declares nothing holds nothing: undeclared
+        is not a claim that repeating is safe, but it is the behaviour every existing tool
+        already has, and a store nobody configured must not start refusing calls.
+
+        Raises:
+            _Terminal: If the effect cannot be identified or the store cannot be reached.
+                Both mean a retry would be a guess, so the call does not go out at all.
+        """
+        policy = getattr(self._resolved(call.name), "idempotency", None)
+        if self._idempotency is None or policy is None or not policy.deduplicated:
+            return (None, None)
+        key = idempotency_key(
+            tenant=run.tenant,
+            run_id=run.id,
+            tool=call.name,
+            arguments=call.arguments,
+            key_arguments=policy.key_arguments,
+        )
+        if key is None:
+            raise self._indeterminate(
+                run,
+                call,
+                f"{call.name!r} is {policy.kind} and its key is derived from "
+                f"{', '.join(policy.key_arguments)}, which this call does not carry",
+            )
+        bounds.keys[call.id] = key
+        recorded = await self._reserved(run, call, key)
+        if recorded is not None:
+            return (None, recorded)
+        return (_Effect(key=key, tenant=run.tenant, kind=policy.kind), None)
+
+    async def _reserved(self, run: Run[Any], call: ToolCall, key: str) -> str | None:
+        """Take the key, waiting out a caller that has it, and report what it recorded.
+
+        Raises:
+            _Terminal: If the store cannot be reached, or if the caller holding the key
+                never finished — an answer nobody has is not an answer this call may
+                invent by running the tool again.
+        """
+        assert self._idempotency is not None  # noqa: S101 — guarded by the caller
+        for _ in range(_EFFECT_POLLS):
+            try:
+                reserved = await self._idempotency.begin(
+                    key, tenant=run.tenant, ttl_seconds=self._idempotency_ttl
+                )
+            except Exception as unreachable:
+                raise self._indeterminate(
+                    run, call, f"the idempotency store could not be reached: {unreachable}"
+                ) from unreachable
+            if reserved.outcome is not None:
+                return reserved.outcome
+            if not reserved.in_flight:
+                return None
+            await asyncio.sleep(0)
+            await self._clock.sleep(_EFFECT_POLL_SECONDS)
+        raise self._indeterminate(
+            run,
+            call,
+            f"another caller has been running {call.name!r} for this key and has not said",
+        )
+
+    async def _record(
+        self, run: Run[Any], call: ToolCall, held: _Effect | None, outcome: str
+    ) -> None:
+        """Remember what the effect produced, so a repeat is answered rather than run.
+
+        Raises:
+            _Terminal: If the record cannot be written. The effect has landed and nothing
+                remembers it, which is the state a second booking comes out of.
+        """
+        if held is None or self._idempotency is None:
+            return
+        try:
+            await self._idempotency.record(
+                held.key, tenant=held.tenant, outcome=outcome, ttl_seconds=self._idempotency_ttl
+            )
+        except Exception as unreachable:
+            raise self._indeterminate(
+                run, call, f"{call.name!r} ran and its outcome could not be recorded: {unreachable}"
+            ) from unreachable
+
+    async def _release(self, held: _Effect | None) -> None:
+        """Let go of a key for a call that never reached the tool body."""
+        if held is None or self._idempotency is None:
+            return
+        with suppress(Exception):
+            await self._idempotency.abandon(held.key, tenant=held.tenant)
+
+    def _refuse_to_repeat_an_effect(
+        self, run: Run[Any], call: ToolCall, held: _Effect | None, failure: Exception
+    ) -> None:
+        """Stop an effectful call that failed, rather than retrying it into a second effect.
+
+        The key stays held. A tool that raised may still have committed downstream, and a
+        released key is permission for the next attempt to commit again.
+
+        Raises:
+            _Terminal: If the call that failed was an effectful one.
+        """
+        if held is None or held.kind is not Idempotency.EFFECTFUL:
+            return
+        raise self._indeterminate(
+            run,
+            call,
+            f"{call.name!r} is effectful and failed without saying whether it landed: {failure}",
+        )
+
+    def _indeterminate(self, run: Run[Any], call: ToolCall, why: str) -> _Terminal:
+        """The run stops, because nobody can say whether the side effect happened."""
+        unknown = IndeterminateOutcomeError(f"{call.name}: {why}")
+        stopped = run.record_event(
+            self._event(RunEventKind.TOOL_INDETERMINATE, name=call.name, detail=_named(unknown))
+        )
+        self._emit(ToolCallIndeterminate(call_id=call.id, tool=call.name, detail=str(unknown)))
+        return _Terminal(stopped, RunState.FAILED, _named(unknown))
+
+    def _already_done(
+        self, run: Run[Any], call: ToolCall, recorded: str
+    ) -> tuple[Run[Any], str, str, ToolResult | None]:
+        """A call whose effect has already landed: the record answers it, the tool does not."""
+        self._emit(ToolCallFinished(call_id=call.id, tool=call.name, truncated=False))
+        return (
+            run.record_event(
+                self._event(
+                    RunEventKind.TOOL_DEDUPLICATED,
+                    name=call.name,
+                    detail="already executed for this key; the recorded outcome stands",
+                )
+            ),
+            recorded,
+            "tool_result",
+            None,
+        )
+
     async def _invoke(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
     ) -> tuple[Run[Any], str, str, ToolResult | None]:
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
         self._spend_the_approval(run, call, bounds)
+        held, recorded = await self._holding(run, call, bounds)
+        if recorded is not None:
+            return self._already_done(run, call, recorded)
         await self._reserve(run, bounds, len(_signature(call)) // _CHARS_PER_TOKEN)
         # Charged before dispatch: a tool counted afterwards is one whose side effect has
         # already landed by the time the ceiling refuses it.
@@ -2098,10 +2276,13 @@ class AgentRunner:
                 stopped = run.record_event(self._indeterminacy(agent, call))
                 raise self._cancelled(stopped, abort, name=call.name) from None
             except ToolArgumentValidationError as rejected:
+                await self._release(held)
                 return self._arguments_rejected(run, agent, call, rejected)
             except ToolRefusal as declined:
+                await self._release(held)
                 return self._tool_declined(run, call, declined)
             except Exception as failure:
+                self._refuse_to_repeat_an_effect(run, call, held, failure)
                 delay = self._tool_backoff(run, agent, call, plan, attempt, bounds, failure)
                 if delay is None:
                     return self._tool_failed(run, agent, call, failure, bounds)
@@ -2141,6 +2322,7 @@ class AgentRunner:
             )
         if len(text) > self._max_tool_result_chars:
             text = text[: self._max_tool_result_chars] + _TRUNCATION_MARKER
+        await self._record(run, call, held, text)
         await self._spent(
             run,
             bounds,

@@ -40,6 +40,9 @@ class ToolContext:
             makes lands under the same trace as the run that caused it.
         cancellation: The caller's switch. A tool that may run long checks it; a tool that
             never does is abandoned rather than interrupted.
+        idempotency_key: The key identifying this side effect, where the tool declared one
+            is needed. Pass it to whatever downstream API accepts one, so the guarantee
+            reaches past the kit into the system that actually books the seat.
 
     Example:
         >>> ToolContext(run_id="run-1", tenant="acme").tenant
@@ -51,6 +54,7 @@ class ToolContext:
     user: str | None = None
     trace: Mapping[str, str] = field(default_factory=dict)
     cancellation: CancellationToken | None = None
+    idempotency_key: str | None = None
 
     @classmethod
     def current(cls) -> ToolContext | None:
@@ -68,6 +72,7 @@ class ToolContext:
             tenant=ambient.tenant,
             user=ambient.user,
             cancellation=ambient.cancellation,
+            idempotency_key=ambient.idempotency_key,
         )
 
     def raise_if_cancelled(self) -> None:

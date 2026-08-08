@@ -14,6 +14,7 @@ from tesserix_adk.testing.cassette import (
 from tesserix_adk.testing.conformance import (
     BudgetPolicyConformance,
     ClockConformance,
+    IdempotencyStoreConformance,
     MemoryStoreConformance,
     ModelProviderConformance,
     SpendLedgerConformance,
@@ -71,6 +72,7 @@ __all__ = [
     "HttpCassette",
     "HttpExchange",
     "HttpReplay",
+    "IdempotencyStoreConformance",
     "InjectionFixture",
     "Interaction",
     "MemoryStoreConformance",

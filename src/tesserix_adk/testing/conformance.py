@@ -32,6 +32,7 @@ from tesserix_adk.core.errors import (
     BudgetUnavailableError,
     CapabilityError,
 )
+from tesserix_adk.core.idempotency import IdempotencyStore
 from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
 from tesserix_adk.core.primitives import Message, TextPart, Usage
 from tesserix_adk.core.protocols import (
@@ -47,6 +48,7 @@ from tesserix_adk.core.provider import ModelRequest, ModelResponse
 __all__ = [
     "BudgetPolicyConformance",
     "ClockConformance",
+    "IdempotencyStoreConformance",
     "MemoryStoreConformance",
     "ModelProviderConformance",
     "TracerConformance",
@@ -315,3 +317,63 @@ class SpendLedgerConformance(ABC):
             return False
         await ledger.settle(held, amount)
         return True
+
+
+class IdempotencyStoreConformance(ABC):
+    """Behaviour every `IdempotencyStore` implementation must exhibit.
+
+    A store that gets any of these wrong books a second seat, which is the one thing it
+    exists to prevent. The guarantee is at-most-once per key within the retention window,
+    and it holds only if a claim is exclusive: two callers asking together get one winner.
+    """
+
+    @abstractmethod
+    def make_store(self) -> IdempotencyStore:
+        """Return a fresh, empty store under test."""
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_store(), IdempotencyStore)
+
+    async def test_an_unclaimed_key_is_free(self) -> None:
+        claimed = await self.make_store().begin("k", tenant="conformance", ttl_seconds=900)
+        assert claimed.outcome is None
+        assert claimed.in_flight is False
+
+    async def test_a_claimed_key_is_in_flight_until_it_is_recorded(self) -> None:
+        store = self.make_store()
+        await store.begin("k", tenant="conformance", ttl_seconds=900)
+        assert (await store.begin("k", tenant="conformance", ttl_seconds=900)).in_flight is True
+
+    async def test_a_recorded_outcome_answers_the_next_caller(self) -> None:
+        store = self.make_store()
+        await store.begin("k", tenant="conformance", ttl_seconds=900)
+        await store.record("k", tenant="conformance", outcome="done", ttl_seconds=900)
+        assert (await store.begin("k", tenant="conformance", ttl_seconds=900)).outcome == "done"
+
+    async def test_only_one_of_many_concurrent_callers_wins_the_claim(self) -> None:
+        """The claim-and-check has to be one operation, whatever the store."""
+        store = self.make_store()
+        claims = await asyncio.gather(
+            *(store.begin("k", tenant="conformance", ttl_seconds=900) for _ in range(20))
+        )
+        assert sum(1 for claim in claims if not claim.in_flight and claim.outcome is None) == 1
+
+    async def test_an_abandoned_claim_frees_the_key(self) -> None:
+        store = self.make_store()
+        await store.begin("k", tenant="conformance", ttl_seconds=900)
+        await store.abandon("k", tenant="conformance")
+        assert (await store.begin("k", tenant="conformance", ttl_seconds=900)).in_flight is False
+
+    async def test_abandoning_a_key_nobody_holds_is_not_an_error(self) -> None:
+        await self.make_store().abandon("never-claimed", tenant="conformance")
+
+    async def test_one_tenant_cannot_see_another_s_record(self) -> None:
+        store = self.make_store()
+        await store.record("k", tenant="one", outcome="done", ttl_seconds=900)
+        assert (await store.begin("k", tenant="two", ttl_seconds=900)).outcome is None
+
+    async def test_erasure_leaves_nothing_of_the_tenant_behind(self) -> None:
+        store = self.make_store()
+        await store.record("k", tenant="one", outcome="done", ttl_seconds=900)
+        assert await store.forget(tenant="one") == 1
+        assert (await store.begin("k", tenant="one", ttl_seconds=900)).outcome is None

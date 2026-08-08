@@ -138,6 +138,25 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A tool can declare what repeating it would do:
+  `@tool(idempotency=IdempotencyPolicy(Idempotency.EFFECTFUL, key_arguments=("flight",)))`. The
+  dispatcher derives a key over the named arguments, claims it before the body runs and records
+  the outcome, so a retry, a replay after a restart and two concurrent identical calls in one
+  turn resolve to one execution. The guarantee is versioned public API: at most one side effect
+  per key within the retention window. An effectful call that fails without saying whether it
+  landed keeps its claim, is not retried, and fails the run with `IndeterminateOutcomeError` —
+  as does a key that cannot be derived or a store that cannot be reached, because a store that
+  is down is not permission. The call id is deliberately excluded from the key; including it
+  would give concurrent duplicates two keys and fire both. Arguments are hashed, never stored,
+  and records are tenant-scoped and erasable. **Stability:** additive. A tool with no policy, or
+  a runner with no store, behaves exactly as before. New public names: `Idempotency`,
+  `IdempotencyPolicy`, `IdempotencyStore`, `Claim`, `idempotency_key` and
+  `IndeterminateOutcomeError` on `tesserix_adk.core`, `MemoryIdempotencyStore` on
+  `tesserix_adk.runtime`, `RedisIdempotencyStore` and `PostgresIdempotencyStore` on
+  `tesserix_adk.adapters`, `IdempotencyStoreConformance` on `tesserix_adk.testing`, plus
+  `Tool.idempotency` and `ToolContext.idempotency_key`. Documented in
+  `docs/tool-idempotency.md`.
+
 - A tool can declare its own approval gate: `@tool(requires_approval=True)`, or a predicate over
   the arguments for the calls that cross a threshold. The requirement was previously the agent's
   to remember, which put it furthest from whoever knows what the tool does. The predicate is

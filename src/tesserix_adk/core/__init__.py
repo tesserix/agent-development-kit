@@ -70,6 +70,7 @@ from tesserix_adk.core.errors import (
     HookEvaluationError,
     HookRefusedError,
     HookRegistrationError,
+    IndeterminateOutcomeError,
     InvalidRequestError,
     LoopLimitError,
     MaxIterationsError,
@@ -117,6 +118,13 @@ from tesserix_adk.core.hooks import (
     HookPoint,
     HookSubject,
     resolve_hooks,
+)
+from tesserix_adk.core.idempotency import (
+    Claim,
+    Idempotency,
+    IdempotencyPolicy,
+    IdempotencyStore,
+    idempotency_key,
 )
 from tesserix_adk.core.ledger import (
     SEPARATOR,
@@ -249,6 +257,7 @@ __all__ = [
     "Capability",
     "CapabilityError",
     "CapabilitySet",
+    "Claim",
     "Clock",
     "ConcurrencyConfig",
     "ConfigError",
@@ -284,6 +293,10 @@ __all__ = [
     "HookRegistrationError",
     "HookSubject",
     "IdFactory",
+    "Idempotency",
+    "IdempotencyPolicy",
+    "IdempotencyStore",
+    "IndeterminateOutcomeError",
     "InlineRefs",
     "InvalidRequestError",
     "JsonSchema",
@@ -382,6 +395,7 @@ __all__ = [
     "deprecate",
     "deprecations",
     "fallback_eligible",
+    "idempotency_key",
     "legal_transitions",
     "load_config",
     "looks_sensitive",
