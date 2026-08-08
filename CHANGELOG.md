@@ -148,6 +148,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Beliefs that change over time. `MemoryStore.supersede` writes a profile fact as a new
+  version and closes the one it replaces with `valid_to` and `superseded_by`, rather than
+  overwriting it; `history` returns the whole trail per key or per scope; `profile` and
+  `belief` take `as_of`, and exactly one record is live per instant however deep the chain.
+  `MemoryRecord` gained `recorded_at`, `superseded_by`, `version`, `subject` and
+  `predicate`. `ContradictionPolicy` decides what an incoming record does to the live one —
+  the default supersedes an exact restatement and branches anything else, leaving both
+  records live, surfaced as a `Contradiction` that `profile` raises on rather than
+  resolving by sort order. Concurrent writers pass `expected_version` and the loser gets
+  `MemoryConflictError`. `DecayPolicy` (`HalfLife`, `ConfidenceFloor`) weighs records for
+  ranking and recall eligibility and never deletes; `Belief.decayed` makes an aggressive
+  policy visible rather than silent. **Stability:** additive within a minor — an existing
+  `MemoryStore` keeps working until it declares `supports_supersession`. See
+  [`docs/beliefs.md`](docs/beliefs.md).
+
 - `ContextAssembler` builds the prompt from a declared `ContextPlan` under a budget taken
   from the provider's own window, and compacts rather than truncates. Sections declare their
   share of the budget and what reduces them; `pinned` content is allocated first and no

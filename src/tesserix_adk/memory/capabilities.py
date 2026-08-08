@@ -26,6 +26,9 @@ class MemoryCapabilities:
         supports_semantic: Whether `index` and `search` do anything.
         supports_as_of: Whether a query may ask what was true at a past time.
         supports_erasure: Whether `erase` removes a scope's records.
+        supports_supersession: Whether `supersede`, `belief` and `history` keep versions
+            rather than overwriting. A store that cannot say what it used to believe
+            refuses the write rather than dropping the old record on the floor.
         embedding_dimensions: The width the vector collection was built with, where the
             store has one. None means it does not check.
         max_value_bytes: The largest value the store holds. None means no declared limit.
@@ -34,6 +37,7 @@ class MemoryCapabilities:
     supports_semantic: bool = True
     supports_as_of: bool = True
     supports_erasure: bool = True
+    supports_supersession: bool = True
     embedding_dimensions: int | None = None
     max_value_bytes: int | None = None
 
@@ -46,11 +50,13 @@ class MemoryNeeds:
         semantic: The plan recalls by resemblance.
         as_of: The plan reads memory as it stood at a past time.
         erasure: The plan promises a subject that their memory can be deleted.
+        supersession: The plan changes beliefs over time and must be able to say why.
     """
 
     semantic: bool = False
     as_of: bool = False
     erasure: bool = False
+    supersession: bool = False
 
 
 def require_memory(store: object, needs: MemoryNeeds) -> None:
@@ -68,7 +74,7 @@ def require_memory(store: object, needs: MemoryNeeds) -> None:
     declared = getattr(store, "capabilities", MemoryCapabilities())
     missing = [
         name
-        for name in ("semantic", "as_of", "erasure")
+        for name in ("semantic", "as_of", "erasure", "supersession")
         if getattr(needs, name) and not getattr(declared, f"supports_{name}")
     ]
     if not missing:

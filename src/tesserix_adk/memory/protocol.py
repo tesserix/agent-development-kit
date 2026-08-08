@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
     from pydantic import JsonValue
 
+    from tesserix_adk.memory.beliefs import Belief, Supersession
     from tesserix_adk.memory.capabilities import MemoryCapabilities
     from tesserix_adk.memory.records import MemoryHit, MemoryQuery, MemoryRecord
     from tesserix_adk.memory.scope import MemoryScope
@@ -79,11 +80,73 @@ class MemoryStore(Protocol):
         """
         ...
 
-    async def profile(self, scope: MemoryScope, key: str) -> MemoryRecord | None:
-        """Return the profile record at `key`, or None.
+    async def profile(
+        self, scope: MemoryScope, key: str, *, as_of: float | None = None
+    ) -> MemoryRecord | None:
+        """Return the profile record live at `as_of`, or now, or None.
+
+        None also means "held but not recalled": a key whose only record has decayed out
+        of reach, or whose live records contradict. Use `belief` to tell those apart.
 
         Raises:
+            CapabilityError: If `as_of` is given and this adapter has no history.
+            MemoryContradictionError: If more than one record is live for the key. The
+                store does not choose, because whichever it chose would be plausible.
             MemoryCorruptionError: If what is stored no longer validates as a record.
+        """
+        ...
+
+    async def supersede(
+        self,
+        scope: MemoryScope,
+        record: MemoryRecord,
+        *,
+        expected_version: int | None = None,
+        resolves: tuple[str, ...] = (),
+    ) -> Supersession:
+        """Write a profile record as a new version, closing whatever it replaced.
+
+        Nothing is overwritten. The record it replaces keeps its value and gains a
+        `valid_to` and a `superseded_by`, so `history` can say what was believed when.
+
+        Args:
+            scope: Whose memory this is.
+            record: The new belief. Its `valid_from` decides when the old one closed.
+            expected_version: The version the caller read. Where it is given and no
+                longer live, the write is refused rather than applied over someone
+                else's. None takes whatever is live, for a caller with no race to lose.
+            resolves: The ids of live records this write settles, closing them whatever
+                the policy would have said. How a branch ends: somebody decided, and the
+                decision is recorded rather than inferred.
+
+        Raises:
+            CapabilityError: If this adapter does not keep versions.
+            MemoryConflictError: If `expected_version` is not what is live.
+            MemoryContradictionError: If the policy rejected the change.
+            MemoryScopeError: If the record does not belong to `scope`, or is not profile.
+            ValueError: If `resolves` names a record that is not live.
+        """
+        ...
+
+    async def belief(self, scope: MemoryScope, key: str, *, as_of: float | None = None) -> Belief:
+        """Return what the scope holds at `key`, including why it holds nothing.
+
+        Where records contradict, the `Belief` carries the `Contradiction` and no record;
+        where decay has put a record out of reach, it carries it under `decayed`. Both
+        are reported rather than raised, for a caller that wants to show a person.
+
+        Raises:
+            CapabilityError: If `as_of` is given and this adapter has no history.
+            MemoryCorruptionError: If what is stored no longer validates as a record.
+        """
+        ...
+
+    async def history(self, scope: MemoryScope, key: str | None = None) -> Sequence[MemoryRecord]:
+        """Return every version under `scope`, oldest first, for `key` or for all keys.
+
+        The supersession trail: what was believed, from when, until what replaced it.
+        Decay never removes anything from it, because a fact nobody recalls is still a
+        fact somebody acted on.
         """
         ...
 

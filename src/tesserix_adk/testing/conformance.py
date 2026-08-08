@@ -32,6 +32,7 @@ from tesserix_adk.core.errors import (
     BudgetExceededError,
     BudgetUnavailableError,
     CapabilityError,
+    MemoryConflictError,
     MemoryScopeError,
 )
 from tesserix_adk.core.idempotency import IdempotencyStore
@@ -515,6 +516,59 @@ class MemoryStoreConformance(ABC):
             return
         with pytest.raises(CapabilityError):
             await store.search(SCOPE, MemoryQuery(kind=MemoryKind.SEMANTIC, embedding=(1.0,)))
+
+    async def test_a_superseded_record_is_closed_and_kept(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_supersession:
+            return
+        first = await store.supersede(SCOPE, _record(MemoryKind.PROFILE, "seat", "aisle"))
+        second = await store.supersede(SCOPE, _record(MemoryKind.PROFILE, "seat", "window"))
+        assert second.superseded is not None
+        assert second.superseded.superseded_by == second.record.id
+        assert [held.value for held in await store.history(SCOPE, "seat")] == ["aisle", "window"]
+        assert first.record.version < second.record.version
+
+    async def test_only_one_record_is_live_after_a_supersession(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_supersession:
+            return
+        await store.supersede(SCOPE, _record(MemoryKind.PROFILE, "seat", "aisle"))
+        await store.supersede(SCOPE, _record(MemoryKind.PROFILE, "seat", "window"))
+        live = await store.profile(SCOPE, "seat")
+        assert live is not None
+        assert live.value == "window"
+
+    async def test_a_stale_expected_version_is_refused(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_supersession:
+            return
+        first = await store.supersede(SCOPE, _record(MemoryKind.PROFILE, "seat", "aisle"))
+        await store.supersede(
+            SCOPE,
+            _record(MemoryKind.PROFILE, "seat", "window"),
+            expected_version=first.record.version,
+        )
+        with pytest.raises(MemoryConflictError):
+            await store.supersede(
+                SCOPE,
+                _record(MemoryKind.PROFILE, "seat", "middle"),
+                expected_version=first.record.version,
+            )
+
+    async def test_belief_says_nothing_rather_than_guessing(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_supersession:
+            return
+        held = await store.belief(SCOPE, "never-written")
+        assert held.record is None
+        assert held.contradiction is None
+
+    async def test_supersession_it_never_declared_is_refused(self) -> None:
+        store = self.make_store()
+        if store.capabilities.supports_supersession:
+            return
+        with pytest.raises(CapabilityError):
+            await store.supersede(SCOPE, _record(MemoryKind.PROFILE, "seat", "aisle"))
 
     async def test_erasure_removes_every_kind_under_the_scope(self) -> None:
         store = self.make_store()

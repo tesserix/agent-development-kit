@@ -13,6 +13,8 @@ logic with no network by using the fake.
 | `ToolRegistry` | Declared tools and their invocation | *(pending — `tools`)* | *(pending)* | *(pending)* |
 | `KeyValueStore` | Durable key-scoped value storage | *(pending — `adapters`)* | `FakeKeyValueStore` | `KeyValueStoreConformance` |
 | `MemoryStore` | Working, profile, episodic and semantic memory under a scope — see [memory.md](memory.md) | `InMemoryMemoryStore` | `InMemoryMemoryStore` | `MemoryStoreConformance` |
+| `ContradictionPolicy` | What an incoming profile record does to the live one — see [beliefs.md](beliefs.md) | `SupersedeMatching` | `SupersedeMatching` | *(covered by `MemoryStoreConformance`)* |
+| `DecayPolicy` | How much of a record survives its age or its own uncertainty | `HalfLife`, `ConfidenceFloor` | `HalfLife` | *(covered by `MemoryStoreConformance`)* |
 | `Guardrail` | An inline check on the call path | *(pending — `guardrails`)* | *(pending)* | *(pending)* |
 | `BudgetPolicy` | Spend and usage limits around metered calls | `RunBudget`, `UnlimitedBudget` | `FakeBudgetPolicy` | `BudgetPolicyConformance` |
 | `Tracer` | Sideband spans and events | *(pending — `observability`)* | `FakeTracer` | `TracerConformance` |

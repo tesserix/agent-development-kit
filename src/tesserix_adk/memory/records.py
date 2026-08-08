@@ -52,6 +52,16 @@ class MemoryRecord(AdkModel):
             provenance is a claim nobody can check.
         valid_from: When it started being true, in epoch seconds.
         valid_to: When it stopped, if it has. Open-ended where None.
+        recorded_at: When the system learned it. Separate from `valid_from` because a
+            fact backdated to last month was still acted on from today, and an audit
+            that cannot tell those apart cannot explain a decision.
+        superseded_by: The id of the record that replaced this one, once one has.
+        version: Which version of its key this is, counting from 1. What an optimistic
+            write checks against.
+        subject: What the record is about. Defaults to the key where it is not set.
+        predicate: Which aspects of the subject it speaks to. Two records on the same
+            subject whose predicates match exactly contradict; overlapping-but-unequal
+            ones might, and are not resolved automatically.
         confidence: How much to believe it, 0 to 1. Defaults to certain, because a
             default of "probably" would quietly discount everything written by hand.
         embedding: The vector, for semantic records. None for the other three kinds.
@@ -65,8 +75,23 @@ class MemoryRecord(AdkModel):
     source: str
     valid_from: float | None = None
     valid_to: float | None = None
+    recorded_at: float | None = None
+    superseded_by: str | None = None
+    version: int = Field(default=1, ge=1)
+    subject: str | None = None
+    predicate: tuple[str, ...] = ()
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     embedding: tuple[float, ...] | None = None
+
+    @property
+    def about(self) -> str:
+        """What this record is about — its subject, or its key where it has none."""
+        return self.subject or self.key
+
+    @property
+    def aspects(self) -> frozenset[str]:
+        """The aspects it speaks to, falling back to its key so a bare record still pairs."""
+        return frozenset(self.predicate) or frozenset({self.key})
 
 
 class MemoryQuery(AdkModel):

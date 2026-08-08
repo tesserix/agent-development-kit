@@ -16,15 +16,22 @@ from pydantic import ValidationError
 from tesserix_adk.core.errors import (
     CapabilityError,
     EmbeddingDimensionError,
+    MemoryConflictError,
+    MemoryContradictionError,
     MemoryCorruptionError,
     MemoryLimitError,
     MemoryScopeError,
 )
 from tesserix_adk.memory import (
+    Belief,
+    Contradiction,
     MemoryCapabilities,
     MemoryHit,
     MemoryKind,
     MemoryRecord,
+    Resolution,
+    SupersedeMatching,
+    Supersession,
 )
 
 if TYPE_CHECKING:
@@ -33,7 +40,12 @@ if TYPE_CHECKING:
     from pydantic import JsonValue
 
     from tesserix_adk.core.protocols import Clock
-    from tesserix_adk.memory import MemoryQuery, MemoryScope
+    from tesserix_adk.memory import (
+        ContradictionPolicy,
+        DecayPolicy,
+        MemoryQuery,
+        MemoryScope,
+    )
 
 __all__ = ["InMemoryMemoryStore"]
 
@@ -47,13 +59,26 @@ class InMemoryMemoryStore:
         clock: Where expiry times come from, so a test can advance rather than sleep.
         capabilities: What this instance claims to support, so a test can build a store
             that lacks something and watch the bind fail.
+        contradictions: What to do when a new profile record meets a live one.
+        decay: What time does to a record's weight. None leaves everything at full
+            weight, which is what a store with no opinion about staleness should do.
     """
 
-    def __init__(self, *, clock: Clock, capabilities: MemoryCapabilities | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        clock: Clock,
+        capabilities: MemoryCapabilities | None = None,
+        contradictions: ContradictionPolicy | None = None,
+        decay: DecayPolicy | None = None,
+    ) -> None:
         self._clock = clock
         self._capabilities = capabilities or MemoryCapabilities()
+        self._contradictions = contradictions or SupersedeMatching()
+        self._decay = decay
         self._items: dict[_Key, Any] = {}
         self._expiry: dict[_Key, float] = {}
+        self._versions: dict[_Key, list[MemoryRecord]] = {}
 
     @property
     def capabilities(self) -> MemoryCapabilities:
@@ -102,14 +127,114 @@ class InMemoryMemoryStore:
         self._expiry[(scope.path, MemoryKind.WORKING, key)] = self._clock.now() + ttl_seconds
 
     async def upsert(self, scope: MemoryScope, record: MemoryRecord) -> None:
-        """Write or replace a profile record."""
+        """Write or replace a profile record, discarding whatever history it had."""
         self._belongs(scope, record, MemoryKind.PROFILE)
         self._fits(record.value)
         self._items[(scope.path, MemoryKind.PROFILE, record.key)] = record.model_dump()
+        self._versions[(scope.path, MemoryKind.PROFILE, record.key)] = [record]
 
-    async def profile(self, scope: MemoryScope, key: str) -> MemoryRecord | None:
-        """Return the profile record at `key`, or None."""
-        return self._read(scope, MemoryKind.PROFILE, key)
+    async def profile(
+        self, scope: MemoryScope, key: str, *, as_of: float | None = None
+    ) -> MemoryRecord | None:
+        """Return the profile record live at `as_of`, or now, or None."""
+        held = await self.belief(scope, key, as_of=as_of)
+        if held.contradiction is not None:
+            raise MemoryContradictionError(
+                f"{key!r} holds {len(held.contradiction.holds)} live records that disagree",
+                key=key,
+                subject=held.contradiction.subject,
+                holds=held.contradiction.holds,
+            )
+        return held.record
+
+    async def belief(self, scope: MemoryScope, key: str, *, as_of: float | None = None) -> Belief:
+        """Return what the scope holds at `key`, contradiction and decay included."""
+        self._as_of(as_of)
+        at = self._clock.now() if as_of is None else as_of
+        live = self._live(scope, key, at)
+        if len(live) > 1:
+            return Belief(contradiction=_disagreement(live))
+        if not live:
+            return Belief()
+        weight = self._weighed(live[0], at)
+        if weight <= 0.0:
+            return Belief(weight=weight, decayed=(live[0],))
+        return Belief(record=live[0], weight=weight)
+
+    async def supersede(
+        self,
+        scope: MemoryScope,
+        record: MemoryRecord,
+        *,
+        expected_version: int | None = None,
+        resolves: tuple[str, ...] = (),
+    ) -> Supersession:
+        """Write a profile record as a new version, closing whatever it replaced."""
+        if not self._capabilities.supports_supersession:
+            raise CapabilityError(
+                "this store cannot supersede a record, only overwrite it",
+                capability="supersession",
+                provider=type(self).__name__,
+            )
+        self._belongs(scope, record, MemoryKind.PROFILE)
+        self._fits(record.value)
+
+        at = (scope.path, MemoryKind.PROFILE, record.key)
+        versions = self._versions.setdefault(at, self._seeded(scope, record.key))
+        now = self._clock.now()
+        live = [held for held in versions if _live_at(held, now)]
+        self._expected(record.key, live, expected_version)
+        _named(live, resolves)
+
+        started = record.valid_from if record.valid_from is not None else now
+        closed = [
+            held
+            for held in live
+            if held.id in resolves
+            or self._contradictions.resolve(held, record) is Resolution.SUPERSEDE
+        ]
+        if any(
+            self._contradictions.resolve(held, record) is Resolution.REJECT
+            for held in live
+            if held.id not in resolves
+        ):
+            raise MemoryContradictionError(
+                f"the policy refused to change what is held at {record.key!r}",
+                key=record.key,
+                subject=record.about,
+                holds=tuple(live),
+            )
+
+        written = record.model_copy(
+            update={
+                "recorded_at": now,
+                "valid_from": started,
+                "version": max((held.version for held in versions), default=0) + 1,
+            }
+        )
+        shut = []
+        for held in closed:
+            shut.append(held.model_copy(update={"valid_to": started, "superseded_by": written.id}))
+            versions[versions.index(held)] = shut[-1]
+        versions.append(written)
+        self._items[at] = written.model_dump()
+
+        branched = [held for held in live if held not in closed]
+        return Supersession(
+            record=written,
+            superseded=shut[-1] if shut else None,
+            resolution=_what_happened(closed, branched),
+            contradiction=_disagreement([*branched, written]) if branched else None,
+        )
+
+    async def history(self, scope: MemoryScope, key: str | None = None) -> Sequence[MemoryRecord]:
+        """Return every version under `scope`, oldest first, for `key` or for all keys."""
+        return tuple(
+            record
+            for at, versions in self._versions.items()
+            if at[0] == scope.path and (key is None or at[2] == key)
+            for record in versions
+        )
 
     async def log(self, scope: MemoryScope, record: MemoryRecord) -> None:
         """Record that something happened."""
@@ -119,17 +244,14 @@ class InMemoryMemoryStore:
 
     async def episodes(self, scope: MemoryScope, query: MemoryQuery) -> Sequence[MemoryHit]:
         """Return episodes matching `query`, newest first."""
-        if query.as_of is not None and not self._capabilities.supports_as_of:
-            raise CapabilityError(
-                "this store cannot read memory as of a past time",
-                capability="as_of",
-                provider=type(self).__name__,
-            )
+        self._as_of(query.as_of)
+        now = self._clock.now() if query.as_of is None else query.as_of
         found = [
             record for record in self._under(scope, MemoryKind.EPISODIC) if _within(record, query)
         ]
         found.sort(key=lambda record: record.valid_from or 0.0, reverse=True)
-        return [MemoryHit(record=record) for record in found[: query.limit]]
+        hits = [MemoryHit(record=record, score=self._weighed(record, now)) for record in found]
+        return [hit for hit in hits if hit.score > 0.0][: query.limit]
 
     async def index(self, scope: MemoryScope, record: MemoryRecord) -> None:
         """Add a semantic record to the collection."""
@@ -163,7 +285,44 @@ class InMemoryMemoryStore:
         for key in doomed:
             del self._items[key]
             self._expiry.pop(key, None)
+            self._versions.pop(key, None)
         return len(doomed)
+
+    def _seeded(self, scope: MemoryScope, key: str) -> list[MemoryRecord]:
+        """A key's versions, starting from whatever a plain upsert left behind."""
+        held = self._read(scope, MemoryKind.PROFILE, key)
+        return [] if held is None else [held]
+
+    def _live(self, scope: MemoryScope, key: str, at: float) -> list[MemoryRecord]:
+        """Every profile record whose window contains `at`."""
+        at_key = (scope.path, MemoryKind.PROFILE, key)
+        versions = self._versions.get(at_key) or self._seeded(scope, key)
+        return [held for held in versions if _live_at(held, at)]
+
+    def _expected(self, key: str, live: list[MemoryRecord], expected: int | None) -> None:
+        """Refuse a write whose caller was reading a version that is no longer live."""
+        if expected is None:
+            return
+        actual = max((held.version for held in live), default=0)
+        if actual != expected:
+            raise MemoryConflictError(
+                f"{key!r} is at version {actual}, not {expected}",
+                key=key,
+                expected_version=expected,
+                actual_version=actual,
+            )
+
+    def _as_of(self, as_of: float | None) -> None:
+        if as_of is not None and not self._capabilities.supports_as_of:
+            raise CapabilityError(
+                "this store cannot read memory as of a past time",
+                capability="as_of",
+                provider=type(self).__name__,
+            )
+
+    def _weighed(self, record: MemoryRecord, now: float) -> float:
+        """How much of a record survives decay, where the store has a policy at all."""
+        return 1.0 if self._decay is None else self._decay.weigh(record, now=now)
 
     def _read(self, scope: MemoryScope, kind: MemoryKind, key: str) -> MemoryRecord | None:
         at = (scope.path, kind, key)
@@ -255,3 +414,33 @@ def _resemblance(asked: Sequence[float], held: Sequence[float]) -> float:
     dot = sum(a * b for a, b in zip(asked, held, strict=True))
     scale = math.sqrt(sum(a * a for a in asked)) * math.sqrt(sum(b * b for b in held))
     return dot / scale if scale else 0.0
+
+
+def _live_at(record: MemoryRecord, at: float) -> bool:
+    """Whether a record's window contains `at`, so exactly one version is live per instant."""
+    started = record.valid_from or 0.0
+    return started <= at and (record.valid_to is None or at < record.valid_to)
+
+
+def _named(live: list[MemoryRecord], resolves: tuple[str, ...]) -> None:
+    """Refuse a write that claims to settle a record nobody is holding."""
+    held = {record.id for record in live}
+    unknown = sorted(set(resolves) - held)
+    if unknown:
+        raise ValueError(f"nothing live at this key with id {', '.join(unknown)}")
+
+
+def _what_happened(closed: list[MemoryRecord], branched: list[MemoryRecord]) -> Resolution:
+    """What the write did, reported by what it left behind."""
+    if closed:
+        return Resolution.SUPERSEDE
+    return Resolution.BRANCH if branched else Resolution.NOTHING_TO_DO
+
+
+def _disagreement(holds: list[MemoryRecord]) -> Contradiction:
+    """The live records that disagree, and what they disagree about."""
+    return Contradiction(
+        subject=holds[0].about,
+        aspects=tuple(sorted({aspect for record in holds for aspect in record.aspects})),
+        holds=tuple(holds),
+    )

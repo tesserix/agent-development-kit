@@ -40,7 +40,10 @@ class TestAStoreThatDeclaresLessIsHeldToLess(MemoryStoreConformance):
         return InMemoryMemoryStore(
             clock=FakeClock(),
             capabilities=MemoryCapabilities(
-                supports_semantic=False, supports_as_of=False, supports_erasure=False
+                supports_semantic=False,
+                supports_as_of=False,
+                supports_erasure=False,
+                supports_supersession=False,
             ),
         )
 

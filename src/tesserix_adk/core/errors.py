@@ -40,6 +40,8 @@ __all__ = [
     "InvalidRequestError",
     "LoopLimitError",
     "MaxIterationsError",
+    "MemoryConflictError",
+    "MemoryContradictionError",
     "MemoryCorruptionError",
     "MemoryLimitError",
     "MemoryScopeError",
@@ -1219,3 +1221,58 @@ class ContextBudgetError(AdkError):
                 "section": section or "",
             },
         )
+
+
+class MemoryConflictError(AdkError):
+    """Raised when a supersession expected a version of a fact that is no longer live.
+
+    Two runs that change the same belief at once must not both succeed: the second
+    would either overwrite the first or leave the scope holding two live records for
+    one subject. The loser is told which version it was working from, so it can re-read
+    and decide again rather than retry blind.
+
+    Args:
+        key: The profile key that was contended.
+        expected_version: What the caller believed was live.
+        actual_version: What is live now.
+    """
+
+    def __init__(
+        self, *args: object, key: str = "", expected_version: int = 0, actual_version: int = 0
+    ) -> None:
+        self.key = key
+        self.expected_version = expected_version
+        self.actual_version = actual_version
+        super().__init__(
+            *args,
+            details={
+                "key": key,
+                "expected_version": str(expected_version),
+                "actual_version": str(actual_version),
+            },
+        )
+
+
+class MemoryContradictionError(AdkError):
+    """Raised when a scope holds contradictory beliefs that nothing may resolve for it.
+
+    Two live records for one subject are not averaged and not ordered by luck. A read
+    that would have to choose raises instead, and the caller — or a person — decides.
+
+    Args:
+        key: The profile key holding the contradiction.
+        subject: What the records disagree about.
+        holds: Every live record involved, so the choice can be made on the evidence.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        key: str = "",
+        subject: str = "",
+        holds: tuple[object, ...] = (),
+    ) -> None:
+        self.key = key
+        self.subject = subject
+        self.holds = holds
+        super().__init__(*args, details={"key": key, "subject": subject, "holds": str(len(holds))})

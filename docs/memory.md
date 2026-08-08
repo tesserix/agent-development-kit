@@ -10,7 +10,7 @@ kinds of remembering an agent actually does, with the scope in every signature.
 | Kind | What it holds | Operations |
 |---|---|---|
 | `WORKING` | The current task's scratch space | `write`, `read`, `append`, `expire` |
-| `PROFILE` | Durable facts about a user or tenant | `upsert`, `profile` |
+| `PROFILE` | Durable facts about a user or tenant | `upsert`, `profile`, `supersede`, `belief`, `history` |
 | `EPISODIC` | Things that happened, at a time | `log`, `episodes` |
 | `SEMANTIC` | Things known, found by resemblance | `index`, `search` |
 
@@ -22,6 +22,10 @@ do not collapse into a shared get/put without lying about one of them.
 Kinds do not share a key space. A working key called `seat` and a profile key called `seat`
 are two records, because one namespace across kinds is a scratch value quietly overwriting
 a preference.
+
+A profile fact that changes supersedes the one it replaces rather than overwriting it,
+and a fact can decay out of recall without being deleted. Both are in
+[beliefs.md](beliefs.md).
 
 ## Scope is in every signature
 
