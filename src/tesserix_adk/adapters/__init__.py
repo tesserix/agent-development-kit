@@ -1,6 +1,22 @@
 """Concrete backing stores and transports."""
 
 from tesserix_adk.adapters.cache import DEFAULT_NAMESPACE, RedisCacheStore
+from tesserix_adk.adapters.graph import (
+    BACKENDS,
+    EXTRACTION_INSTRUCTION,
+    EntityExtractor,
+    ExtractedEdge,
+    ExtractedNode,
+    ExtractedSubgraph,
+    ExtractionCharge,
+    ExtractionMeter,
+    GraphEngine,
+    GraphitiClient,
+    GraphitiEngine,
+    GraphMemoryStore,
+    GraphSettings,
+    open_graphiti,
+)
 from tesserix_adk.adapters.idempotency import (
     IN_FLIGHT,
     PostgresIdempotencyStore,
@@ -43,6 +59,7 @@ from tesserix_adk.adapters.transport import (
 )
 
 __all__ = [
+    "BACKENDS",
     "DEFAULT_COLLECTION",
     "DEFAULT_HEARTBEAT_SECONDS",
     "DEFAULT_LEASE_SECONDS",
@@ -51,10 +68,22 @@ __all__ = [
     "DEFAULT_RETRY_MILLISECONDS",
     "DEFAULT_TABLE",
     "DISTANCE_OPERATORS",
+    "EXTRACTION_INSTRUCTION",
     "IN_FLIGHT",
     "SSE_HEADERS",
     "ApprovalInbox",
     "CoalescingLedger",
+    "EntityExtractor",
+    "ExtractedEdge",
+    "ExtractedNode",
+    "ExtractedSubgraph",
+    "ExtractionCharge",
+    "ExtractionMeter",
+    "GraphEngine",
+    "GraphMemoryStore",
+    "GraphSettings",
+    "GraphitiClient",
+    "GraphitiEngine",
     "InMemoryLedger",
     "MemoryPage",
     "MemoryStoreSettings",
@@ -75,6 +104,7 @@ __all__ = [
     "TransportAuthorizationError",
     "WebSocketBridge",
     "WebSocketLike",
+    "open_graphiti",
     "sse_events",
     "wire_payload",
 ]

@@ -30,6 +30,7 @@ __all__ = [
     "EmbeddingDimensionError",
     "EstimateUnavailableError",
     "EventLoopStalledError",
+    "ExtractionError",
     "FallbackExhaustedError",
     "FallbackUnsafeError",
     "FanOutLimitError",
@@ -74,6 +75,7 @@ __all__ = [
     "ToolTimedOutError",
     "TrustBoundaryError",
     "WorkersBusyError",
+    "WriteQueueFullError",
 ]
 
 _DISTRIBUTION = "tesserix-adk"
@@ -1326,3 +1328,51 @@ class PartialErasureError(AdkError):
         self.adapter = adapter
         self.receipt = receipt
         super().__init__(*args, details={"adapter": adapter})
+
+
+class ExtractionError(AdkError):
+    """Raised when a model's extraction output cannot be trusted as a subgraph.
+
+    Nothing is committed. A subgraph half of which the model invented reads exactly like
+    one it derived, and there is no later signal that would tell them apart, so the write
+    fails rather than guessing which half was real.
+
+    Args:
+        model: Which model produced the output.
+        payload: The raw output, kept so the failure can be diagnosed rather than
+            re-elicited. It is model output, so it is treated as untrusted text.
+        reason: What the payload violated.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        model: str = "",
+        payload: str = "",
+        reason: str = "",
+    ) -> None:
+        self.model = model
+        self.payload = payload
+        self.reason = reason
+        super().__init__(*args, details={"model": model, "reason": reason})
+
+
+class WriteQueueFullError(AdkError):
+    """Raised when an asynchronous write cannot be accepted because the queue is full.
+
+    A bounded queue that drops its overflow loses a write nobody will ever look for.
+    Refusing is louder and is the caller's decision to make: wait, shed, or write through
+    synchronously and pay the latency.
+
+    Args:
+        depth: How many writes are waiting, which is also the bound that was reached.
+    """
+
+    def __init__(self, *args: object, depth: int = 0) -> None:
+        self.depth = depth
+        super().__init__(*args, details={"depth": str(depth)})
+
+    @property
+    def retryable(self) -> bool:
+        """Yes, once the queue has drained. Nothing about the write itself was refused."""
+        return True

@@ -154,6 +154,20 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `GraphMemoryStore`, relationship memory over a temporal knowledge graph behind the same
+  `MemoryStore` protocol. It answers `relations(scope, as_of=…)` and hands everything else
+  to a companion store. It is the one adapter whose writes cost money — relations come from
+  a model call — so a write first asks whether the tenant may still spend: `BudgetPolicy`
+  bounds the run, `ExtractionMeter` bounds the tenant, and an exhausted ceiling raises
+  `BudgetExceededError` before the provider is called, leaving no partial subgraph. Schema
+  violations raise `ExtractionError` and roll back; a backend that fails after extraction was
+  paid for keeps the result for retry. Writes queue so an interactive run does not wait, and
+  a saturated queue raises `WriteQueueFullError` rather than dropping one. Retrieved text is
+  data to the extractor, never instruction; entities deduplicate within a tenant and never
+  across tenants. The engine is injected — `open_graphiti` wraps Graphiti over Neo4j or
+  FalkorDB, selected by config, behind the `graphiti` extra. **Stability:** additive.
+  Documented in `docs/graph-memory.md`.
+
 - Redis, PostgreSQL and pgvector memory adapters, composed by `RoutedMemoryStore` into the
   one `MemoryStore` a consumer binds. Working memory expires on the server and appends in a
   single script; profiles and episodes are bitemporal with optimistic versions and keyset

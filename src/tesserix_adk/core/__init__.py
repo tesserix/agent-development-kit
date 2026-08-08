@@ -65,6 +65,7 @@ from tesserix_adk.core.errors import (
     EmbeddingDimensionError,
     EstimateUnavailableError,
     EventLoopStalledError,
+    ExtractionError,
     FallbackExhaustedError,
     FallbackUnsafeError,
     FanOutLimitError,
@@ -110,6 +111,7 @@ from tesserix_adk.core.errors import (
     ToolTimedOutError,
     TrustBoundaryError,
     WorkersBusyError,
+    WriteQueueFullError,
 )
 from tesserix_adk.core.extras import require_extra
 from tesserix_adk.core.fallback import FallbackChain, fallback_eligible
@@ -288,6 +290,7 @@ __all__ = [
     "EmbeddingDimensionError",
     "EstimateUnavailableError",
     "EventLoopStalledError",
+    "ExtractionError",
     "FallbackChain",
     "FallbackExhaustedError",
     "FallbackUnsafeError",
@@ -409,6 +412,7 @@ __all__ = [
     "WindowKind",
     "WindowSpend",
     "WorkersBusyError",
+    "WriteQueueFullError",
     "deduplicate",
     "deprecate",
     "deprecations",
