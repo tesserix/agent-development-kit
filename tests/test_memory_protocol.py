@@ -416,7 +416,7 @@ class TestTheEdgesTwoProductsAlreadyHitByHand:
             kept.erase(SCOPE), kept.episodes(SCOPE, MemoryQuery(kind=MemoryKind.EPISODIC, limit=50))
         )
 
-        assert erased == 20
+        assert erased.records == 20
         assert len(found) in (0, 20)
 
     async def test_erasure_reaches_every_kind(self) -> None:

@@ -21,10 +21,13 @@ from tesserix_adk.core.errors import (
     MemoryCorruptionError,
     MemoryLimitError,
     MemoryScopeError,
+    PartialErasureError,
 )
 from tesserix_adk.memory import (
+    DEFAULT_REDACTOR,
     Belief,
     Contradiction,
+    ErasureReceipt,
     MemoryCapabilities,
     MemoryHit,
     MemoryKind,
@@ -35,15 +38,18 @@ from tesserix_adk.memory import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
 
     from pydantic import JsonValue
 
-    from tesserix_adk.core.protocols import Clock
+    from tesserix_adk.core.protocols import Clock, Tracer
     from tesserix_adk.memory import (
         ContradictionPolicy,
         DecayPolicy,
+        Derivation,
+        DerivedIndex,
         MemoryQuery,
+        MemoryRedactor,
         MemoryScope,
     )
 
@@ -62,6 +68,10 @@ class InMemoryMemoryStore:
         contradictions: What to do when a new profile record meets a live one.
         decay: What time does to a record's weight. None leaves everything at full
             weight, which is what a store with no opinion about staleness should do.
+        redactor: What masks a value on the way in. `None` stores what it is given,
+            which has to be asked for rather than arrived at.
+        indices: The derived-artefact indices this store is responsible for erasing.
+        tracer: Where erasure events go. Ids and counts only, never a value.
     """
 
     def __init__(
@@ -71,14 +81,22 @@ class InMemoryMemoryStore:
         capabilities: MemoryCapabilities | None = None,
         contradictions: ContradictionPolicy | None = None,
         decay: DecayPolicy | None = None,
+        redactor: MemoryRedactor | None = DEFAULT_REDACTOR,
+        indices: Sequence[DerivedIndex] = (),
+        tracer: Tracer | None = None,
     ) -> None:
         self._clock = clock
         self._capabilities = capabilities or MemoryCapabilities()
         self._contradictions = contradictions or SupersedeMatching()
         self._decay = decay
+        self._redactor = redactor
+        self._indices = tuple(indices)
+        self._tracer = tracer
         self._items: dict[_Key, Any] = {}
         self._expiry: dict[_Key, float] = {}
         self._versions: dict[_Key, list[MemoryRecord]] = {}
+        self._derived: dict[tuple[str, str, str, str], list[Derivation]] = {}
+        self._tombstoned: set[_Key] = set()
 
     @property
     def capabilities(self) -> MemoryCapabilities:
@@ -97,7 +115,8 @@ class InMemoryMemoryStore:
         """Replace working memory at `record.key`."""
         self._belongs(scope, record, MemoryKind.WORKING)
         self._fits(record.value)
-        self._items[(scope.path, MemoryKind.WORKING, record.key)] = record.model_dump()
+        held = self._redacted(record)
+        self._items[(scope.path, MemoryKind.WORKING, record.key)] = held.model_dump()
 
     async def read(self, scope: MemoryScope, key: str) -> MemoryRecord | None:
         """Return the working record at `key`, or None where it is absent or expired."""
@@ -119,7 +138,7 @@ class InMemoryMemoryStore:
             source="append",
             valid_from=self._clock.now(),
         )
-        self._items[(scope.path, MemoryKind.WORKING, key)] = record.model_dump()
+        self._items[(scope.path, MemoryKind.WORKING, key)] = self._redacted(record).model_dump()
         return len(values)
 
     async def expire(self, scope: MemoryScope, key: str, *, ttl_seconds: float) -> None:
@@ -130,8 +149,9 @@ class InMemoryMemoryStore:
         """Write or replace a profile record, discarding whatever history it had."""
         self._belongs(scope, record, MemoryKind.PROFILE)
         self._fits(record.value)
-        self._items[(scope.path, MemoryKind.PROFILE, record.key)] = record.model_dump()
-        self._versions[(scope.path, MemoryKind.PROFILE, record.key)] = [record]
+        held = self._redacted(record)
+        self._items[(scope.path, MemoryKind.PROFILE, record.key)] = held.model_dump()
+        self._versions[(scope.path, MemoryKind.PROFILE, record.key)] = [held]
 
     async def profile(
         self, scope: MemoryScope, key: str, *, as_of: float | None = None
@@ -178,6 +198,7 @@ class InMemoryMemoryStore:
             )
         self._belongs(scope, record, MemoryKind.PROFILE)
         self._fits(record.value)
+        record = self._redacted(record)
 
         at = (scope.path, MemoryKind.PROFILE, record.key)
         versions = self._versions.setdefault(at, self._seeded(scope, record.key))
@@ -232,7 +253,7 @@ class InMemoryMemoryStore:
         return tuple(
             record
             for at, versions in self._versions.items()
-            if at[0] == scope.path and (key is None or at[2] == key)
+            if at[0] == scope.path and (key is None or at[2] == key) and at not in self._tombstoned
             for record in versions
         )
 
@@ -240,7 +261,9 @@ class InMemoryMemoryStore:
         """Record that something happened."""
         self._belongs(scope, record, MemoryKind.EPISODIC)
         self._fits(record.value)
-        self._items[(scope.path, MemoryKind.EPISODIC, record.key)] = record.model_dump()
+        self._items[(scope.path, MemoryKind.EPISODIC, record.key)] = self._redacted(
+            record
+        ).model_dump()
 
     async def episodes(self, scope: MemoryScope, query: MemoryQuery) -> Sequence[MemoryHit]:
         """Return episodes matching `query`, newest first."""
@@ -259,7 +282,9 @@ class InMemoryMemoryStore:
         self._belongs(scope, record, MemoryKind.SEMANTIC)
         self._fits(record.value)
         self._width(record.embedding)
-        self._items[(scope.path, MemoryKind.SEMANTIC, record.key)] = record.model_dump()
+        self._items[(scope.path, MemoryKind.SEMANTIC, record.key)] = self._redacted(
+            record
+        ).model_dump()
 
     async def search(self, scope: MemoryScope, query: MemoryQuery) -> Sequence[MemoryHit]:
         """Return semantic records ranked by resemblance, closest first."""
@@ -273,20 +298,127 @@ class InMemoryMemoryStore:
         hits.sort(key=lambda hit: hit.score, reverse=True)
         return hits[: query.limit]
 
-    async def erase(self, scope: MemoryScope) -> int:
-        """Delete every record under `scope` across all four kinds, and return how many."""
+    async def derived(self, scope: MemoryScope, derivation: Derivation) -> None:
+        """Record that an artefact was built from a record under `scope`."""
+        self._derived.setdefault(scope.path, []).append(derivation)
+
+    async def derivations(
+        self, scope: MemoryScope, *, source_id: str | None = None
+    ) -> Sequence[Derivation]:
+        """Return what has been derived under `scope`, or from one record within it."""
+        held = self._derived.get(scope.path, [])
+        return tuple(one for one in held if source_id is None or one.source_id == source_id)
+
+    async def erase(
+        self,
+        scope: MemoryScope,
+        *,
+        kinds: tuple[MemoryKind, ...] = (),
+        dry_run: bool = False,
+    ) -> ErasureReceipt:
+        """Tombstone every record under `scope`, then purge what was derived from them."""
         if not self._capabilities.supports_erasure:
             raise CapabilityError(
                 "this store cannot erase a scope",
                 capability="erasure",
                 provider=type(self).__name__,
             )
-        doomed = [key for key in self._items if key[0] == scope.path]
+        doomed = [
+            key for key in self._items if key[0] == scope.path and (not kinds or key[1] in kinds)
+        ]
+        counts = self._counted(key for key in doomed if key not in self._tombstoned)
+        if dry_run:
+            return ErasureReceipt(counts=counts, adapters=self._adapters(), dry_run=True)
+
+        self._tombstoned.update(doomed)
+        purged, outstanding = await self._purge(scope)
+        if outstanding:
+            receipt = ErasureReceipt(
+                counts=counts,
+                artefacts=purged,
+                adapters=self._adapters(),
+                outstanding=outstanding,
+            )
+            self._published(receipt)
+            raise PartialErasureError(
+                f"{outstanding[0]!r} could not be reached; {scope.path} is tombstoned, not purged",
+                adapter=outstanding[0],
+                receipt=receipt,
+            )
+
         for key in doomed:
             del self._items[key]
             self._expiry.pop(key, None)
             self._versions.pop(key, None)
-        return len(doomed)
+            self._tombstoned.discard(key)
+        self._derived.pop(scope.path, None)
+        receipt = ErasureReceipt(
+            counts=counts,
+            artefacts=purged,
+            adapters=self._adapters(),
+            completed_at=self._clock.now(),
+            complete=True,
+        )
+        self._published(receipt)
+        return receipt
+
+    def _counted(self, doomed: Iterable[_Key]) -> dict[str, int]:
+        """How many records go per kind, counting every version of a superseded key."""
+        counts: dict[str, int] = {}
+        for key in doomed:
+            counts[key[1].value] = counts.get(key[1].value, 0) + max(
+                len(self._versions.get(key, ())), 1
+            )
+        return counts
+
+    def _adapters(self) -> tuple[str, ...]:
+        return tuple(index.name for index in self._indices)
+
+    async def _purge(self, scope: MemoryScope) -> tuple[int, tuple[str, ...]]:
+        """Drop the artefacts this scope alone derived, reporting whatever went unreachable."""
+        mine = self._derived.get(scope.path, [])
+        shared = {
+            one.artefact_id
+            for path, held in self._derived.items()
+            if path != scope.path
+            for one in held
+        }
+        purged, outstanding = 0, []
+        for index in self._indices:
+            ids = tuple(
+                one.artefact_id
+                for one in mine
+                if one.adapter == index.name and one.artefact_id not in shared
+            )
+            if not ids:
+                continue
+            try:
+                purged += await index.purge(ids)
+            # However an index fails to answer, the erasure is incomplete in the same way.
+            except Exception:
+                outstanding.append(index.name)
+        return purged, tuple(outstanding)
+
+    def _published(self, receipt: ErasureReceipt) -> None:
+        """Say what an erasure did, in counts. A value here would outlive the erasure."""
+        if self._tracer is None:
+            return
+        self._tracer.event(
+            "adk.memory.erased",
+            **{
+                "adk.memory.records": str(receipt.records),
+                "adk.memory.artefacts": str(receipt.artefacts),
+                "adk.memory.complete": "true" if receipt.complete else "false",
+                "adk.memory.outstanding": ",".join(receipt.outstanding),
+            },
+        )
+
+    def _redacted(self, record: MemoryRecord) -> MemoryRecord:
+        """A record as it should be stored, carrying the paths that were masked."""
+        if self._redactor is None:
+            return record
+        value, masked = self._redactor.redact(record.value)
+        return record.model_copy(update={"value": value, "redacted": masked})
 
     def _seeded(self, scope: MemoryScope, key: str) -> list[MemoryRecord]:
         """A key's versions, starting from whatever a plain upsert left behind."""
@@ -296,6 +428,8 @@ class InMemoryMemoryStore:
     def _live(self, scope: MemoryScope, key: str, at: float) -> list[MemoryRecord]:
         """Every profile record whose window contains `at`."""
         at_key = (scope.path, MemoryKind.PROFILE, key)
+        if at_key in self._tombstoned:
+            return []
         versions = self._versions.get(at_key) or self._seeded(scope, key)
         return [held for held in versions if _live_at(held, at)]
 
@@ -326,6 +460,8 @@ class InMemoryMemoryStore:
 
     def _read(self, scope: MemoryScope, kind: MemoryKind, key: str) -> MemoryRecord | None:
         at = (scope.path, kind, key)
+        if at in self._tombstoned:
+            return None
         expires = self._expiry.get(at)
         if expires is not None and self._clock.now() >= expires:
             return None
@@ -336,7 +472,7 @@ class InMemoryMemoryStore:
         return [
             _validated(at[2], payload)
             for at, payload in self._items.items()
-            if at[0] == scope.path and at[1] is kind
+            if at[0] == scope.path and at[1] is kind and at not in self._tombstoned
         ]
 
     def _belongs(self, scope: MemoryScope, record: MemoryRecord, kind: MemoryKind) -> None:

@@ -58,8 +58,8 @@ async def scoped() -> None:
     await store.write(SCOPE, remembered(MemoryKind.WORKING, "draft", "BOM-DEL"))
 
     elsewhere = await store.read(MemoryScope(tenant_id="other"), "draft")
-    erased = await store.erase(SCOPE)
-    print("another tenant reads:", elsewhere, "| records erased:", erased)  # noqa: T201
+    receipt = await store.erase(SCOPE)
+    print("another tenant reads:", elsewhere, "| records erased:", receipt.records)  # noqa: T201
 
 
 def bound() -> None:

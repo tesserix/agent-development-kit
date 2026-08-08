@@ -22,7 +22,8 @@ if TYPE_CHECKING:
 
     from tesserix_adk.memory.beliefs import Belief, Supersession
     from tesserix_adk.memory.capabilities import MemoryCapabilities
-    from tesserix_adk.memory.records import MemoryHit, MemoryQuery, MemoryRecord
+    from tesserix_adk.memory.erasure import Derivation, ErasureReceipt
+    from tesserix_adk.memory.records import MemoryHit, MemoryKind, MemoryQuery, MemoryRecord
     from tesserix_adk.memory.scope import MemoryScope
 
 __all__ = ["MemoryStore"]
@@ -35,6 +36,10 @@ class MemoryStore(Protocol):
     Every operation takes a `MemoryScope`. There is no unscoped overload, so a call site
     cannot forget one, and a record whose own scope disagrees with the call is refused
     rather than filed under whichever of the two the adapter happened to read.
+
+    Every write path redacts before it stores, and names what it masked on
+    `MemoryRecord.redacted`. What never reaches the store never has to be chased out of
+    six indices when somebody asks to be forgotten.
     """
 
     @property
@@ -186,13 +191,45 @@ class MemoryStore(Protocol):
         """
         ...
 
-    async def erase(self, scope: MemoryScope) -> int:
-        """Delete every record under `scope`, across all four kinds, and return how many.
+    async def derived(self, scope: MemoryScope, derivation: Derivation) -> None:
+        """Record that an artefact was built from a record, so erasure can reach it.
 
-        A read racing an erasure sees all of the scope or none of it, never half.
+        Anything derived from case content — an embedding, a summary, an index entry, a
+        cache key — registers here or it survives the erasure of what it was built from.
+        """
+        ...
+
+    async def derivations(
+        self, scope: MemoryScope, *, source_id: str | None = None
+    ) -> Sequence[Derivation]:
+        """Return what has been derived under `scope`, or from one record within it."""
+        ...
+
+    async def erase(
+        self,
+        scope: MemoryScope,
+        *,
+        kinds: tuple[MemoryKind, ...] = (),
+        dry_run: bool = False,
+    ) -> ErasureReceipt:
+        """Delete everything under `scope` and report what went, in two phases.
+
+        Records are tombstoned first and stop being readable at once; derived artefacts
+        are purged from their indices second. A read racing an erasure sees all of the
+        scope or none of it, never half. Re-running a completed erasure is a no-op
+        returning zero counts.
+
+        Args:
+            scope: Whose memory is being erased.
+            kinds: Which kinds to remove. Empty means all four.
+            dry_run: Report what would go without removing anything. Never complete,
+                because a dry run has kept no promise to anybody.
 
         Raises:
             CapabilityError: If this adapter cannot erase. Reporting zero rows erased
                 would be indistinguishable from a scope that held nothing.
+            PartialErasureError: If an index could not be reached after the records were
+                tombstoned. The receipt on the error says what did go; the operation is
+                resumable and idempotent.
         """
         ...

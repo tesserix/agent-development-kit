@@ -65,6 +65,8 @@ class MemoryRecord(AdkModel):
         confidence: How much to believe it, 0 to 1. Defaults to certain, because a
             default of "probably" would quietly discount everything written by hand.
         embedding: The vector, for semantic records. None for the other three kinds.
+        redacted: The paths inside `value` that were masked on the way in. Named rather
+            than counted, so a reader can tell a masked field from one that was empty.
     """
 
     id: str
@@ -82,6 +84,7 @@ class MemoryRecord(AdkModel):
     predicate: tuple[str, ...] = ()
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     embedding: tuple[float, ...] | None = None
+    redacted: tuple[str, ...] = ()
 
     @property
     def about(self) -> str:

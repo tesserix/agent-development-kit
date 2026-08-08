@@ -10,6 +10,12 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- `MemoryStore.erase` returns an `ErasureReceipt` rather than an `int`. A number cannot
+  say which kinds went, which indices were spoken to, whether the erasure finished, or
+  when, and a right-to-erasure request answered with `5` is not answered. **Stability:**
+  breaking for anyone comparing the return of `erase` to a number; `.records` is the same
+  integer. Documented in `docs/erasure.md`.
+
 - `MemoryStore` is now the four-kind memory protocol in `tesserix_adk.memory`. The old
   three-method `get`/`put`/`delete` protocol of the same name is renamed `KeyValueStore`,
   with `FakeMemoryStore` becoming `FakeKeyValueStore` and `MemoryStoreConformance` becoming
@@ -147,6 +153,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   `examples/providers.py`.
 
 ### Added
+
+- Redaction on every memory write path, and erasure that reaches what was derived from a
+  record. Values are masked before they are stored and the masked paths are named on
+  `MemoryRecord.redacted`; `Derivation` registers each embedding, summary or cache entry
+  against the record it came from, and `erase` purges them from their `DerivedIndex` in a
+  second phase after the rows are tombstoned. An unreachable index raises
+  `PartialErasureError` with an incomplete receipt, and re-running `erase` resumes without
+  double-counting. `dry_run=True` counts without touching anything. Card numbers joined
+  `SENSITIVE_SHAPES`. **Stability:** additive apart from the `erase` return type above.
+  Documented in `docs/erasure.md`.
 
 - Beliefs that change over time. `MemoryStore.supersede` writes a profile fact as a new
   version and closes the one it replaces with `valid_to` and `superseded_by`, rather than

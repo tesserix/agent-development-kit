@@ -29,11 +29,20 @@ from tesserix_adk.memory.context import (
     SectionOutcome,
     SectionPlan,
 )
+from tesserix_adk.memory.erasure import (
+    DEFAULT_REDACTOR,
+    Derivation,
+    DerivedIndex,
+    ErasureReceipt,
+    MemoryRedactor,
+    PatternRedactor,
+)
 from tesserix_adk.memory.protocol import MemoryStore
 from tesserix_adk.memory.records import MemoryHit, MemoryKind, MemoryQuery, MemoryRecord
 from tesserix_adk.memory.scope import MemoryScope
 
 __all__ = [
+    "DEFAULT_REDACTOR",
     "AssembledContext",
     "Belief",
     "CompactionOutcome",
@@ -45,7 +54,10 @@ __all__ = [
     "Contradiction",
     "ContradictionPolicy",
     "DecayPolicy",
+    "Derivation",
+    "DerivedIndex",
     "DropOldest",
+    "ErasureReceipt",
     "HalfLife",
     "MemoryCapabilities",
     "MemoryHit",
@@ -53,8 +65,10 @@ __all__ = [
     "MemoryNeeds",
     "MemoryQuery",
     "MemoryRecord",
+    "MemoryRedactor",
     "MemoryScope",
     "MemoryStore",
+    "PatternRedactor",
     "PinAndFold",
     "Resolution",
     "SectionOutcome",

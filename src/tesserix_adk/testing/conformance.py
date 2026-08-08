@@ -48,6 +48,7 @@ from tesserix_adk.core.protocols import (
 )
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.memory import (
+    Derivation,
     MemoryKind,
     MemoryQuery,
     MemoryRecord,
@@ -576,9 +577,49 @@ class MemoryStoreConformance(ABC):
             return
         await store.write(SCOPE, _record(MemoryKind.WORKING, "k"))
         await store.upsert(SCOPE, _record(MemoryKind.PROFILE, "seat", "aisle"))
-        assert await store.erase(SCOPE) >= 2
+        receipt = await store.erase(SCOPE)
+        assert receipt.complete
+        assert receipt.records >= 2
         assert await store.read(SCOPE, "k") is None
         assert await store.profile(SCOPE, "seat") is None
+
+    async def test_a_dry_run_reports_without_removing(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_erasure:
+            return
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k"))
+        receipt = await store.erase(SCOPE, dry_run=True)
+        assert receipt.dry_run
+        assert not receipt.complete
+        assert receipt.records >= 1
+        assert await store.read(SCOPE, "k") is not None
+
+    async def test_erasing_a_second_time_removes_nothing(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_erasure:
+            return
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k"))
+        await store.erase(SCOPE)
+        again = await store.erase(SCOPE)
+        assert again.complete
+        assert again.records == 0
+
+    async def test_a_sensitive_value_is_masked_on_the_way_in(self) -> None:
+        store = self.make_store()
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k", "write to ada@example.com"))
+        held = await store.read(SCOPE, "k")
+        assert held is not None
+        assert "ada@example.com" not in str(held.value)
+
+    async def test_what_was_derived_is_reported_before_it_is_erased(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_erasure:
+            return
+        made = Derivation(artefact_id="a1", source_id="working:k", adapter="vectors")
+        await store.derived(SCOPE, made)
+        assert list(await store.derivations(SCOPE, source_id="working:k")) == [made]
+        await store.erase(SCOPE)
+        assert list(await store.derivations(SCOPE)) == []
 
     async def test_erasure_stops_at_the_scope_it_was_given(self) -> None:
         store = self.make_store()

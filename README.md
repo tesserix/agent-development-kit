@@ -95,6 +95,7 @@ code lands here as the kit is built.
 | Tool idempotency — declaring what a repeat would do, key derivation, durable stores, the at-most-once guarantee | [`docs/tool-idempotency.md`](docs/tool-idempotency.md) |
 | Memory — the four kinds, scope in every signature, capabilities checked at bind time, adapter guarantees | [`docs/memory.md`](docs/memory.md) |
 | Changing beliefs — supersession, bitemporal reads, contradictions, decay | [`docs/beliefs.md`](docs/beliefs.md) |
+| Redaction and erasure — masking on write, derived artefacts, two-phase erasure, receipts | [`docs/erasure.md`](docs/erasure.md) |
 | Context assembly — the plan, the provider's budget, pinning, compaction strategies, failing closed | [`docs/context-assembly.md`](docs/context-assembly.md) |
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |

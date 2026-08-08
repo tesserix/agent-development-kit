@@ -7,7 +7,7 @@ kit's failures without catching `Exception` and swallowing its own bugs alongsid
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -48,6 +48,7 @@ __all__ = [
     "MissingExtraError",
     "ModelResponseError",
     "NoEligibleModelError",
+    "PartialErasureError",
     "PoolExhaustedError",
     "ProtocolConformanceError",
     "ProviderError",
@@ -1276,3 +1277,27 @@ class MemoryContradictionError(AdkError):
         self.subject = subject
         self.holds = holds
         super().__init__(*args, details={"key": key, "subject": subject, "holds": str(len(holds))})
+
+
+class PartialErasureError(AdkError):
+    """Raised when an erasure removed the records but could not reach a derived index.
+
+    Half an erasure is worse than none, because the receipt would say the promise was
+    kept while a vector built from the erased text is still searchable. The rows stay
+    tombstoned and out of reach, the receipt is marked incomplete, and the caller is
+    told which adapter to come back for. Re-running the erasure resumes it.
+
+    Args:
+        adapter: The index that could not be reached.
+        receipt: The incomplete `ErasureReceipt`, so the caller can record what did go.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        adapter: str = "",
+        receipt: Any = None,  # noqa: ANN401 — core cannot name a memory type and stay independent
+    ) -> None:
+        self.adapter = adapter
+        self.receipt = receipt
+        super().__init__(*args, details={"adapter": adapter})

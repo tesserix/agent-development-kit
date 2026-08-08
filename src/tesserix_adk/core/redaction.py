@@ -27,6 +27,7 @@ SENSITIVE_SHAPES: tuple[str, ...] = (
     r"\bBearer\s+\S+",
     r"\beyJ[A-Za-z0-9_-]{10,}",
     r"\b[0-9a-f]{32,}\b",
+    r"\b(?:\d{4}[ -]?){3}\d{1,4}\b",
 )
 
 _COMPILED = tuple(re.compile(shape) for shape in SENSITIVE_SHAPES)
