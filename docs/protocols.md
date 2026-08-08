@@ -11,7 +11,8 @@ logic with no network by using the fake.
 | `Clock` | Time, injected so timeouts are testable | *(pending — `adapters`)* | `FakeClock` | `ClockConformance` |
 | `ModelProvider` | Completions and streaming from one provider | `models` | `ScriptedProvider` | `ModelProviderConformance` |
 | `ToolRegistry` | Declared tools and their invocation | *(pending — `tools`)* | *(pending)* | *(pending)* |
-| `MemoryStore` | Durable key-scoped record storage | *(pending — `adapters`)* | `FakeMemoryStore` | `MemoryStoreConformance` |
+| `KeyValueStore` | Durable key-scoped value storage | *(pending — `adapters`)* | `FakeKeyValueStore` | `KeyValueStoreConformance` |
+| `MemoryStore` | Working, profile, episodic and semantic memory under a scope — see [memory.md](memory.md) | `InMemoryMemoryStore` | `InMemoryMemoryStore` | `MemoryStoreConformance` |
 | `Guardrail` | An inline check on the call path | *(pending — `guardrails`)* | *(pending)* | *(pending)* |
 | `BudgetPolicy` | Spend and usage limits around metered calls | `RunBudget`, `UnlimitedBudget` | `FakeBudgetPolicy` | `BudgetPolicyConformance` |
 | `Tracer` | Sideband spans and events | *(pending — `observability`)* | `FakeTracer` | `TracerConformance` |
@@ -35,12 +36,12 @@ than merges, or that a tracer must not swallow the exception raised inside its s
 Those live in `tesserix_adk.testing` and are inherited, not re-derived:
 
 ```python
-from tesserix_adk.testing import MemoryStoreConformance
+from tesserix_adk.testing import KeyValueStoreConformance
 
 
-class TestRedisStore(MemoryStoreConformance):
+class TestRedisStore(KeyValueStoreConformance):
     def make_store(self):
-        return RedisMemoryStore(url="redis://localhost")
+        return RedisKeyValueStore(url="redis://localhost")
 ```
 
 ## Rules

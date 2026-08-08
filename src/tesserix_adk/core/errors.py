@@ -26,6 +26,7 @@ __all__ = [
     "ConfigurationError",
     "ContentFilteredError",
     "ContextWindowExceededError",
+    "EmbeddingDimensionError",
     "EstimateUnavailableError",
     "EventLoopStalledError",
     "FallbackExhaustedError",
@@ -38,6 +39,9 @@ __all__ = [
     "InvalidRequestError",
     "LoopLimitError",
     "MaxIterationsError",
+    "MemoryCorruptionError",
+    "MemoryLimitError",
+    "MemoryScopeError",
     "MissingExtraError",
     "ModelResponseError",
     "NoEligibleModelError",
@@ -1112,3 +1116,72 @@ class ToolTimedOutError(AdkError):
             f"tool {tool!r} did not return inside its ceiling of {seconds:g}s",
             details={"tool": tool, "seconds": f"{seconds:g}"},
         )
+
+
+class MemoryScopeError(AdkError):
+    """Raised when a record is filed somewhere it does not say it belongs.
+
+    A record carries the scope and the kind it was written under, and a call that
+    disagrees with either is a bug at the call site rather than a merge to resolve —
+    the resolution nobody wants is one user's preference written into another's.
+
+    Args:
+        expected: What the record itself says.
+        given: What the call said.
+    """
+
+    def __init__(self, *args: object, expected: str = "", given: str = "") -> None:
+        self.expected = expected
+        self.given = given
+        super().__init__(*args, details={"expected": expected, "given": given})
+
+
+class MemoryCorruptionError(AdkError):
+    """Raised when a stored record no longer validates as the model it was written as.
+
+    Never swallowed: a recall that drops what it could not read assembles a prompt from
+    whatever survived, and nobody can explain the answer afterwards.
+
+    Args:
+        record_id: Which record, so the row can be found and fixed.
+        payload: What was actually stored, kept for a debugger. Never logged by the kit.
+    """
+
+    def __init__(self, *args: object, record_id: str = "", payload: object = None) -> None:
+        self.record_id = record_id
+        self.payload = payload
+        super().__init__(*args, details={"record_id": record_id})
+
+
+class MemoryLimitError(AdkError):
+    """Raised when a value is larger than the adapter declared it can hold.
+
+    Refused at the write, because an adapter that truncates instead returns a profile
+    that is subtly wrong on every read afterwards.
+
+    Args:
+        limit: The declared ceiling, in bytes.
+        size: What was offered.
+    """
+
+    def __init__(self, *args: object, limit: int = 0, size: int = 0) -> None:
+        self.limit = limit
+        self.size = size
+        super().__init__(*args, details={"limit": str(limit), "size": str(size)})
+
+
+class EmbeddingDimensionError(AdkError):
+    """Raised when an embedding is not the width the collection was built with.
+
+    Vector stores compare what they are given; a mismatch that reaches one is either an
+    error there or, worse, a distance computed over the overlap and returned as a rank.
+
+    Args:
+        expected: The collection's width.
+        received: The width offered.
+    """
+
+    def __init__(self, *args: object, expected: int = 0, received: int = 0) -> None:
+        self.expected = expected
+        self.received = received
+        super().__init__(*args, details={"expected": str(expected), "received": str(received)})

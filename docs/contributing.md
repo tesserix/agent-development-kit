@@ -66,7 +66,7 @@ Two further checks run over the same collection:
 
 - **Leak check.** A public signature naming a vendor type (`redis`, `httpx`, `openai`,
   …) or a concrete `Fake*` outside `tesserix_adk.testing` fails the job naming the
-  symbol. Returning `MemoryStore` keeps every implementation substitutable; returning
+  symbol. Returning `KeyValueStore` keeps every implementation substitutable; returning
   a Redis-backed store couples every consumer to Redis.
 - **Re-export allowlist.** Any exported name defined outside `tesserix_adk` must be
   listed in `RE_EXPORT_ALLOWLIST`. Re-exporting a third-party type adopts that

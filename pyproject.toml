@@ -155,6 +155,9 @@ ignore = [
 # owner: @sam123ben — reason: the key is a digest over arbitrary validated tool
 # arguments, honestly Any rather than falsely narrow. Same as determinism.py.
 "src/tesserix_adk/core/idempotency.py" = ["ANN401"]
+# owner: @sam123ben — reason: a planted corrupt payload is by definition not a record,
+# so the corruption path is typed as honestly as it can be.
+"src/tesserix_adk/testing/memory.py" = ["ANN401"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tesserix_adk", "tests"]

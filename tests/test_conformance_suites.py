@@ -6,6 +6,7 @@ If a suite cannot be inherited and run here, no third party can run it either.
 import pytest
 
 from tesserix_adk.core import Usage
+from tesserix_adk.memory import MemoryCapabilities
 from tesserix_adk.runtime import SystemClock
 from tesserix_adk.testing import (
     BudgetExceededError,
@@ -13,16 +14,35 @@ from tesserix_adk.testing import (
     ClockConformance,
     FakeBudgetPolicy,
     FakeClock,
-    FakeMemoryStore,
+    FakeKeyValueStore,
     FakeTracer,
+    InMemoryMemoryStore,
+    KeyValueStoreConformance,
     MemoryStoreConformance,
     TracerConformance,
 )
 
 
-class TestFakeMemoryStore(MemoryStoreConformance):
-    def make_store(self) -> FakeMemoryStore:
-        return FakeMemoryStore()
+class TestFakeKeyValueStore(KeyValueStoreConformance):
+    def make_store(self) -> FakeKeyValueStore:
+        return FakeKeyValueStore()
+
+
+class TestInMemoryMemoryStore(MemoryStoreConformance):
+    def make_store(self) -> InMemoryMemoryStore:
+        return InMemoryMemoryStore(clock=FakeClock())
+
+
+class TestAStoreThatDeclaresLessIsHeldToLess(MemoryStoreConformance):
+    """The capability-gated cases have to pass against a store that lacks them."""
+
+    def make_store(self) -> InMemoryMemoryStore:
+        return InMemoryMemoryStore(
+            clock=FakeClock(),
+            capabilities=MemoryCapabilities(
+                supports_semantic=False, supports_as_of=False, supports_erasure=False
+            ),
+        )
 
 
 class TestFakeClock(ClockConformance):

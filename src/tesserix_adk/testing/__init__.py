@@ -15,6 +15,7 @@ from tesserix_adk.testing.conformance import (
     BudgetPolicyConformance,
     ClockConformance,
     IdempotencyStoreConformance,
+    KeyValueStoreConformance,
     MemoryStoreConformance,
     ModelProviderConformance,
     SpendLedgerConformance,
@@ -26,7 +27,7 @@ from tesserix_adk.testing.fakes import (
     FakeBudgetPolicy,
     FakeClock,
     FakeGuardrail,
-    FakeMemoryStore,
+    FakeKeyValueStore,
     FakeMeter,
     FakeSecrets,
     FakeTenantLedger,
@@ -48,6 +49,7 @@ from tesserix_adk.testing.http_cassette import (
     SentRequest,
 )
 from tesserix_adk.testing.injection import INJECTION_FIXTURES, InjectionFixture
+from tesserix_adk.testing.memory import InMemoryMemoryStore
 from tesserix_adk.testing.pytest_plugin import NetworkAccessInTestError, QuarantineError
 
 __all__ = [
@@ -63,7 +65,7 @@ __all__ = [
     "FakeBudgetPolicy",
     "FakeClock",
     "FakeGuardrail",
-    "FakeMemoryStore",
+    "FakeKeyValueStore",
     "FakeMeter",
     "FakeSecrets",
     "FakeTenantLedger",
@@ -73,8 +75,10 @@ __all__ = [
     "HttpExchange",
     "HttpReplay",
     "IdempotencyStoreConformance",
+    "InMemoryMemoryStore",
     "InjectionFixture",
     "Interaction",
+    "KeyValueStoreConformance",
     "MemoryStoreConformance",
     "MetricPoint",
     "ModelProviderConformance",

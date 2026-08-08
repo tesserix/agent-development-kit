@@ -33,7 +33,7 @@ __all__ = [
     "DeclaresEmulation",
     "Guardrail",
     "IdFactory",
-    "MemoryStore",
+    "KeyValueStore",
     "ModelProvider",
     "SecretProvider",
     "ToolRegistry",
@@ -189,11 +189,12 @@ class SecretProvider(Protocol):
 
 
 @runtime_checkable
-class MemoryStore(Protocol):
-    """Durable key-scoped storage for memory records.
+class KeyValueStore(Protocol):
+    """Durable key-to-value storage, for whatever a caller wants keyed.
 
-    Every operation is tenant-scoped by the caller. An implementation that ignores
-    the scope is a cross-tenant read waiting to happen.
+    The caller composes the key, tenant included. An implementation that ignores the
+    tenant part is a cross-tenant read waiting to happen — which is exactly why memory
+    proper has its own scoped protocol rather than this one. See `tesserix_adk.memory`.
     """
 
     async def get(self, key: str) -> Any:

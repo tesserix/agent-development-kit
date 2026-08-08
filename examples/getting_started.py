@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from tesserix_adk import __version__
 from tesserix_adk.core import (
     BudgetPolicy,
-    MemoryStore,
+    KeyValueStore,
     Message,
     ModelCapabilities,
     ModelProvider,
@@ -22,7 +22,7 @@ from tesserix_adk.core import (
     resolve_config,
     verify_conformance,
 )
-from tesserix_adk.testing import FakeBudgetPolicy, FakeMemoryStore, FakeTracer, estimate_tokens
+from tesserix_adk.testing import FakeBudgetPolicy, FakeKeyValueStore, FakeTracer, estimate_tokens
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -60,7 +60,7 @@ async def main() -> None:
     config = resolution.config
     provider, memory, budget, tracer = (
         EchoProvider(),
-        FakeMemoryStore(),
+        FakeKeyValueStore(),
         FakeBudgetPolicy(limit=config.budget.max_input_tokens),
         FakeTracer(),
     )
@@ -69,7 +69,7 @@ async def main() -> None:
     # through a run, when it has already cost a provider call.
     for implementation, protocol in (
         (provider, ModelProvider),
-        (memory, MemoryStore),
+        (memory, KeyValueStore),
         (budget, BudgetPolicy),
         (tracer, Tracer),
     ):

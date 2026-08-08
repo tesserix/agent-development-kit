@@ -52,7 +52,7 @@ __all__ = [
     "FakeBudgetPolicy",
     "FakeClock",
     "FakeGuardrail",
-    "FakeMemoryStore",
+    "FakeKeyValueStore",
     "FakeMeter",
     "FakeSecrets",
     "FakeTenantLedger",
@@ -175,8 +175,8 @@ class FakeClock:
         raise AssertionError(f"expected {count} sleeps, saw {len(self.slept)}: {self.slept}")
 
 
-class FakeMemoryStore:
-    """A dictionary-backed `MemoryStore`."""
+class FakeKeyValueStore:
+    """A dictionary-backed `KeyValueStore`."""
 
     def __init__(self) -> None:
         self._items: dict[str, Any] = {}

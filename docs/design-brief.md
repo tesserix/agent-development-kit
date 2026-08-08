@@ -82,7 +82,7 @@ fakeable. That is what makes the testing package possible.
 
 ### core
 Agent, Message, Run, ToolCall, Usage and Error types. Protocols for `ModelProvider`,
-`ToolRegistry`, `MemoryStore`, `Tracer`, `BudgetPolicy`, `Guardrail`. Config resolution from
+`ToolRegistry`, `KeyValueStore`, `Tracer`, `BudgetPolicy`, `Guardrail`. Config resolution from
 environment, file and code with a documented precedence. No I/O.
 
 ### runtime

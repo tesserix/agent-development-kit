@@ -10,6 +10,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- `MemoryStore` is now the four-kind memory protocol in `tesserix_adk.memory`. The old
+  three-method `get`/`put`/`delete` protocol of the same name is renamed `KeyValueStore`,
+  with `FakeMemoryStore` becoming `FakeKeyValueStore` and `MemoryStoreConformance` becoming
+  `KeyValueStoreConformance`. It was never a memory system — it was a key-value store, and
+  holding the memory name meant the real thing would have had to be called something else
+  forever. **Stability:** breaking for anyone importing the three old names; the change is a
+  rename with identical behaviour, so `MemoryStore` → `KeyValueStore`, `FakeMemoryStore` →
+  `FakeKeyValueStore`, `MemoryStoreConformance` → `KeyValueStoreConformance` is the whole
+  migration. Nothing in the kit consumed it.
+
 - A denied approval no longer fails the run. It reaches the agent as a `ToolRefusal` — code
   `approval_denied`, or `approval_expired` for a decision that arrived outside its window — so
   the agent can propose something the human will accept instead of losing everything the run has
@@ -137,6 +147,19 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   `examples/providers.py`.
 
 ### Added
+
+- One `MemoryStore` protocol across the four kinds of remembering an agent does — working,
+  profile, episodic and semantic — with the scope in every signature and no unscoped
+  overload anywhere on the surface. `MemoryScope` requires a tenant with no default and no
+  blank, the record carries its own scope so a mismatched write raises `MemoryScopeError`
+  rather than being filed under whichever the adapter read first, and an adapter declares
+  `MemoryCapabilities` so a plan that needs semantic recall from a store without a vector
+  index fails at bind time instead of returning an empty list forever.
+  `MemoryStoreConformance` carries the guarantees adapters have to keep as executable cases,
+  `InMemoryMemoryStore` is the network-free implementation that passes them, and corrupt
+  records raise `MemoryCorruptionError` rather than dropping out of a recall.
+  **Stability:** public API under semver — additive only within a minor, with one minor of
+  notice and a working shim before any removal. Documented in `docs/memory.md`.
 
 - A tool can declare what repeating it would do:
   `@tool(idempotency=IdempotencyPolicy(Idempotency.EFFECTFUL, key_arguments=("flight",)))`. The

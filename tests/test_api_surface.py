@@ -72,12 +72,12 @@ def test_a_leaked_vendor_type_is_reported_with_its_symbol() -> None:
 
 
 def test_a_leaked_fake_is_reported_outside_the_testing_package() -> None:
-    surface = {"tesserix_adk.runtime.build": "def build() -> FakeMemoryStore"}
+    surface = {"tesserix_adk.runtime.build": "def build() -> FakeKeyValueStore"}
     assert find_leaks(surface) != []
 
 
 def test_the_testing_package_may_return_its_own_fakes() -> None:
-    surface = {"tesserix_adk.testing.make": "def make() -> FakeMemoryStore"}
+    surface = {"tesserix_adk.testing.make": "def make() -> FakeKeyValueStore"}
     assert find_leaks(surface) == []
 
 

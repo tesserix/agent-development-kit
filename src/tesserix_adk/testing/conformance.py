@@ -6,12 +6,12 @@ suites carry those assumptions. First- and third-party implementations subclass 
 supply the implementation under test, and inherit the whole suite:
 
 ```python
-from tesserix_adk.testing import MemoryStoreConformance
+from tesserix_adk.testing import KeyValueStoreConformance
 
 
-class TestRedisStore(MemoryStoreConformance):
+class TestRedisStore(KeyValueStoreConformance):
     def make_store(self):
-        return RedisMemoryStore(url="redis://localhost")
+        return RedisKeyValueStore(url="redis://localhost")
 ```
 
 Adding a member to a protocol means adding its case here in the same change, so
@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 from abc import ABC, abstractmethod
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -31,6 +32,7 @@ from tesserix_adk.core.errors import (
     BudgetExceededError,
     BudgetUnavailableError,
     CapabilityError,
+    MemoryScopeError,
 )
 from tesserix_adk.core.idempotency import IdempotencyStore
 from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
@@ -38,17 +40,28 @@ from tesserix_adk.core.primitives import Message, TextPart, Usage
 from tesserix_adk.core.protocols import (
     BudgetPolicy,
     Clock,
-    MemoryStore,
+    KeyValueStore,
     ModelProvider,
     Tracer,
     verify_conformance,
 )
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
+from tesserix_adk.memory import (
+    MemoryKind,
+    MemoryQuery,
+    MemoryRecord,
+    MemoryScope,
+    MemoryStore,
+)
+
+if TYPE_CHECKING:
+    from pydantic import JsonValue
 
 __all__ = [
     "BudgetPolicyConformance",
     "ClockConformance",
     "IdempotencyStoreConformance",
+    "KeyValueStoreConformance",
     "MemoryStoreConformance",
     "ModelProviderConformance",
     "TracerConformance",
@@ -111,15 +124,15 @@ class ModelProviderConformance(ABC):
             await provider.stream(_request("hello"))
 
 
-class MemoryStoreConformance(ABC):
-    """Behaviour every `MemoryStore` implementation must exhibit."""
+class KeyValueStoreConformance(ABC):
+    """Behaviour every `KeyValueStore` implementation must exhibit."""
 
     @abstractmethod
-    def make_store(self) -> MemoryStore:
+    def make_store(self) -> KeyValueStore:
         """Return a fresh, empty store under test."""
 
     def test_satisfies_the_protocol(self) -> None:
-        verify_conformance(self.make_store(), MemoryStore)
+        verify_conformance(self.make_store(), KeyValueStore)
 
     async def test_get_returns_none_for_an_absent_key(self) -> None:
         assert await self.make_store().get("absent") is None
@@ -377,3 +390,157 @@ class IdempotencyStoreConformance(ABC):
         await store.record("k", tenant="one", outcome="done", ttl_seconds=900)
         assert await store.forget(tenant="one") == 1
         assert (await store.begin("k", tenant="one", ttl_seconds=900)).outcome is None
+
+
+SCOPE = MemoryScope(tenant_id="acme", user_id="u1", session_id="s1", agent="planner")
+
+
+def _record(
+    kind: MemoryKind,
+    key: str,
+    value: JsonValue = "v",
+    *,
+    valid_from: float | None = None,
+    embedding: tuple[float, ...] | None = None,
+) -> MemoryRecord:
+    """A record with the fields the suite is not asserting on already filled in."""
+    return MemoryRecord(
+        id=f"{kind.value}:{key}",
+        kind=kind,
+        scope=SCOPE,
+        key=key,
+        value=value,
+        source="conformance",
+        valid_from=valid_from,
+        embedding=embedding,
+    )
+
+
+class MemoryStoreConformance(ABC):
+    """Behaviour every `MemoryStore` implementation must exhibit.
+
+    Capability-gated cases skip themselves against a store that declares it cannot do
+    the thing, so an adapter is held to what it claims and not to what it does not.
+    """
+
+    @abstractmethod
+    def make_store(self) -> MemoryStore:
+        """Return a fresh, empty store under test."""
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_store(), MemoryStore)
+
+    async def test_working_memory_round_trips(self) -> None:
+        store = self.make_store()
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k", {"a": 1}))
+        found = await store.read(SCOPE, "k")
+        assert found is not None
+        assert found.value == {"a": 1}
+
+    async def test_reading_an_absent_key_is_none(self) -> None:
+        assert await self.make_store().read(SCOPE, "absent") is None
+
+    async def test_writing_replaces_rather_than_merges(self) -> None:
+        store = self.make_store()
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k", {"a": 1}))
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k", {"b": 2}))
+        found = await store.read(SCOPE, "k")
+        assert found is not None
+        assert found.value == {"b": 2}
+
+    async def test_appends_are_ordered_and_none_is_lost(self) -> None:
+        store = self.make_store()
+        positions = await asyncio.gather(*(store.append(SCOPE, "turns", n) for n in range(20)))
+        assert sorted(positions) == list(range(1, 21))
+
+    async def test_a_profile_upsert_is_read_back(self) -> None:
+        store = self.make_store()
+        await store.upsert(SCOPE, _record(MemoryKind.PROFILE, "seat", "aisle"))
+        found = await store.profile(SCOPE, "seat")
+        assert found is not None
+        assert found.value == "aisle"
+
+    async def test_kinds_do_not_share_a_key_space(self) -> None:
+        store = self.make_store()
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "seat", "working"))
+        await store.upsert(SCOPE, _record(MemoryKind.PROFILE, "seat", "profile"))
+        found = await store.read(SCOPE, "seat")
+        assert found is not None
+        assert found.value == "working"
+
+    async def test_episodes_come_back_newest_first(self) -> None:
+        store = self.make_store()
+        for at in (10.0, 30.0, 20.0):
+            await store.log(SCOPE, _record(MemoryKind.EPISODIC, f"e{at}", valid_from=at))
+        found = await store.episodes(SCOPE, MemoryQuery(kind=MemoryKind.EPISODIC))
+        assert [hit.record.key for hit in found] == ["e30.0", "e20.0", "e10.0"]
+
+    async def test_a_window_excludes_what_falls_outside_it(self) -> None:
+        store = self.make_store()
+        for at in (10.0, 20.0, 30.0):
+            await store.log(SCOPE, _record(MemoryKind.EPISODIC, f"e{at}", valid_from=at))
+        found = await store.episodes(
+            SCOPE, MemoryQuery(kind=MemoryKind.EPISODIC, since=15.0, until=25.0)
+        )
+        assert [hit.record.key for hit in found] == ["e20.0"]
+
+    async def test_a_scope_cannot_read_another_s_records(self) -> None:
+        store = self.make_store()
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k"))
+        other = MemoryScope(tenant_id="other", user_id="u1", session_id="s1", agent="planner")
+        assert await store.read(other, "k") is None
+
+    async def test_a_record_from_another_scope_is_refused(self) -> None:
+        store = self.make_store()
+        with pytest.raises(MemoryScopeError):
+            await store.write(
+                SCOPE.model_copy(update={"user_id": "u2"}), _record(MemoryKind.WORKING, "k")
+            )
+
+    async def test_semantic_search_ranks_the_closer_record_higher(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_semantic:
+            return
+        await store.index(SCOPE, _record(MemoryKind.SEMANTIC, "near", embedding=(1.0, 0.0)))
+        await store.index(SCOPE, _record(MemoryKind.SEMANTIC, "far", embedding=(0.0, 1.0)))
+        found = await store.search(
+            SCOPE, MemoryQuery(kind=MemoryKind.SEMANTIC, embedding=(0.9, 0.1))
+        )
+        assert next(hit.record.key for hit in found) == "near"
+
+    async def test_semantic_recall_it_never_declared_is_refused(self) -> None:
+        """Returning nothing forever is the alternative, and nobody notices it."""
+        store = self.make_store()
+        if store.capabilities.supports_semantic:
+            return
+        with pytest.raises(CapabilityError):
+            await store.search(SCOPE, MemoryQuery(kind=MemoryKind.SEMANTIC, embedding=(1.0,)))
+
+    async def test_erasure_removes_every_kind_under_the_scope(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_erasure:
+            return
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k"))
+        await store.upsert(SCOPE, _record(MemoryKind.PROFILE, "seat", "aisle"))
+        assert await store.erase(SCOPE) >= 2
+        assert await store.read(SCOPE, "k") is None
+        assert await store.profile(SCOPE, "seat") is None
+
+    async def test_erasure_stops_at_the_scope_it_was_given(self) -> None:
+        store = self.make_store()
+        if not store.capabilities.supports_erasure:
+            return
+        other = SCOPE.model_copy(update={"user_id": "u2"})
+        await store.write(SCOPE, _record(MemoryKind.WORKING, "k"))
+        await store.write(
+            other, _record(MemoryKind.WORKING, "k").model_copy(update={"scope": other})
+        )
+        await store.erase(SCOPE)
+        assert await store.read(other, "k") is not None
+
+    async def test_erasure_it_never_declared_is_refused(self) -> None:
+        store = self.make_store()
+        if store.capabilities.supports_erasure:
+            return
+        with pytest.raises(CapabilityError):
+            await store.erase(SCOPE)

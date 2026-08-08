@@ -8,14 +8,14 @@ from tesserix_adk.core import (
     BudgetPolicy,
     Clock,
     Guardrail,
-    MemoryStore,
+    KeyValueStore,
     ModelProvider,
     ProtocolConformanceError,
     Tracer,
     verify_conformance,
 )
 
-PROTOCOLS = [ModelProvider, Guardrail, MemoryStore, Tracer, BudgetPolicy, Clock]
+PROTOCOLS = [ModelProvider, Guardrail, KeyValueStore, Tracer, BudgetPolicy, Clock]
 
 
 class NotAStore:
@@ -32,24 +32,24 @@ def test_protocol_conformance_error_is_an_adk_error() -> None:
 
 
 def test_verify_conformance_accepts_a_complete_implementation() -> None:
-    from tesserix_adk.testing import FakeMemoryStore
+    from tesserix_adk.testing import FakeKeyValueStore
 
-    verify_conformance(FakeMemoryStore(), MemoryStore)  # must not raise
+    verify_conformance(FakeKeyValueStore(), KeyValueStore)  # must not raise
 
 
 def test_verify_conformance_names_every_missing_member() -> None:
     with pytest.raises(ProtocolConformanceError) as exc:
-        verify_conformance(HalfAStore(), MemoryStore)
+        verify_conformance(HalfAStore(), KeyValueStore)
 
     assert exc.value.missing == ("delete", "put")
-    assert exc.value.protocol == "MemoryStore"
+    assert exc.value.protocol == "KeyValueStore"
     assert "delete" in str(exc.value)
     assert "put" in str(exc.value)
 
 
 def test_verify_conformance_reports_all_members_when_none_are_present() -> None:
     with pytest.raises(ProtocolConformanceError) as exc:
-        verify_conformance(NotAStore(), MemoryStore)
+        verify_conformance(NotAStore(), KeyValueStore)
 
     assert set(exc.value.missing) == {"get", "put", "delete"}
 
@@ -61,7 +61,7 @@ def test_a_non_callable_attribute_does_not_satisfy_a_protocol_method() -> None:
         delete = "not callable"
 
     with pytest.raises(ProtocolConformanceError) as exc:
-        verify_conformance(Sabotage(), MemoryStore)
+        verify_conformance(Sabotage(), KeyValueStore)
 
     assert set(exc.value.missing) == {"get", "put", "delete"}
 

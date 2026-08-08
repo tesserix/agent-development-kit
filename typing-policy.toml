@@ -79,7 +79,7 @@ owner = "@sam123ben"
 review_by = 2026-11-07
 
 [[any]]
-symbol = "tesserix_adk.core.protocols.MemoryStore"
+symbol = "tesserix_adk.core.protocols.KeyValueStore"
 kind = "json"
 reason = """
 A memory store holds what the consumer put in it. Typing the value would either force
@@ -220,9 +220,9 @@ owner = "@sam123ben"
 review_by = 2026-11-07
 
 [[any]]
-symbol = "tesserix_adk.testing.fakes.FakeMemoryStore"
+symbol = "tesserix_adk.testing.fakes.FakeKeyValueStore"
 kind = "json"
-reason = "Mirrors MemoryStore, whose value is whatever the consumer stored."
+reason = "Mirrors KeyValueStore, whose value is whatever the consumer stored."
 owner = "@sam123ben"
 review_by = 2027-08-07
 
@@ -339,3 +339,13 @@ model sent; the function canonicalises and digests them rather than reading them
 """
 owner = "@sam123ben"
 review_by = 2027-08-08
+
+[[any]]
+symbol = "tesserix_adk.testing.memory.InMemoryMemoryStore"
+kind = "json"
+reason = """
+`plant` takes a payload that is deliberately not a record, so that the corruption path
+has a way in. Typing it as a record would defeat the only thing the method is for.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
