@@ -96,6 +96,7 @@ code lands here as the kit is built.
 | Memory — the four kinds, scope in every signature, capabilities checked at bind time, adapter guarantees | [`docs/memory.md`](docs/memory.md) |
 | Changing beliefs — supersession, bitemporal reads, contradictions, decay | [`docs/beliefs.md`](docs/beliefs.md) |
 | Redaction and erasure — masking on write, derived artefacts, two-phase erasure, receipts | [`docs/erasure.md`](docs/erasure.md) |
+| Memory adapters — Redis, PostgreSQL and pgvector, settings, retries, paging | [`docs/memory-adapters.md`](docs/memory-adapters.md) |
 | Context assembly — the plan, the provider's budget, pinning, compaction strategies, failing closed | [`docs/context-assembly.md`](docs/context-assembly.md) |
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |

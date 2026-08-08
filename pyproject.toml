@@ -180,8 +180,12 @@ testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = "-q --strict-markers --strict-config"
+addopts = "-q --strict-markers --strict-config -m 'not integration'"
 xfail_strict = true
+markers = [
+  # Needs a real Redis and PostgreSQL. Out of the default lane, which reaches no network.
+  "integration: runs against ephemeral containers, opted into with -m integration",
+]
 # A warning the kit emits and nobody sees is a breakage already scheduled for a consumer.
 filterwarnings = [
   "error",

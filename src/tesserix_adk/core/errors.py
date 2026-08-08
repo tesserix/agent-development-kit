@@ -45,6 +45,7 @@ __all__ = [
     "MemoryCorruptionError",
     "MemoryLimitError",
     "MemoryScopeError",
+    "MemoryUnavailableError",
     "MissingExtraError",
     "ModelResponseError",
     "NoEligibleModelError",
@@ -1252,6 +1253,30 @@ class MemoryConflictError(AdkError):
                 "actual_version": str(actual_version),
             },
         )
+
+
+class MemoryUnavailableError(AdkError):
+    """Raised when a memory store could not be reached, after the retries were spent.
+
+    A failover is ordinary and is waited out. A store that is still gone once the budget
+    is spent is not: the run fails closed rather than continuing with an empty memory,
+    because an agent that silently remembers nothing looks exactly like one whose user
+    said nothing. The message never carries the DSN.
+
+    Args:
+        store: Which adapter gave up, by class name.
+        attempts: How many times it tried.
+    """
+
+    def __init__(self, *args: object, store: str = "", attempts: int = 0) -> None:
+        self.store = store
+        self.attempts = attempts
+        super().__init__(*args, details={"store": store, "attempts": str(attempts)})
+
+    @property
+    def retryable(self) -> bool:
+        """Yes, later. Nothing about the request was refused, only the moment."""
+        return True
 
 
 class MemoryContradictionError(AdkError):

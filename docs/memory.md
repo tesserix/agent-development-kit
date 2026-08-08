@@ -26,7 +26,9 @@ a preference.
 A profile fact that changes supersedes the one it replaces rather than overwriting it,
 and a fact can decay out of recall without being deleted. Both are in
 [beliefs.md](beliefs.md). Redaction on write and
-erasure of derived artefacts are in [erasure.md](erasure.md).
+erasure of derived artefacts are in [erasure.md](erasure.md). The Redis, PostgreSQL
+and pgvector stores behind this protocol are in
+[memory-adapters.md](memory-adapters.md).
 
 ## Scope is in every signature
 

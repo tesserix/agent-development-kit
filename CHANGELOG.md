@@ -154,6 +154,17 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Redis, PostgreSQL and pgvector memory adapters, composed by `RoutedMemoryStore` into the
+  one `MemoryStore` a consumer binds. Working memory expires on the server and appends in a
+  single script; profiles and episodes are bitemporal with optimistic versions and keyset
+  paging; semantic recall ranks in the database with the scope filter in the predicate, and
+  `verify()` catches a collection narrower than the embedder at startup. Credentials come
+  from `MemoryStoreSettings` and nowhere else — a blank DSN and a shipped default password
+  are both refused. Driver failures retry with bounded jittered backoff and surface as
+  `MemoryUnavailableError`; an exhausted pool is reported rather than retried. No schema
+  DDL: tables belong to the platform's migrations. **Stability:** additive. Documented in
+  `docs/memory-adapters.md`.
+
 - Redaction on every memory write path, and erasure that reaches what was derived from a
   record. Values are masked before they are stored and the masked paths are named on
   `MemoryRecord.redacted`; `Derivation` registers each embedding, summary or cache entry
