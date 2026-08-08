@@ -94,6 +94,7 @@ code lands here as the kit is built.
 | Tool approval — declaring a gate on the tool, redacted summaries, grants bound to one payload, what a denial means | [`docs/tool-approval.md`](docs/tool-approval.md) |
 | Tool idempotency — declaring what a repeat would do, key derivation, durable stores, the at-most-once guarantee | [`docs/tool-idempotency.md`](docs/tool-idempotency.md) |
 | Memory — the four kinds, scope in every signature, capabilities checked at bind time, adapter guarantees | [`docs/memory.md`](docs/memory.md) |
+| Context assembly — the plan, the provider's budget, pinning, compaction strategies, failing closed | [`docs/context-assembly.md`](docs/context-assembly.md) |
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |
 | Resilience — the error taxonomy, redaction, phase timeouts, rate limiting | [`docs/resilience.md`](docs/resilience.md) |

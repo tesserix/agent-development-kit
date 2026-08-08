@@ -226,8 +226,10 @@ class TestMeasuring:
         plain = await measure(scenario(Garbage(cyclic=False)), timer=Ticks())
         cyclic = await measure(scenario(Garbage(cyclic=True)), timer=Ticks())
 
+        # Both counts sit near zero, where a relative tolerance is ambient noise; the
+        # claim is that 5_000 uncollected objects do not appear, so give it a floor.
         assert cyclic.values[Metric.ALLOCATIONS] == pytest.approx(
-            plain.values[Metric.ALLOCATIONS], rel=0.5
+            plain.values[Metric.ALLOCATIONS], rel=0.5, abs=50
         )
 
     async def test_allocation_tracing_is_off_while_the_timings_are_taken(self) -> None:

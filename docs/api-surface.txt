@@ -86,6 +86,7 @@ tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.Consumed :: class Consumed(AdkModel) {against(self, name: 'str') -> 'Decimal'}
 tesserix_adk.core.ContentFilteredError :: class ContentFilteredError(ProviderError)
 tesserix_adk.core.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.core.primitives.TextPart | tesserix_adk.core.primitives.BinaryPart, FieldInfo(annotation=NoneType, required=True, discriminator='kind')]
+tesserix_adk.core.ContextBudgetError :: class ContextBudgetError(AdkError)
 tesserix_adk.core.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
 tesserix_adk.core.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 6) -> 'Cost'}
 tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
@@ -285,6 +286,7 @@ tesserix_adk.core.errors.CancelledError :: class CancelledError(AdkError)
 tesserix_adk.core.errors.CapabilityError :: class CapabilityError(AdkError)
 tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.errors.ContentFilteredError :: class ContentFilteredError(ProviderError)
+tesserix_adk.core.errors.ContextBudgetError :: class ContextBudgetError(AdkError)
 tesserix_adk.core.errors.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
 tesserix_adk.core.errors.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.errors.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
@@ -445,6 +447,13 @@ tesserix_adk.core.trust.TrustBoundary :: class TrustBoundary(AdkModel) {admits(s
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
+tesserix_adk.memory.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
+tesserix_adk.memory.CompactionOutcome :: class CompactionOutcome(AdkModel)
+tesserix_adk.memory.CompactionStrategy :: class CompactionStrategy(Protocol) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'Callable[[Sequence[Message]], int]') -> 'CompactionOutcome'}
+tesserix_adk.memory.ContextAssembler :: class ContextAssembler(object) {assemble(self, sections: 'Mapping[str, Sequence[Message]]') -> 'AssembledContext'}
+tesserix_adk.memory.ContextEntry :: class ContextEntry(AdkModel)
+tesserix_adk.memory.ContextPlan :: class ContextPlan(AdkModel)
+tesserix_adk.memory.DropOldest :: class DropOldest(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
 tesserix_adk.memory.MemoryCapabilities :: class MemoryCapabilities(object)
 tesserix_adk.memory.MemoryHit :: class MemoryHit(AdkModel)
 tesserix_adk.memory.MemoryKind :: class MemoryKind(StrEnum)
@@ -453,9 +462,28 @@ tesserix_adk.memory.MemoryQuery :: class MemoryQuery(AdkModel)
 tesserix_adk.memory.MemoryRecord :: class MemoryRecord(AdkModel)
 tesserix_adk.memory.MemoryScope :: class MemoryScope(AdkModel)
 tesserix_adk.memory.MemoryStore :: class MemoryStore(Protocol) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope') -> 'int'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
+tesserix_adk.memory.PinAndFold :: class PinAndFold(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.SectionOutcome :: class SectionOutcome(AdkModel)
+tesserix_adk.memory.SectionPlan :: class SectionPlan(AdkModel)
+tesserix_adk.memory.SummariseSpan :: class SummariseSpan(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.TokenCounter :: TokenCounter: TypeAliasType
 tesserix_adk.memory.capabilities.MemoryCapabilities :: class MemoryCapabilities(object)
 tesserix_adk.memory.capabilities.MemoryNeeds :: class MemoryNeeds(object)
 tesserix_adk.memory.capabilities.require_memory :: def require_memory(store: 'object', needs: 'MemoryNeeds') -> 'None'
+tesserix_adk.memory.compaction.CompactionOutcome :: class CompactionOutcome(AdkModel)
+tesserix_adk.memory.compaction.CompactionStrategy :: class CompactionStrategy(Protocol) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'Callable[[Sequence[Message]], int]') -> 'CompactionOutcome'}
+tesserix_adk.memory.compaction.ContextEntry :: class ContextEntry(AdkModel)
+tesserix_adk.memory.compaction.DropOldest :: class DropOldest(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.compaction.PinAndFold :: class PinAndFold(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.compaction.SummariseSpan :: class SummariseSpan(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.compaction.TokenCounter :: TokenCounter: TypeAliasType
+tesserix_adk.memory.compaction.pinned :: def pinned(message: 'Message') -> 'Message'
+tesserix_adk.memory.context.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
+tesserix_adk.memory.context.ContextAssembler :: class ContextAssembler(object) {assemble(self, sections: 'Mapping[str, Sequence[Message]]') -> 'AssembledContext'}
+tesserix_adk.memory.context.ContextPlan :: class ContextPlan(AdkModel)
+tesserix_adk.memory.context.SectionOutcome :: class SectionOutcome(AdkModel)
+tesserix_adk.memory.context.SectionPlan :: class SectionPlan(AdkModel)
+tesserix_adk.memory.pinned :: def pinned(message: 'Message') -> 'Message'
 tesserix_adk.memory.protocol.MemoryStore :: class MemoryStore(Protocol) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope') -> 'int'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.memory.records.MemoryHit :: class MemoryHit(AdkModel)
 tesserix_adk.memory.records.MemoryKind :: class MemoryKind(StrEnum)

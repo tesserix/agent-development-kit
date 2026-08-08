@@ -148,6 +148,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `ContextAssembler` builds the prompt from a declared `ContextPlan` under a budget taken
+  from the provider's own window, and compacts rather than truncates. Sections declare their
+  share of the budget and what reduces them; `pinned` content is allocated first and no
+  strategy may evict it; `DropOldest` and `PinAndFold` cost nothing and `SummariseSpan`
+  replaces the oldest span with a summary written back to episodic memory with provenance.
+  Everything fails closed with `ContextBudgetError` — a failed summarisation, an unusable
+  summary, pinned content that does not fit, or a strategy that reduced nothing — so the kit
+  never emits an over-budget prompt or a fabricated summary. `AssembledContext` reports what
+  was kept, evicted and summarised, and exports counts as span attributes with no content.
+  **Stability:** public API under semver, additive only within a minor, with one minor of
+  notice and a working shim before any removal. Documented in `docs/context-assembly.md`.
+
 - One `MemoryStore` protocol across the four kinds of remembering an agent does — working,
   profile, episodic and semantic — with the scope in every signature and no unscoped
   overload anywhere on the surface. `MemoryScope` requires a tenant with no default and no

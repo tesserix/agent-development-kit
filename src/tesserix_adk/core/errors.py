@@ -25,6 +25,7 @@ __all__ = [
     "CapabilityError",
     "ConfigurationError",
     "ContentFilteredError",
+    "ContextBudgetError",
     "ContextWindowExceededError",
     "EmbeddingDimensionError",
     "EstimateUnavailableError",
@@ -1185,3 +1186,36 @@ class EmbeddingDimensionError(AdkError):
         self.expected = expected
         self.received = received
         super().__init__(*args, details={"expected": str(expected), "received": str(received)})
+
+
+class ContextBudgetError(AdkError):
+    """Raised when a prompt cannot be made to fit the tokens available for it.
+
+    Assembly fails rather than emitting an over-budget prompt or a fabricated summary:
+    a prompt the provider truncates loses whichever part it liked least, which in a long
+    conversation is the stated constraint rather than the small talk.
+
+    Args:
+        budget_tokens: What there was room for.
+        required_tokens: What could not be reduced below.
+        section: The section that could not be made to fit, where one is to blame.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        budget_tokens: int = 0,
+        required_tokens: int = 0,
+        section: str | None = None,
+    ) -> None:
+        self.budget_tokens = budget_tokens
+        self.required_tokens = required_tokens
+        self.section = section
+        super().__init__(
+            *args,
+            details={
+                "budget_tokens": str(budget_tokens),
+                "required_tokens": str(required_tokens),
+                "section": section or "",
+            },
+        )
