@@ -82,10 +82,12 @@ from tesserix_adk.core import (
     TextPart,
     ToolArgumentValidationError,
     ToolCall,
+    ToolError,
     ToolExecutionError,
     ToolFailurePolicy,
     ToolNotFoundError,
     ToolNotPermittedError,
+    ToolRefusal,
     ToolTimedOutError,
     TrustBoundaryError,
     Usage,
@@ -143,6 +145,8 @@ __all__ = ["AgentRunner", "ModelRequest", "ModelResponse", "SystemClock"]
 
 _DEFAULT_MAX_ITERATIONS = 8
 _DEFAULT_MAX_TOOL_RESULT_CHARS = 8_000
+_DEFAULT_MAX_TOOL_ATTEMPTS = 12
+"""How often one tool may be retried in a run, so one flaky dependency cannot own it."""
 _CHARS_PER_TOKEN = 4
 _NOTHING = Usage(input_tokens=0, output_tokens=0)
 _TRUNCATION_MARKER = "\n[truncated]"
@@ -283,6 +287,9 @@ class AgentRunner:
             `LoopMonitor` with its own defaults; `None` turns the instrumentation off,
             which is a decision to take the tail latency rather than attribute it.
         max_iterations: How many model calls one run may make before it is capped.
+        max_tool_attempts: How many retries one tool may consume across a whole run. A
+            dependency failing transiently on every call would otherwise spend the
+            iteration budget being asked again.
         max_tool_result_chars: Where an oversized tool result is cut. Truncation is
             recorded as its own event; silently dropping half a result is a wrong answer
             nobody can account for. Compaction rather than cutting is #192.
@@ -318,6 +325,7 @@ class AgentRunner:
         ids: IdFactory | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
+        max_tool_attempts: int = _DEFAULT_MAX_TOOL_ATTEMPTS,
         results: ToolResultBoundary | None = None,
     ) -> None:
         verify_conformance(provider, ModelProvider)
@@ -356,6 +364,7 @@ class AgentRunner:
         self._ids: IdFactory = ids or _random_id
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
+        self._max_tool_attempts = max_tool_attempts
         self._results = results or ToolResultBoundary()
         self._orphans: set[asyncio.Task[Any]] = set()
 
@@ -1980,8 +1989,10 @@ class AgentRunner:
                 raise self._cancelled(stopped, abort, name=call.name) from None
             except ToolArgumentValidationError as rejected:
                 return self._arguments_rejected(run, agent, call, rejected)
+            except ToolRefusal as declined:
+                return self._tool_declined(run, call, declined)
             except Exception as failure:
-                delay = self._tool_backoff(agent, call, plan, attempt, bounds, failure)
+                delay = self._tool_backoff(run, agent, call, plan, attempt, bounds, failure)
                 if delay is None:
                     return self._tool_failed(run, agent, call, failure, bounds)
                 run = run.record_event(
@@ -2104,6 +2115,7 @@ class AgentRunner:
 
     def _tool_backoff(
         self,
+        run: Run[Any],
         agent: Agent[Any],
         call: ToolCall,
         plan: RetryPlan,
@@ -2118,38 +2130,79 @@ class AgentRunner:
         decision rather than a fault: a name nobody registered and a name this agent may
         not call are the same answer however often they are asked.
         """
-        if isinstance(failure, ToolNotFoundError | ToolNotPermittedError):
+        if isinstance(failure, ToolNotFoundError | ToolNotPermittedError | ToolRefusal):
             return None
-        if call.name not in agent.idempotent_tools:
+        if isinstance(failure, ToolError):
+            if not failure.retryable:
+                return None
+        elif call.name not in agent.idempotent_tools:
             return None
-        delay = plan.delay_for(attempt)
+        if self._retried_enough(run, call.name):
+            return None
+        after = failure.retry_after if isinstance(failure, ToolError) else None
+        delay = plan.delay_for(attempt, retry_after=after)
         return delay if delay is not None and self._fits(delay, bounds) else None
+
+    def _retried_enough(self, run: Run[Any], tool: str) -> bool:
+        """Whether this tool has already had its share of the run's attempts."""
+        spent = sum(
+            1
+            for event in run.events
+            if event.kind is RunEventKind.ATTEMPT_FAILED and event.name == tool
+        )
+        return spent >= self._max_tool_attempts
+
+    def _tool_declined(
+        self, run: Run[Any], call: ToolCall, declined: ToolRefusal
+    ) -> tuple[Run[Any], str, str, ToolResult | None]:
+        """A tool that worked and said no. The answer reaches the model once, as data.
+
+        Not retried and not a run failure: asking again gets the same answer, and a refusal
+        the model never sees is a refusal it will work around.
+        """
+        detail = f"{declined.code}: {declined.message}"
+        run = run.record_event(
+            self._event(RunEventKind.TOOL_REFUSED, name=call.name, detail=detail)
+        )
+        self._emit(
+            ToolCallFailed(call_id=call.id, tool=call.name, error="ToolRefusal", detail=detail)
+        )
+        return run, detail, "tool_refusal", None
 
     def _tool_failed(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, failure: Exception, bounds: _Bounds
     ) -> tuple[Run[Any], str, str, ToolResult | None]:
         wrapped = ToolExecutionError(
-            f"tool {call.name!r} failed: {failure}", run_id=run.id, tenant=run.tenant
+            f"tool {call.name!r} failed: {scrub(str(failure))}", run_id=run.id, tenant=run.tenant
         )
         unretried = (
             "; not declared idempotent, so it was not tried again"
-            if bounds.retry.max_attempts > 1 and call.name not in agent.idempotent_tools
+            if bounds.retry.max_attempts > 1
+            and not isinstance(failure, ToolError)
+            and call.name not in agent.idempotent_tools
             else ""
         )
+        said = _what_failed(failure)
+        tried = sum(
+            1
+            for event in run.events
+            if event.kind is RunEventKind.ATTEMPT_FAILED and event.name == call.name
+        )
+        spent = f" after {tried + 1} attempts" if tried else ""
         run = run.record_event(
-            self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=f"{failure}{unretried}")
+            self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=f"{said}{spent}{unretried}")
         )
         self._emit(
             ToolCallFailed(
                 call_id=call.id,
                 tool=call.name,
                 error=type(failure).__name__,
-                detail=f"{failure}{unretried}",
+                detail=f"{said}{spent}{unretried}",
             )
         )
         if agent.on_tool_error is ToolFailurePolicy.FAIL_RUN:
             raise _Terminal(run, RunState.FAILED, str(wrapped)) from failure
-        return run, f"error: {failure}", "tool_error", None
+        return run, f"error: {said}", "tool_error", None
 
     def _arguments_rejected(
         self,
@@ -2446,6 +2499,13 @@ class _Unannotated:
 
     name: str
     returns_type: Any = None
+
+
+def _what_failed(failure: Exception) -> str:
+    """What may be recorded about a failure: its code where it has one, never a credential."""
+    if isinstance(failure, ToolError):
+        return f"{failure.code}: {failure.message}" if failure.message else failure.code
+    return scrub(str(failure))
 
 
 def _as_data(text: str, outcome: _Outcome) -> str:

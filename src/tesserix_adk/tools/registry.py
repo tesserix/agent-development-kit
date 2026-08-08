@@ -28,6 +28,7 @@ from tesserix_adk.core.errors import (
     ToolDefinitionError,
     ToolNotFoundError,
     ToolNotPermittedError,
+    ToolRefusal,
     ToolTimedOutError,
 )
 from tesserix_adk.core.provider import ToolDeclaration
@@ -59,7 +60,10 @@ class ToolCallSpan:
         agent: Whose view called it, empty where the registry was called directly.
         permitted: The permission decision. Recorded on every call, so a call with no
             decision on its span is a bug rather than an omission.
-        outcome: `ok`, `refused`, `not_found`, `timed_out` or `error`.
+        outcome: `ok`, `refused`, `declined`, `not_found`, `timed_out` or `error`.
+            `refused` is a permission decision; `declined` is the tool itself saying no.
+        code: The taxonomy code where the failure carried one, so a dashboard can group
+            failures by what happened rather than by exception class.
         duration_seconds: How long it took on the injected clock.
         failure: The exception class where one was raised, never its message.
         abandoned: Whether the call ignored cancellation and was left running.
@@ -71,6 +75,7 @@ class ToolCallSpan:
     outcome: str = "ok"
     duration_seconds: float = 0.0
     failure: str = ""
+    code: str = ""
     abandoned: bool = False
 
 
@@ -261,9 +266,10 @@ class ToolRegistry:
                 ToolCallSpan(
                     tool=name,
                     agent=agent,
-                    outcome="error",
+                    outcome="declined" if isinstance(failure, ToolRefusal) else "error",
                     duration_seconds=self._clock.now() - started,
                     failure=type(failure).__name__,
+                    code=getattr(failure, "code", ""),
                 )
             )
             raise

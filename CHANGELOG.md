@@ -129,6 +129,25 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A tool error taxonomy the run loop can branch on. `ToolFailure` carries a stable `code`, a
+  `retryable` flag and an optional `retry_after`; `ToolRefusal` is the tool working and saying
+  no. Before this every tool problem arrived as a generic exception, so a run retried a refusal
+  until the iteration cap fired — spending the budget to be told the same thing and, worse,
+  re-attempting an action the downstream had already declined. A refusal now reaches the model
+  once, as data in the untrusted-result envelope, and is never retried. `ToolErrorMap` with
+  `transient`, `permanent` and `refusal` translates library exceptions declaratively — most
+  specific MRO match first, then HTTP status — scrubbing messages as it goes; unmapped
+  exceptions become a permanent `unmapped_failure` rather than being optimistically retried,
+  and cancellation is re-raised rather than classified. The loop honours `retryable` and
+  `retry_after` for typed errors and keeps the idempotency gate for untyped ones;
+  `AgentRunner(max_tool_attempts=…)` caps how much of a run one tool may spend on retries.
+  `ToolCallSpan` gains `code` and tells `declined` (the tool) from `refused` (permission).
+  **Stability:** additive. New public names: `ToolError`, `ToolFailure`, `ToolRefusal` on
+  `tesserix_adk.core` and `tesserix_adk.tools`, plus `ToolErrorMap`, `ToolErrorRule`,
+  `transient`, `permanent` and `refusal` on `tesserix_adk.tools`. Reason codes are public API:
+  new codes are minor, removing or repurposing one is major. Documented in
+  `docs/tool-errors.md`.
+
 - `ToolResultBoundary`, so everything a tool returns crosses a boundary before it reaches the
   model. It validates the value against the tool's declared return type, walks the whole
   structure for injection heuristics, neutralises structural forgery, applies size and depth

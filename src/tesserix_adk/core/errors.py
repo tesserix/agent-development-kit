@@ -54,9 +54,12 @@ __all__ = [
     "StreamInterruptedError",
     "ToolArgumentValidationError",
     "ToolDefinitionError",
+    "ToolError",
     "ToolExecutionError",
+    "ToolFailure",
     "ToolNotFoundError",
     "ToolNotPermittedError",
+    "ToolRefusal",
     "ToolResultError",
     "ToolTimedOutError",
     "TrustBoundaryError",
@@ -725,6 +728,85 @@ class ToolDefinitionError(ConfigurationError):
         self.tool = tool
         self.parameter = parameter
         super().__init__(*args, run_id=run_id, tenant=tenant, details=details)
+
+
+class ToolError(AdkError):
+    """Base of the tool taxonomy: something the run loop can branch on.
+
+    Args:
+        tool: What raised it.
+        code: A stable, machine-readable name for what happened. Required — a failure
+            nobody can name is a failure nobody can write a policy about.
+        message: What the model may be told, where anything may be. Free of credentials
+            and of whatever the upstream put in its own message.
+        retry_after: Seconds the upstream asked the caller to wait, where it said so.
+
+    Raises:
+        ValueError: If `code` is empty.
+    """
+
+    def __init__(
+        self, tool: str, code: str, message: str = "", *, retry_after: float | None = None
+    ) -> None:
+        if not code:
+            raise ValueError("a tool error needs a code: an unnamed failure cannot be acted on")
+        self.tool = tool
+        self.code = code
+        self.message = message
+        self.retry_after = retry_after
+        super().__init__(
+            f"{tool}: {code}" + (f" — {message}" if message else ""),
+            details={"tool": tool, "code": code},
+        )
+
+
+class ToolFailure(ToolError):  # noqa: N818 — the taxonomy's name, and it is not always an error
+    """The tool tried and could not finish.
+
+    Args:
+        tool: What failed.
+        code: What went wrong, stably named.
+        transient: Whether the same call could succeed on a second attempt. False by
+            default: an author who has not thought about it has not established that
+            repeating the call does not repeat a side effect.
+        retry_after: What the upstream asked for, where it asked.
+        detail: What the model may be told about it.
+    """
+
+    def __init__(
+        self,
+        tool: str,
+        code: str,
+        *,
+        transient: bool = False,
+        retry_after: float | None = None,
+        detail: str = "",
+    ) -> None:
+        self._transient = transient
+        super().__init__(tool, code, detail, retry_after=retry_after)
+
+    @property
+    def retryable(self) -> bool:
+        """Whether the run loop may try again."""
+        return self._transient
+
+
+class ToolRefusal(ToolError):  # noqa: N818 — a refusal is an answer, not an error
+    """The tool worked and declined. An answer, not a fault.
+
+    Reaches the model once, as data, with its reason code — never retried, because asking
+    again gets the same answer and spends the budget to hear it. The message travels
+    through the untrusted-result envelope like any other tool output: a reason string
+    authored to read like an instruction is still only a string.
+
+    Args:
+        tool: What declined.
+        code: Why, stably named, so a consumer can branch on it.
+        message: What the model may be told, in words a user could read.
+    """
+
+    def __init__(self, tool: str, code: str, message: str) -> None:
+        super().__init__(tool, code, message)
 
 
 class ToolExecutionError(AdkError):
