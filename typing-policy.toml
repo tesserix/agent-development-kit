@@ -288,3 +288,24 @@ fields. The values arriving are JSON, because a provider is what sent them.
 """
 owner = "@sam123ben"
 review_by = 2027-08-08
+
+[[any]]
+symbol = "tesserix_adk.tools.registry.ToolRegistry"
+kind = "json"
+reason = """
+Arguments arrive as whatever a provider sent and results are whatever a tool returned, so
+neither has a static type at the registry: the tool's own validator is where the arguments
+become typed, and the caller of a specific tool is where the result does.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-08
+
+[[any]]
+symbol = "tesserix_adk.tools.registry.AgentToolView"
+kind = "json"
+reason = """
+The same boundary as the registry it is a view of: it dispatches by name, so its arguments
+and results are the tools' rather than its own.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-08

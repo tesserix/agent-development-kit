@@ -185,6 +185,8 @@ tesserix_adk.core.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.core.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
 tesserix_adk.core.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.core.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
+tesserix_adk.core.ToolNotFoundError :: class ToolNotFoundError(AdkError)
+tesserix_adk.core.ToolNotPermittedError :: class ToolNotPermittedError(AdkError)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.core.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
@@ -291,6 +293,8 @@ tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(
 tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
 tesserix_adk.core.errors.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
 tesserix_adk.core.errors.ToolExecutionError :: class ToolExecutionError(AdkError)
+tesserix_adk.core.errors.ToolNotFoundError :: class ToolNotFoundError(AdkError)
+tesserix_adk.core.errors.ToolNotPermittedError :: class ToolNotPermittedError(AdkError)
 tesserix_adk.core.errors.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.errors.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
 tesserix_adk.core.errors.WorkersBusyError :: class WorkersBusyError(AdkError)
@@ -811,16 +815,22 @@ tesserix_adk.testing.http_cassette.SentRequest :: class SentRequest(AdkModel)
 tesserix_adk.testing.pytest_plugin.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.redacted :: def redacted(text: 'str') -> 'str'
+tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.LENIENT :: LENIENT: ArgumentPolicy
 tesserix_adk.tools.STRICT :: STRICT: ArgumentPolicy
 tesserix_adk.tools.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any] | str | bytes', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'}
 tesserix_adk.tools.ToolArgumentValidator :: class ToolArgumentValidator(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'; validate(self, arguments: 'object') -> 'Any'}
+tesserix_adk.tools.ToolCallSpan :: class ToolCallSpan(object)
 tesserix_adk.tools.ToolContext :: class ToolContext(object) {raise_if_cancelled(self) -> 'None'}
+tesserix_adk.tools.ToolRegistry :: class ToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; observe(self, observer: 'Callable[[ToolCallSpan], None]') -> 'None'; register(self, tool: 'Tool[Any, Any]', *, origin: 'str' = '') -> 'None'; resolve(self, name: 'str') -> 'Tool[Any, Any]'; timeout_for(self, name: 'str') -> 'float | None'; view(self, *, allow: 'Sequence[str]', agent: 'str' = '') -> 'AgentToolView'}
 tesserix_adk.tools.context.ToolContext :: class ToolContext(object) {raise_if_cancelled(self) -> 'None'}
 tesserix_adk.tools.decorator.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any] | str | bytes', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'}
-tesserix_adk.tools.decorator.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536)) -> 'Tool[Any, Any] | _Decorator'
-tesserix_adk.tools.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536)) -> 'Tool[Any, Any] | _Decorator'
+tesserix_adk.tools.decorator.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True) -> 'Tool[Any, Any] | _Decorator'
+tesserix_adk.tools.registry.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
+tesserix_adk.tools.registry.ToolCallSpan :: class ToolCallSpan(object)
+tesserix_adk.tools.registry.ToolRegistry :: class ToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; observe(self, observer: 'Callable[[ToolCallSpan], None]') -> 'None'; register(self, tool: 'Tool[Any, Any]', *, origin: 'str' = '') -> 'None'; resolve(self, name: 'str') -> 'Tool[Any, Any]'; timeout_for(self, name: 'str') -> 'float | None'; view(self, *, allow: 'Sequence[str]', agent: 'str' = '') -> 'AgentToolView'}
+tesserix_adk.tools.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True) -> 'Tool[Any, Any] | _Decorator'
 tesserix_adk.tools.validation.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.validation.LENIENT :: LENIENT: ArgumentPolicy
 tesserix_adk.tools.validation.STRICT :: STRICT: ArgumentPolicy

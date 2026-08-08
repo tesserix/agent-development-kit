@@ -177,7 +177,100 @@ outside a run and receives `None`.
 | `function` | The undecorated callable |
 | `context_parameter` / `context_required` | The injected parameter, where there is one |
 | `validator` | What `invoke` holds the model's arguments to |
+| `timeout` | The ceiling the author declared, where one was declared |
+| `parallel_safe` | Whether two calls to it may overlap |
 
 Run [`examples/tools.py`](../examples/tools.py) for each of these end to end, and
 [`examples/tool_arguments.py`](../examples/tool_arguments.py) for the refusals and the
 feedback that goes back to the model.
+
+## The registry is what an agent may call
+
+`ToolRegistry` holds the tools a process has and hands each agent a view of the subset it
+may call. A tool registered for one agent is not reachable by every other agent sharing the
+process, which is what a filtered dict built at construction cannot promise once a second
+agent is added to the same service.
+
+```python
+registry = ToolRegistry((fare_for, rooms_in, refund))
+planner = registry.view(allow=("fare_for", "rooms_in"), agent="planner")
+desk = registry.view(allow=("fare_for", "refund"), agent="desk")
+
+await planner.invoke("refund", {"booking": "AB-1"})  # ToolNotPermittedError, never called
+```
+
+An allowlist is resolved once, when the view is made. A name nobody registered fails there,
+naming what is registered, rather than at the first call in production; the view is frozen,
+so an agent's callable set cannot widen mid-run. A refusal is raised *before* dispatch, not
+checked after it — an allowlist enforced after the call has already had its side effect.
+
+The two errors are deliberately different types. `ToolNotFoundError` means nothing is
+registered under that name, which is a wiring mistake; `ToolNotPermittedError` means the
+tool exists and this agent may not call it, which is a permission decision. Neither is
+retried by the run loop even for a tool the agent declared idempotent: asking again gets
+the same answer, so a retry only spends the budget.
+
+An empty allowlist raises `ConfigurationError` at construction. An agent with no tools is
+either a misconfiguration or an agent that should not have been given a view.
+
+## A tool's ceiling is the author's decision
+
+```python
+@tool(timeout=5.0)
+async def partner_lookup(reference: str) -> str: ...
+```
+
+The ceiling travels with the tool, because the person who wrote the network call knows what
+a healthy one costs. A registry may override it per deployment —
+`ToolRegistry(tools, timeouts={"partner_lookup": 2.0})` — and the override wins. `timeout=0`
+is refused at the line that declared it.
+
+When the ceiling elapses the underlying task is cancelled, not orphaned, and
+`ToolTimedOutError` reaches the run loop. A body that swallows cancellation and keeps
+running is bounded by a hard abandonment path: the call stops waiting, the span is marked
+`abandoned`, and the late result is discarded rather than injected into the run. The run
+loop never receives an invented result for a call that timed out.
+
+## How wide the calls may run
+
+`ConcurrencyConfig` bounds the registry as a whole and each tool individually:
+
+```python
+ToolRegistry(tools, concurrency=ConcurrencyConfig(max_concurrent_tools=2, per_tool={"refund": 1}))
+```
+
+The registry-wide limit is how much the process may do at once; the per-tool limit is how
+much one downstream may be asked to take. A tool declared `parallel_safe=False` is held to
+one call at a time whatever the config says. Fan-out caps — how many calls one model turn
+may make, and how many a run may make in total — are the run loop's, documented in
+[`run-loop.md`](run-loop.md), and are refused before any of the turn's calls run.
+
+## What is recorded about a call
+
+Every invocation emits a `ToolCallSpan` to each registered observer:
+
+| Field | |
+|---|---|
+| `tool` / `agent` | What was called, and by whom |
+| `permitted` | The permission decision, recorded for refusals too |
+| `outcome` | `ok`, `refused`, `not_found`, `timed_out` or `error` |
+| `duration_seconds` | How long the call was waited on |
+| `failure` | The class of the failure, never its message |
+| `abandoned` | Whether a timed-out body ignored cancellation |
+
+A span carries neither the arguments nor the result. A tool's payload is model output and
+its result is business data; both belong in the audit trail the run loop keeps, not in
+telemetry that leaves the process. An observer that raises is ignored — a broken exporter
+does not fail a tool call.
+
+## Stability
+
+* Additive tool metadata is non-breaking. A new field on `Tool` or `ToolCallSpan` does not
+  require a major version.
+* Allowlist semantics are versioned: what `allow=` means, and what a view resolves to, may
+  only change with a documented version bump.
+* Any change to default-deny — a view permitting anything it was not given — is a major
+  version. There is no configuration that turns it off.
+
+Run [`examples/tool_registry.py`](../examples/tool_registry.py) for allowlists, refusals,
+ceilings and spans end to end.

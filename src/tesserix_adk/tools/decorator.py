@@ -79,6 +79,12 @@ class Tool[**P, R]:
         context_required: Whether that parameter has to be filled. A context parameter
             with a default is a tool that also works outside a run; one without is a tool
             that must be refused rather than called with a tenant nobody set.
+        timeout: The ceiling one call may take, in seconds, where the author declared one.
+            Enforced by whoever dispatches the tool; awaiting the tool directly is the
+            typed path and is not bounded here.
+        parallel_safe: Whether two of this tool's calls may be in flight together. A tool
+            whose effect depends on the order it is called in declares itself here; no
+            signature says it.
     """
 
     name: str
@@ -90,6 +96,8 @@ class Tool[**P, R]:
     validator: ToolArgumentValidator
     context_parameter: str | None = None
     context_required: bool = False
+    timeout: float | None = None
+    parallel_safe: bool = True
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """Call the function with its own signature, awaiting it either way.
@@ -202,6 +210,8 @@ def tool(
     description: str | None = ...,
     dialect: SchemaDialect = ...,
     arguments: ArgumentPolicy = ...,
+    timeout: float | None = ...,
+    parallel_safe: bool = ...,
 ) -> _Decorator: ...
 
 
@@ -213,6 +223,8 @@ def tool(
     description: str | None = None,
     dialect: SchemaDialect = INLINE_REFS,
     arguments: ArgumentPolicy = STRICT,
+    timeout: float | None = None,
+    parallel_safe: bool = True,
 ) -> Tool[Any, Any] | _Decorator:
     """Turn a typed function into a tool, deriving its schema from the signature.
 
@@ -230,6 +242,11 @@ def tool(
             which is what providers that refuse `$ref` need.
         arguments: How strictly `invoke` reads what the model sent. Strict by default, so
             a tool's contract does not depend on which provider answered.
+        timeout: How long one call may take, in seconds. Enforced by the registry that
+            dispatches it, which may tighten it further. `None` leaves the tool bounded
+            only by whatever ceiling the run itself has.
+        parallel_safe: Whether two of its calls may be in flight together. Declare `False`
+            for a tool whose effect depends on the order it is called in.
 
     Returns:
         The tool, or the decorator that builds it when overrides were given.
@@ -255,41 +272,37 @@ def tool(
         >>> asyncio.run(fare.invoke({"leg": "Osaka to Kyoto"}))
         'Osaka to Kyoto: 40 EUR'
     """
+    overrides = _Overrides(name, description, dialect, arguments, timeout, parallel_safe)
     if function is None:
-        return _overriding(name=name, description=description, dialect=dialect, arguments=arguments)
-    return _built(
-        function, name=name, description=description, dialect=dialect, arguments=arguments
-    )
+        return _overriding(overrides)
+    return _built(function, overrides)
 
 
-def _overriding(
-    *,
-    name: str | None,
-    description: str | None,
-    dialect: SchemaDialect,
-    arguments: ArgumentPolicy,
-) -> _Decorator:
+@dataclass(frozen=True, slots=True)
+class _Overrides:
+    """What `@tool(...)` was given, carried to the function it ends up decorating."""
+
+    name: str | None
+    description: str | None
+    dialect: SchemaDialect
+    arguments: ArgumentPolicy
+    timeout: float | None
+    parallel_safe: bool
+
+
+def _overriding(overrides: _Overrides) -> _Decorator:
     """The decorator `@tool(...)` becomes, carrying the overrides to the function."""
 
     def decorate(function: Callable[..., Any]) -> Tool[Any, Any]:
-        return _built(
-            function, name=name, description=description, dialect=dialect, arguments=arguments
-        )
+        return _built(function, overrides)
 
     return cast("_Decorator", decorate)
 
 
-def _built(
-    function: Callable[..., Any],
-    *,
-    name: str | None,
-    description: str | None,
-    dialect: SchemaDialect,
-    arguments: ArgumentPolicy,
-) -> Tool[Any, Any]:
+def _built(function: Callable[..., Any], overrides: _Overrides) -> Tool[Any, Any]:
     """Describe one function, refusing anything the model could not be told about."""
     _refuse_unsuitable(function)
-    called = name or getattr(function, "__name__", "")
+    called = overrides.name or getattr(function, "__name__", "")
     if not called:
         raise ToolDefinitionError(
             "a tool needs a name and this callable has none. Pass name= explicitly.",
@@ -297,25 +310,38 @@ def _built(
         )
     hints = _hints(function, called)
     injected, required = _context_parameter(function, called, hints)
-    parameters = _parameters(function, called, dialect, injected)
+    parameters = _parameters(function, called, overrides.dialect, injected)
+    _refuse_an_impossible_ceiling(called, overrides.timeout)
     built = Tool[Any, Any](
         name=called,
-        description=description or _summary(function) or called,
+        description=overrides.description or _summary(function) or called,
         parameters_schema=parameters,
-        returns_schema=_returns(hints, called, dialect),
+        returns_schema=_returns(hints, called, overrides.dialect),
         is_async=inspect.iscoroutinefunction(function),
         function=function,
         validator=ToolArgumentValidator(
             function,
             tool=called,
             exclude=(injected,) if injected else (),
-            policy=arguments,
+            policy=overrides.arguments,
         ),
         context_parameter=injected,
         context_required=required,
+        timeout=overrides.timeout,
+        parallel_safe=overrides.parallel_safe,
     )
     _claim(called, function, built)
     return built
+
+
+def _refuse_an_impossible_ceiling(called: str, timeout: float | None) -> None:
+    """A ceiling of zero or less reads as no time at all, which fails every call."""
+    if timeout is not None and timeout <= 0:
+        raise ToolDefinitionError(
+            f"{called} declares a timeout of {timeout:g}s, which is no time at all: every "
+            f"call would fail before it was made. Leave it unset to declare no ceiling.",
+            tool=called,
+        )
 
 
 def _refuse_unsuitable(function: object) -> None:

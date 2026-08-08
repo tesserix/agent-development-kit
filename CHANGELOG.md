@@ -129,6 +129,28 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `ToolRegistry`, which makes what an agent may call declared configuration rather than a
+  filtered dict and a dispatch check. It holds the tools a process has;
+  `registry.view(allow=..., agent=...)` returns an immutable `AgentToolView` of the subset
+  one agent may call, resolved at construction — a misspelled name fails there, naming what
+  is registered, and the view cannot widen mid-run. An off-allowlist call raises
+  `ToolNotPermittedError` *before* dispatch and is never executed; a name nobody registered
+  raises `ToolNotFoundError`, a different type because a deployment mistake and a permission
+  decision have different fixes. Neither is retried by the run loop even for a tool the agent
+  declared idempotent. `@tool(timeout=...)` declares a ceiling that the registry may override
+  per deployment and enforces with real cancellation and a typed `ToolTimedOutError`; a body
+  that ignores cancellation is bounded by an abandonment path that discards the late result
+  rather than injecting it into a run that has moved on. `ConcurrencyConfig` bounds the
+  registry and each tool, `@tool(parallel_safe=False)` serialises an order-dependent tool,
+  and duplicate registration of one name names both origins. Every invocation emits a
+  `ToolCallSpan` — tool, agent, permission decision, outcome class, duration, abandonment —
+  carrying neither the arguments nor the result. **Stability:** additive. Five new public
+  names (`ToolRegistry`, `AgentToolView`, `ToolCallSpan`, `ToolNotFoundError`,
+  `ToolNotPermittedError`) and two new optional `@tool` parameters; nothing existing changes
+  shape. The registry's own guarantees are versioned from here: additive tool metadata is
+  non-breaking, allowlist semantics are versioned, and any change to default-deny is a major
+  version. Documented in `docs/tools.md`.
+
 - `@tool`, which makes one typed function the whole tool: `tesserix_adk.tools.tool` derives
   the model-facing schema from the signature and the docstring, so the declaration the model
   reads and the code that runs cannot drift apart. Everything a model could be told wrongly

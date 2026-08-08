@@ -88,7 +88,7 @@ code lands here as the kit is built.
 | Core primitives — agents, messages, runs, usage, errors | [`docs/primitives.md`](docs/primitives.md) |
 | Boundary models — strictness, extras, sensitive fields, field changes | [`docs/models.md`](docs/models.md) |
 | Schemas — generation, docstrings, provider dialects, the schema hash | [`docs/schemas.md`](docs/schemas.md) |
-| Tools — the `@tool` decorator, import-time refusals, argument validation, injected context | [`docs/tools.md`](docs/tools.md) |
+| Tools — the `@tool` decorator, import-time refusals, argument validation, injected context, per-agent allowlists and ceilings | [`docs/tools.md`](docs/tools.md) |
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |
 | Resilience — the error taxonomy, redaction, phase timeouts, rate limiting | [`docs/resilience.md`](docs/resilience.md) |

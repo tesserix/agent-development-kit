@@ -84,6 +84,8 @@ from tesserix_adk.core import (
     ToolCall,
     ToolExecutionError,
     ToolFailurePolicy,
+    ToolNotFoundError,
+    ToolNotPermittedError,
     ToolTimedOutError,
     TrustBoundaryError,
     Usage,
@@ -1927,7 +1929,7 @@ class AgentRunner:
             except ToolArgumentValidationError as rejected:
                 return self._arguments_rejected(run, agent, call, rejected)
             except Exception as failure:
-                delay = self._tool_backoff(agent, call, plan, attempt, bounds)
+                delay = self._tool_backoff(agent, call, plan, attempt, bounds, failure)
                 if delay is None:
                     return self._tool_failed(run, agent, call, failure, bounds)
                 run = run.record_event(
@@ -2035,13 +2037,23 @@ class AgentRunner:
             await bounds.budget.record(spent, model_calls=1)
 
     def _tool_backoff(
-        self, agent: Agent[Any], call: ToolCall, plan: RetryPlan, attempt: int, bounds: _Bounds
+        self,
+        agent: Agent[Any],
+        call: ToolCall,
+        plan: RetryPlan,
+        attempt: int,
+        bounds: _Bounds,
+        failure: Exception,
     ) -> float | None:
         """A tool is retried on its declaration, not on the shape of its exception.
 
         A tool's exception says nothing about whether its side effect landed, so the only
-        safe gate is the agent naming the tool as safe to call again.
+        safe gate is the agent naming the tool as safe to call again. The exception is a
+        decision rather than a fault: a name nobody registered and a name this agent may
+        not call are the same answer however often they are asked.
         """
+        if isinstance(failure, ToolNotFoundError | ToolNotPermittedError):
+            return None
         if call.name not in agent.idempotent_tools:
             return None
         delay = plan.delay_for(attempt)

@@ -55,6 +55,8 @@ __all__ = [
     "ToolArgumentValidationError",
     "ToolDefinitionError",
     "ToolExecutionError",
+    "ToolNotFoundError",
+    "ToolNotPermittedError",
     "ToolTimedOutError",
     "TrustBoundaryError",
     "WorkersBusyError",
@@ -726,6 +728,52 @@ class ToolDefinitionError(ConfigurationError):
 
 class ToolExecutionError(AdkError):
     """Raised when a tool fails. The tool's own exception is the `__cause__`."""
+
+
+class ToolNotFoundError(AdkError):
+    """Raised when nothing is registered under the name that was asked for.
+
+    Distinct from a refusal on purpose: a name nobody registered is a wiring mistake, and
+    a name this agent may not call is a permission decision. Telling them apart is the
+    difference between fixing a deployment and widening an allowlist.
+
+    Args:
+        tool: The name that was asked for.
+        known: What is registered, so the mistake is visible without a second lookup.
+    """
+
+    def __init__(self, tool: str, *, known: Sequence[str] = ()) -> None:
+        self.tool = tool
+        self.known = tuple(known)
+        super().__init__(
+            f"no tool is registered under {tool!r}"
+            + (f"; the registry holds {', '.join(self.known)}" if self.known else ""),
+            details={"tool": tool},
+        )
+
+
+class ToolNotPermittedError(AdkError):
+    """Raised when a tool exists but this agent's allowlist does not name it.
+
+    Raised instead of calling it. An allowlist enforced after dispatch is a side effect
+    that has already landed by the time the decision is recorded.
+
+    Args:
+        tool: What was asked for.
+        agent: Whose allowlist refused it.
+        permitted: What that agent may call, which is what the model can be told.
+    """
+
+    def __init__(self, tool: str, *, agent: str = "", permitted: Sequence[str] = ()) -> None:
+        self.tool = tool
+        self.agent = agent
+        self.permitted = tuple(permitted)
+        whose = f"{agent}'s" if agent else "this agent's"
+        super().__init__(
+            f"{tool!r} is not in {whose} allowlist, so it was not called"
+            + (f". It may call {', '.join(self.permitted)}" if self.permitted else ""),
+            details={"tool": tool, "agent": agent},
+        )
 
 
 class GuardrailViolationError(AdkError):
