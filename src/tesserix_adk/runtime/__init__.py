@@ -82,6 +82,7 @@ from tesserix_adk.runtime.results import (
 )
 from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.spend import budgeted_stream
+from tesserix_adk.runtime.state import MemoryStateStore
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
 __all__ = [
@@ -109,6 +110,7 @@ __all__ = [
     "LoopMonitor",
     "MemoryClaimCheckStore",
     "MemoryIdempotencyStore",
+    "MemoryStateStore",
     "ModelRequest",
     "ModelResponse",
     "Observed",

@@ -71,6 +71,10 @@ __all__ = [
     "SchemaGenerationError",
     "SchemaViolationError",
     "ScopeEscalationError",
+    "StateConflictError",
+    "StateInUseError",
+    "StateNotFoundError",
+    "StatePersistenceError",
     "StreamInterruptedError",
     "ToolArgumentValidationError",
     "ToolDefinitionError",
@@ -1576,3 +1580,93 @@ class DependencyCycleError(ConfigurationError):
     def __init__(self, *args: object, cycle: tuple[str, ...] = ()) -> None:
         self.cycle = cycle
         super().__init__(*args, details={"cycle": ", ".join(cycle)})
+
+
+class StateConflictError(AdkError):
+    """Raised when a state write named a version that has since moved.
+
+    Two workers holding the same run both write it back and, without this, the second
+    silently wins — the first worker's iteration, spend and cursor are gone with nothing
+    recording that they happened. The loser is told both numbers so it can re-read and
+    decide, rather than retry against the same stale copy.
+
+    Args:
+        key: What was contended, as `tenant/id`.
+        expected_version: The version the write claimed to have read.
+        actual_version: The version that is stored.
+    """
+
+    def __init__(
+        self, *args: object, key: str = "", expected_version: int = 0, actual_version: int = 0
+    ) -> None:
+        self.key = key
+        self.expected_version = expected_version
+        self.actual_version = actual_version
+        super().__init__(
+            *args,
+            details={
+                "key": key,
+                "expected_version": str(expected_version),
+                "actual_version": str(actual_version),
+            },
+        )
+
+
+class StateNotFoundError(AdkError):
+    """Raised when a patch or a resume named state that is not there.
+
+    A patch adds to what is stored, so there is nothing sensible to do with an absent
+    record: creating one would invent a run that never started, and returning quietly
+    would report a write that did not happen.
+
+    Args:
+        key: What was looked for, as `tenant/id`.
+        kind: `session` or `run`.
+    """
+
+    def __init__(self, *args: object, key: str = "", kind: str = "") -> None:
+        self.key = key
+        self.kind = kind
+        super().__init__(*args, details={"key": key, "kind": kind})
+
+
+class StatePersistenceError(AdkError):
+    """Raised when a state store could not take a write, or could not be reached.
+
+    A store that is unreachable is not a store that accepted the write, and a run that
+    carries on regardless is a run whose recorded spend is fiction. Nothing is partially
+    applied: the caller sees a failure or it sees the new version.
+
+    Args:
+        store: Which adapter failed, by class name.
+        reason: `unavailable` where it could not be reached, `too_large` where the record
+            exceeded what the store will hold.
+    """
+
+    def __init__(self, *args: object, store: str = "", reason: str = "unavailable") -> None:
+        self.store = store
+        self.reason = reason
+        super().__init__(*args, details={"store": store, "reason": reason})
+
+    @property
+    def retryable(self) -> bool:
+        """Only where it could not be reached. A record too large stays too large."""
+        return self.reason == "unavailable"
+
+
+class StateInUseError(AdkError):
+    """Raised when deleting a session would orphan runs that have not finished.
+
+    A live run whose session has gone cannot be resumed and cannot be found by any
+    listing that starts from the session, so it becomes work nothing will ever reap.
+    Callers that mean it pass `cascade=True`.
+
+    Args:
+        key: The session, as `tenant/id`.
+        live_runs: The runs that have not reached a terminal state.
+    """
+
+    def __init__(self, *args: object, key: str = "", live_runs: tuple[str, ...] = ()) -> None:
+        self.key = key
+        self.live_runs = live_runs
+        super().__init__(*args, details={"key": key, "live_runs": ", ".join(live_runs)})

@@ -34,10 +34,13 @@ from tesserix_adk.core.errors import (
     CapabilityError,
     MemoryConflictError,
     MemoryScopeError,
+    StateConflictError,
+    StateInUseError,
+    StateNotFoundError,
 )
 from tesserix_adk.core.idempotency import IdempotencyStore
 from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
-from tesserix_adk.core.primitives import Message, TextPart, Usage
+from tesserix_adk.core.primitives import Message, TextPart, ToolCall, Usage
 from tesserix_adk.core.protocols import (
     BudgetPolicy,
     Clock,
@@ -47,6 +50,15 @@ from tesserix_adk.core.protocols import (
     verify_conformance,
 )
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
+from tesserix_adk.core.run import RunState
+from tesserix_adk.core.state import (
+    RunRecord,
+    SessionRecord,
+    StateDelta,
+    StateKey,
+    StateQuery,
+    StateStore,
+)
 from tesserix_adk.memory import (
     Derivation,
     MemoryKind,
@@ -66,6 +78,7 @@ __all__ = [
     "KeyValueStoreConformance",
     "MemoryStoreConformance",
     "ModelProviderConformance",
+    "StateStoreConformance",
     "TracerConformance",
 ]
 
@@ -639,3 +652,231 @@ class MemoryStoreConformance(ABC):
             return
         with pytest.raises(CapabilityError):
             await store.erase(SCOPE)
+
+
+def _run(
+    run_id: str,
+    *,
+    tenant: str = "conformance",
+    session_id: str | None = None,
+    state: RunState = RunState.PENDING,
+    message_cursor: int = 0,
+    iterations: int = 0,
+    cost_micros: int = 0,
+    pending_tool_calls: tuple[ToolCall, ...] = (),
+) -> RunRecord:
+    """The smallest run record a store can be asked to hold."""
+    return RunRecord(
+        run_id=run_id,
+        tenant=tenant,
+        agent_name="planner",
+        session_id=session_id,
+        state=state,
+        message_cursor=message_cursor,
+        iterations=iterations,
+        cost_micros=cost_micros,
+        pending_tool_calls=pending_tool_calls,
+    )
+
+
+class StateStoreConformance(ABC):
+    """Behaviour every `StateStore` implementation must exhibit.
+
+    A store that gets any of these wrong loses an update between two workers, and a lost
+    update is invisible: the run continues with spend nobody recorded and a cursor that
+    replays a turn. The guarantees are that a write states the version it read, that
+    patches accumulate rather than overwrite, and that a tenant sees only its own.
+    """
+
+    @abstractmethod
+    def make_store(self) -> StateStore:
+        """Return a fresh, empty store under test."""
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_store(), StateStore)
+
+    async def test_a_run_that_was_never_written_is_none(self) -> None:
+        key = StateKey(tenant="conformance", id="absent")
+        assert await self.make_store().get_run(key) is None
+
+    async def test_a_written_run_comes_back(self) -> None:
+        store = self.make_store()
+        written = await store.put_run(_run("r1", message_cursor=3))
+        read = await store.get_run(written.key)
+        assert read is not None
+        assert read.message_cursor == 3
+
+    async def test_a_first_write_lands_at_version_one(self) -> None:
+        assert (await self.make_store().put_run(_run("r1"))).version == 1
+
+    async def test_a_second_write_of_a_stale_version_is_refused(self) -> None:
+        """Two workers holding the same run: the second must not silently win."""
+        store = self.make_store()
+        stored = await store.put_run(_run("r1"))
+        await store.put_run(stored.model_copy(update={"iterations": 1}))
+        with pytest.raises(StateConflictError) as refused:
+            await store.put_run(stored.model_copy(update={"iterations": 9}))
+        assert refused.value.expected_version == 1
+        assert refused.value.actual_version == 2
+
+    async def test_a_create_that_finds_something_there_is_refused(self) -> None:
+        store = self.make_store()
+        await store.put_run(_run("r1"))
+        with pytest.raises(StateConflictError):
+            await store.put_run(_run("r1"))
+
+    async def test_only_one_of_many_concurrent_creates_wins(self) -> None:
+        store = self.make_store()
+        written = await asyncio.gather(
+            *(store.put_run(_run("r1")) for _ in range(20)), return_exceptions=True
+        )
+        assert sum(1 for outcome in written if isinstance(outcome, RunRecord)) == 1
+
+    async def test_a_patch_adds_rather_than_sets(self) -> None:
+        store = self.make_store()
+        stored = await store.put_run(_run("r1", iterations=2, cost_micros=10))
+        patched = await store.patch_run(stored.key, StateDelta(iterations=1, cost_micros=5))
+        assert patched.iterations == 3
+        assert patched.cost_micros == 15
+
+    async def test_concurrent_patches_all_land(self) -> None:
+        """Two workers each adding what they spent commute; two setting a total do not."""
+        store = self.make_store()
+        stored = await store.put_run(_run("r1"))
+        await asyncio.gather(
+            *(store.patch_run(stored.key, StateDelta(iterations=1)) for _ in range(10))
+        )
+        read = await store.get_run(stored.key)
+        assert read is not None
+        assert read.iterations == 10
+
+    async def test_a_patch_of_a_run_that_is_not_there_is_refused(self) -> None:
+        key = StateKey(tenant="conformance", id="absent")
+        with pytest.raises(StateNotFoundError):
+            await self.make_store().patch_run(key, StateDelta(iterations=1))
+
+    async def test_a_pending_tool_call_survives_a_round_trip(self) -> None:
+        """A run abandoned mid tool call is a state to resume, not a corruption."""
+        store = self.make_store()
+        call = ToolCall(id="c1", name="search", arguments={"query": "kyoto"})
+        stored = await store.put_run(_run("r1", pending_tool_calls=(call,)))
+        read = await store.get_run(stored.key)
+        assert read is not None
+        assert read.mid_tool_call is True
+        assert read.pending_tool_calls[0].name == "search"
+
+    async def test_a_secret_in_a_tool_argument_is_masked_before_it_is_stored(self) -> None:
+        store = self.make_store()
+        call = ToolCall(id="c1", name="pay", arguments={"token": "sk-live-0123456789abcd"})
+        stored = await store.put_run(_run("r1", pending_tool_calls=(call,)))
+        read = await store.get_run(stored.key)
+        assert read is not None
+        assert "sk-live" not in str(read.pending_tool_calls[0].arguments)
+
+    async def test_deleting_a_run_removes_it(self) -> None:
+        store = self.make_store()
+        stored = await store.put_run(_run("r1"))
+        await store.delete_run(stored.key)
+        assert await store.get_run(stored.key) is None
+
+    async def test_deleting_a_run_that_is_not_there_is_not_an_error(self) -> None:
+        await self.make_store().delete_run(StateKey(tenant="conformance", id="absent"))
+
+    async def test_a_session_round_trips(self) -> None:
+        store = self.make_store()
+        written = await store.put_session(
+            SessionRecord(session_id="s1", tenant="conformance", runs=("r1",))
+        )
+        read = await store.get_session(written.key)
+        assert read is not None
+        assert read.runs == ("r1",)
+
+    async def test_a_stale_session_write_is_refused(self) -> None:
+        store = self.make_store()
+        stored = await store.put_session(SessionRecord(session_id="s1", tenant="conformance"))
+        await store.put_session(stored)
+        with pytest.raises(StateConflictError):
+            await store.put_session(stored)
+
+    async def test_a_session_with_a_live_run_is_not_deleted(self) -> None:
+        """A live run whose session has gone is work nothing will ever find again."""
+        store = self.make_store()
+        session = await store.put_session(SessionRecord(session_id="s1", tenant="conformance"))
+        await store.put_run(_run("r1", session_id="s1", state=RunState.RUNNING))
+        with pytest.raises(StateInUseError) as refused:
+            await store.delete_session(session.key)
+        assert refused.value.live_runs == ("r1",)
+
+    async def test_a_cascade_takes_the_runs_with_it(self) -> None:
+        store = self.make_store()
+        session = await store.put_session(SessionRecord(session_id="s1", tenant="conformance"))
+        run = await store.put_run(_run("r1", session_id="s1", state=RunState.RUNNING))
+        await store.delete_session(session.key, cascade=True)
+        assert await store.get_session(session.key) is None
+        assert await store.get_run(run.key) is None
+
+    async def test_a_finished_run_does_not_hold_its_session_open(self) -> None:
+        store = self.make_store()
+        session = await store.put_session(SessionRecord(session_id="s1", tenant="conformance"))
+        await store.put_run(_run("r1", session_id="s1", state=RunState.COMPLETED))
+        await store.delete_session(session.key)
+        assert await store.get_session(session.key) is None
+
+    async def test_deleting_a_session_that_is_not_there_is_not_an_error(self) -> None:
+        await self.make_store().delete_session(StateKey(tenant="conformance", id="absent"))
+
+    async def test_a_listing_returns_what_was_written(self) -> None:
+        store = self.make_store()
+        await store.put_run(_run("r1"))
+        await store.put_run(_run("r2"))
+        page = await store.list_runs(StateQuery(tenant="conformance"))
+        assert {record.run_id for record in page.records} == {"r1", "r2"}
+        assert page.cursor is None
+
+    async def test_a_listing_can_be_narrowed_to_one_state(self) -> None:
+        store = self.make_store()
+        await store.put_run(_run("r1", state=RunState.RUNNING))
+        await store.put_run(_run("r2", state=RunState.COMPLETED))
+        page = await store.list_runs(StateQuery(tenant="conformance", state=RunState.RUNNING))
+        assert [record.run_id for record in page.records] == ["r1"]
+
+    async def test_a_listing_can_be_narrowed_by_age(self) -> None:
+        """How abandoned work is found: everything last written before some moment."""
+        store = self.make_store()
+        await store.put_run(_run("r1"))
+        stale = await store.list_runs(StateQuery(tenant="conformance", updated_before=float("inf")))
+        fresh = await store.list_runs(
+            StateQuery(tenant="conformance", updated_before=float("-inf"))
+        )
+        assert [record.run_id for record in stale.records] == ["r1"]
+        assert fresh.records == ()
+
+    async def test_a_cursor_walks_every_run_exactly_once(self) -> None:
+        store = self.make_store()
+        for index in range(5):
+            await store.put_run(_run(f"r{index}"))
+        seen: list[str] = []
+        cursor: str | None = None
+        while True:
+            page = await store.list_runs(StateQuery(tenant="conformance", limit=2, cursor=cursor))
+            seen.extend(record.run_id for record in page.records)
+            cursor = page.cursor
+            if cursor is None:
+                break
+        assert sorted(seen) == [f"r{index}" for index in range(5)]
+
+    async def test_an_exhausted_listing_carries_no_cursor(self) -> None:
+        store = self.make_store()
+        await store.put_run(_run("r1"))
+        page = await store.list_runs(StateQuery(tenant="conformance", limit=1))
+        assert page.cursor is None
+
+    async def test_one_tenant_cannot_read_another_s_run(self) -> None:
+        store = self.make_store()
+        await store.put_run(_run("r1", tenant="one"))
+        assert await store.get_run(StateKey(tenant="two", id="r1")) is None
+
+    async def test_one_tenant_cannot_list_another_s_runs(self) -> None:
+        store = self.make_store()
+        await store.put_run(_run("r1", tenant="one"))
+        assert (await store.list_runs(StateQuery(tenant="two"))).records == ()

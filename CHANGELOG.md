@@ -165,6 +165,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `StateStore` gives session and run state one shape, so runs can survive the process that
+  started them. Every write states the version it read and commits at that version plus one
+  or raises `StateConflictError` with both numbers, which makes a lost update between two
+  workers impossible rather than unlikely; version zero is a create, so two workers racing
+  to start the same run resolve to one. `patch_run` takes a `StateDelta` of additions and no
+  version, because additions commute where totals do not. `RunRecord` holds what a resume
+  needs — message cursor, unanswered tool calls, spend, iterations, the approval it waits on
+  — with tool arguments scrubbed on the way in, and `StateKey` carries the tenant so a
+  cross-tenant read needs a deliberate key. Listings page by the store's own insertion
+  counter rather than by a clock. `MemoryStateStore` and `StateStoreConformance` ship with
+  it. **Stability:** additive. Documented in `docs/state.md`.
+
 - Delegation now traverses the same controls a tool call does. `RunGrant` records what a run
   was allowed to do — its tools, which of them needed approval, and the guards it ran under
   — on `Run.grant` and on the `RunContext` it hands to a sub-run, so a delegated run

@@ -117,6 +117,7 @@ code lands here as the kit is built.
 | Typing — the answer type, the escape-hatch policy, third-party boundaries | [`docs/typing.md`](docs/typing.md) |
 | The agent definition — owner, evaluation suite, revision, pinning | [`docs/agent-definition.md`](docs/agent-definition.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
+| State — versioned writes, patches that commute, cursor paging, session lifetime | [`docs/state.md`](docs/state.md) |
 | Delegation — depth, fan-out and run ceilings, scope narrowing, escalation refused, expiry, and the guards a sub-run inherits | [`docs/delegation.md`](docs/delegation.md) |
 | Dispatch — declared dependencies, derived schedule, cycles refused at construction, contained failure | [`docs/dispatch.md`](docs/dispatch.md) |
 | Guardrails — declared order, redaction that carries, failing closed on a guard that cannot answer | [`docs/guardrails.md`](docs/guardrails.md) |
