@@ -79,6 +79,7 @@ from tesserix_adk.runtime.prompt import (
     assemble_prompt,
     wrap_untrusted,
 )
+from tesserix_adk.runtime.queue import MemoryWorkQueue
 from tesserix_adk.runtime.rate_limit import RateLimiter
 from tesserix_adk.runtime.results import (
     ResultFinding,
@@ -120,6 +121,7 @@ __all__ = [
     "MemoryClaimCheckStore",
     "MemoryIdempotencyStore",
     "MemoryStateStore",
+    "MemoryWorkQueue",
     "ModelRequest",
     "ModelResponse",
     "Observed",

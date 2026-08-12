@@ -33,11 +33,13 @@ from tesserix_adk.core.errors import (
     BudgetExceededError,
     BudgetUnavailableError,
     CapabilityError,
+    LeaseLostError,
     MemoryConflictError,
     MemoryScopeError,
     StateConflictError,
     StateInUseError,
     StateNotFoundError,
+    WorkItemNotFoundError,
 )
 from tesserix_adk.core.idempotency import IdempotencyStore
 from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
@@ -51,6 +53,7 @@ from tesserix_adk.core.protocols import (
     verify_conformance,
 )
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
+from tesserix_adk.core.queue import WorkItem, WorkQueue, WorkState
 from tesserix_adk.core.run import RunState
 from tesserix_adk.core.state import (
     RunRecord,
@@ -82,6 +85,7 @@ __all__ = [
     "ModelProviderConformance",
     "StateStoreConformance",
     "TracerConformance",
+    "WorkQueueConformance",
 ]
 
 
@@ -984,3 +988,142 @@ class CheckpointStoreConformance(ABC):
         await store.put(_checkpoint("r1", tenant="one"))
         await store.forget("r1", tenant="two")
         assert await store.latest("r1", tenant="one") is not None
+
+
+def _work(
+    item_id: str = "i1", *, tenant: str = "conformance", dedupe_key: str | None = None
+) -> WorkItem:
+    """An item with the fields a queue has to round-trip."""
+    return WorkItem(id=item_id, tenant=tenant, dedupe_key=dedupe_key, payload={"run": item_id})
+
+
+class WorkQueueConformance(ABC):
+    """Behaviour every `WorkQueue` implementation must exhibit.
+
+    The guarantees are that a claim is exclusive, that a lapsed claim comes back with its
+    attempt counted, that an item which has run out of attempts is in the dead letter
+    rather than in a loop, and that no tenant can be starved or read by another.
+    """
+
+    @abstractmethod
+    def make_queue(self) -> WorkQueue:
+        """Return a fresh, empty queue whose policy allows at least three attempts."""
+
+    @abstractmethod
+    async def advance(self, queue: WorkQueue, seconds: float) -> None:
+        """Move the store's clock on, so a lease can lapse without a test sleeping."""
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_queue(), WorkQueue)
+
+    async def test_an_empty_queue_hands_out_nothing(self) -> None:
+        assert await self.make_queue().claim(worker="w1") is None
+
+    async def test_an_enqueued_item_is_claimable(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        claimed = await queue.claim(worker="w1")
+        assert claimed is not None
+        assert claimed.id == "i1"
+        assert claimed.worker == "w1"
+
+    async def test_a_claimed_item_is_not_handed_to_a_second_worker(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1")
+        assert await queue.claim(worker="w2") is None
+
+    async def test_a_completed_item_never_comes_back(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1")
+        await queue.complete("i1", tenant="conformance", worker="w1")
+        assert await queue.claim(worker="w2") is None
+
+    async def test_a_lapsed_claim_is_requeued_with_its_attempt_counted(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1", lease_seconds=1.0)
+        await self.advance(queue, 2.0)
+        reaped = await queue.reap()
+        assert [item.id for item in reaped] == ["i1"]
+        assert reaped[0].attempts == 1
+
+    async def test_a_live_worker_keeps_its_claim(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1", lease_seconds=10.0)
+        await self.advance(queue, 5.0)
+        await queue.heartbeat("i1", tenant="conformance", worker="w1")
+        await self.advance(queue, 5.0)
+        assert await queue.reap() == ()
+
+    async def test_a_worker_that_lost_its_claim_is_refused(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1", lease_seconds=1.0)
+        await self.advance(queue, 2.0)
+        await queue.reap()
+        with pytest.raises(LeaseLostError):
+            await queue.complete("i1", tenant="conformance", worker="w1")
+
+    async def test_an_item_the_queue_does_not_hold_is_a_refusal(self) -> None:
+        with pytest.raises(WorkItemNotFoundError):
+            await self.make_queue().complete("absent", tenant="conformance", worker="w1")
+
+    async def test_a_failure_comes_back_for_another_attempt(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1")
+        failed = await queue.fail("i1", tenant="conformance", worker="w1", error="boom")
+        assert failed.attempts == 1
+        assert failed.failures == ("boom",)
+
+    async def test_an_item_that_cannot_succeed_skips_its_remaining_attempts(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1")
+        failed = await queue.fail(
+            "i1", tenant="conformance", worker="w1", error="malformed", retryable=False
+        )
+        assert failed.state is WorkState.DEAD_LETTERED
+        assert [item.id for item in await queue.dead_letters(tenant="conformance")] == ["i1"]
+
+    async def test_a_duplicate_job_is_collapsed_into_the_first(self) -> None:
+        queue = self.make_queue()
+        first = await queue.enqueue(_work("i1", dedupe_key="nightly"))
+        second = await queue.enqueue(_work("i2", dedupe_key="nightly"))
+        assert second.id == first.id
+
+    async def test_a_restarted_worker_gives_back_what_it_held(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.claim(worker="w1")
+        adopted = await queue.adopt(worker="w1")
+        assert [item.id for item in adopted] == ["i1"]
+        claimed = await queue.claim(worker="w2")
+        assert claimed is not None
+        assert claimed.id == "i1"
+
+    async def test_one_tenant_cannot_starve_another(self) -> None:
+        queue = self.make_queue()
+        for index in range(4):
+            await queue.enqueue(_work(f"loud{index}", tenant="loud"))
+        await queue.enqueue(_work("quiet1", tenant="quiet"))
+        claimed = [await queue.claim(worker=f"w{index}") for index in range(4)]
+        assert any(item is not None and item.tenant == "quiet" for item in claimed)
+
+    async def test_one_tenant_cannot_act_on_another_s_item(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1", tenant="one"))
+        await queue.claim(worker="w1")
+        with pytest.raises(WorkItemNotFoundError):
+            await queue.complete("i1", tenant="two", worker="w1")
+
+    async def test_the_depth_counts_what_is_waiting(self) -> None:
+        queue = self.make_queue()
+        await queue.enqueue(_work("i1"))
+        await queue.enqueue(_work("i2"))
+        await queue.claim(worker="w1")
+        stats = await queue.stats()
+        assert (stats.depth, stats.claimed) == (1, 1)

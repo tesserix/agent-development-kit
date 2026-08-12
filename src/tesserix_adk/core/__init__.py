@@ -108,6 +108,7 @@ from tesserix_adk.core.errors import (
     IndeterminateOutcomeError,
     IndeterminateToolCallError,
     InvalidRequestError,
+    LeaseLostError,
     LoopLimitError,
     MaxIterationsError,
     MemoryConflictError,
@@ -125,6 +126,7 @@ from tesserix_adk.core.errors import (
     ProviderError,
     ProviderTimeoutError,
     ProviderUnavailableError,
+    QueueUnavailableError,
     RateLimitError,
     RecursionLimitError,
     RepeatedCallError,
@@ -153,6 +155,7 @@ from tesserix_adk.core.errors import (
     ToolTimedOutError,
     TrustBoundaryError,
     WorkersBusyError,
+    WorkItemNotFoundError,
     WriteQueueFullError,
 )
 from tesserix_adk.core.extras import require_extra
@@ -226,6 +229,14 @@ from tesserix_adk.core.provider import (
     ModelResponse,
     StopReason,
     ToolDeclaration,
+)
+from tesserix_adk.core.queue import (
+    QueuePolicy,
+    QueueStats,
+    WorkItem,
+    WorkPriority,
+    WorkQueue,
+    WorkState,
 )
 from tesserix_adk.core.redaction import (
     MASK,
@@ -392,6 +403,7 @@ __all__ = [
     "InvalidRequestError",
     "JsonSchema",
     "KeyValueStore",
+    "LeaseLostError",
     "LedgerFailure",
     "LedgerKey",
     "LoopConfig",
@@ -428,6 +440,9 @@ __all__ = [
     "ProviderError",
     "ProviderTimeoutError",
     "ProviderUnavailableError",
+    "QueuePolicy",
+    "QueueStats",
+    "QueueUnavailableError",
     "RateLimitError",
     "ReasoningDelta",
     "RecursionLimitError",
@@ -511,6 +526,11 @@ __all__ = [
     "Window",
     "WindowKind",
     "WindowSpend",
+    "WorkItem",
+    "WorkItemNotFoundError",
+    "WorkPriority",
+    "WorkQueue",
+    "WorkState",
     "WorkersBusyError",
     "WriteQueueFullError",
     "claim_handle",

@@ -165,6 +165,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- A reliable work queue behind the `WorkQueue` protocol, with `MemoryWorkQueue` as the
+  in-process implementation. Work is claimed under a lease rather than taken, so a worker
+  that dies holding an item has it requeued by the reaper with its attempt counted rather
+  than leaving it stranded. Delivery is at-least-once and handlers must be idempotent.
+  Attempts are capped with an exponential backoff and exhausted items go to a dead letter
+  carrying every failure, so a poisonous item neither loops nor disappears. A restarting
+  worker gives back what it held, tenants are served in rotation so no backlog can starve
+  another tenant, and a dedupe key collapses a repeat of a live job.
+  **Stability:** additive. Documented in `docs/work-queue.md`.
+
 - Run checkpointing and resume. A run that dies at iteration nine no longer restarts at
   zero: `Checkpointer` writes the run's frontier at boundaries where what has happened and
   what has not is unambiguous, and `AgentRunner.resume` carries it on from there. Each

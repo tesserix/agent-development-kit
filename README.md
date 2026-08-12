@@ -119,6 +119,7 @@ code lands here as the kit is built.
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | State — versioned writes, patches that commute, cursor paging, session lifetime | [`docs/state.md`](docs/state.md) |
 | Checkpointing — frontiers at unambiguous boundaries, resume, calls nobody can decide | [`docs/checkpointing.md`](docs/checkpointing.md) |
+| Work queues — leases, reaper, capped attempts, dead letter, per-tenant fairness | [`docs/work-queue.md`](docs/work-queue.md) |
 | Delegation — depth, fan-out and run ceilings, scope narrowing, escalation refused, expiry, and the guards a sub-run inherits | [`docs/delegation.md`](docs/delegation.md) |
 | Dispatch — declared dependencies, derived schedule, cycles refused at construction, contained failure | [`docs/dispatch.md`](docs/dispatch.md) |
 | Guardrails — declared order, redaction that carries, failing closed on a guard that cannot answer | [`docs/guardrails.md`](docs/guardrails.md) |

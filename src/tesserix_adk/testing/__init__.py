@@ -22,6 +22,7 @@ from tesserix_adk.testing.conformance import (
     SpendLedgerConformance,
     StateStoreConformance,
     TracerConformance,
+    WorkQueueConformance,
 )
 from tesserix_adk.testing.fakes import (
     CAPABLE,
@@ -99,6 +100,7 @@ __all__ = [
     "StateStoreConformance",
     "ToolExecutionError",
     "TracerConformance",
+    "WorkQueueConformance",
     "assert_same_run",
     "estimate_tokens",
     "redacted",

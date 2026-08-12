@@ -47,6 +47,7 @@ __all__ = [
     "HookRegistrationError",
     "IndeterminateToolCallError",
     "InvalidRequestError",
+    "LeaseLostError",
     "LoopLimitError",
     "MaxIterationsError",
     "MemoryConflictError",
@@ -64,6 +65,7 @@ __all__ = [
     "ProviderError",
     "ProviderTimeoutError",
     "ProviderUnavailableError",
+    "QueueUnavailableError",
     "RateLimitError",
     "RecursionLimitError",
     "RepeatedCallError",
@@ -91,6 +93,7 @@ __all__ = [
     "ToolResultError",
     "ToolTimedOutError",
     "TrustBoundaryError",
+    "WorkItemNotFoundError",
     "WorkersBusyError",
     "WriteQueueFullError",
 ]
@@ -1775,3 +1778,84 @@ class ResumeConflictError(AdkError):
 
     def __init__(self, *args: object, run_id: str = "") -> None:
         super().__init__(*args, run_id=run_id, details={"run_id": run_id})
+
+
+class WorkItemNotFoundError(AdkError):
+    """Raised when a queue operation named an item the queue does not hold.
+
+    Completing an item that is not there would report work done that nothing recorded, so
+    the caller is told rather than quietly succeeding.
+
+    Args:
+        item_id: What was named.
+        tenant: Whose queue was looked in. An item is never found across tenants.
+    """
+
+    def __init__(self, *args: object, item_id: str = "", tenant: str = "") -> None:
+        self.item_id = item_id
+        super().__init__(*args, tenant=tenant, details={"item_id": item_id, "tenant": tenant})
+
+
+class LeaseLostError(AdkError):
+    """Raised when a worker acted on a claim it no longer holds.
+
+    The lease lapsed, another worker has the item, or it has been renewed for longer than
+    the policy allows. Either way this worker's result is a duplicate of somebody else's
+    work, and writing it back would overwrite the outcome that counts.
+
+    Args:
+        item_id: The item in question.
+        worker: Who thought they held it.
+        holder: Who holds it now, where anyone does.
+        reason: `expired`, `taken`, or `capped` where renewals ran past the bound.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        item_id: str = "",
+        worker: str = "",
+        holder: str | None = None,
+        reason: str = "expired",
+    ) -> None:
+        self.item_id = item_id
+        self.worker = worker
+        self.holder = holder
+        self.reason = reason
+        super().__init__(
+            *args,
+            details={
+                "item_id": item_id,
+                "worker": worker,
+                "holder": holder or "",
+                "reason": reason,
+            },
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """No. The item is somebody else's now, and retrying is the duplicate."""
+        return False
+
+
+class QueueUnavailableError(AdkError):
+    """Raised when a work queue could not be reached.
+
+    An enqueue that failed silently is work that nobody is waiting for and nobody will
+    reap, because nothing ever recorded that it existed. The caller decides what to do
+    with the failure; the kit will not decide by dropping it.
+
+    Args:
+        queue: Which queue, by name.
+        operation: What was being attempted.
+    """
+
+    def __init__(self, *args: object, queue: str = "", operation: str = "") -> None:
+        self.queue = queue
+        self.operation = operation
+        super().__init__(*args, details={"queue": queue, "operation": operation})
+
+    @property
+    def retryable(self) -> bool:
+        """Yes. A store that is unreachable now may be reachable shortly."""
+        return True
