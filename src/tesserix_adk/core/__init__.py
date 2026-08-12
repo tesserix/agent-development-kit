@@ -55,6 +55,13 @@ from tesserix_adk.core.deprecation import (
     deprecate,
     deprecations,
 )
+from tesserix_adk.core.dispatch import (
+    Dispatch,
+    DispatchNode,
+    DispatchResult,
+    NodeOutcome,
+    NodeResult,
+)
 from tesserix_adk.core.errors import (
     AdkError,
     ApprovalBindingError,
@@ -70,6 +77,7 @@ from tesserix_adk.core.errors import (
     ContentFilteredError,
     ContextBudgetError,
     ContextWindowExceededError,
+    DependencyCycleError,
     EmbeddingDimensionError,
     EstimateUnavailableError,
     EventLoopStalledError,
@@ -301,8 +309,12 @@ __all__ = [
     "CountSource",
     "DeadlineConfig",
     "DeclaresEmulation",
+    "DependencyCycleError",
     "Deprecation",
     "DeprecationPolicyError",
+    "Dispatch",
+    "DispatchNode",
+    "DispatchResult",
     "EmbeddingDimensionError",
     "EstimateUnavailableError",
     "EventLoopStalledError",
@@ -355,6 +367,8 @@ __all__ = [
     "ModelSpec",
     "NoEligibleModelError",
     "NoOutput",
+    "NodeOutcome",
+    "NodeResult",
     "Owner",
     "PartialErasureError",
     "PoolExhaustedError",

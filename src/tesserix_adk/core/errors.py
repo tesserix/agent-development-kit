@@ -28,6 +28,7 @@ __all__ = [
     "ContentFilteredError",
     "ContextBudgetError",
     "ContextWindowExceededError",
+    "DependencyCycleError",
     "EmbeddingDimensionError",
     "EstimateUnavailableError",
     "EventLoopStalledError",
@@ -1444,3 +1445,19 @@ class SandboxMemoryError(SandboxError):
     def __init__(self, *args: object, limit_bytes: int = 0) -> None:
         self.limit_bytes = limit_bytes
         super().__init__(*args, details={"limit_bytes": str(limit_bytes)})
+
+
+class DependencyCycleError(ConfigurationError):
+    """Raised when declared dependencies close a loop, so nothing in it could ever start.
+
+    Found while the graph is built rather than while it runs: a cycle discovered at
+    runtime is a set of nodes waiting on each other, which looks like slow work.
+
+    Args:
+        cycle: The nodes that wait on each other, so the message names them rather than
+            saying a cycle exists somewhere.
+    """
+
+    def __init__(self, *args: object, cycle: tuple[str, ...] = ()) -> None:
+        self.cycle = cycle
+        super().__init__(*args, details={"cycle": ", ".join(cycle)})

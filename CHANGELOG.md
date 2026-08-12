@@ -154,6 +154,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `Dispatch`, which runs work with declared dependencies as wide as those dependencies
+  allow. Each `DispatchNode` names what it waits for and is given exactly what those nodes
+  returned, so independent branches run together without hand-scheduling and a join starts
+  when its inputs exist. A cycle is refused at construction with `DependencyCycleError`
+  naming the nodes in it, as are a dependency no node declares, a duplicated name and a
+  width that could never start anything. A failed node's dependents are skipped rather than
+  run with a missing input, with `blocked_by` naming the failure; branches that did not
+  depend on it still finish, and `failures` carries the exception itself. **Stability:**
+  additive. Documented in `docs/dispatch.md`.
+
 - Sandboxed code execution. `SubprocessSandbox` runs model-generated code in a fresh
   interpreter under `-I -S`, in a temporary workspace deleted when the call returns, with an
   environment constructed rather than inherited and `socket` replaced before the code is
