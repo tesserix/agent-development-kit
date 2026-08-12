@@ -80,7 +80,8 @@ class TestWhatARecordKnowsAboutItself:
 
 class TestWhatIsWrittenDown:
     def test_a_secret_in_a_tool_argument_is_masked(self) -> None:
-        call = ToolCall(id="c1", name="pay", arguments={"token": "sk-live-0123456789abcd"})
+        secret = "sk-live-0123456789abcd"  # noqa: S105 — a fixture, not a credential; gitleaks:allow
+        call = ToolCall(id="c1", name="pay", arguments={"token": secret})
         scrubbed = a_run(pending_tool_calls=(call,)).scrubbed()
         assert "sk-live" not in str(scrubbed.pending_tool_calls[0].arguments)
 

@@ -146,12 +146,12 @@ class RunRecord(AdkModel):
         than what it was handed, and the conformance suite fails one that does not.
 
         Example:
-            >>> call = ToolCall(id="c1", name="pay", arguments={"token": "sk-live-0123456789"})
+            >>> call = ToolCall(id="c1", name="pay", arguments={"who": "ada@example.com"})
             >>> record = RunRecord(
             ...     run_id="run_1", tenant="acme", agent_name="planner",
             ...     pending_tool_calls=(call,),
             ... )
-            >>> record.scrubbed().pending_tool_calls[0].arguments["token"]
+            >>> record.scrubbed().pending_tool_calls[0].arguments["who"]
             '[redacted]'
         """
         return self.model_copy(

@@ -29,7 +29,8 @@ TENANT = "acme"
 async def what_a_store_holds() -> None:
     """A run goes in, comes back, and knows how far through the conversation it is."""
     store = MemoryStateStore(FakeClock(start=1_000.0))
-    call = ToolCall(id="c1", name="pay", arguments={"api_key": "sk-live-9f3c2a71b055"})
+    secret = "sk-live-9f3c2a71b055"  # noqa: S105 — a fixture, not a credential; gitleaks:allow
+    call = ToolCall(id="c1", name="pay", arguments={"api_key": secret})
     stored = await store.put_run(
         RunRecord(
             run_id="run_1",
