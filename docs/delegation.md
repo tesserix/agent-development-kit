@@ -86,8 +86,64 @@ an expired scope raises `DelegationLimitError(reason="expired")`. Time that cann
 fails closed, and `root` refuses a scope that declares an expiry with no clock to read it
 against — an expiry nothing evaluates is a comment.
 
-## Known limitation
+## What a delegated run inherits
 
-Budgets are not narrowed here. A child inherits the run budget its parent resolved, so
-depth and delegation count are what bound spend on this path today. Per-delegation budget
-narrowing belongs with the spend ledger (`docs/ledger.md`) and is not implemented.
+`Delegation` is the model of a call graph. What follows is what the run loop enforces when
+one run actually calls another, with `runner.run(child, parent=parent_run.context)`.
+
+A kit with two dispatch paths grows a control that covers one of them. Guardrails covering
+tool calls but not delegation leave the cheapest bypass in the system open: hand the work
+to a sub-agent that declared no guard. So a run states what it was allowed to do, and a run
+below it inherits that rather than its own configuration.
+
+```python
+parent = await runner.run(supervisor, "plan the work", tenant="acme")
+parent.grant.tools                     # ('search',)
+parent.grant.guardrails                # ('no_pii', 'no_prompt_leak')
+
+child = await runner.run(researcher, "sub-task", tenant="acme", parent=parent.context)
+child.grant.guardrails                 # ('no_pii', 'no_prompt_leak') — it declared none
+```
+
+- **Guards are inherited, in the caller's order,** followed by any of the child's own that
+  were not already there. A child cannot drop one, and a guard named at both levels is
+  asked once. A guard the child's runner was never given is a `ConfigurationError` at the
+  boundary rather than a skipped check.
+- **Reach only narrows.** A tool the caller did not hold is `ScopeEscalationError`,
+  recorded as `SCOPE_REFUSED` and terminal, before a model is called. It is refused rather
+  than intersected away, because the difference is a wiring mistake and a silent
+  intersection is how nobody finds out about it. This holds at every depth: a grandchild
+  cannot recover what the level above it gave up.
+- **Approval is inherited.** A tool a human had to clear at the top is not cleared by being
+  called one level down.
+- **Budget is shared, not reset.** A parent passes `bounds.budget.child()`, so a delegation
+  spends the caller's remaining allowance.
+
+A `RunContext` built by hand outside the loop carries no grant and narrows nothing: the
+absence of a record is not a claim that the caller held nothing. Every context the loop
+produces carries one.
+
+## What comes back
+
+```python
+messages.append(Message(role="user", content=[TextPart(text=handed_back(child))]))
+```
+
+A sub-agent's answer is model output that read whatever the sub-agent read. Pasted into the
+caller's conversation bare, it is an instruction channel for whatever wrote it, so it
+crosses in the same `<untrusted-data>` envelope a tool result crosses in.
+
+A child a guard stopped hands back the guard and its code rather than an empty string, so a
+refusal inside a delegation reaches the caller as a refusal it can reason about rather than
+as an unexplained silence.
+
+## Known limitations
+
+Budgets are not narrowed by `Delegation`. A child inherits the run budget its parent
+resolved, so depth and delegation count are what bound spend on this path today.
+Per-delegation budget narrowing belongs with the spend ledger (`docs/ledger.md`) and is not
+implemented.
+
+`DelegationScope.mutations` is not part of `RunGrant`: an agent declares tools, not
+mutation classes, so there is nothing at the run boundary to narrow. Deployments that
+separate reading from writing express it through the tool allowlist.

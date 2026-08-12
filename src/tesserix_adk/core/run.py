@@ -113,6 +113,7 @@ class RunEventKind(StrEnum):
     BUDGET_EXCEEDED = "budget_exceeded"
     COMPENSATION_REQUIRED = "compensation_required"
     FAN_OUT_REFUSED = "fan_out_refused"
+    SCOPE_REFUSED = "scope_refused"
     REPEAT_DETECTED = "repeat_detected"
     DEPTH_EXCEEDED = "depth_exceeded"
     HOOK_REWRITE = "hook_rewrite"
@@ -164,6 +165,32 @@ class TenantContext(AdkModel):
     user: str | None = None
 
 
+class RunGrant(AdkModel):
+    """What a run was allowed to do, so a run below it can be allowed no more.
+
+    A sub-agent that carried only its own configuration would hold whatever that
+    configuration said — which is how delegation becomes the way around a control rather
+    than a use of it. A run states its grant, and a run it delegates to inherits it.
+
+    Args:
+        tools: The tools the run could call. A child asking for one that is absent is
+            refused rather than quietly narrowed, because the difference is a bug
+            somewhere and a silent intersection hides it.
+        approval_required_tools: Which of those a human had to clear first. Inherited, or
+            a call is cleared by being made one level down.
+        guardrails: The guards the run was subject to, in order. A child is subject to
+            these and to its own; it cannot drop one.
+
+    Example:
+        >>> RunGrant(tools=("search",), guardrails=("no_pii",)).guardrails
+        ('no_pii',)
+    """
+
+    tools: tuple[str, ...] = ()
+    approval_required_tools: tuple[str, ...] = ()
+    guardrails: tuple[str, ...] = ()
+
+
 class RunContext(AdkModel):
     """What the runtime threads through every layer of a run.
 
@@ -176,6 +203,9 @@ class RunContext(AdkModel):
     depth: int = Field(default=0, ge=0)
     path: tuple[str, ...] = ()
     """The agents this run was called through, root first. A cycle is only visible here."""
+    grant: RunGrant | None = None
+    """What the calling run held. `None` where a caller outside the loop recorded nothing,
+    which narrows nothing: absence is not a claim that the caller held nothing."""
 
 
 class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot carry the parameter's default before 3.13
@@ -200,6 +230,8 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
         path: The agents this run was called through, root first. A delegation cycle is
             only legible here — a depth alone says a run went too far, not where it went
             round.
+        grant: What this run was allowed to do, after anything its caller narrowed. A run
+            it delegates to inherits this rather than its own configuration.
         state: Where the run is. See `RunState`.
         messages: The conversation as it stands.
         tool_calls: Calls the model requested, deduplicated by id.
@@ -226,6 +258,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
     task_class: str | None = None
     depth: int = Field(default=0, ge=0)
     path: tuple[str, ...] = ()
+    grant: RunGrant | None = None
     state: RunState = RunState.PENDING
     messages: list[Message] = Field(default_factory=list)
     tool_calls: list[ToolCall] = Field(default_factory=list)
@@ -244,6 +277,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
             tenant=TenantContext(tenant=self.tenant, user=self.user),
             depth=self.depth,
             path=self.path,
+            grant=self.grant,
         )
 
     @property

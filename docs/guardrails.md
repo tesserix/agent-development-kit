@@ -90,6 +90,8 @@ guard over the assembled answer, and accepts that it is showing unchecked text.
 - Guards see text. Structured output is checked on its serialised form; a guard that needs
   the parsed object parses it itself.
 - Tool arguments and tool results are not on this path — they have their own boundary
-  (`docs/tool-results.md`). Extending the pipeline to cover the tool-call path is #227.
+  (`docs/tool-results.md`).
+- A delegated run inherits its caller's guards and runs them in the caller's order, so
+  handing work to a sub-agent is not a way around one; see `docs/delegation.md`.
 - `timeout_seconds` is per guard, not per pipeline. A run's own deadline still bounds the
   whole thing, and inside the loop that deadline is what applies.

@@ -85,9 +85,11 @@ from tesserix_adk.core import (
     RunContext,
     RunEvent,
     RunEventKind,
+    RunGrant,
     RunState,
     SchemaViolationError,
     ScopedLimits,
+    ScopeEscalationError,
     TaskClass,
     TextPart,
     ToolArgumentValidationError,
@@ -675,9 +677,19 @@ class AgentRunner:
         self._refuse_an_unrouted_class(agent)
         decision = self._route(agent, tenant)
         bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision), budget)
-        self._refuse_incomplete_wiring(agent, bounds.provider)
         depth = parent.depth + 1 if parent is not None else 0
         path = (*parent.path, agent.name) if parent is not None else (agent.name,)
+        try:
+            agent = _inherited(agent, parent, path)
+        except ScopeEscalationError as escalation:
+            return await self._refused(
+                _Started(agent, depth, path, tenant=tenant, user=user, run_id=run_id),
+                bounds,
+                RunEventKind.SCOPE_REFUSED,
+                escalation,
+                state=RunState.FAILED,
+            )
+        self._refuse_incomplete_wiring(agent, bounds.provider)
         started = _Started(
             agent, depth, path, tenant=tenant, user=user, run_id=run_id, revision=revision
         )
@@ -698,6 +710,7 @@ class AgentRunner:
             model=model,
             depth=depth,
             path=path,
+            grant=_granted(agent),
             budget=bounds.budget.resolved,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
         self._emit(RunStarted(agent=agent.name, model=model, tenant=tenant))
@@ -1945,7 +1958,12 @@ class AgentRunner:
         return None
 
     async def _refused(
-        self, started: _Started, bounds: _Bounds, kind: RunEventKind, failure: AdkError
+        self,
+        started: _Started,
+        bounds: _Bounds,
+        kind: RunEventKind,
+        failure: AdkError,
+        state: RunState = RunState.LOOP_LIMIT_EXCEEDED,
     ) -> Run[Any]:
         run = Run(
             id=started.run_id or self._ids(),
@@ -1959,9 +1977,7 @@ class AgentRunner:
             path=started.path,
         ).transition_to(RunState.RUNNING, at=self._clock.now())
         run = run.record_event(self._event(kind, detail=str(failure)))
-        return await self._terminate(
-            run, started.agent, RunState.LOOP_LIMIT_EXCEEDED, _named(failure), bounds
-        )
+        return await self._terminate(run, started.agent, state, _named(failure), bounds)
 
     async def _cleared_to_dispatch(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
@@ -2839,6 +2855,52 @@ def _shown(arguments: Mapping[str, Any]) -> str:
 
 def _signature(call: ToolCall) -> str:
     return f"{call.name}:{json.dumps(call.arguments, sort_keys=True, default=repr)}"
+
+
+def _granted(agent: Agent[Any]) -> RunGrant:
+    """What this run may do, in the form a run below it inherits."""
+    return RunGrant(
+        tools=agent.tools,
+        approval_required_tools=agent.approval_required_tools,
+        guardrails=agent.guardrails,
+    )
+
+
+def _inherited[OutputT: BaseModel](
+    agent: Agent[OutputT], parent: RunContext | None, path: tuple[str, ...]
+) -> Agent[OutputT]:
+    """Hold a delegated run to its caller's grant: every guard of it, and no wider a reach.
+
+    Raises:
+        ScopeEscalationError: If the agent declares a tool its caller does not hold. It is
+            refused rather than narrowed away, because the difference is a wiring mistake
+            and a silent intersection is how nobody finds out about it.
+    """
+    grant = parent.grant if parent is not None else None
+    if grant is None:
+        return agent
+    beyond = tuple(sorted(set(agent.tools) - set(grant.tools)))
+    if beyond:
+        caller = "/".join(path[:-1]) or "its caller"
+        raise ScopeEscalationError(
+            f"{path[-1]!r} declares {', '.join(beyond)}, which {caller} does not hold",
+            requested=beyond,
+            path=path,
+        )
+    return agent.model_copy(
+        update={
+            "guardrails": _once(grant.guardrails, agent.guardrails),
+            "approval_required_tools": _once(
+                tuple(name for name in grant.approval_required_tools if name in agent.tools),
+                agent.approval_required_tools,
+            ),
+        }
+    )
+
+
+def _once(inherited: tuple[str, ...], own: tuple[str, ...]) -> tuple[str, ...]:
+    """Inherited first, then whatever is the agent's own, each name appearing once."""
+    return (*inherited, *(name for name in own if name not in inherited))
 
 
 def _text_of(message: Message) -> str:

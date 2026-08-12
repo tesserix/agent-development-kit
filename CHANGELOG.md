@@ -165,6 +165,19 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Delegation now traverses the same controls a tool call does. `RunGrant` records what a run
+  was allowed to do — its tools, which of them needed approval, and the guards it ran under
+  — on `Run.grant` and on the `RunContext` it hands to a sub-run, so a delegated run
+  inherits its caller's grant rather than falling back to its own configuration. A child is
+  subject to every guard its caller was, in the caller's order, and cannot drop one; a guard
+  its runner was never given is a `ConfigurationError` at the boundary. A tool the caller
+  never held is refused with `ScopeEscalationError`, recorded as the new
+  `RunEventKind.SCOPE_REFUSED` and terminal before a model is called, at any depth.
+  `handed_back(run)` returns a child's answer in the untrusted-data envelope a tool result
+  crosses in, and states the guard and code where a guard stopped the child.
+  **Stability:** additive — `grant` defaults to `None`, and a `RunContext` built by hand
+  narrows nothing. Documented in `docs/delegation.md`.
+
 - `GuardrailPipeline`, the declared order a run's safety checks are asked in, applied by the
   loop at both ends of a run with no path to the provider that skips it. A guard answers
   `GuardResult.allow()`, `.redacted(content, code=…)` — which the guards after it see and

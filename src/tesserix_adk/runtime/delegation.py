@@ -27,19 +27,24 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel
+
 from tesserix_adk.core.errors import (
     ConfigurationError,
     DelegationLimitError,
     ScopeEscalationError,
 )
-from tesserix_adk.core.run import RunContext, TenantContext
+from tesserix_adk.core.primitives import TextPart
+from tesserix_adk.core.run import RunContext, RunEventKind, RunState, TenantContext
+from tesserix_adk.runtime.results import ToolResult
 
 if TYPE_CHECKING:
     from collections.abc import Collection
 
     from tesserix_adk.core.protocols import Clock
+    from tesserix_adk.core.run import Run
 
-__all__ = ["Delegation", "DelegationLimits", "DelegationScope"]
+__all__ = ["Delegation", "DelegationLimits", "DelegationScope", "handed_back"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -337,6 +342,61 @@ class Delegation:
             mutations=wanted_mutations & self._scope.mutations,
             expires_at=self._scope.expires_at,
         )
+
+
+def handed_back[OutputT: BaseModel](run: Run[OutputT]) -> str:
+    """What a delegated run gives its caller, as data the caller's model may not obey.
+
+    A sub-agent's answer is model output that read whatever the sub-agent read. Pasted
+    into the caller's conversation bare, it is an instruction channel for whatever wrote
+    it, so it crosses the boundary in the same envelope a tool result crosses in.
+
+    Args:
+        run: The finished child run.
+
+    Returns:
+        An untrusted-data envelope carrying the child's answer, or, where the child did
+        not complete, why it stopped. A caller that cannot tell a refusal from an empty
+        answer reads one as the other.
+
+    Example:
+        >>> from tesserix_adk.core import Run, RunState
+        >>> stopped = Run(
+        ...     id="run_1", tenant="acme", agent_name="researcher",
+        ...     agent_version="1.0.0", model="claude-sonnet-5", state=RunState.FAILED,
+        ... )
+        >>> handed_back(stopped).splitlines()[0]
+        '<untrusted-data source="delegated_agent">'
+    """
+    return ToolResult(
+        tool=run.agent_name,
+        text=_said_by(run),
+        source="delegated_agent",
+        tenant=run.tenant,
+    ).rendered()
+
+
+def _said_by[OutputT: BaseModel](run: Run[OutputT]) -> str:
+    """The child's answer, or the reason there is not one."""
+    if run.state is RunState.COMPLETED:
+        return next(
+            (
+                "".join(part.text for part in message.content if isinstance(part, TextPart))
+                for message in reversed(run.messages)
+                if message.role == "assistant"
+            ),
+            "",
+        )
+    refusal = next(
+        (event for event in reversed(run.events) if event.kind is RunEventKind.GUARDRAIL_REFUSAL),
+        None,
+    )
+    if refusal is not None:
+        return (
+            f"{run.agent_name} was stopped by guardrail {refusal.name}: {refusal.detail}; "
+            f"it produced no answer"
+        )
+    return f"{run.agent_name} did not finish: the run ended {run.state}"
 
 
 def _built(
