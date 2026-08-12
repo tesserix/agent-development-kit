@@ -18,6 +18,7 @@ from tesserix_adk.core import (
     CancelledError,
     ConcurrencyConfig,
     DeadlineConfig,
+    GuardResult,
     Run,
     RunEventKind,
     RunState,
@@ -45,17 +46,17 @@ class StallingGuardrail:
     """A guardrail that never reaches a verdict, so a test can cancel one mid-check."""
 
     def __init__(self, name: str = "toxicity") -> None:
-        self._name = name
+        self.name = name
         self.entered = asyncio.Event()
 
-    @property
-    def name(self) -> str:
-        return self._name
-
-    async def check(self, subject: object) -> bool:  # noqa: ARG002 — it never gets that far
+    async def check_input(self, content: str) -> GuardResult:
+        del content
         self.entered.set()
         await asyncio.Event().wait()
-        return True
+        return GuardResult.allow()
+
+    async def check_output(self, content: str) -> GuardResult:
+        return await self.check_input(content)
 
 
 def agent(**overrides: object) -> Agent:

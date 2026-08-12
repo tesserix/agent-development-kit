@@ -30,6 +30,7 @@ from tesserix_adk.core.errors import (
     BudgetUnavailableError,
     ToolExecutionError,
 )
+from tesserix_adk.core.guards import GuardResult
 from tesserix_adk.core.primitives import TextPart, Usage
 from tesserix_adk.core.streaming import (
     ReasoningDelta,
@@ -555,20 +556,30 @@ class FakeToolRegistry:
 
 
 class FakeGuardrail:
-    """A guardrail with a fixed verdict.
+    """A guardrail with a fixed verdict on both stages.
 
     Args:
         name: Its recorded name.
         allow: Whether it permits what it is shown.
+        redacts: What it hands on instead, for the redaction path. Overrides `allow`.
         raises: An exception to raise instead of deciding, for the fail-closed path.
+        code: The machine-readable reason it gives when it blocks or redacts.
     """
 
     def __init__(
-        self, name: str = "fake", *, allow: bool = True, raises: Exception | None = None
+        self,
+        name: str = "fake",
+        *,
+        allow: bool = True,
+        redacts: str | None = None,
+        raises: Exception | None = None,
+        code: str = "fake_refusal",
     ) -> None:
         self._name = name
         self._allow = allow
+        self._redacts = redacts
         self._raises = raises
+        self._code = code
         self.checked: list[Any] = []
 
     @property
@@ -576,12 +587,24 @@ class FakeGuardrail:
         """The guardrail name."""
         return self._name
 
-    async def check(self, subject: Any) -> Any:
-        """Return the fixed verdict, or raise the configured failure."""
-        self.checked.append(subject)
+    async def check_input(self, content: str) -> GuardResult:
+        """Return the fixed verdict about what is going to the model."""
+        return self._verdict(content)
+
+    async def check_output(self, content: str) -> GuardResult:
+        """Return the same fixed verdict about what is coming back."""
+        return self._verdict(content)
+
+    def _verdict(self, content: str) -> GuardResult:
+        """One answer, whichever stage asked."""
+        self.checked.append(content)
         if self._raises is not None:
             raise self._raises
-        return self._allow
+        if self._redacts is not None:
+            return GuardResult.redacted(self._redacts, code=self._code)
+        if not self._allow:
+            return GuardResult.blocked(code=self._code)
+        return GuardResult.allow()
 
 
 class FakeSecrets:

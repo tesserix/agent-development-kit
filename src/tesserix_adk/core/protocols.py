@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
     from tesserix_adk.core.budget import BudgetDecision, BudgetLimits, ResolvedBudget
     from tesserix_adk.core.capabilities import ModelCapabilities
+    from tesserix_adk.core.guards import GuardResult
     from tesserix_adk.core.primitives import Message, Usage
     from tesserix_adk.core.provider import ModelRequest, ModelResponse
     from tesserix_adk.core.streaming import StreamEvent
@@ -212,24 +213,33 @@ class KeyValueStore(Protocol):
 
 @runtime_checkable
 class Guardrail(Protocol):
-    """An inline check on the model or tool call path.
+    """An inline check on what enters a run and on what leaves it.
 
-    Guardrails fail closed: if a check cannot be evaluated, the call does not happen.
-    This is the opposite of `Tracer`, and the distinction is deliberate.
+    Guardrails fail closed: a check that could not be evaluated is not a check that
+    passed, and the content does not continue. This is the opposite of `Tracer`, and the
+    distinction is deliberate.
+
+    Both stages are required members so that a pipeline can be told what a guard covers
+    without calling it. `tesserix_adk.guardrails.Guard` implements both as allow, so a
+    guard that cares about one stage overrides one method.
     """
 
     @property
     def name(self) -> str:
-        """Stable identifier, recorded when the guardrail trips."""
+        """Stable identifier, recorded on every verdict."""
         ...
 
-    async def check(self, subject: Any) -> Any:
-        """Evaluate `subject` and return the decision.
+    async def check_input(self, content: str) -> GuardResult:
+        """Decide about content on its way to the model.
 
         Raises:
-            GuardrailEvaluationError: If the check cannot be evaluated, which the
-                caller must treat as a denial rather than a pass.
+            Exception: Anything raised here is treated as a refusal by the caller, never
+                as a pass.
         """
+        ...
+
+    async def check_output(self, content: str) -> GuardResult:
+        """Decide about content on its way out of the run, under the same rule."""
         ...
 
 

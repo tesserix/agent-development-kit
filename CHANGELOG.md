@@ -10,6 +10,17 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Breaking changes
 
+- The `Guardrail` protocol splits `check(subject: Any) -> Any` into `check_input` and
+  `check_output`, both taking `str` and returning a `GuardResult`. One method could not say
+  which end of the run a guard covered, so a pipeline had to call it to find out, and an
+  `Any` verdict left "allowed" indistinguishable from "returned something unreadable" —
+  exactly the case that has to fail closed. `GuardrailViolationError` now inherits
+  `GuardrailError` and takes keyword-only `code`, `stage`, `guard` and `detail`.
+  **Stability:** breaking for anyone implementing `Guardrail` — subclass
+  `tesserix_adk.guardrails.Guard` and override the stage the check is about, returning
+  `GuardResult.allow()` / `.redacted(...)` / `.blocked(...)` instead of raising. Catching
+  `AdkError` is unaffected. Documented in `docs/guardrails.md`.
+
 - `MemoryStore.erase` returns an `ErasureReceipt` rather than an `int`. A number cannot
   say which kinds went, which indices were spoken to, whether the erasure finished, or
   when, and a right-to-erasure request answered with `5` is not answered. **Stability:**
@@ -153,6 +164,20 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   `examples/providers.py`.
 
 ### Added
+
+- `GuardrailPipeline`, the declared order a run's safety checks are asked in, applied by the
+  loop at both ends of a run with no path to the provider that skips it. A guard answers
+  `GuardResult.allow()`, `.redacted(content, code=…)` — which the guards after it see and
+  which is what comes back — or `.blocked(code=…)`, and the first block ends the pipeline,
+  so where two guards disagree the more restrictive verdict wins deterministically. A guard
+  that raises, times out or answers with something unreadable raises
+  `GuardrailEvaluationError` rather than being taken as consent; it shares a `GuardrailError`
+  base with `GuardrailViolationError`, and neither is retryable. Cancelling a check is not a
+  verdict. In a run, a refusal ends it as `FAILED` with a `guardrail_refusal` event and a
+  redaction records `guardrail_redaction`; each verdict is a `GuardrailDecision` progress
+  event carrying the guard, the stage and the decision — never the content. `check_stream`
+  buffers a streamed answer rather than emitting the first half of something about to be
+  blocked. **Stability:** additive. Documented in `docs/guardrails.md`.
 
 - `Delegation`, which bounds how far a run may hand work onward and narrows what each
   sub-agent holds. `DelegationLimits` caps depth, one agent's fan-out and the whole run's

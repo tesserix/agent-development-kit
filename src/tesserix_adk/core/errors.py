@@ -37,6 +37,8 @@ __all__ = [
     "FallbackExhaustedError",
     "FallbackUnsafeError",
     "FanOutLimitError",
+    "GuardrailError",
+    "GuardrailEvaluationError",
     "GuardrailViolationError",
     "HookEvaluationError",
     "HookRefusedError",
@@ -902,8 +904,76 @@ class ToolResultError(AdkError):
         )
 
 
-class GuardrailViolationError(AdkError):
-    """Raised when a guardrail rejects content. The step stops; it does not degrade."""
+class GuardrailError(AdkError):
+    """Base for what a guard decided and for what it could not decide.
+
+    Both stop the step, and a caller that cannot tell them apart is a caller that will
+    eventually retry a refusal. Catch this to stop the run either way; catch the subclass
+    to tell a decision from an outage.
+    """
+
+
+class GuardrailViolationError(GuardrailError):
+    """Raised when a guardrail rejects content. The step stops; it does not degrade.
+
+    Args:
+        code: The machine-readable reason the guard gave, so a caller matches on why
+            rather than on a sentence that will be reworded.
+        stage: Where it happened — `GuardStage.INPUT` or `GuardStage.OUTPUT`.
+        guard: Which guard decided it.
+        detail: A short, redacted explanation. Never the offending content, which is the
+            one thing an error carrying it would put in every log that catches it.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        code: str = "",
+        stage: str = "",
+        guard: str = "",
+        detail: str = "",
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.code = code
+        self.stage = stage
+        self.guard = guard
+        self.detail = detail
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={"code": code, "stage": str(stage), "guard": guard},
+        )
+
+
+class GuardrailEvaluationError(GuardrailError):
+    """Raised when a guard could not reach a verdict, which is not consent.
+
+    Args:
+        guard: Which guard was asked.
+        stage: Where it was asked.
+        reason: What went wrong — `raised`, `timeout` or `unreadable`.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        guard: str = "",
+        stage: str = "",
+        reason: str = "raised",
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.guard = guard
+        self.stage = stage
+        self.reason = reason
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={"guard": guard, "stage": str(stage), "reason": reason},
+        )
 
 
 class BudgetExceededError(AdkError):

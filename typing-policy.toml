@@ -68,17 +68,6 @@ owner = "@sam123ben"
 review_by = 2026-11-07
 
 [[any]]
-symbol = "tesserix_adk.core.protocols.Guardrail"
-kind = "provisional"
-removed_by = "#155"
-reason = """
-A guardrail inspects whatever it was pointed at — a prompt, a response, a tool argument —
-so its subject is a union nobody has enumerated yet. The guardrails epic defines it.
-"""
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
 symbol = "tesserix_adk.core.protocols.KeyValueStore"
 kind = "json"
 reason = """
@@ -208,14 +197,6 @@ symbol = "tesserix_adk.testing.fakes.FakeToolRegistry"
 kind = "provisional"
 removed_by = "#130"
 reason = "Mirrors ToolRegistry, and gains the real types when that protocol does."
-owner = "@sam123ben"
-review_by = 2026-11-07
-
-[[any]]
-symbol = "tesserix_adk.testing.fakes.FakeGuardrail"
-kind = "provisional"
-removed_by = "#155"
-reason = "Mirrors Guardrail, and gains the real subject type when that protocol does."
 owner = "@sam123ben"
 review_by = 2026-11-07
 

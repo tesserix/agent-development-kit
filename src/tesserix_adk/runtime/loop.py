@@ -20,7 +20,7 @@ import hashlib
 import json
 import time
 import uuid
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from types import MappingProxyType
@@ -54,6 +54,10 @@ from tesserix_adk.core import (
     FallbackExhaustedError,
     FallbackUnsafeError,
     FanOutLimitError,
+    GuardrailEvaluationError,
+    GuardrailPipeline,
+    GuardrailViolationError,
+    GuardStage,
     HookAction,
     HookChain,
     HookDecision,
@@ -135,7 +139,7 @@ from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Coroutine, Iterable, Iterator, Mapping, Sequence
     from random import Random
 
     from tesserix_adk.core import (
@@ -193,6 +197,39 @@ class SystemClock:
 
 
 _NO_REFUSALS: Mapping[str, ToolRefusal] = MappingProxyType({})
+
+
+class _GuardProgress:
+    """Turns the pipeline's verdicts into progress events, so a watcher sees each one.
+
+    Only the guard, the stage and what it decided: the content a guard objected to is the
+    one thing that must not travel to a watcher that may be logging it.
+    """
+
+    def __init__(self, emit: Callable[[ProgressEvent], None]) -> None:
+        self._emit = emit
+
+    @contextmanager
+    def span(self, name: str, **attributes: object) -> Iterator[None]:
+        """The pipeline records events rather than spans; this is here for the protocol."""
+        del name, attributes
+        yield
+
+    def event(self, name: str, **attributes: object) -> None:
+        """Report one guard's verdict."""
+        if name != "guardrail":
+            return
+        verdict = str(attributes.get("verdict", ""))
+        detail = str(attributes.get("code", ""))
+        if verdict == "unevaluated":
+            detail = "could not evaluate"
+        self._emit(
+            GuardrailDecision(
+                guardrail=str(attributes.get("guard", "")),
+                allowed=verdict in {"allow", "redact"},
+                detail=detail,
+            )
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -717,7 +754,7 @@ class AgentRunner:
                 if run.state.is_terminal:
                     return run
 
-                run = await self._check_guardrails(run, agent, response, bounds)
+                run, response = await self._check_guardrails(run, agent, response, messages, bounds)
                 run, done = await self._advance(run, agent, response, messages, bounds)
                 if done:
                     return run
@@ -740,7 +777,7 @@ class AgentRunner:
             run, agent, HookPoint.BEFORE_PROMPT_ASSEMBLY, bounds, content=user_input
         )
         self._stop_on_refusal(run, decision)
-        return run, asked
+        return await self._guarded(run, agent, asked, bounds, stage=GuardStage.INPUT)
 
     async def _before_the_call(
         self, run: Run[Any], agent: Agent[Any], messages: list[Message], bounds: _Bounds
@@ -1492,54 +1529,81 @@ class AgentRunner:
         if response.content:
             # A field of a structured answer can hold retrieved text; echoed back bare it
             # becomes instruction on the next turn, which is the injection this prevents.
-            echoed = (
-                response.content
-                if agent.free_text
-                else wrap_untrusted(response.content, source="model_output")
-            )
+            echoed = self._echoed(agent, response.content)
             messages.append(Message(role="assistant", content=[TextPart(text=echoed)]))
         return _carrying(run, messages)
 
     async def _check_guardrails(
-        self, run: Run[Any], agent: Agent[Any], response: ModelResponse, bounds: _Bounds
-    ) -> Run[Any]:
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        response: ModelResponse,
+        messages: list[Message],
+        bounds: _Bounds,
+    ) -> tuple[Run[Any], ModelResponse]:
+        """What came back is checked once, in the agent's declared order, before it is used."""
+        if not response.content:
+            return run, response
+        run, checked = await self._guarded(
+            run, agent, response.content, bounds, stage=GuardStage.OUTPUT
+        )
+        if checked == response.content:
+            return run, response
+        messages[-1] = _retexted(messages[-1], self._echoed(agent, checked))
+        run = _carrying(run, messages)
+        return run, response.model_copy(update={"content": checked})
+
+    async def _guarded(
+        self, run: Run[Any], agent: Agent[Any], content: str, bounds: _Bounds, *, stage: GuardStage
+    ) -> tuple[Run[Any], str]:
         """Guardrails fail closed: a check that did not run is not a check that passed."""
-        for name in agent.guardrails:
-            guardrail = self._guardrails[name]
-            try:
-                verdict = await self._bounded(
-                    guardrail.check(response.content),
-                    limit=self._limit(bounds, None),
-                    bounds=bounds,
-                    what=f"guardrail {name}",
-                )
-            except _Aborted as abort:
-                raise self._cancelled(run, abort, name=name) from None
-            except Exception as failure:
-                self._emit(
-                    GuardrailDecision(
-                        guardrail=name, allowed=False, detail=f"could not evaluate: {failure}"
+        if not agent.guardrails:
+            return run, content
+        pipeline = GuardrailPipeline(
+            [self._guardrails[name] for name in agent.guardrails],
+            timeout_seconds=None,
+            tracer=_GuardProgress(self._emit),
+        )
+        check = pipeline.check_input if stage is GuardStage.INPUT else pipeline.check_output
+        try:
+            checked = await self._bounded(
+                check(content),
+                limit=self._limit(bounds, None),
+                bounds=bounds,
+                what=f"guardrails on the {stage}",
+            )
+        except _Aborted as abort:
+            raise self._cancelled(run, abort, name="guardrails") from None
+        except GuardrailViolationError as refused:
+            raise _Terminal(
+                run.record_event(
+                    self._event(
+                        RunEventKind.GUARDRAIL_REFUSAL, name=refused.guard, detail=refused.code
                     )
-                )
-                raise _Terminal(
-                    run.record_event(
-                        self._event(
-                            RunEventKind.GUARDRAIL_REFUSAL,
-                            name=name,
-                            detail=f"could not evaluate: {failure}",
-                        )
-                    ),
-                    RunState.FAILED,
-                    f"guardrail {name} could not be evaluated",
-                ) from failure
-            self._emit(GuardrailDecision(guardrail=name, allowed=bool(verdict)))
-            if not verdict:
-                raise _Terminal(
-                    run.record_event(self._event(RunEventKind.GUARDRAIL_REFUSAL, name=name)),
-                    RunState.FAILED,
-                    f"guardrail {name} refused the response",
-                )
-        return run
+                ),
+                RunState.FAILED,
+                f"guardrail {refused.guard} refused the {stage}",
+            ) from None
+        except GuardrailEvaluationError as failure:
+            raise _Terminal(
+                run.record_event(
+                    self._event(
+                        RunEventKind.GUARDRAIL_REFUSAL,
+                        name=failure.guard,
+                        detail=f"could not evaluate: {failure.reason}",
+                    )
+                ),
+                RunState.FAILED,
+                f"guardrail {failure.guard} could not be evaluated",
+            ) from failure
+        if checked != content:
+            run = run.record_event(self._event(RunEventKind.GUARDRAIL_REDACTION, name=str(stage)))
+        return run, checked
+
+    @staticmethod
+    def _echoed(agent: Agent[Any], content: str) -> str:
+        """What the model said, as the next turn is allowed to read it."""
+        return content if agent.free_text else wrap_untrusted(content, source="model_output")
 
     async def _advance(
         self,

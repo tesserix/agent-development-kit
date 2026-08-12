@@ -159,8 +159,14 @@ tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, re
 tesserix_adk.core.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
 tesserix_adk.core.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
-tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
-tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(AdkError)
+tesserix_adk.core.GuardResult :: class GuardResult(object)
+tesserix_adk.core.GuardStage :: class GuardStage(StrEnum)
+tesserix_adk.core.GuardVerdict :: class GuardVerdict(StrEnum)
+tesserix_adk.core.Guardrail :: class Guardrail(Protocol) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
+tesserix_adk.core.GuardrailError :: class GuardrailError(AdkError)
+tesserix_adk.core.GuardrailEvaluationError :: class GuardrailEvaluationError(GuardrailError)
+tesserix_adk.core.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
+tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(GuardrailError)
 tesserix_adk.core.HANDLE_PREFIX :: HANDLE_PREFIX: str
 tesserix_adk.core.Hook :: class Hook(Protocol) {on(self, subject: 'HookSubject') -> 'HookDecision'}
 tesserix_adk.core.HookAction :: class HookAction(StrEnum)
@@ -378,7 +384,9 @@ tesserix_adk.core.errors.ExtractionError :: class ExtractionError(AdkError)
 tesserix_adk.core.errors.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
 tesserix_adk.core.errors.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.errors.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
-tesserix_adk.core.errors.GuardrailViolationError :: class GuardrailViolationError(AdkError)
+tesserix_adk.core.errors.GuardrailError :: class GuardrailError(AdkError)
+tesserix_adk.core.errors.GuardrailEvaluationError :: class GuardrailEvaluationError(GuardrailError)
+tesserix_adk.core.errors.GuardrailViolationError :: class GuardrailViolationError(GuardrailError)
 tesserix_adk.core.errors.HookEvaluationError :: class HookEvaluationError(AdkError)
 tesserix_adk.core.errors.HookRefusedError :: class HookRefusedError(AdkError)
 tesserix_adk.core.errors.HookRegistrationError :: class HookRegistrationError(ConfigurationError)
@@ -429,6 +437,10 @@ tesserix_adk.core.extras.require_extra :: def require_extra(extra: 'str', module
 tesserix_adk.core.fallback.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'; refuse_the_excluded(self) -> 'None'}
 tesserix_adk.core.fallback.fallback_eligible :: def fallback_eligible(failure: 'BaseException') -> 'bool'
 tesserix_adk.core.fallback_eligible :: def fallback_eligible(failure: 'BaseException') -> 'bool'
+tesserix_adk.core.guards.GuardResult :: class GuardResult(object)
+tesserix_adk.core.guards.GuardStage :: class GuardStage(StrEnum)
+tesserix_adk.core.guards.GuardVerdict :: class GuardVerdict(StrEnum)
+tesserix_adk.core.guards.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
 tesserix_adk.core.hooks.ApprovalDecision :: class ApprovalDecision(AdkModel)
 tesserix_adk.core.hooks.ApprovalDenial :: class ApprovalDenial(StrEnum)
 tesserix_adk.core.hooks.ApprovalGate :: class ApprovalGate(Protocol) {request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
@@ -479,7 +491,7 @@ tesserix_adk.core.primitives.deduplicate :: def deduplicate(calls: 'list[ToolCal
 tesserix_adk.core.protocols.BudgetPolicy :: class BudgetPolicy(Protocol) {check(self) -> 'BudgetDecision'; child(self) -> 'BudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.protocols.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.core.protocols.DeclaresEmulation :: class DeclaresEmulation(Protocol)
-tesserix_adk.core.protocols.Guardrail :: class Guardrail(Protocol) {check(self, subject: 'Any') -> 'Any'}
+tesserix_adk.core.protocols.Guardrail :: class Guardrail(Protocol) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.core.protocols.IdFactory :: class IdFactory(Protocol)
 tesserix_adk.core.protocols.KeyValueStore :: class KeyValueStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.core.protocols.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
@@ -540,6 +552,12 @@ tesserix_adk.core.trust.TrustBoundary :: class TrustBoundary(AdkModel) {admits(s
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
+tesserix_adk.guardrails.Guard :: class Guard(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
+tesserix_adk.guardrails.GuardResult :: class GuardResult(object)
+tesserix_adk.guardrails.GuardStage :: class GuardStage(StrEnum)
+tesserix_adk.guardrails.GuardVerdict :: class GuardVerdict(StrEnum)
+tesserix_adk.guardrails.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
+tesserix_adk.guardrails.base.Guard :: class Guard(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.memory.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
 tesserix_adk.memory.Belief :: class Belief(AdkModel)
 tesserix_adk.memory.CompactionOutcome :: class CompactionOutcome(AdkModel)
@@ -964,7 +982,7 @@ tesserix_adk.testing.CassetteVersionError :: class CassetteVersionError(AdkError
 tesserix_adk.testing.ClockConformance :: class ClockConformance(ABC) {make_clock(self) -> 'Clock'; test_now_does_not_go_backwards(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_sleep_does_not_move_time_backwards(self) -> 'None'}
 tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; set(self, when: 'float') -> 'None'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
-tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
+tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.testing.FakeKeyValueStore :: class FakeKeyValueStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.testing.FakeMeter :: class FakeMeter(object) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'; total(self, name: 'str', **dimensions: 'str') -> 'float'}
 tesserix_adk.testing.FakeSecrets :: class FakeSecrets(object) {secret(self, name: 'str') -> 'str | None'}
@@ -1034,7 +1052,7 @@ tesserix_adk.testing.fakes.BudgetExceededError :: class BudgetExceededError(AdkE
 tesserix_adk.testing.fakes.CAPABLE :: CAPABLE: ModelCapabilities
 tesserix_adk.testing.fakes.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.testing.fakes.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; set(self, when: 'float') -> 'None'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
-tesserix_adk.testing.fakes.FakeGuardrail :: class FakeGuardrail(object) {check(self, subject: 'Any') -> 'Any'}
+tesserix_adk.testing.fakes.FakeGuardrail :: class FakeGuardrail(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.testing.fakes.FakeKeyValueStore :: class FakeKeyValueStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.testing.fakes.FakeMeter :: class FakeMeter(object) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'; total(self, name: 'str', **dimensions: 'str') -> 'float'}
 tesserix_adk.testing.fakes.FakeSecrets :: class FakeSecrets(object) {secret(self, name: 'str') -> 'str | None'}

@@ -86,6 +86,8 @@ from tesserix_adk.core.errors import (
     FallbackExhaustedError,
     FallbackUnsafeError,
     FanOutLimitError,
+    GuardrailError,
+    GuardrailEvaluationError,
     GuardrailViolationError,
     HookEvaluationError,
     HookRefusedError,
@@ -136,6 +138,7 @@ from tesserix_adk.core.errors import (
 )
 from tesserix_adk.core.extras import require_extra
 from tesserix_adk.core.fallback import FallbackChain, fallback_eligible
+from tesserix_adk.core.guards import GuardrailPipeline, GuardResult, GuardStage, GuardVerdict
 from tesserix_adk.core.hooks import (
     ApprovalDecision,
     ApprovalDenial,
@@ -326,7 +329,13 @@ __all__ = [
     "FallbackExhaustedError",
     "FallbackUnsafeError",
     "FanOutLimitError",
+    "GuardResult",
+    "GuardStage",
+    "GuardVerdict",
     "Guardrail",
+    "GuardrailError",
+    "GuardrailEvaluationError",
+    "GuardrailPipeline",
     "GuardrailViolationError",
     "Hook",
     "HookAction",

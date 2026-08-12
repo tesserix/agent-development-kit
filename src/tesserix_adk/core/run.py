@@ -121,6 +121,7 @@ class RunEventKind(StrEnum):
     APPROVAL_GRANTED = "approval_granted"
     APPROVAL_DENIED = "approval_denied"
     GUARDRAIL_REFUSAL = "guardrail_refusal"
+    GUARDRAIL_REDACTION = "guardrail_redaction"
     OUTPUT_UNWRAPPED = "output_unwrapped"
     OUTPUT_VALIDATED = "output_validated"
     SCHEMA_VIOLATION = "schema_violation"

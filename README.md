@@ -119,6 +119,7 @@ code lands here as the kit is built.
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | Delegation — depth, fan-out and run ceilings, scope narrowing, escalation refused, expiry | [`docs/delegation.md`](docs/delegation.md) |
 | Dispatch — declared dependencies, derived schedule, cycles refused at construction, contained failure | [`docs/dispatch.md`](docs/dispatch.md) |
+| Guardrails — declared order, redaction that carries, failing closed on a guard that cannot answer | [`docs/guardrails.md`](docs/guardrails.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
 | Tool concurrency — bounded fan-out, per-tool and per-tenant lanes, per-call failure | [`docs/tool-concurrency.md`](docs/tool-concurrency.md) |
 | Connection pooling — client reuse across runs, credential rotation, bounded exhaustion | [`docs/connection-pooling.md`](docs/connection-pooling.md) |

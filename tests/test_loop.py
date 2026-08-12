@@ -25,7 +25,8 @@ from tesserix_adk.core import (
     ToolFailurePolicy,
     Usage,
 )
-from tesserix_adk.runtime import AgentRunner, ModelResponse
+from tesserix_adk.runtime import AgentRunner, ModelResponse, ProgressEvent
+from tesserix_adk.runtime.loop import _GuardProgress
 from tesserix_adk.testing import (
     FakeBudgetPolicy,
     FakeClock,
@@ -348,7 +349,37 @@ class TestTerminalStates:
             agent(guardrails=("no_pii", "no_prompt_leak")),
         )
         assert run.state is RunState.COMPLETED
-        assert second.checked == ["Kyoto, four nights."]
+        assert second.checked == ["plan a trip", "Kyoto, four nights."]
+
+    async def test_a_redacted_answer_is_what_the_conversation_carries(self) -> None:
+        """A redaction the next turn cannot see is a redaction that did not happen."""
+        masked = FakeGuardrail("no_pii", redacts="the number is ****", code="pii_masked")
+        run = await start(
+            runner(answer("the number is 4111 1111"), guardrails={"no_pii": masked}),
+            agent(guardrails=("no_pii",)),
+        )
+        assert run.state is RunState.COMPLETED
+        assert run.messages[-1].content[0].text == "the number is ****"  # type: ignore[union-attr]
+        assert RunEventKind.GUARDRAIL_REDACTION in [event.kind for event in run.events]
+
+    async def test_a_turn_that_only_calls_a_tool_has_no_answer_to_check(self) -> None:
+        """Handing an empty answer to a guard invites a verdict on nothing."""
+        guard = FakeGuardrail("no_pii")
+        calling = ModelResponse(
+            tool_calls=(ToolCall(id="call_1", name="search", arguments={"q": "Kyoto"}),),
+            usage=Usage(input_tokens=1, output_tokens=1),
+        )
+        run = await start(
+            runner(
+                calling,
+                answer(),
+                tools=FakeToolRegistry({"search": lambda q: f"3 results for {q}"}),
+                guardrails={"no_pii": guard},
+            ),
+            agent(tools=("search",), guardrails=("no_pii",)),
+        )
+        assert run.state is RunState.COMPLETED
+        assert guard.checked == ["plan a trip", "Kyoto, four nights."]
 
     async def test_a_run_that_outlives_its_script_fails_rather_than_hanging(self) -> None:
         """The fake refuses to invent a response, so a runaway loop is visible immediately."""
@@ -426,3 +457,23 @@ class TestFailingClosed:
         run = runner(asyncio.CancelledError())
         with pytest.raises(asyncio.CancelledError):
             await start(run, agent())
+
+
+class TestTheGuardProgressAdapter:
+    """Verdicts reach a watcher as progress events; nothing else the pipeline says does."""
+
+    def test_a_span_reports_nothing_because_a_verdict_is_an_event(self) -> None:
+        seen: list[ProgressEvent] = []
+
+        with _GuardProgress(seen.append).span("guardrails", stage="input"):
+            pass
+
+        assert seen == []
+
+    def test_an_event_that_is_not_a_verdict_is_not_reported_as_one(self) -> None:
+        """A watcher reading a decision that was never made would act on it."""
+        seen: list[ProgressEvent] = []
+
+        _GuardProgress(seen.append).event("something_else", guard="no_pii")
+
+        assert seen == []
