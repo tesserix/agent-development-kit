@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from tesserix_adk.core.capabilities import Capability, ModelCapabilities
+from tesserix_adk.core.checkpoint import Checkpoint, CheckpointStore, PendingCall
 from tesserix_adk.core.errors import (
     BudgetExceededError,
     BudgetUnavailableError,
@@ -73,6 +74,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "BudgetPolicyConformance",
+    "CheckpointStoreConformance",
     "ClockConformance",
     "IdempotencyStoreConformance",
     "KeyValueStoreConformance",
@@ -881,3 +883,104 @@ class StateStoreConformance(ABC):
         store = self.make_store()
         await store.put_run(_run("r1", tenant="one"))
         assert (await store.list_runs(StateQuery(tenant="two"))).records == ()
+
+
+def _checkpoint(
+    run_id: str = "r1",
+    *,
+    tenant: str = "conformance",
+    iterations: int = 0,
+    messages: tuple[Message, ...] = (),
+    pending: tuple[PendingCall, ...] = (),
+) -> Checkpoint:
+    """A checkpoint with the fields a store has to round-trip."""
+    return Checkpoint(
+        run_id=run_id,
+        tenant=tenant,
+        agent_name="planner",
+        iterations=iterations,
+        messages=messages,
+        pending=pending,
+    )
+
+
+class CheckpointStoreConformance(ABC):
+    """Behaviour every `CheckpointStore` implementation must exhibit.
+
+    A store that keeps an older frontier alongside the newest one resumes a run into work
+    it already did; one that leaks across tenants hands a run's conversation to somebody
+    else. The guarantees are one checkpoint per run, last write wins, and tenant isolation.
+    """
+
+    @abstractmethod
+    def make_store(self) -> CheckpointStore:
+        """Return a fresh, empty store under test."""
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_store(), CheckpointStore)
+
+    async def test_a_run_that_was_never_checkpointed_is_none(self) -> None:
+        assert await self.make_store().latest("absent", tenant="conformance") is None
+
+    async def test_a_written_checkpoint_comes_back(self) -> None:
+        store = self.make_store()
+        await store.put(_checkpoint(iterations=3))
+        read = await store.latest("r1", tenant="conformance")
+        assert read is not None
+        assert read.iterations == 3
+
+    async def test_only_the_newest_frontier_is_kept(self) -> None:
+        """An older one is work already done, and resuming from it repeats it."""
+        store = self.make_store()
+        await store.put(_checkpoint(iterations=1))
+        await store.put(_checkpoint(iterations=2))
+        read = await store.latest("r1", tenant="conformance")
+        assert read is not None
+        assert read.iterations == 2
+
+    async def test_the_conversation_survives_a_round_trip(self) -> None:
+        store = self.make_store()
+        messages = (Message(role="user", content=[TextPart(text="book it")]),)
+        await store.put(_checkpoint(messages=messages))
+        read = await store.latest("r1", tenant="conformance")
+        assert read is not None
+        assert read.messages == messages
+
+    async def test_an_outstanding_call_survives_a_round_trip(self) -> None:
+        """Without it a resume cannot tell which calls it still has to account for."""
+        store = self.make_store()
+        call = ToolCall(id="c1", name="book", arguments={"flight": "BA117"})
+        pending = (PendingCall(call=call, idempotency_key="k1", dispatched=True),)
+        await store.put(_checkpoint(pending=pending))
+        read = await store.latest("r1", tenant="conformance")
+        assert read is not None
+        assert read.pending[0].idempotency_key == "k1"
+        assert read.pending[0].dispatched is True
+
+    async def test_forgetting_removes_the_frontier(self) -> None:
+        store = self.make_store()
+        await store.put(_checkpoint())
+        await store.forget("r1", tenant="conformance")
+        assert await store.latest("r1", tenant="conformance") is None
+
+    async def test_forgetting_a_run_that_was_never_checkpointed_is_not_an_error(self) -> None:
+        await self.make_store().forget("absent", tenant="conformance")
+
+    async def test_two_runs_do_not_share_a_frontier(self) -> None:
+        store = self.make_store()
+        await store.put(_checkpoint("r1", iterations=1))
+        await store.put(_checkpoint("r2", iterations=2))
+        read = await store.latest("r1", tenant="conformance")
+        assert read is not None
+        assert read.iterations == 1
+
+    async def test_one_tenant_cannot_read_another_s_checkpoint(self) -> None:
+        store = self.make_store()
+        await store.put(_checkpoint("r1", tenant="one"))
+        assert await store.latest("r1", tenant="two") is None
+
+    async def test_forgetting_one_tenant_s_run_leaves_another_s(self) -> None:
+        store = self.make_store()
+        await store.put(_checkpoint("r1", tenant="one"))
+        await store.forget("r1", tenant="two")
+        assert await store.latest("r1", tenant="one") is not None

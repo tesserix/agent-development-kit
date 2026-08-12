@@ -13,6 +13,7 @@ from tesserix_adk.testing.cassette import (
 )
 from tesserix_adk.testing.conformance import (
     BudgetPolicyConformance,
+    CheckpointStoreConformance,
     ClockConformance,
     IdempotencyStoreConformance,
     KeyValueStoreConformance,
@@ -62,6 +63,7 @@ __all__ = [
     "Cassette",
     "CassetteMissError",
     "CassetteVersionError",
+    "CheckpointStoreConformance",
     "ClockConformance",
     "FakeBudgetPolicy",
     "FakeClock",

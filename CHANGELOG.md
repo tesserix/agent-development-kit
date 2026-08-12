@@ -165,6 +165,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Run checkpointing and resume. A run that dies at iteration nine no longer restarts at
+  zero: `Checkpointer` writes the run's frontier at boundaries where what has happened and
+  what has not is unambiguous, and `AgentRunner.resume` carries it on from there. Each
+  outstanding call is resolved against the idempotency record rather than guessed at — a
+  recorded outcome is replayed, a key nobody holds is dispatched, and a key held in flight
+  by a process that is gone raises the deliberately non-retryable
+  `IndeterminateToolCallError`, because a retry is the duplicate booking this exists to
+  prevent. A payload over the cap is refused rather than truncated, and a checkpoint that
+  could not be written never fails the live run. Two workers resuming one run resolve to
+  one via an at-most-once claim. `MemoryCheckpointStore` and `CheckpointStoreConformance`
+  ship with it. **Stability:** additive. Documented in `docs/checkpointing.md`.
+
 - `StateStore` gives session and run state one shape, so runs can survive the process that
   started them. Every write states the version it read and commits at that version plus one
   or raises `StateConflictError` with both numbers, which makes a lost update between two

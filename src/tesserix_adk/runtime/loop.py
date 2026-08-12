@@ -44,6 +44,8 @@ from tesserix_adk.core import (
     BudgetUnavailableError,
     CancelledError,
     Capability,
+    Checkpoint,
+    CheckpointBoundary,
     ConcurrencyConfig,
     ConfigurationError,
     ContextWindowExceededError,
@@ -90,6 +92,7 @@ from tesserix_adk.core import (
     SchemaViolationError,
     ScopedLimits,
     ScopeEscalationError,
+    StateNotFoundError,
     TaskClass,
     TextPart,
     ToolArgumentValidationError,
@@ -117,6 +120,12 @@ from tesserix_adk.core.streaming import TextDelta as _StreamedText
 from tesserix_adk.runtime.approvals import ApprovalLedger
 from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
+from tesserix_adk.runtime.checkpoint import (
+    Checkpointer,
+    claim_resume,
+    plan_resume,
+    refuse_if_undecidable,
+)
 from tesserix_adk.runtime.fanout import Lanes, Turn, phased
 from tesserix_adk.runtime.progress import (
     WATCHING,
@@ -135,7 +144,11 @@ from tesserix_adk.runtime.progress import (
     ToolCallStarted,
     UsageUpdated,
 )
-from tesserix_adk.runtime.prompt import ToolDeclaration, assemble_prompt, wrap_untrusted
+from tesserix_adk.runtime.prompt import (
+    ToolDeclaration,
+    assemble_prompt,
+    wrap_untrusted,
+)
 from tesserix_adk.runtime.results import ReturningTool, ToolResult, ToolResultBoundary
 from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
@@ -412,6 +425,7 @@ class AgentRunner:
         max_tool_attempts: int = _DEFAULT_MAX_TOOL_ATTEMPTS,
         results: ToolResultBoundary | None = None,
         claim_check: ClaimCheck | None = None,
+        checkpoints: Checkpointer | None = None,
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
@@ -457,6 +471,7 @@ class AgentRunner:
         self._max_tool_attempts = max_tool_attempts
         self._results = results or ToolResultBoundary()
         self._claims = claim_check
+        self._checkpoints = checkpoints
         self._orphans: set[asyncio.Task[Any]] = set()
 
     def reload(self, router: ModelRouter) -> None:
@@ -741,38 +756,201 @@ class AgentRunner:
                     detail=f"prefix {prompt.fingerprint}, {prompt.prefix_tokens} tokens",
                 )
             )
-            messages = list(prompt.messages)
-            for iteration in range(1, self._max_iterations + 1):
-                self._emit(IterationStarted(iteration=iteration))
-                self._stop_if_over(run, bounds)
-                await self._spent(run, bounds, _NOTHING, iterations=1)
-                run, messages = await self._before_the_call(run, agent, messages, bounds)
-                self._refuse_unreadable_prompt(messages, model, bounds.provider)
-                request = ModelRequest(
+            return await self._forgotten(
+                await self._drive(
+                    run,
+                    agent,
+                    bounds,
                     model=model,
-                    messages=tuple(messages),
+                    chain=chain,
+                    contract=contract,
                     tools=prompt.tools,
-                    output_schema=contract.schema
-                    if contract is not None and contract.native
-                    else None,
-                    output_schema_hash=contract.hash if contract is not None else None,
+                    messages=list(prompt.messages),
                 )
-                run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
-
-                answered = await self._call_model(run, agent, request, bounds, chain)
-                run, response, bounds = answered.run, answered.response, answered.bounds
-                model = answered.request.model
-                run, response = await self._after_the_response(run, agent, response, bounds)
-                run = await self._settle(run, agent, response, messages, bounds)
-                if run.state.is_terminal:
-                    return run
-
-                run, response = await self._check_guardrails(run, agent, response, messages, bounds)
-                run, done = await self._advance(run, agent, response, messages, bounds)
-                if done:
-                    return run
+            )
         except _Terminal as stop:
-            return await self._terminate(stop.run, agent, stop.state, stop.detail, bounds)
+            return await self._forgotten(
+                await self._terminate(stop.run, agent, stop.state, stop.detail, bounds)
+            )
+
+    async def resume[OutputT: BaseModel](
+        self,
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
+        run_id: str,
+        *,
+        tenant: str,
+        user: str | None = None,
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        budget: BudgetPolicy | None = None,
+    ) -> Run[OutputT]:
+        """Carry on a run whose process died, from the frontier its checkpoint holds.
+
+        The conversation is restored rather than replayed: work already done is not paid
+        for a second time, and a tool whose result was recorded is replayed from that
+        record rather than called again. A call nobody can say ran stops the resume.
+
+        Args:
+            agent: What was running. A definition whose revision differs from the one the
+                checkpoint pinned is refused — resuming into a changed agent is a
+                different run wearing the first one's identity.
+            run_id: Which run.
+            tenant: The isolation boundary.
+            user: The acting principal, where there is one.
+            cancellation: The caller's switch.
+            deadline: A ceiling from the caller.
+            budget: The ceiling for what is left of the run. The ledger already holds what
+                was spent before the process died, so this is not a fresh allowance.
+
+        Returns:
+            The run, in a terminal state.
+
+        Raises:
+            ConfigurationError: If this runner has nowhere to read checkpoints from, or
+                the agent's revision is not the one that was checkpointed.
+            StateNotFoundError: If nothing was ever checkpointed for `run_id`.
+            IndeterminateToolCallError: If a call was dispatched and nothing can say
+                whether it happened. Retrying it is the duplicate this exists to prevent.
+            ResumeConflictError: If another worker is already carrying the run on.
+        """
+        if self._checkpoints is None:
+            raise ConfigurationError(
+                "this runner was built without a checkpointer, so there is no frontier to "
+                "carry on from; construct it with one before a run needs resuming"
+            )
+        revision = agent.revision if isinstance(agent, AgentDefinition) else None
+        if isinstance(agent, AgentDefinition):
+            agent = agent.agent
+        checkpoint = await self._checkpoints.latest(run_id, tenant=tenant)
+        if checkpoint is None:
+            raise StateNotFoundError(
+                f"{run_id} was never checkpointed, so there is nothing to carry on from",
+                key=f"{tenant}/{run_id}",
+                kind="checkpoint",
+            )
+        if checkpoint.agent_revision != revision:
+            raise ConfigurationError(
+                f"{run_id} was checkpointed at revision {checkpoint.agent_revision!r} and "
+                f"would be carried on at {revision!r}; that is a different run"
+            )
+        if self._idempotency is not None:
+            await claim_resume(run_id, tenant=tenant, idempotency=self._idempotency)
+        plan = await plan_resume(checkpoint, self._idempotency)
+        refuse_if_undecidable(plan)
+
+        decision = self._route(agent, tenant)
+        bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision), budget)
+        run: Run[Any] = _carrier_for(agent.output_type)(
+            id=run_id,
+            tenant=tenant,
+            user=user,
+            agent_name=agent.name,
+            agent_version=agent.version,
+            definition_revision=revision,
+            model=checkpoint.model or agent.model or "resumed",
+            prompt_version=checkpoint.prompt_version or None,
+            grant=_granted(agent),
+            usage=checkpoint.usage,
+            budget=bounds.budget.resolved,
+        ).transition_to(RunState.RUNNING, at=self._clock.now())
+        run = run.record_event(
+            self._event(
+                RunEventKind.RUN_RESUMED,
+                name=str(checkpoint.boundary),
+                detail=f"from iteration {checkpoint.iterations}",
+            )
+        )
+        self._emit(RunStarted(agent=agent.name, model=run.model, tenant=tenant))
+
+        messages = list(checkpoint.messages)
+        for replayed in plan.completed:
+            messages.append(
+                Message(
+                    role="tool",
+                    tool_call_id=replayed.call.id,
+                    content=[TextPart(text=replayed.outcome or "")],
+                )
+            )
+        contract = self._contract_for(agent, bounds.provider)
+        try:
+            if plan.to_dispatch:
+                run = await self._dispatch(
+                    run,
+                    agent,
+                    ModelResponse(tool_calls=tuple(one.call for one in plan.to_dispatch)),
+                    messages,
+                    bounds,
+                )
+            return await self._forgotten(
+                await self._drive(
+                    run,
+                    agent,
+                    bounds,
+                    model=run.model,
+                    chain=FallbackChain(),
+                    contract=contract,
+                    tools=self._declarations_for(agent),
+                    messages=messages,
+                    start=checkpoint.iterations + 1,
+                )
+            )
+        except _Terminal as stop:
+            return await self._forgotten(
+                await self._terminate(stop.run, agent, stop.state, stop.detail, bounds)
+            )
+
+    async def _drive(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        bounds: _Bounds,
+        *,
+        model: str,
+        chain: FallbackChain,
+        contract: OutputContract | None,
+        tools: tuple[ToolDeclaration, ...],
+        messages: list[Message],
+        start: int = 1,
+    ) -> Run[Any]:
+        """Go round the loop until the run is over.
+
+        A fresh run enters with the assembled prompt; a resumed one enters with the
+        conversation its checkpoint held, already carrying whatever its outstanding calls
+        returned. Both then want the same thing, so both get the same loop.
+        """
+        for iteration in range(start, self._max_iterations + 1):
+            self._emit(IterationStarted(iteration=iteration))
+            self._stop_if_over(run, bounds)
+            await self._spent(run, bounds, _NOTHING, iterations=1)
+            run, messages = await self._before_the_call(run, agent, messages, bounds)
+            self._refuse_unreadable_prompt(messages, model, bounds.provider)
+            request = ModelRequest(
+                model=model,
+                messages=tuple(messages),
+                tools=tools,
+                output_schema=contract.schema if contract is not None and contract.native else None,
+                output_schema_hash=contract.hash if contract is not None else None,
+            )
+            run = run.record_event(self._event(RunEventKind.MODEL_CALL, name=model))
+
+            answered = await self._call_model(run, agent, request, bounds, chain)
+            run, response, bounds = answered.run, answered.response, answered.bounds
+            model = answered.request.model
+            run, response = await self._after_the_response(run, agent, response, bounds)
+            await self._checkpoint(
+                run, agent, messages, model, CheckpointBoundary.AFTER_MODEL_CALL, iteration
+            )
+            run = await self._settle(run, agent, response, messages, bounds)
+            if run.state.is_terminal:
+                return run
+
+            run, response = await self._check_guardrails(run, agent, response, messages, bounds)
+            run, done = await self._advance(run, agent, response, messages, bounds)
+            if done:
+                return run
+            await self._checkpoint(
+                run, agent, messages, model, CheckpointBoundary.AFTER_TOOL_RESULT, iteration
+            )
 
         return await self._terminate(
             run,
@@ -781,6 +959,43 @@ class AgentRunner:
             _named(MaxIterationsError(f"stopped after {self._max_iterations} model calls")),
             bounds,
         )
+
+    async def _checkpoint(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        messages: list[Message],
+        model: str,
+        boundary: CheckpointBoundary,
+        iteration: int,
+    ) -> None:
+        """Write the frontier, where the runner was given somewhere to write it.
+
+        Spend is not carried here: the ledger already survives the process, and a second
+        copy of a number that only ever goes up is a second copy to disagree with.
+        """
+        if self._checkpoints is None:
+            return
+        await self._checkpoints.record(
+            Checkpoint(
+                run_id=run.id,
+                tenant=run.tenant,
+                agent_name=agent.name,
+                model=model,
+                boundary=boundary,
+                messages=tuple(messages),
+                usage=run.usage,
+                iterations=iteration,
+                agent_revision=run.definition_revision,
+                prompt_version=run.prompt_version or "",
+            )
+        )
+
+    async def _forgotten(self, run: Run[Any]) -> Run[Any]:
+        """Drop the frontier of a run that has reached the end of itself."""
+        if self._checkpoints is not None:
+            await self._checkpoints.forget(run.id, tenant=run.tenant)
+        return run
 
     async def _asked(
         self, run: Run[Any], agent: Agent[Any], user_input: str, bounds: _Bounds

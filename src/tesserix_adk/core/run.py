@@ -95,6 +95,7 @@ class RunEventKind(StrEnum):
     to anything that has to count tool failures or total the cost of model calls.
     """
 
+    RUN_RESUMED = "run_resumed"
     MODEL_ROUTED = "model_routed"
     MODEL_FELL_BACK = "model_fell_back"
     PROMPT_ASSEMBLED = "prompt_assembled"

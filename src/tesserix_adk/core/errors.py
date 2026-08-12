@@ -23,6 +23,8 @@ __all__ = [
     "BudgetUnavailableError",
     "CancelledError",
     "CapabilityError",
+    "CheckpointFormatError",
+    "CheckpointTooLargeError",
     "ClaimUnavailableError",
     "ConfigurationError",
     "ContentFilteredError",
@@ -43,6 +45,7 @@ __all__ = [
     "HookEvaluationError",
     "HookRefusedError",
     "HookRegistrationError",
+    "IndeterminateToolCallError",
     "InvalidRequestError",
     "LoopLimitError",
     "MaxIterationsError",
@@ -64,6 +67,7 @@ __all__ = [
     "RateLimitError",
     "RecursionLimitError",
     "RepeatedCallError",
+    "ResumeConflictError",
     "RunningLoopError",
     "SandboxError",
     "SandboxMemoryError",
@@ -1670,3 +1674,104 @@ class StateInUseError(AdkError):
         self.key = key
         self.live_runs = live_runs
         super().__init__(*args, details={"key": key, "live_runs": ", ".join(live_runs)})
+
+
+class CheckpointTooLargeError(AdkError):
+    """Raised when a run's frontier exceeds what a checkpoint may carry.
+
+    Truncating it would be worse than not writing it: half a frontier resumes into a
+    conversation that never happened, and nothing downstream could tell. The run carries
+    on uncheckpointed, and the caller is told what it would have taken.
+
+    Args:
+        run_id: Whose frontier.
+        size_bytes: What it came to.
+        max_bytes: What the policy allows.
+    """
+
+    def __init__(
+        self, *args: object, run_id: str = "", size_bytes: int = 0, max_bytes: int = 0
+    ) -> None:
+        self.size_bytes = size_bytes
+        self.max_bytes = max_bytes
+        super().__init__(
+            *args,
+            run_id=run_id,
+            details={
+                "run_id": run_id,
+                "size_bytes": str(size_bytes),
+                "max_bytes": str(max_bytes),
+            },
+        )
+
+
+class CheckpointFormatError(AdkError):
+    """Raised when a checkpoint was written by a kit version this one cannot read.
+
+    Reading fields it has to guess at is how a resume replays a call it thought had not
+    run. The run is left where it is, for a worker on the newer version to pick up.
+
+    Args:
+        run_id: Whose checkpoint.
+        format_version: What it was written at.
+        readable_version: The newest this reader understands.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        run_id: str = "",
+        format_version: int = 0,
+        readable_version: int = 0,
+    ) -> None:
+        self.format_version = format_version
+        self.readable_version = readable_version
+        super().__init__(
+            *args,
+            run_id=run_id,
+            details={
+                "run_id": run_id,
+                "format_version": str(format_version),
+                "readable_version": str(readable_version),
+            },
+        )
+
+
+class IndeterminateToolCallError(AdkError):
+    """Raised when a resume cannot say whether an effectful call already happened.
+
+    The process died between dispatching a call and recording its result. Retrying might
+    book a second seat; skipping might strand the run having promised something it never
+    did. Neither is a guess the kit is entitled to make, so it stops and names the calls,
+    for the tool's own status endpoint or a person to resolve.
+
+    Args:
+        run_id: Which run cannot be carried on.
+        calls: The tools involved, in the order the model asked for them.
+    """
+
+    def __init__(self, *args: object, run_id: str = "", calls: tuple[str, ...] = ()) -> None:
+        self.calls = calls
+        super().__init__(
+            *args, run_id=run_id, details={"run_id": run_id, "calls": ", ".join(calls)}
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """No. Retrying is the outcome this exists to prevent."""
+        return False
+
+
+class ResumeConflictError(AdkError):
+    """Raised when another worker is already carrying this run on.
+
+    Two workers resuming one run is two runs, spending one budget twice and dispatching
+    each outstanding call twice. The second is refused rather than queued: the first is
+    already doing the work.
+
+    Args:
+        run_id: The run in question.
+    """
+
+    def __init__(self, *args: object, run_id: str = "") -> None:
+        super().__init__(*args, run_id=run_id, details={"run_id": run_id})

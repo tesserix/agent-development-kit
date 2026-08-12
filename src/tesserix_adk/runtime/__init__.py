@@ -11,6 +11,13 @@ from tesserix_adk.runtime.blocking import (
     drive,
 )
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
+from tesserix_adk.runtime.checkpoint import (
+    Checkpointer,
+    MemoryCheckpointStore,
+    claim_resume,
+    plan_resume,
+    refuse_if_undecidable,
+)
 from tesserix_adk.runtime.claim_check import ClaimCheck, MemoryClaimCheckStore
 from tesserix_adk.runtime.context import ContextWindow, Segment
 from tesserix_adk.runtime.delegation import (
@@ -96,6 +103,7 @@ __all__ = [
     "Backpressure",
     "Calibration",
     "CancellationToken",
+    "Checkpointer",
     "ClaimCheck",
     "Confidence",
     "ContextWindow",
@@ -108,6 +116,7 @@ __all__ = [
     "InMemoryHistory",
     "IterationStarted",
     "LoopMonitor",
+    "MemoryCheckpointStore",
     "MemoryClaimCheckStore",
     "MemoryIdempotencyStore",
     "MemoryStateStore",
@@ -158,12 +167,15 @@ __all__ = [
     "calibrate",
     "canonical_digest",
     "carrying",
+    "claim_resume",
     "current_ambient",
     "decode_progress",
     "drive",
     "estimate_run",
     "fingerprint_of",
     "handed_back",
+    "plan_resume",
+    "refuse_if_undecidable",
     "refuse_unaffordable",
     "unwrap_fenced",
     "wrap_untrusted",
