@@ -165,6 +165,16 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `RedisStateStore` and `RedisWorkQueue`, the durable backings for the `StateStore` and
+  `WorkQueue` protocols, passing both conformance suites unchanged. A run is a JSON blob
+  beside a counters hash, so patches commute under concurrency and a write holding a stale
+  version is refused rather than overwriting a live record. Leases are fenced on the score
+  the caller last saw, so a reaper cannot take work from a worker that is still alive, and
+  retry, backoff and dead-letter decisions moved into `QueuePolicy` where both queue
+  implementations share them. `preflight()` refuses at startup a server configured to evict
+  keys or to keep nothing across a restart, because such an instance loses a run quietly and
+  answers the next read as though it never existed.
+
 - A reliable work queue behind the `WorkQueue` protocol, with `MemoryWorkQueue` as the
   in-process implementation. Work is claimed under a lease rather than taken, so a worker
   that dies holding an item has it requeued by the reaper with its attempt counted rather

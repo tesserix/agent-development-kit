@@ -105,5 +105,6 @@ in it outlives the process, which is what surviving a rolled pod is not.
 
 ## See also
 
+- [`docs/state-adapters.md`](state-adapters.md) — the Redis queue that does outlive the process, and what its server has to be configured as.
 - [`docs/checkpointing.md`](checkpointing.md) — how a redelivered run carries on from its frontier rather than from zero.
 - [`docs/tool-idempotency.md`](tool-idempotency.md) — what makes a handler safe to deliver twice.

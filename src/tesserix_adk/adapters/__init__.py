@@ -42,6 +42,15 @@ from tesserix_adk.adapters.memory import (
     RedisMemoryStore,
     RoutedMemoryStore,
 )
+from tesserix_adk.adapters.state import (
+    COUNTERS,
+    DEFAULT_QUEUE_NAMESPACE,
+    DEFAULT_STATE_NAMESPACE,
+    InspectableRedis,
+    RedisStateStore,
+    RedisStoreSettings,
+    RedisWorkQueue,
+)
 from tesserix_adk.adapters.transport import (
     DEFAULT_HEARTBEAT_SECONDS,
     DEFAULT_PAYLOAD_LIMIT_BYTES,
@@ -60,12 +69,15 @@ from tesserix_adk.adapters.transport import (
 
 __all__ = [
     "BACKENDS",
+    "COUNTERS",
     "DEFAULT_COLLECTION",
     "DEFAULT_HEARTBEAT_SECONDS",
     "DEFAULT_LEASE_SECONDS",
     "DEFAULT_NAMESPACE",
     "DEFAULT_PAYLOAD_LIMIT_BYTES",
+    "DEFAULT_QUEUE_NAMESPACE",
     "DEFAULT_RETRY_MILLISECONDS",
+    "DEFAULT_STATE_NAMESPACE",
     "DEFAULT_TABLE",
     "DISTANCE_OPERATORS",
     "EXTRACTION_INSTRUCTION",
@@ -85,6 +97,7 @@ __all__ = [
     "GraphitiClient",
     "GraphitiEngine",
     "InMemoryLedger",
+    "InspectableRedis",
     "MemoryPage",
     "MemoryStoreSettings",
     "PayloadElided",
@@ -97,6 +110,9 @@ __all__ = [
     "RedisIdempotencyStore",
     "RedisLedger",
     "RedisMemoryStore",
+    "RedisStateStore",
+    "RedisStoreSettings",
+    "RedisWorkQueue",
     "RoutedMemoryStore",
     "RunBroker",
     "SqlExecutor",

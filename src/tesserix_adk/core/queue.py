@@ -169,6 +169,72 @@ class QueuePolicy(AdkModel):
         """Whether an item on `attempts` has run out of them."""
         return attempts >= self.max_attempts
 
+    def overheld(self, item: WorkItem, now: float) -> bool:
+        """Whether a single claim has been renewed for longer than the bound allows."""
+        return now - item.held_since >= self.max_lease_seconds
+
+    def claimed(
+        self, item: WorkItem, *, worker: str, now: float, lease_seconds: float | None = None
+    ) -> WorkItem:
+        """The item as it looks once `worker` has taken it under a lease."""
+        return item.model_copy(
+            update={
+                "state": WorkState.CLAIMED,
+                "worker": worker,
+                "lease_expires_at": now + (lease_seconds or self.lease_seconds),
+                "first_claimed_at": now,
+            }
+        )
+
+    def renewed(self, item: WorkItem, *, now: float) -> WorkItem:
+        """The item with its lease extended from `now`."""
+        return item.model_copy(update={"lease_expires_at": now + self.lease_seconds})
+
+    def completed(self, item: WorkItem) -> WorkItem:
+        """The item as it looks once the work is done and nobody holds it."""
+        return item.model_copy(
+            update={"state": WorkState.COMPLETED, "worker": None, "lease_expires_at": None}
+        )
+
+    def returned(
+        self,
+        item: WorkItem,
+        *,
+        error: str,
+        now: float,
+        retryable: bool = True,
+        backoff: bool = True,
+    ) -> WorkItem:
+        """The item as it looks once a worker has given it back, one attempt worse off.
+
+        Every store decides retry against dead letter here rather than in its own driver
+        code: two implementations that disagree about when an item is poisonous are two
+        deployments with different retry semantics and one set of tests.
+        """
+        attempts = item.attempts + 1
+        failures = (*item.failures, error)
+        if not retryable or self.exhausted(attempts):
+            return item.model_copy(
+                update={
+                    "state": WorkState.DEAD_LETTERED,
+                    "worker": None,
+                    "lease_expires_at": None,
+                    "attempts": attempts,
+                    "failures": failures,
+                }
+            )
+        return item.model_copy(
+            update={
+                "state": WorkState.QUEUED,
+                "worker": None,
+                "lease_expires_at": None,
+                "first_claimed_at": None,
+                "available_at": now + (self.backoff_for(attempts) if backoff else 0.0),
+                "attempts": attempts,
+                "failures": failures,
+            }
+        )
+
 
 class QueueStats(AdkModel):
     """What the queue looks like right now, for the metrics a deployment alerts on.

@@ -92,22 +92,15 @@ class MemoryWorkQueue:
         if not due:
             return None
         chosen = self._next_in_turn(due)
-        lease = lease_seconds or self._policy.lease_seconds
-        held = chosen.model_copy(
-            update={
-                "state": WorkState.CLAIMED,
-                "worker": worker,
-                "lease_expires_at": now + lease,
-                "first_claimed_at": now,
-            }
+        return self._keep(
+            self._policy.claimed(chosen, worker=worker, now=now, lease_seconds=lease_seconds)
         )
-        return self._keep(held)
 
     async def heartbeat(self, item_id: str, *, tenant: str, worker: str) -> WorkItem:
         """Extend the claim, up to the total the policy allows a single claim to run for."""
         item = self._holding(item_id, tenant=tenant, worker=worker)
         now = self._now()
-        if now - item.held_since >= self._policy.max_lease_seconds:
+        if self._policy.overheld(item, now):
             raise LeaseLostError(
                 f"{item_id!r} has been held for longer than {self._policy.max_lease_seconds}s",
                 item_id=item_id,
@@ -115,23 +108,13 @@ class MemoryWorkQueue:
                 holder=worker,
                 reason="capped",
             )
-        return self._keep(
-            item.model_copy(update={"lease_expires_at": now + self._policy.lease_seconds})
-        )
+        return self._keep(self._policy.renewed(item, now=now))
 
     async def complete(self, item_id: str, *, tenant: str, worker: str) -> WorkItem:
         """Finish the item. Its dedupe key is free again; the same job may be enqueued anew."""
         item = self._holding(item_id, tenant=tenant, worker=worker)
         self._release_dedupe(item)
-        return self._keep(
-            item.model_copy(
-                update={
-                    "state": WorkState.COMPLETED,
-                    "worker": None,
-                    "lease_expires_at": None,
-                }
-            )
-        )
+        return self._keep(self._policy.completed(item))
 
     async def fail(
         self, item_id: str, *, tenant: str, worker: str, error: str, retryable: bool = True
@@ -185,29 +168,8 @@ class MemoryWorkQueue:
         self, item: WorkItem, error: str, *, retryable: bool = True, backoff: bool = True
     ) -> WorkItem:
         """The item as it looks once a worker has given it back, one attempt worse off."""
-        attempts = item.attempts + 1
-        failures = (*item.failures, error)
-        if not retryable or self._policy.exhausted(attempts):
-            return item.model_copy(
-                update={
-                    "state": WorkState.DEAD_LETTERED,
-                    "worker": None,
-                    "lease_expires_at": None,
-                    "attempts": attempts,
-                    "failures": failures,
-                }
-            )
-        wait = self._policy.backoff_for(attempts) if backoff else 0.0
-        return item.model_copy(
-            update={
-                "state": WorkState.QUEUED,
-                "worker": None,
-                "lease_expires_at": None,
-                "first_claimed_at": None,
-                "available_at": self._now() + wait,
-                "attempts": attempts,
-                "failures": failures,
-            }
+        return self._policy.returned(
+            item, error=error, now=self._now(), retryable=retryable, backoff=backoff
         )
 
     def _holding(self, item_id: str, *, tenant: str, worker: str) -> WorkItem:

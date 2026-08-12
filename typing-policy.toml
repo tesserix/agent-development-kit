@@ -219,6 +219,16 @@ owner = "@sam123ben"
 review_by = 2027-08-07
 
 [[any]]
+symbol = "tesserix_adk.adapters.state.InspectableRedis"
+kind = "json"
+reason = """
+Same reply shapes as the ledger's client: a script answers with an integer, a string, or a
+nested array, depending on which script it was. One annotation cannot describe all of them.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
 symbol = "tesserix_adk.adapters.ledger.SqlExecutor"
 kind = "json"
 reason = """

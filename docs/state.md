@@ -111,8 +111,10 @@ reads and listings.
 ```python
 class TestRedisStateStore(StateStoreConformance):
     def make_store(self) -> StateStore:
-        return RedisStateStore(url="redis://localhost")
+        return RedisStateStore(redis, clock=clock, settings=settings)
 ```
+
+The shipped Redis store is [`docs/state-adapters.md`](state-adapters.md).
 
 ## Known limitations
 
