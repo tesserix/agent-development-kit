@@ -61,6 +61,9 @@ __all__ = [
     "RecursionLimitError",
     "RepeatedCallError",
     "RunningLoopError",
+    "SandboxError",
+    "SandboxMemoryError",
+    "SandboxTimeoutError",
     "SchemaGenerationError",
     "SchemaViolationError",
     "StreamInterruptedError",
@@ -1401,3 +1404,43 @@ class ClaimUnavailableError(AdkError):
         self.tenant = tenant
         self.run_id = run_id
         super().__init__(*args, details={"handle": handle, "run_id": run_id})
+
+
+class SandboxError(AdkError):
+    """Raised when the sandbox stopped generated code, rather than the code stopping itself.
+
+    Code that raises, exits non-zero or writes nothing is a result, not an error: the
+    caller wanted to know what it did and now knows. This is the other case — the sandbox
+    took the process away before it could finish, so there is no result to report.
+    """
+
+
+class SandboxTimeoutError(SandboxError):
+    """Raised when generated code ran past a time ceiling and was killed.
+
+    Args:
+        limit: Which ceiling fired — `"wall"` for elapsed time, `"cpu"` for processor
+            time. They are different diagnoses: wall time catches something waiting,
+            processor time catches something spinning.
+        seconds: The ceiling that fired, so the message names a number the caller set.
+    """
+
+    def __init__(self, *args: object, limit: str = "wall", seconds: float = 0.0) -> None:
+        self.limit = limit
+        self.seconds = seconds
+        super().__init__(*args, details={"limit": limit, "seconds": str(seconds)})
+
+
+class SandboxMemoryError(SandboxError):
+    """Raised when generated code asked for more memory than its ceiling allowed.
+
+    The allocation fails inside the sandbox, never on the host: the ceiling is set on the
+    child before any generated code runs, so the host cannot be starved by what it ran.
+
+    Args:
+        limit_bytes: The ceiling the code was under.
+    """
+
+    def __init__(self, *args: object, limit_bytes: int = 0) -> None:
+        self.limit_bytes = limit_bytes
+        super().__init__(*args, details={"limit_bytes": str(limit_bytes)})

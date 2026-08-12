@@ -14,6 +14,15 @@ from tesserix_adk.tools.errors import (
     transient,
 )
 from tesserix_adk.tools.registry import AgentToolView, ToolCallSpan, ToolRegistry
+from tesserix_adk.tools.sandbox import (
+    DEFAULT_LIMITS,
+    Sandbox,
+    SandboxArtifact,
+    SandboxLimits,
+    SandboxResult,
+    SubprocessSandbox,
+    sandbox_tool,
+)
 from tesserix_adk.tools.validation import (
     LENIENT,
     STRICT,
@@ -23,10 +32,16 @@ from tesserix_adk.tools.validation import (
 
 __all__ = [
     "DEFAULT_FETCH_CHARS",
+    "DEFAULT_LIMITS",
     "LENIENT",
     "STRICT",
     "AgentToolView",
     "ArgumentPolicy",
+    "Sandbox",
+    "SandboxArtifact",
+    "SandboxLimits",
+    "SandboxResult",
+    "SubprocessSandbox",
     "Tool",
     "ToolArgumentValidator",
     "ToolCallSpan",
@@ -40,6 +55,7 @@ __all__ = [
     "claim_check_tool",
     "permanent",
     "refusal",
+    "sandbox_tool",
     "tool",
     "transient",
 ]

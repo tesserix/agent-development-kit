@@ -235,6 +235,9 @@ tesserix_adk.core.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple
 tesserix_adk.core.SEPARATOR :: SEPARATOR: str
 tesserix_adk.core.SMART :: SMART: TaskClass
 tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
+tesserix_adk.core.SandboxError :: class SandboxError(AdkError)
+tesserix_adk.core.SandboxMemoryError :: class SandboxMemoryError(SandboxError)
+tesserix_adk.core.SandboxTimeoutError :: class SandboxTimeoutError(SandboxError)
 tesserix_adk.core.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.SchemaViolationError :: class SchemaViolationError(AdkError)
@@ -387,6 +390,9 @@ tesserix_adk.core.errors.RateLimitError :: class RateLimitError(ProviderError)
 tesserix_adk.core.errors.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.errors.RepeatedCallError :: class RepeatedCallError(LoopLimitError)
 tesserix_adk.core.errors.RunningLoopError :: class RunningLoopError(AdkError, RuntimeError)
+tesserix_adk.core.errors.SandboxError :: class SandboxError(AdkError)
+tesserix_adk.core.errors.SandboxMemoryError :: class SandboxMemoryError(SandboxError)
+tesserix_adk.core.errors.SandboxTimeoutError :: class SandboxTimeoutError(SandboxError)
 tesserix_adk.core.errors.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
@@ -1034,8 +1040,14 @@ tesserix_adk.testing.redacted :: def redacted(text: 'str') -> 'str'
 tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int
+tesserix_adk.tools.DEFAULT_LIMITS :: DEFAULT_LIMITS: SandboxLimits
 tesserix_adk.tools.LENIENT :: LENIENT: ArgumentPolicy
 tesserix_adk.tools.STRICT :: STRICT: ArgumentPolicy
+tesserix_adk.tools.Sandbox :: class Sandbox(Protocol) {run(self, code: 'str', *, limits: 'SandboxLimits | None' = None, files: 'Mapping[str, str] | None' = None) -> 'SandboxResult'}
+tesserix_adk.tools.SandboxArtifact :: class SandboxArtifact(object)
+tesserix_adk.tools.SandboxLimits :: class SandboxLimits(object)
+tesserix_adk.tools.SandboxResult :: class SandboxResult(object)
+tesserix_adk.tools.SubprocessSandbox :: class SubprocessSandbox(object) {run(self, code: 'str', *, limits: 'SandboxLimits | None' = None, files: 'Mapping[str, str] | None' = None) -> 'SandboxResult'}
 tesserix_adk.tools.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any] | str | bytes', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'; requires_approval(self, arguments: 'Mapping[str, Any] | str | bytes') -> 'bool'}
 tesserix_adk.tools.ToolArgumentValidator :: class ToolArgumentValidator(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'; validate(self, arguments: 'object') -> 'Any'}
 tesserix_adk.tools.ToolCallSpan :: class ToolCallSpan(object)
@@ -1070,6 +1082,14 @@ tesserix_adk.tools.refusal :: def refusal(code: 'str', message: 'str') -> 'ToolE
 tesserix_adk.tools.registry.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.registry.ToolCallSpan :: class ToolCallSpan(object)
 tesserix_adk.tools.registry.ToolRegistry :: class ToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; observe(self, observer: 'Callable[[ToolCallSpan], None]') -> 'None'; register(self, tool: 'Tool[Any, Any]', *, origin: 'str' = '') -> 'None'; resolve(self, name: 'str') -> 'Tool[Any, Any]'; timeout_for(self, name: 'str') -> 'float | None'; view(self, *, allow: 'Sequence[str]', agent: 'str' = '') -> 'AgentToolView'}
+tesserix_adk.tools.sandbox.DEFAULT_LIMITS :: DEFAULT_LIMITS: SandboxLimits
+tesserix_adk.tools.sandbox.Sandbox :: class Sandbox(Protocol) {run(self, code: 'str', *, limits: 'SandboxLimits | None' = None, files: 'Mapping[str, str] | None' = None) -> 'SandboxResult'}
+tesserix_adk.tools.sandbox.SandboxArtifact :: class SandboxArtifact(object)
+tesserix_adk.tools.sandbox.SandboxLimits :: class SandboxLimits(object)
+tesserix_adk.tools.sandbox.SandboxResult :: class SandboxResult(object)
+tesserix_adk.tools.sandbox.SubprocessSandbox :: class SubprocessSandbox(object) {run(self, code: 'str', *, limits: 'SandboxLimits | None' = None, files: 'Mapping[str, str] | None' = None) -> 'SandboxResult'}
+tesserix_adk.tools.sandbox.sandbox_tool :: def sandbox_tool(sandbox: 'Sandbox', *, name: 'str' = 'run_python', limits: 'SandboxLimits | None' = None) -> 'Tool[..., str]'
+tesserix_adk.tools.sandbox_tool :: def sandbox_tool(sandbox: 'Sandbox', *, name: 'str' = 'run_python', limits: 'SandboxLimits | None' = None) -> 'Tool[..., str]'
 tesserix_adk.tools.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True, requires_approval: 'bool | ApprovalPredicate | ApprovalPolicy' = False, idempotency: 'Idempotency | str | IdempotencyPolicy | None' = None) -> 'Tool[Any, Any] | _Decorator'
 tesserix_adk.tools.transient :: def transient(code: 'str', *, retry_after: 'float | None' = None, message: 'str' = '') -> 'ToolErrorRule'
 tesserix_adk.tools.validation.ArgumentPolicy :: class ArgumentPolicy(object)

@@ -154,6 +154,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- Sandboxed code execution. `SubprocessSandbox` runs model-generated code in a fresh
+  interpreter under `-I -S`, in a temporary workspace deleted when the call returns, with an
+  environment constructed rather than inherited and `socket` replaced before the code is
+  compiled — so it reaches no credential, no network and not the kit itself. `SandboxLimits`
+  bounds wall time, processor time, address space, output and artifacts; hitting a time
+  ceiling raises `SandboxTimeoutError` naming which one, and an allocation past the memory
+  ceiling raises `SandboxMemoryError` inside the sandbox rather than starving the host. A
+  non-zero exit is a `SandboxResult`, not an error. `sandbox_tool` exposes it to an agent,
+  refusing with `sandbox_limit_exceeded` when a ceiling fires. `Sandbox` is the seam for
+  gVisor, Kata or a remote executor. **Stability:** additive. Documented in
+  `docs/sandbox.md`.
+
 - `ClaimCheck`, which stops an oversized tool result being re-sent on every turn. The
   content goes to a `ClaimCheckStore` and what enters the conversation is an extractive
   head plus a handle, cut at a boundary the content provides rather than mid-word.
