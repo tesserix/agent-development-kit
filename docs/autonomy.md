@@ -127,7 +127,8 @@ withdrawn stays readable as what it permitted while it stood.
 A run suspended on an approval was asleep while the authority behind it could have been
 taken back, and a human approving a call is not the same as the grant that put the call in
 front of them still standing. The loop re-checks after the approval returns and before
-anything goes out, and records `grant_revoked`:
+anything goes out, records `grant_revoked`, and then does what the gate's `revoked_runs`
+says:
 
 | `revoked_runs` | What the run does |
 |---|---|

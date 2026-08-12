@@ -243,7 +243,6 @@ class TestRunsAlreadyUnderWay:
         called, run = await _settling(
             _gate(watch, grant(ceiling=_tight())),
             approvals=Desk(revoking=watch),
-            policy=InFlightPolicy.CANCEL,
         )
         assert called == []
         assert run.state is RunState.FAILED
@@ -252,9 +251,8 @@ class TestRunsAlreadyUnderWay:
     async def test_the_same_run_can_be_told_to_ask_instead_of_stopping(self) -> None:
         watch = RevocationWatch(clock=FakeClock(start=NOW))
         called, run = await _settling(
-            _gate(watch, grant(ceiling=_tight())),
+            _gate(watch, grant(ceiling=_tight()), policy=InFlightPolicy.ASK_ALWAYS),
             approvals=Desk(revoking=watch),
-            policy=InFlightPolicy.ASK_ALWAYS,
         )
         assert called == [{"amount": 9000, "currency": "INR"}]
         assert run.state is RunState.COMPLETED
@@ -262,9 +260,7 @@ class TestRunsAlreadyUnderWay:
 
     async def test_a_call_nobody_revoked_goes_out_after_the_approval(self) -> None:
         watch = RevocationWatch(clock=FakeClock(start=NOW))
-        called, run = await _settling(
-            _gate(watch, grant(ceiling=_tight())), approvals=Desk(), policy=InFlightPolicy.CANCEL
-        )
+        called, run = await _settling(_gate(watch, grant(ceiling=_tight())), approvals=Desk())
         assert called == [{"amount": 9000, "currency": "INR"}]
         assert not _events(run, RunEventKind.GRANT_REVOKED)
 
@@ -329,9 +325,13 @@ def _ladder(*grants: AutonomyGrant) -> AutonomyLadder:
     return AutonomyLadder(REGISTRY, grants=InMemoryGrants(grants), clock=FakeClock(start=NOW))
 
 
-def _gate(watch: RevocationWatch, *grants: AutonomyGrant) -> AutonomyGate:
+def _gate(
+    watch: RevocationWatch,
+    *grants: AutonomyGrant,
+    policy: InFlightPolicy = InFlightPolicy.CANCEL,
+) -> AutonomyGate:
     """A gate that consults the watch before it lets anything through."""
-    return AutonomyGate(_ladder(*grants), revocations=watch)
+    return AutonomyGate(_ladder(*grants), revocations=watch, revoked_runs=policy)
 
 
 def _events(run: Run[Any], kind: RunEventKind) -> list[RunEvent]:
@@ -343,7 +343,6 @@ async def _settling(
     autonomy: AutonomyGate,
     *,
     approvals: Desk,
-    policy: InFlightPolicy,
 ) -> tuple[list[dict[str, Any]], Run[Any]]:
     """A run over one booking change that has to be approved, returning what executed."""
     called: list[dict[str, Any]] = []
@@ -370,7 +369,6 @@ async def _settling(
         tools=registry.view(allow=("change_booking",), agent="planner"),
         approvals=approvals,
         autonomy=autonomy,
-        revoked_runs=policy,
     )
     agent: Agent[Any] = Agent(
         name="planner",

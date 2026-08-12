@@ -432,7 +432,6 @@ class AgentRunner:
         claim_check: ClaimCheck | None = None,
         checkpoints: Checkpointer | None = None,
         autonomy: AutonomyGate | None = None,
-        revoked_runs: InFlightPolicy = InFlightPolicy.CANCEL,
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
@@ -480,7 +479,6 @@ class AgentRunner:
         self._claims = claim_check
         self._checkpoints = checkpoints
         self._autonomy = autonomy
-        self._revoked_runs = revoked_runs
         self._orphans: set[asyncio.Task[Any]] = set()
 
     def reload(self, router: ModelRouter) -> None:
@@ -2235,11 +2233,10 @@ class AgentRunner:
         been withdrawn, and a human approving a call is not the same as the grant that put
         the call in front of them still standing.
         """
-        withdrawn = (
-            None
-            if escalated is None or self._autonomy is None
-            else (self._autonomy.withdrawn(escalated))
-        )
+        gate = self._autonomy
+        if gate is None or escalated is None:
+            return run
+        withdrawn = gate.withdrawn(escalated)
         if withdrawn is None:
             return run
         run = run.record_event(
@@ -2249,7 +2246,7 @@ class AgentRunner:
                 detail=f"{withdrawn.grant_id} withdrawn by {withdrawn.revoked_by}",
             )
         )
-        if self._revoked_runs is InFlightPolicy.CANCEL:
+        if gate.revoked_runs is InFlightPolicy.CANCEL:
             raise _Terminal(
                 run,
                 RunState.FAILED,

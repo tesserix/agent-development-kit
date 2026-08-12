@@ -11,7 +11,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from tesserix_adk.core.autonomy import ActionRequest, AutonomyDecision, AutonomyOutcome
+from tesserix_adk.core.autonomy import (
+    ActionRequest,
+    AutonomyDecision,
+    AutonomyOutcome,
+    InFlightPolicy,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
@@ -130,6 +135,8 @@ class AutonomyGate:
             obligation is the consumer's to honour elsewhere.
         revocations: What this process has heard withdrawn. Absent, the store's own read
             is the only check, which is correct but no faster than the next action.
+        revoked_runs: What a run already under way does when the grant behind the call a
+            human just approved turns out to have been withdrawn.
     """
 
     def __init__(
@@ -138,10 +145,12 @@ class AutonomyGate:
         *,
         reports: ReportLog | None = None,
         revocations: RevocationWatch | None = None,
+        revoked_runs: InFlightPolicy = InFlightPolicy.CANCEL,
     ) -> None:
         self._ladder = ladder
         self._reports = reports
         self._revocations = revocations
+        self.revoked_runs = revoked_runs
 
     async def decide(
         self,

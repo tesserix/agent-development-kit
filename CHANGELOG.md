@@ -176,12 +176,12 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   A run suspended on an approval is re-checked when it wakes, before anything goes out: a
   human approving a call is not the same as the grant behind it still standing. The run
   records `grant_revoked` and then fails with `GrantRevokedError` or degrades to asking,
-  per the runner's `revoked_runs`. `RevocationBroadcast` carries withdrawals to every
+  per the gate's `revoked_runs`. `RevocationBroadcast` carries withdrawals to every
   process, but only as an accelerator — the store re-read is the authority, and a watch
   nobody has confirmed within `stale_after_seconds` refuses unattended action rather than
   acting on what it last heard. `PostgresGrantStore.revoke` appends to
   `adk_grant_revocations`, which `grants_for` excludes; `GRANT_SCHEMA_VERSION` is 2.
-  **Stability:** additive. `revoked_runs` defaults to `CANCEL`, and a runner given no
+  **Stability:** additive. `revoked_runs` defaults to `CANCEL`, and a gate given no
   `RevocationWatch` behaves exactly as before. Documented in `docs/autonomy.md`, exercised
   by `examples/revocation.py`.
 
