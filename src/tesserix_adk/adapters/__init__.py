@@ -1,6 +1,14 @@
 """Concrete backing stores and transports."""
 
 from tesserix_adk.adapters.cache import DEFAULT_NAMESPACE, RedisCacheStore
+from tesserix_adk.adapters.grants import (
+    DEFAULT_GRANT_TABLES,
+    EXPECTED_GRANT_SCHEMA,
+    GRANT_SCHEMA_VERSION,
+    GrantTables,
+    PostgresGrantSettings,
+    PostgresGrantStore,
+)
 from tesserix_adk.adapters.graph import (
     BACKENDS,
     EXTRACTION_INSTRUCTION,
@@ -81,6 +89,7 @@ __all__ = [
     "BACKENDS",
     "COUNTERS",
     "DEFAULT_COLLECTION",
+    "DEFAULT_GRANT_TABLES",
     "DEFAULT_HEARTBEAT_SECONDS",
     "DEFAULT_LEASE_SECONDS",
     "DEFAULT_NAMESPACE",
@@ -90,8 +99,10 @@ __all__ = [
     "DEFAULT_STATE_NAMESPACE",
     "DEFAULT_TABLE",
     "DISTANCE_OPERATORS",
+    "EXPECTED_GRANT_SCHEMA",
     "EXPECTED_SCHEMA",
     "EXTRACTION_INSTRUCTION",
+    "GRANT_SCHEMA_VERSION",
     "IN_FLIGHT",
     "SCHEMA_VERSION",
     "SSE_HEADERS",
@@ -103,6 +114,7 @@ __all__ = [
     "ExtractedSubgraph",
     "ExtractionCharge",
     "ExtractionMeter",
+    "GrantTables",
     "GraphEngine",
     "GraphMemoryStore",
     "GraphSettings",
@@ -114,6 +126,8 @@ __all__ = [
     "MemoryStoreSettings",
     "PayloadElided",
     "PgvectorMemoryStore",
+    "PostgresGrantSettings",
+    "PostgresGrantStore",
     "PostgresIdempotencyStore",
     "PostgresLedger",
     "PostgresMemoryStore",

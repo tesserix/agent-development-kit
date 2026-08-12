@@ -38,6 +38,7 @@ from tesserix_adk.core import (
     ApprovalExpiredError,
     ApprovalGate,
     ApprovalRecord,
+    AutonomyRefusedError,
     BinaryPart,
     BudgetExceededError,
     BudgetScope,
@@ -114,6 +115,7 @@ from tesserix_adk.core import (
     scrub,
     verify_conformance,
 )
+from tesserix_adk.core.autonomy import AutonomyOutcome
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
@@ -167,6 +169,7 @@ if TYPE_CHECKING:
         IdFactory,
         ToolRegistry,
     )
+    from tesserix_adk.runtime.autonomy import AutonomyGate
     from tesserix_adk.runtime.claim_check import ClaimCheck
 
 __all__ = ["AgentRunner", "ModelRequest", "ModelResponse", "SystemClock"]
@@ -426,6 +429,7 @@ class AgentRunner:
         results: ToolResultBoundary | None = None,
         claim_check: ClaimCheck | None = None,
         checkpoints: Checkpointer | None = None,
+        autonomy: AutonomyGate | None = None,
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
@@ -472,6 +476,7 @@ class AgentRunner:
         self._results = results or ToolResultBoundary()
         self._claims = claim_check
         self._checkpoints = checkpoints
+        self._autonomy = autonomy
         self._orphans: set[asyncio.Task[Any]] = set()
 
     def reload(self, router: ModelRouter) -> None:
@@ -2208,15 +2213,59 @@ class AgentRunner:
         )
         if decision.action is HookAction.REFUSE:
             raise _Terminal(run, RunState.FAILED, _named(HookRefusedError(decision.reason)))
+        run, escalated = await self._within_autonomy(run, call)
         declared = self._declares_approval(agent, call)
-        if not declared and decision.action is not HookAction.REQUIRE_APPROVAL:
+        asked = decision.action is HookAction.REQUIRE_APPROVAL
+        if not declared and escalated is None and not asked:
             return run
-        reason = (
-            decision.reason
-            if decision.action is HookAction.REQUIRE_APPROVAL
-            else f"{call.name} is declared to require approval"
-        )
+        reason = self._why_held(call, decision, escalated, declared=declared)
         return await self._approved(run, agent, call, reason, bounds)
+
+    def _why_held(
+        self, call: ToolCall, decision: HookDecision, escalated: str | None, *, declared: bool
+    ) -> str:
+        """What the human waiting on this call is told it is about."""
+        if decision.action is HookAction.REQUIRE_APPROVAL:
+            return decision.reason
+        if declared:
+            return f"{call.name} is declared to require approval"
+        return f"beyond this agent's autonomy: {escalated}"
+
+    async def _within_autonomy(self, run: Run[Any], call: ToolCall) -> tuple[Run[Any], str | None]:
+        """What the grants say about this call, and why where they say it needs a human.
+
+        Autonomy only ever adds a gate. A grant that permits acting unattended does not
+        waive an approval the agent or the tool declared, because the two answer different
+        questions: how much this agent may do, and whether this call is one a human sees.
+        """
+        if self._autonomy is None:
+            return run, None
+        decided = await self._autonomy.decide(
+            tool=call.name,
+            tenant=run.tenant,
+            arguments=call.arguments,
+            run_id=run.id,
+            user=run.user,
+        )
+        if decided.outcome is AutonomyOutcome.REFUSE:
+            run = run.record_event(
+                self._event(RunEventKind.AUTONOMY_REFUSED, name=call.name, detail=decided.reason)
+            )
+            raise _Terminal(
+                run,
+                RunState.FAILED,
+                _named(
+                    AutonomyRefusedError(
+                        decided.reason, tool=call.name, action_class=decided.action_class
+                    )
+                ),
+            )
+        if decided.outcome is AutonomyOutcome.ESCALATE:
+            run = run.record_event(
+                self._event(RunEventKind.AUTONOMY_ESCALATED, name=call.name, detail=decided.reason)
+            )
+            return run, decided.reason
+        return run, None
 
     def _declares_approval(self, agent: Agent[Any], call: ToolCall) -> bool:
         """Whether a human must decide this call, per the agent or per the tool itself.

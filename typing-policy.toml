@@ -350,3 +350,13 @@ has a way in. Typing it as a record would defeat the only thing the method is fo
 """
 owner = "@sam123ben"
 review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.runtime.autonomy.AutonomyGate"
+kind = "json"
+reason = """
+Tool arguments are whatever the tool's schema validated them to, which is the same JSON the
+loop already carries; the gate reads one field out of them and never interprets the rest.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13

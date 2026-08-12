@@ -19,6 +19,7 @@ __all__ = [
     "ApprovalDeniedError",
     "ApprovalExpiredError",
     "AuthenticationError",
+    "AutonomyRefusedError",
     "BudgetExceededError",
     "BudgetUnavailableError",
     "CancelledError",
@@ -1571,6 +1572,23 @@ class ScopeEscalationError(AdkError):
         super().__init__(
             *args, details={"requested": ", ".join(requested), "path": " -> ".join(path)}
         )
+
+
+class AutonomyRefusedError(AdkError):
+    """Raised when an action is one no grant could ever have permitted.
+
+    Distinct from escalation: escalating puts the call in front of a human, and there is
+    no human who can wave this one through from inside the run.
+
+    Args:
+        tool: What was attempted.
+        action_class: The class it belongs to.
+    """
+
+    def __init__(self, *args: object, tool: str = "", action_class: str = "") -> None:
+        self.tool = tool
+        self.action_class = action_class
+        super().__init__(*args, details={"tool": tool, "action_class": action_class})
 
 
 class DependencyCycleError(ConfigurationError):

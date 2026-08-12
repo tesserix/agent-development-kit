@@ -165,6 +165,19 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `AutonomyLadder`, `AutonomyGrant` and `AutonomyGate`, making how much an agent may do
+  unattended a grant somebody issued rather than a number in a config file. A grant names
+  its issuer, one action class, a `Decimal` ceiling in one currency over one window, and an
+  expiry — there is no non-expiring grant. Anything unmatched, expired, unpriced, in another
+  currency or over the remaining headroom escalates to a human, and headroom is never
+  rounded up to fit. The ladder holds a read-only `GrantReader`, so no object inside a run
+  can widen what the run may do, and the reserved `autonomy.grant` class is refused outright.
+  In the loop, `ESCALATE` adds an approval requirement and `REFUSE` fails the run; autonomy
+  only ever adds a gate and never waives one a tool declared. `act_and_report` is enforced —
+  an undelivered report degrades the next action of that class to asking. `PostgresGrantStore`
+  is the append-only backing: an id in use is refused rather than updated, and
+  `EXPECTED_GRANT_SCHEMA` leaves the DDL with the deployment.
+
 - `PostgresStateStore` and `PostgresWorkQueue`, backing the `StateStore` and `WorkQueue`
   protocols with the database a deployment already runs and passing both conformance suites
   unchanged. `bound(session)` puts a state change and the work it queues in one transaction,
