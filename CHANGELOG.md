@@ -165,6 +165,17 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `PostgresStateStore` and `PostgresWorkQueue`, backing the `StateStore` and `WorkQueue`
+  protocols with the database a deployment already runs and passing both conformance suites
+  unchanged. `bound(session)` puts a state change and the work it queues in one transaction,
+  so they commit together or neither does. A claim is one `FOR UPDATE ... SKIP LOCKED`
+  statement with every predicate repeated on the locked relation, because a predicate
+  PostgreSQL cannot re-check under `READ COMMITTED` is a row two workers both take; tenants
+  are served in rotation so a backlog cannot starve the tenant beside it. `EXPECTED_SCHEMA`
+  publishes the shape for a migration to own — the kit reads `adk_schema`, refuses a version
+  it was not written for and a connection with no `statement_timeout`, and never applies or
+  alters anything itself.
+
 - `RedisStateStore` and `RedisWorkQueue`, the durable backings for the `StateStore` and
   `WorkQueue` protocols, passing both conformance suites unchanged. A run is a JSON blob
   beside a counters hash, so patches commute under concurrency and a write holding a stale

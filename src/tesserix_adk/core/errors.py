@@ -1646,8 +1646,9 @@ class StatePersistenceError(AdkError):
 
     Args:
         store: Which adapter failed, by class name.
-        reason: `unavailable` where it could not be reached, `too_large` where the record
-            exceeded what the store will hold.
+        reason: `unavailable` where it could not be reached, `contended` where the write
+            lost a serialisation race and the transaction rolled back, `too_large` where
+            the record exceeded what the store will hold.
     """
 
     def __init__(self, *args: object, store: str = "", reason: str = "unavailable") -> None:
@@ -1657,8 +1658,8 @@ class StatePersistenceError(AdkError):
 
     @property
     def retryable(self) -> bool:
-        """Only where it could not be reached. A record too large stays too large."""
-        return self.reason == "unavailable"
+        """Everything but size: a record too large stays too large, however often it is sent."""
+        return self.reason != "too_large"
 
 
 class StateInUseError(AdkError):

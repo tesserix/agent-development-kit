@@ -239,6 +239,16 @@ owner = "@sam123ben"
 review_by = 2027-08-07
 
 [[any]]
+symbol = "tesserix_adk.adapters.sql_state.SqlSession"
+kind = "json"
+reason = """
+The same reason as the ledger's executor: rows and bound parameters vary by statement, and
+the driver a deployment brings decides what a column comes back as.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
 symbol = "tesserix_adk.core.schema.annotations_of"
 kind = "json"
 reason = """
