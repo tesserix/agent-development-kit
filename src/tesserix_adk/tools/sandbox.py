@@ -57,7 +57,8 @@ __all__ = [
     "sandbox_tool",
 ]
 
-_SIGXCPU = int(getattr(signal, "SIGXCPU", 24))
+# The soft ceiling raises SIGXCPU; a child that ignores it is killed at the hard one.
+_CPU_SIGNALS = (-int(getattr(signal, "SIGXCPU", 24)), -int(signal.SIGKILL))
 
 _BOOTSTRAP = """
 import builtins, socket, sys
@@ -260,7 +261,7 @@ class SubprocessSandbox:
 
         failed = err.decode("utf-8", "replace")
         exit_code = process.returncode or 0
-        if exit_code == -_SIGXCPU:
+        if exit_code in _CPU_SIGNALS:
             raise SandboxTimeoutError(
                 f"the code ran past its {ceilings.cpu_seconds}s cpu ceiling",
                 limit="cpu",
@@ -367,7 +368,8 @@ def _ceilings_for(limits: SandboxLimits) -> Callable[[], None]:
     """Return the hook that binds the ceilings inside the child, before it runs anything."""
 
     def bind() -> None:  # pragma: no cover — runs in the child, after the fork
-        resource.setrlimit(resource.RLIMIT_CPU, (limits.cpu_seconds, limits.cpu_seconds))
+        # Headroom so the kernel signals the soft ceiling before killing at the hard one.
+        resource.setrlimit(resource.RLIMIT_CPU, (limits.cpu_seconds, limits.cpu_seconds + 1))
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
         for kind in (resource.RLIMIT_AS, resource.RLIMIT_DATA):
             try:
