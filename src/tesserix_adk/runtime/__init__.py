@@ -13,6 +13,7 @@ from tesserix_adk.runtime.blocking import (
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.claim_check import ClaimCheck, MemoryClaimCheckStore
 from tesserix_adk.runtime.context import ContextWindow, Segment
+from tesserix_adk.runtime.delegation import Delegation, DelegationLimits, DelegationScope
 from tesserix_adk.runtime.determinism import RunFingerprint, canonical_digest, fingerprint_of
 from tesserix_adk.runtime.estimate import (
     Assumptions,
@@ -94,6 +95,9 @@ __all__ = [
     "ContextWindow",
     "CostEstimate",
     "Deadline",
+    "Delegation",
+    "DelegationLimits",
+    "DelegationScope",
     "GuardrailDecision",
     "InMemoryHistory",
     "IterationStarted",

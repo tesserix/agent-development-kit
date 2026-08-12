@@ -154,6 +154,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `Delegation`, which bounds how far a run may hand work onward and narrows what each
+  sub-agent holds. `DelegationLimits` caps depth, one agent's fan-out and the whole run's
+  delegation count — the last catching the shallow, very wide tree the other two miss — and
+  narrows downward only. A child holds the intersection of what it asked for with what its
+  parent holds; asking for anything the parent never held raises `ScopeEscalationError`
+  naming it, and the tenant is inherited rather than passed, so crossing a tenant boundary
+  by delegation is unrepresentable. Revisiting an agent already on the path, exceeding a
+  ceiling or acting on an expired scope raises `DelegationLimitError` with a `reason` and
+  the path, before the child is created and without spending the run's allowance. A
+  delegation comes only from `Delegation.root` or `parent.to(...)`; the constructor refuses.
+  **Stability:** additive. Documented in `docs/delegation.md`.
+
 - `Dispatch`, which runs work with declared dependencies as wide as those dependencies
   allow. Each `DispatchNode` names what it waits for and is given exactly what those nodes
   returned, so independent branches run together without hand-scheduling and a join starts

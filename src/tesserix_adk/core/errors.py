@@ -28,6 +28,7 @@ __all__ = [
     "ContentFilteredError",
     "ContextBudgetError",
     "ContextWindowExceededError",
+    "DelegationLimitError",
     "DependencyCycleError",
     "EmbeddingDimensionError",
     "EstimateUnavailableError",
@@ -67,6 +68,7 @@ __all__ = [
     "SandboxTimeoutError",
     "SchemaGenerationError",
     "SchemaViolationError",
+    "ScopeEscalationError",
     "StreamInterruptedError",
     "ToolArgumentValidationError",
     "ToolDefinitionError",
@@ -1445,6 +1447,49 @@ class SandboxMemoryError(SandboxError):
     def __init__(self, *args: object, limit_bytes: int = 0) -> None:
         self.limit_bytes = limit_bytes
         super().__init__(*args, details={"limit_bytes": str(limit_bytes)})
+
+
+class DelegationLimitError(LoopLimitError):
+    """Raised when one agent may not hand work to another, and the run must say why.
+
+    Surfaced to the parent rather than ending the run: an agent that cannot delegate can
+    often still answer, and a refusal it can read is a refusal it can reason about. It is
+    not retryable — the same call refused for the same reason refuses again — so a parent
+    that retries it is looping, not recovering.
+
+    Args:
+        reason: Which ceiling bound. `"depth"`, `"fan_out"`, `"run"`, `"cycle"` or
+            `"expired"`, so a refusal is attributable to a decision somebody made.
+        path: The agents the refused call would have run through, root first, ending with
+            the one that was refused.
+    """
+
+    def __init__(self, *args: object, reason: str = "depth", path: tuple[str, ...] = ()) -> None:
+        self.reason = reason
+        self.path = path
+        super().__init__(*args, details={"reason": reason, "path": " -> ".join(path)})
+
+
+class ScopeEscalationError(AdkError):
+    """Raised when a sub-agent asked to hold access the agent it acts for does not hold.
+
+    A child's scope is its parent's, narrowed. Anything else is a privilege escalation
+    dressed as a default, and it is refused whether or not the child's own configuration
+    would have permitted it.
+
+    Args:
+        requested: What was asked for and not held, in the order it was asked for.
+        path: The agents the call ran through, so the refusal names who asked.
+    """
+
+    def __init__(
+        self, *args: object, requested: tuple[str, ...] = (), path: tuple[str, ...] = ()
+    ) -> None:
+        self.requested = requested
+        self.path = path
+        super().__init__(
+            *args, details={"requested": ", ".join(requested), "path": " -> ".join(path)}
+        )
 
 
 class DependencyCycleError(ConfigurationError):

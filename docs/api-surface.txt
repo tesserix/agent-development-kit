@@ -144,6 +144,7 @@ tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(AdkModel)
 tesserix_adk.core.DeclaresEmulation :: class DeclaresEmulation(Protocol)
+tesserix_adk.core.DelegationLimitError :: class DelegationLimitError(LoopLimitError)
 tesserix_adk.core.DependencyCycleError :: class DependencyCycleError(ConfigurationError)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
 tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
@@ -247,6 +248,7 @@ tesserix_adk.core.SandboxTimeoutError :: class SandboxTimeoutError(SandboxError)
 tesserix_adk.core.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.SchemaViolationError :: class SchemaViolationError(AdkError)
+tesserix_adk.core.ScopeEscalationError :: class ScopeEscalationError(AdkError)
 tesserix_adk.core.ScopedLimits :: class ScopedLimits(AdkModel)
 tesserix_adk.core.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.core.Sensitive :: class Sensitive(object)
@@ -367,6 +369,7 @@ tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError
 tesserix_adk.core.errors.ContentFilteredError :: class ContentFilteredError(ProviderError)
 tesserix_adk.core.errors.ContextBudgetError :: class ContextBudgetError(AdkError)
 tesserix_adk.core.errors.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
+tesserix_adk.core.errors.DelegationLimitError :: class DelegationLimitError(LoopLimitError)
 tesserix_adk.core.errors.DependencyCycleError :: class DependencyCycleError(ConfigurationError)
 tesserix_adk.core.errors.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.errors.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
@@ -407,6 +410,7 @@ tesserix_adk.core.errors.SandboxMemoryError :: class SandboxMemoryError(SandboxE
 tesserix_adk.core.errors.SandboxTimeoutError :: class SandboxTimeoutError(SandboxError)
 tesserix_adk.core.errors.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
+tesserix_adk.core.errors.ScopeEscalationError :: class ScopeEscalationError(AdkError)
 tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
 tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
 tesserix_adk.core.errors.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
@@ -804,6 +808,9 @@ tesserix_adk.runtime.Confidence :: class Confidence(StrEnum)
 tesserix_adk.runtime.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.CostEstimate :: class CostEstimate(AdkModel) {as_limits(self, *, headroom: 'Decimal' = Decimal('1')) -> 'BudgetLimits'; with_children(self, *children: 'CostEstimate') -> 'CostEstimate'}
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
+tesserix_adk.runtime.Delegation :: class Delegation(object) {to(self, agent: 'str', *, tools: 'Collection[str] | None' = None, mutations: 'Collection[str] | None' = None, limits: 'DelegationLimits | None' = None) -> 'Delegation'}
+tesserix_adk.runtime.DelegationLimits :: class DelegationLimits(object) {narrowed(self, other: 'DelegationLimits') -> 'DelegationLimits'}
+tesserix_adk.runtime.DelegationScope :: class DelegationScope(object) {holds(self, tool: 'str') -> 'bool'}
 tesserix_adk.runtime.GuardrailDecision :: class GuardrailDecision(ProgressEvent)
 tesserix_adk.runtime.InMemoryHistory :: class InMemoryHistory(object) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'; record(self, run: 'Run[OutputT]') -> 'None'}
 tesserix_adk.runtime.IterationStarted :: class IterationStarted(ProgressEvent)
@@ -874,6 +881,9 @@ tesserix_adk.runtime.context.ContextWindow :: class ContextWindow(object) {admit
 tesserix_adk.runtime.context.Segment :: class Segment(AdkModel)
 tesserix_adk.runtime.current_ambient :: def current_ambient() -> 'Ambient | None'
 tesserix_adk.runtime.decode_progress :: def decode_progress(payload: 'Mapping[str, object]') -> 'ProgressEvent | None'
+tesserix_adk.runtime.delegation.Delegation :: class Delegation(object) {to(self, agent: 'str', *, tools: 'Collection[str] | None' = None, mutations: 'Collection[str] | None' = None, limits: 'DelegationLimits | None' = None) -> 'Delegation'}
+tesserix_adk.runtime.delegation.DelegationLimits :: class DelegationLimits(object) {narrowed(self, other: 'DelegationLimits') -> 'DelegationLimits'}
+tesserix_adk.runtime.delegation.DelegationScope :: class DelegationScope(object) {holds(self, tool: 'str') -> 'bool'}
 tesserix_adk.runtime.determinism.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.determinism.canonical_digest :: def canonical_digest(value: 'Any') -> 'str'
 tesserix_adk.runtime.determinism.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
