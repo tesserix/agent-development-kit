@@ -11,6 +11,7 @@ from tesserix_adk.runtime.blocking import (
     drive,
 )
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
+from tesserix_adk.runtime.claim_check import ClaimCheck, MemoryClaimCheckStore
 from tesserix_adk.runtime.context import ContextWindow, Segment
 from tesserix_adk.runtime.determinism import RunFingerprint, canonical_digest, fingerprint_of
 from tesserix_adk.runtime.estimate import (
@@ -88,6 +89,7 @@ __all__ = [
     "Backpressure",
     "Calibration",
     "CancellationToken",
+    "ClaimCheck",
     "Confidence",
     "ContextWindow",
     "CostEstimate",
@@ -96,6 +98,7 @@ __all__ = [
     "InMemoryHistory",
     "IterationStarted",
     "LoopMonitor",
+    "MemoryClaimCheckStore",
     "MemoryIdempotencyStore",
     "ModelRequest",
     "ModelResponse",

@@ -98,6 +98,7 @@ code lands here as the kit is built.
 | Redaction and erasure — masking on write, derived artefacts, two-phase erasure, receipts | [`docs/erasure.md`](docs/erasure.md) |
 | Memory adapters — Redis, PostgreSQL and pgvector, settings, retries, paging | [`docs/memory-adapters.md`](docs/memory-adapters.md) |
 | Graph memory — relations over a temporal graph, metered extraction, tenant ceilings, queued writes | [`docs/graph-memory.md`](docs/graph-memory.md) |
+| Claim-check tool results — heads and handles, thresholds, handle scope, reading back | [`docs/claim-check.md`](docs/claim-check.md) |
 | Context assembly — the plan, the provider's budget, pinning, compaction strategies, failing closed | [`docs/context-assembly.md`](docs/context-assembly.md) |
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |

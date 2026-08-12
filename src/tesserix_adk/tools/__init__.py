@@ -1,5 +1,6 @@
 """Tool registry, argument schemas, invocation and the ToolBus."""
 
+from tesserix_adk.tools.claim_check import DEFAULT_FETCH_CHARS, claim_check_tool
 from tesserix_adk.tools.context import ToolContext
 from tesserix_adk.tools.decorator import Tool, tool
 from tesserix_adk.tools.errors import (
@@ -21,6 +22,7 @@ from tesserix_adk.tools.validation import (
 )
 
 __all__ = [
+    "DEFAULT_FETCH_CHARS",
     "LENIENT",
     "STRICT",
     "AgentToolView",
@@ -35,6 +37,7 @@ __all__ = [
     "ToolFailure",
     "ToolRefusal",
     "ToolRegistry",
+    "claim_check_tool",
     "permanent",
     "refusal",
     "tool",

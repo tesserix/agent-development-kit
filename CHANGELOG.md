@@ -154,6 +154,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `ClaimCheck`, which stops an oversized tool result being re-sent on every turn. The
+  content goes to a `ClaimCheckStore` and what enters the conversation is an extractive
+  head plus a handle, cut at a boundary the content provides rather than mid-word.
+  `ClaimCheckPolicy` sets the threshold, the head size and the retention window, per tool
+  where tools differ; a head no smaller than the threshold is refused at construction. A
+  handle is scoped to the tenant and run that made it, with the scope hashed into the
+  handle as well as checked on lookup, so a handle from another run cannot be derived —
+  and an out-of-scope, expired or unknown handle all answer `ClaimUnavailableError`
+  identically. `claim_check_tool(store)` builds the read-only `fetch_result(handle,
+  offset=0)` that redeems one, returning a bounded window rather than the document.
+  Checking in runs after the tool-result boundary, so only validated content is stored,
+  and the loop records `tool_result_stored` naming the size and handle, never the content.
+  **Stability:** additive — without a `claim_check` bound, behaviour is unchanged.
+  Documented in `docs/claim-check.md`.
+
 - `GraphMemoryStore`, relationship memory over a temporal knowledge graph behind the same
   `MemoryStore` protocol. It answers `relations(scope, as_of=…)` and hands everything else
   to a companion store. It is the one adapter whose writes cost money — relations come from

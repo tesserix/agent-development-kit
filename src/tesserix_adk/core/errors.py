@@ -23,6 +23,7 @@ __all__ = [
     "BudgetUnavailableError",
     "CancelledError",
     "CapabilityError",
+    "ClaimUnavailableError",
     "ConfigurationError",
     "ContentFilteredError",
     "ContextBudgetError",
@@ -1376,3 +1377,27 @@ class WriteQueueFullError(AdkError):
     def retryable(self) -> bool:
         """Yes, once the queue has drained. Nothing about the write itself was refused."""
         return True
+
+
+class ClaimUnavailableError(AdkError):
+    """Raised when a checked-in tool result cannot be produced for the handle asked about.
+
+    Expired, erased, never stored, or belonging to another tenant or run — all one answer,
+    deliberately. Distinguishing "gone" from "not yours" tells a caller which handles other
+    runs hold, and the model can do nothing different with either.
+
+    The alternative to raising is returning something, and the only something available is
+    invented. A model handed a plausible substitute for a document it asked to read has no
+    way to know it is reasoning about nothing.
+
+    Args:
+        handle: What was asked for.
+        tenant: Whose run asked.
+        run_id: Which run asked.
+    """
+
+    def __init__(self, *args: object, handle: str = "", tenant: str = "", run_id: str = "") -> None:
+        self.handle = handle
+        self.tenant = tenant
+        self.run_id = run_id
+        super().__init__(*args, details={"handle": handle, "run_id": run_id})

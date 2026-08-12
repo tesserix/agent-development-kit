@@ -141,12 +141,14 @@ if TYPE_CHECKING:
     from tesserix_adk.core import (
         Agent,
         BudgetPolicy,
+        ClaimTicket,
         Clock,
         Guardrail,
         Hook,
         IdFactory,
         ToolRegistry,
     )
+    from tesserix_adk.runtime.claim_check import ClaimCheck
 
 __all__ = ["AgentRunner", "ModelRequest", "ModelResponse", "SystemClock"]
 
@@ -328,11 +330,15 @@ class AgentRunner:
             iteration budget being asked again.
         max_tool_result_chars: Where an oversized tool result is cut. Truncation is
             recorded as its own event; silently dropping half a result is a wrong answer
-            nobody can account for. Compaction rather than cutting is #192.
+            nobody can account for. `claim_check` compacts rather than cuts.
         results: What every tool result is held to before it enters the conversation. The
             default holds each result to the type its tool declared, neutralises what can
             forge a turn, and flags instruction-shaped content; a consumer that needs a
             tool to fail closed on suspicion says so here rather than in a prompt.
+        claim_check: Where oversized results go instead of into the conversation. Bound,
+            a result above the threshold enters as a head and a handle and the content is
+            fetched only if the model asks. Unbound, an oversized result is cut at
+            `max_tool_result_chars` and the rest is gone.
 
     Raises:
         ProtocolConformanceError: If a collaborator is missing a member its protocol
@@ -366,6 +372,7 @@ class AgentRunner:
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
         max_tool_attempts: int = _DEFAULT_MAX_TOOL_ATTEMPTS,
         results: ToolResultBoundary | None = None,
+        claim_check: ClaimCheck | None = None,
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
@@ -410,6 +417,7 @@ class AgentRunner:
         self._max_tool_result_chars = max_tool_result_chars
         self._max_tool_attempts = max_tool_attempts
         self._results = results or ToolResultBoundary()
+        self._claims = claim_check
         self._orphans: set[asyncio.Task[Any]] = set()
 
     def reload(self, router: ModelRouter) -> None:
@@ -1739,6 +1747,12 @@ class AgentRunner:
         stopped = self._indeterminacy(agent, ticket.call)
         return _Outcome(events=(stopped,), text=f"error: {stopped.detail}")
 
+    async def _checked_in(self, checked: ToolResult, run: Run[Any]) -> ClaimTicket | None:
+        """Store an oversized result and return its ticket, or `None` if none was bound."""
+        if self._claims is None:
+            return None
+        return await self._claims.stored(checked, tenant=run.tenant, run_id=run.id)
+
     def _returning(self, name: str) -> ReturningTool:
         """What the boundary needs to know about the tool, for buses that can say."""
         resolve = getattr(self._tools, "resolve", None)
@@ -2311,6 +2325,16 @@ class AgentRunner:
                 )
             )
         text = checked.text
+        claim = await self._checked_in(checked, run)
+        if claim is not None:
+            run = run.record_event(
+                self._event(
+                    RunEventKind.TOOL_RESULT_STORED,
+                    name=call.name,
+                    detail=f"{claim.chars} chars held under {claim.handle}",
+                )
+            )
+            text = claim.rendered()
         truncated = checked.truncated or len(text) > self._max_tool_result_chars
         if truncated:
             run = run.record_event(

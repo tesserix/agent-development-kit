@@ -21,6 +21,13 @@ from tesserix_adk.core.capabilities import (
     ModelRef,
     ModelSpec,
 )
+from tesserix_adk.core.claim_check import (
+    HANDLE_PREFIX,
+    ClaimCheckPolicy,
+    ClaimCheckStore,
+    ClaimTicket,
+    claim_handle,
+)
 from tesserix_adk.core.config import (
     AdkConfig,
     ConcurrencyConfig,
@@ -58,6 +65,7 @@ from tesserix_adk.core.errors import (
     BudgetUnavailableError,
     CancelledError,
     CapabilityError,
+    ClaimUnavailableError,
     ConfigurationError,
     ContentFilteredError,
     ContextBudgetError,
@@ -233,6 +241,7 @@ from tesserix_adk.core.trust import TrustBoundary
 
 __all__ = [
     "CHEAP",
+    "HANDLE_PREFIX",
     "INLINE_REFS",
     "JSON_SCHEMA",
     "MASK",
@@ -269,6 +278,10 @@ __all__ = [
     "CapabilityError",
     "CapabilitySet",
     "Claim",
+    "ClaimCheckPolicy",
+    "ClaimCheckStore",
+    "ClaimTicket",
+    "ClaimUnavailableError",
     "Clock",
     "ConcurrencyConfig",
     "ConfigError",
@@ -413,6 +426,7 @@ __all__ = [
     "WindowSpend",
     "WorkersBusyError",
     "WriteQueueFullError",
+    "claim_handle",
     "deduplicate",
     "deprecate",
     "deprecations",
