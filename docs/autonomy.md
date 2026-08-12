@@ -102,11 +102,56 @@ that class to asking a human until it is delivered. Without that, `act_and_repor
 `act` the day nobody reads the reports. `InMemoryReports` is the single-process
 implementation; a deployment substitutes its own.
 
+## Taking it back
+
+A grant is read from the store on every attempted action, not once at run start, which is
+what makes a withdrawal land on the very next action rather than at the next deployment.
+
+```python
+await grants.revoke(Revocation(
+    grant_id="g1", revoked_by="ops@acme.example", revoked_at=now, reason="card reported stolen",
+))
+```
+
+A withdrawal names one grant, or a tenant, or a tenant and an action class — enough to stop
+a class of work across a fleet without knowing every id that was issued for it. One that
+names neither a grant nor a tenant is refused at construction: it would either do nothing or
+withdraw the world, and both are the wrong answer to what somebody meant.
+
+Withdrawal is an append, never a delete, so a revoked grant cannot be reactivated: there is
+no statement in the kit that removes a revocation, and re-granting mints a new id. What was
+withdrawn stays readable as what it permitted while it stood.
+
+### Runs already under way
+
+A run suspended on an approval was asleep while the authority behind it could have been
+taken back, and a human approving a call is not the same as the grant that put the call in
+front of them still standing. The loop re-checks after the approval returns and before
+anything goes out, and records `grant_revoked`:
+
+| `revoked_runs` | What the run does |
+|---|---|
+| `InFlightPolicy.CANCEL` (default) | Fails with `GrantRevokedError`, naming the grant and who withdrew it. |
+| `InFlightPolicy.ASK_ALWAYS` | Proceeds on the approval it has, and every later action of the class asks a human. |
+
+### The bus is an accelerator, never the authority
+
+`RevocationBroadcast` carries withdrawals to every process over NATS or Redis, and
+`RevocationWatch.follow` consumes them. A missed message costs latency, not correctness: the
+store re-read is what refuses.
+
+The watch fails closed on its own. A view nobody has confirmed within
+`stale_after_seconds` (30 by default) refuses unattended action rather than acting on what it
+last heard — a process cut off from the bus cannot know a grant is still live. It never
+manufactures authority in the other direction: a stale watch turns `act` into `refuse` and
+leaves an escalation exactly as it was.
+
 ## Grants in PostgreSQL
 
 `PostgresGrantStore` is append-only. An id already in use is refused, never updated: a
 decision recorded against an id has to stay readable as what it permitted, so re-granting
-mints a new id. The dispatch-path read is one tenant, one class, unexpired at one moment.
+mints a new id. The dispatch-path read is one tenant, one class, unexpired at one moment, excluding
+anything a row in `adk_grant_revocations` withdrew.
 
 Issuance is not retried — a retried insert that may already have landed is how one id ends
 up meaning two things — while reads retry a contended or briefly unreachable database. A
@@ -128,7 +173,6 @@ store = await PostgresGrantStore.open(pool, clock=clock, settings=settings)
 - **The audit record shape.** The ladder names the grant on every decision, including
   escalations — which grant was not enough is the question an operator asks — but what that
   record looks like on disk belongs elsewhere.
-- **Revocation.** A grant is withdrawn as its own column, not by rewriting the row.
 - **Grant administration UI.** Each product's own.
 
 Verify the store against a real PostgreSQL:

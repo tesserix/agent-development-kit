@@ -165,6 +165,26 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `Revocation`, `RevocationWatch` and `InFlightPolicy`, taking autonomy back from work
+  already under way. Grants are read from the store on every attempted action, so a
+  withdrawal lands on the very next one; a withdrawal names one grant, or a tenant, or a
+  tenant and an action class, and one that names neither a grant nor a tenant is refused
+  because it would either do nothing or withdraw the world. Revocation is an append, so a
+  withdrawn grant can never be reactivated — re-granting mints a new id and what was
+  withdrawn stays readable as what it permitted.
+
+  A run suspended on an approval is re-checked when it wakes, before anything goes out: a
+  human approving a call is not the same as the grant behind it still standing. The run
+  records `grant_revoked` and then fails with `GrantRevokedError` or degrades to asking,
+  per the runner's `revoked_runs`. `RevocationBroadcast` carries withdrawals to every
+  process, but only as an accelerator — the store re-read is the authority, and a watch
+  nobody has confirmed within `stale_after_seconds` refuses unattended action rather than
+  acting on what it last heard. `PostgresGrantStore.revoke` appends to
+  `adk_grant_revocations`, which `grants_for` excludes; `GRANT_SCHEMA_VERSION` is 2.
+  **Stability:** additive. `revoked_runs` defaults to `CANCEL`, and a runner given no
+  `RevocationWatch` behaves exactly as before. Documented in `docs/autonomy.md`, exercised
+  by `examples/revocation.py`.
+
 - `AutonomyLadder`, `AutonomyGrant` and `AutonomyGate`, making how much an agent may do
   unattended a grant somebody issued rather than a number in a config file. A grant names
   its issuer, one action class, a `Decimal` ceiling in one currency over one window, and an

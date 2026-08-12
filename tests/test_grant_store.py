@@ -22,7 +22,14 @@ from tesserix_adk.adapters.grants import (
     PostgresGrantSettings,
     PostgresGrantStore,
 )
-from tesserix_adk.core.autonomy import AutonomyGrant, AutonomyLevel, Ceiling, GrantReader
+from tesserix_adk.core.autonomy import (
+    AutonomyGrant,
+    AutonomyLevel,
+    Ceiling,
+    GrantIssuer,
+    GrantReader,
+    Revocation,
+)
 from tesserix_adk.core.errors import ConfigurationError, StatePersistenceError
 from tesserix_adk.testing import FakeClock
 
@@ -198,3 +205,50 @@ class TestWhenTheDatabaseSaysNo:
         with pytest.raises(StatePersistenceError) as raised:
             await store(sql).grants_for(tenant="acme", action_class="booking.change")
         assert "PostgresGrantStore" in str(raised.value)
+
+
+class TestWithdrawing:
+    """A withdrawal is another append, so nothing here can put an old authority back."""
+
+    def _taken_back(self, **fields: object) -> Revocation:
+        """One withdrawal, filled in enough to be recorded."""
+        defaults: dict[str, object] = {
+            "grant_id": "g1",
+            "revoked_by": "ops@acme.example",
+            "revoked_at": NOW + 1,
+        }
+        return Revocation.model_validate(defaults | fields)
+
+    async def test_a_withdrawal_is_written_whole(self) -> None:
+        sql = FakeSql([])
+        await store(sql).revoke(self._taken_back(reason="the card was reported stolen"))
+        assert json.loads(sql.bound[-1])["reason"] == "the card was reported stolen"
+        assert sql.bound[0] == "g1"
+
+    async def test_a_withdrawal_of_a_whole_class_names_no_grant(self) -> None:
+        sql = FakeSql([])
+        await store(sql).revoke(
+            self._taken_back(grant_id=None, tenant="acme", action_class="payment.refund")
+        )
+        assert sql.bound[:3] == (None, "acme", "payment.refund")
+
+    async def test_repeating_a_withdrawal_is_the_same_withdrawal(self) -> None:
+        sql = FakeSql(fails=[DriverError("23505")])
+        await store(sql).revoke(self._taken_back())
+
+    async def test_a_withdrawal_the_database_would_not_take_is_raised(self) -> None:
+        sql = FakeSql(fails=[DriverError("08006")])
+        with pytest.raises(StatePersistenceError):
+            await store(sql).revoke(self._taken_back())
+
+    async def test_nothing_here_removes_a_withdrawal(self) -> None:
+        assert "DELETE" not in EXPECTED_GRANT_SCHEMA.replace("REVOKE UPDATE, DELETE", "")
+        assert "adk_grant_revocations" in EXPECTED_GRANT_SCHEMA
+
+    async def test_a_withdrawn_grant_is_not_read_back_as_live(self) -> None:
+        sql = FakeSql([row()])
+        await store(sql).grants_for(tenant="acme", action_class="booking.change")
+        assert "NOT EXISTS" in sql.sent
+
+    async def test_the_store_is_an_issuer_by_shape(self) -> None:
+        assert isinstance(store(FakeSql()), GrantIssuer)

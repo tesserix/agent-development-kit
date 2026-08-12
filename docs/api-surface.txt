@@ -38,7 +38,7 @@ tesserix_adk.adapters.MemoryStoreSettings :: class MemoryStoreSettings(AdkModel)
 tesserix_adk.adapters.PayloadElided :: class PayloadElided(ProgressEvent)
 tesserix_adk.adapters.PgvectorMemoryStore :: class PgvectorMemoryStore(object) {erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; verify(self) -> 'None'}
 tesserix_adk.adapters.PostgresGrantSettings :: class PostgresGrantSettings(PostgresStoreSettings)
-tesserix_adk.adapters.PostgresGrantStore :: class PostgresGrantStore(object) {grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; verify(self) -> 'None'}
+tesserix_adk.adapters.PostgresGrantStore :: class PostgresGrantStore(object) {grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'None'; verify(self) -> 'None'}
 tesserix_adk.adapters.PostgresIdempotencyStore :: class PostgresIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; ensure_schema(self) -> 'None'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.adapters.PostgresLedger :: class PostgresLedger(_Shared) {ensure_schema(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.PostgresMemoryStore :: class PostgresMemoryStore(object) {belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'tuple[Derivation, ...]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'tuple[MemoryRecord, ...]'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; page(self, scope: 'MemoryScope', query: 'MemoryQuery', *, cursor: 'str | None' = None) -> 'MemoryPage'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
@@ -72,7 +72,7 @@ tesserix_adk.adapters.grants.EXPECTED_GRANT_SCHEMA :: EXPECTED_GRANT_SCHEMA: str
 tesserix_adk.adapters.grants.GRANT_SCHEMA_VERSION :: GRANT_SCHEMA_VERSION: int
 tesserix_adk.adapters.grants.GrantTables :: class GrantTables(object)
 tesserix_adk.adapters.grants.PostgresGrantSettings :: class PostgresGrantSettings(PostgresStoreSettings)
-tesserix_adk.adapters.grants.PostgresGrantStore :: class PostgresGrantStore(object) {grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; verify(self) -> 'None'}
+tesserix_adk.adapters.grants.PostgresGrantStore :: class PostgresGrantStore(object) {grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'None'; verify(self) -> 'None'}
 tesserix_adk.adapters.graph.BACKENDS :: BACKENDS: tuple
 tesserix_adk.adapters.graph.EXTRACTION_INSTRUCTION :: EXTRACTION_INSTRUCTION: str
 tesserix_adk.adapters.graph.EntityExtractor :: class EntityExtractor(object) {extract(self, scope: 'MemoryScope', record: 'MemoryRecord', *, budget: 'BudgetPolicy') -> 'tuple[ExtractedSubgraph, ExtractionCharge]'}
@@ -220,8 +220,9 @@ tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, re
 tesserix_adk.core.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
 tesserix_adk.core.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
-tesserix_adk.core.GrantIssuer :: class GrantIssuer(Protocol) {issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'}
+tesserix_adk.core.GrantIssuer :: class GrantIssuer(Protocol) {issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
 tesserix_adk.core.GrantReader :: class GrantReader(Protocol) {grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'}
+tesserix_adk.core.GrantRevokedError :: class GrantRevokedError(AdkError)
 tesserix_adk.core.GuardResult :: class GuardResult(object)
 tesserix_adk.core.GuardStage :: class GuardStage(StrEnum)
 tesserix_adk.core.GuardVerdict :: class GuardVerdict(StrEnum)
@@ -245,7 +246,8 @@ tesserix_adk.core.IdFactory :: class IdFactory(Protocol)
 tesserix_adk.core.Idempotency :: class Idempotency(StrEnum)
 tesserix_adk.core.IdempotencyPolicy :: class IdempotencyPolicy(object)
 tesserix_adk.core.IdempotencyStore :: class IdempotencyStore(Protocol) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
-tesserix_adk.core.InMemoryGrants :: class InMemoryGrants(object) {all_grants(self) -> 'Sequence[AutonomyGrant]'; grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'}
+tesserix_adk.core.InFlightPolicy :: class InFlightPolicy(StrEnum)
+tesserix_adk.core.InMemoryGrants :: class InMemoryGrants(object) {all_grants(self) -> 'Sequence[AutonomyGrant]'; grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
 tesserix_adk.core.IndeterminateOutcomeError :: class IndeterminateOutcomeError(AdkError)
 tesserix_adk.core.IndeterminateToolCallError :: class IndeterminateToolCallError(AdkError)
 tesserix_adk.core.InlineRefs :: class InlineRefs(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
@@ -309,6 +311,7 @@ tesserix_adk.core.ResumeConflictError :: class ResumeConflictError(AdkError)
 tesserix_adk.core.ResumePlan :: class ResumePlan(AdkModel)
 tesserix_adk.core.Resumption :: class Resumption(AdkModel)
 tesserix_adk.core.RetryConfig :: class RetryConfig(AdkModel)
+tesserix_adk.core.Revocation :: class Revocation(AdkModel) {covers(self, grant: 'AutonomyGrant') -> 'bool'}
 tesserix_adk.core.Role :: Role = typing.Literal['system', 'user', 'assistant', 'tool']
 tesserix_adk.core.RoutingDecision :: class RoutingDecision(AdkModel) {explain(self) -> 'str'}
 tesserix_adk.core.Run :: class Run(AdkModel, Generic) {record(self, usage: 'Usage') -> 'Self'; record_event(self, event: 'RunEvent') -> 'Self'; transition_to(self, state: 'RunState', *, at: 'float | None' = None) -> 'Self'; with_output(self, output: 'OutputT') -> 'Self'}
@@ -402,10 +405,12 @@ tesserix_adk.core.autonomy.AutonomyLevel :: class AutonomyLevel(StrEnum)
 tesserix_adk.core.autonomy.AutonomyOutcome :: class AutonomyOutcome(StrEnum)
 tesserix_adk.core.autonomy.Ceiling :: class Ceiling(AdkModel)
 tesserix_adk.core.autonomy.CommitmentLedger :: class CommitmentLedger(Protocol) {committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'}
-tesserix_adk.core.autonomy.GrantIssuer :: class GrantIssuer(Protocol) {issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'}
+tesserix_adk.core.autonomy.GrantIssuer :: class GrantIssuer(Protocol) {issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
 tesserix_adk.core.autonomy.GrantReader :: class GrantReader(Protocol) {grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'}
-tesserix_adk.core.autonomy.InMemoryGrants :: class InMemoryGrants(object) {all_grants(self) -> 'Sequence[AutonomyGrant]'; grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'}
+tesserix_adk.core.autonomy.InFlightPolicy :: class InFlightPolicy(StrEnum)
+tesserix_adk.core.autonomy.InMemoryGrants :: class InMemoryGrants(object) {all_grants(self) -> 'Sequence[AutonomyGrant]'; grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
 tesserix_adk.core.autonomy.RESERVED_ACTION_CLASS :: RESERVED_ACTION_CLASS: str
+tesserix_adk.core.autonomy.Revocation :: class Revocation(AdkModel) {covers(self, grant: 'AutonomyGrant') -> 'bool'}
 tesserix_adk.core.budget.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
 tesserix_adk.core.budget.BudgetLimits :: class BudgetLimits(AdkModel) {filled(self) -> 'Self'}
 tesserix_adk.core.budget.BudgetScope :: class BudgetScope(StrEnum)
@@ -502,6 +507,7 @@ tesserix_adk.core.errors.ExtractionError :: class ExtractionError(AdkError)
 tesserix_adk.core.errors.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
 tesserix_adk.core.errors.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.errors.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
+tesserix_adk.core.errors.GrantRevokedError :: class GrantRevokedError(AdkError)
 tesserix_adk.core.errors.GuardrailError :: class GuardrailError(AdkError)
 tesserix_adk.core.errors.GuardrailEvaluationError :: class GuardrailEvaluationError(GuardrailError)
 tesserix_adk.core.errors.GuardrailViolationError :: class GuardrailViolationError(GuardrailError)
@@ -958,7 +964,7 @@ tesserix_adk.runtime.AnswerDelta :: class AnswerDelta(ProgressEvent)
 tesserix_adk.runtime.ApprovalLedger :: class ApprovalLedger(object) {bind(self, record: 'ApprovalRecord') -> 'None'; spend(self, record: 'ApprovalRecord', arguments: 'Mapping[str, Any]') -> 'None'; void(self) -> 'None'}
 tesserix_adk.runtime.ApprovalRequired :: class ApprovalRequired(ProgressEvent)
 tesserix_adk.runtime.Assumptions :: class Assumptions(AdkModel)
-tesserix_adk.runtime.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None) -> 'AutonomyDecision'}
+tesserix_adk.runtime.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None) -> 'AutonomyDecision'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
 tesserix_adk.runtime.Backpressure :: class Backpressure(object)
 tesserix_adk.runtime.Calibration :: class Calibration(AdkModel)
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
@@ -998,6 +1004,8 @@ tesserix_adk.runtime.ResultFinding :: class ResultFinding(object)
 tesserix_adk.runtime.ResultPolicy :: class ResultPolicy(object)
 tesserix_adk.runtime.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.runtime.ReturningTool :: class ReturningTool(Protocol)
+tesserix_adk.runtime.RevocationBroadcast :: class RevocationBroadcast(Protocol) {listen(self) -> 'AsyncIterator[Revocation]'; publish(self, revocation: 'Revocation') -> 'None'}
+tesserix_adk.runtime.RevocationWatch :: class RevocationWatch(object) {confirm(self) -> 'None'; follow(self, broadcast: 'RevocationBroadcast') -> 'None'; fresh(self) -> 'bool'; heard(self, revocation: 'Revocation') -> 'None'; revoked(self, grant: 'AutonomyGrant') -> 'bool'; withdrew(self, grant_id: 'str') -> 'Revocation | None'}
 tesserix_adk.runtime.RunCancelled :: class RunCancelled(ProgressEvent)
 tesserix_adk.runtime.RunCompleted :: class RunCompleted(ProgressEvent)
 tesserix_adk.runtime.RunFailed :: class RunFailed(ProgressEvent)
@@ -1027,9 +1035,11 @@ tesserix_adk.runtime.approval_for :: def approval_for(estimate: 'CostEstimate', 
 tesserix_adk.runtime.approvals.ApprovalLedger :: class ApprovalLedger(object) {bind(self, record: 'ApprovalRecord') -> 'None'; spend(self, record: 'ApprovalRecord', arguments: 'Mapping[str, Any]') -> 'None'; void(self) -> 'None'}
 tesserix_adk.runtime.approximate_tokens :: def approximate_tokens(text: 'str') -> 'int'
 tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), pinned: 'Iterable[str]' = (), retrieved: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None, tokenizer: 'Tokenizer | None' = None) -> 'Prompt'
-tesserix_adk.runtime.autonomy.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None) -> 'AutonomyDecision'}
+tesserix_adk.runtime.autonomy.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None) -> 'AutonomyDecision'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
 tesserix_adk.runtime.autonomy.InMemoryReports :: class InMemoryReports(object) {delivered(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'; outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.autonomy.ReportLog :: class ReportLog(Protocol) {outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
+tesserix_adk.runtime.autonomy.RevocationBroadcast :: class RevocationBroadcast(Protocol) {listen(self) -> 'AsyncIterator[Revocation]'; publish(self, revocation: 'Revocation') -> 'None'}
+tesserix_adk.runtime.autonomy.RevocationWatch :: class RevocationWatch(object) {confirm(self) -> 'None'; follow(self, broadcast: 'RevocationBroadcast') -> 'None'; fresh(self) -> 'bool'; heard(self, revocation: 'Revocation') -> 'None'; revoked(self, grant: 'AutonomyGrant') -> 'bool'; withdrew(self, grant_id: 'str') -> 'Revocation | None'}
 tesserix_adk.runtime.blocking.Ambient :: class Ambient(object) {raise_if_cancelled(self) -> 'None'}
 tesserix_adk.runtime.blocking.LoopMonitor :: class LoopMonitor(object) {watching(self, what: 'str', work: 'Callable[[], Awaitable[T]]') -> 'T'}
 tesserix_adk.runtime.blocking.WorkerPool :: class WorkerPool(object) {call(self, what: 'str', body: 'Callable[[], T]') -> 'T'; close(self) -> 'None'}

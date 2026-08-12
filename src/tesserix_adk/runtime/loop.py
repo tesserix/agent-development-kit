@@ -57,6 +57,7 @@ from tesserix_adk.core import (
     FallbackExhaustedError,
     FallbackUnsafeError,
     FanOutLimitError,
+    GrantRevokedError,
     GuardrailEvaluationError,
     GuardrailPipeline,
     GuardrailViolationError,
@@ -115,7 +116,7 @@ from tesserix_adk.core import (
     scrub,
     verify_conformance,
 )
-from tesserix_adk.core.autonomy import AutonomyOutcome
+from tesserix_adk.core.autonomy import AutonomyOutcome, InFlightPolicy
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
@@ -169,6 +170,7 @@ if TYPE_CHECKING:
         IdFactory,
         ToolRegistry,
     )
+    from tesserix_adk.core.autonomy import AutonomyDecision
     from tesserix_adk.runtime.autonomy import AutonomyGate
     from tesserix_adk.runtime.claim_check import ClaimCheck
 
@@ -430,6 +432,7 @@ class AgentRunner:
         claim_check: ClaimCheck | None = None,
         checkpoints: Checkpointer | None = None,
         autonomy: AutonomyGate | None = None,
+        revoked_runs: InFlightPolicy = InFlightPolicy.CANCEL,
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
@@ -477,6 +480,7 @@ class AgentRunner:
         self._claims = claim_check
         self._checkpoints = checkpoints
         self._autonomy = autonomy
+        self._revoked_runs = revoked_runs
         self._orphans: set[asyncio.Task[Any]] = set()
 
     def reload(self, router: ModelRouter) -> None:
@@ -2219,19 +2223,64 @@ class AgentRunner:
         if not declared and escalated is None and not asked:
             return run
         reason = self._why_held(call, decision, escalated, declared=declared)
-        return await self._approved(run, agent, call, reason, bounds)
+        run = await self._approved(run, agent, call, reason, bounds)
+        return self._still_granted(run, call, escalated)
+
+    def _still_granted(
+        self, run: Run[Any], call: ToolCall, escalated: AutonomyDecision | None
+    ) -> Run[Any]:
+        """Re-check the withdrawn grants after a human decided, before anything goes out.
+
+        A run suspended on an approval was asleep while the authority behind it could have
+        been withdrawn, and a human approving a call is not the same as the grant that put
+        the call in front of them still standing.
+        """
+        withdrawn = (
+            None
+            if escalated is None or self._autonomy is None
+            else (self._autonomy.withdrawn(escalated))
+        )
+        if withdrawn is None:
+            return run
+        run = run.record_event(
+            self._event(
+                RunEventKind.GRANT_REVOKED,
+                name=call.name,
+                detail=f"{withdrawn.grant_id} withdrawn by {withdrawn.revoked_by}",
+            )
+        )
+        if self._revoked_runs is InFlightPolicy.CANCEL:
+            raise _Terminal(
+                run,
+                RunState.FAILED,
+                _named(
+                    GrantRevokedError(
+                        f"the grant behind {call.name!r} was withdrawn while the run was under way",
+                        grant_id=withdrawn.grant_id or "",
+                        revoked_by=withdrawn.revoked_by,
+                    )
+                ),
+            )
+        return run
 
     def _why_held(
-        self, call: ToolCall, decision: HookDecision, escalated: str | None, *, declared: bool
+        self,
+        call: ToolCall,
+        decision: HookDecision,
+        escalated: AutonomyDecision | None,
+        *,
+        declared: bool,
     ) -> str:
         """What the human waiting on this call is told it is about."""
         if decision.action is HookAction.REQUIRE_APPROVAL:
             return decision.reason
-        if declared:
+        if declared or escalated is None:
             return f"{call.name} is declared to require approval"
-        return f"beyond this agent's autonomy: {escalated}"
+        return f"beyond this agent's autonomy: {escalated.reason}"
 
-    async def _within_autonomy(self, run: Run[Any], call: ToolCall) -> tuple[Run[Any], str | None]:
+    async def _within_autonomy(
+        self, run: Run[Any], call: ToolCall
+    ) -> tuple[Run[Any], AutonomyDecision | None]:
         """What the grants say about this call, and why where they say it needs a human.
 
         Autonomy only ever adds a gate. A grant that permits acting unattended does not
@@ -2264,7 +2313,7 @@ class AgentRunner:
             run = run.record_event(
                 self._event(RunEventKind.AUTONOMY_ESCALATED, name=call.name, detail=decided.reason)
             )
-            return run, decided.reason
+            return run, decided
         return run, None
 
     def _declares_approval(self, agent: Agent[Any], call: ToolCall) -> bool:

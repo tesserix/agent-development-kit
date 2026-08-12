@@ -124,6 +124,7 @@ class RunEventKind(StrEnum):
     APPROVAL_DENIED = "approval_denied"
     AUTONOMY_ESCALATED = "autonomy_escalated"
     AUTONOMY_REFUSED = "autonomy_refused"
+    GRANT_REVOKED = "grant_revoked"
     GUARDRAIL_REFUSAL = "guardrail_refusal"
     GUARDRAIL_REDACTION = "guardrail_redaction"
     OUTPUT_UNWRAPPED = "output_unwrapped"

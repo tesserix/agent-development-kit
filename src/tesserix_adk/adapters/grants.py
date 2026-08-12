@@ -2,8 +2,9 @@
 
 A grant is the record of a decision somebody made, so this store appends and never
 rewrites: an id in use is refused rather than updated, because a decision already recorded
-against that id has to stay readable as what it permitted. Revocation is a separate story
-and lands as its own column, not as an overwrite of the row.
+against that id has to stay readable as what it permitted. A withdrawal is another append,
+into its own table, which is why a revoked grant can never be reactivated — there is no
+statement here that removes one.
 
 The read is deliberately narrow — one tenant, one action class, unexpired at one moment —
 so that the only thing reachable from inside a run is what is live right now. There is no
@@ -29,7 +30,7 @@ from tesserix_adk.adapters.sql_state import (
     _state_failure,
 )
 from tesserix_adk.adapters.state import _text
-from tesserix_adk.core.autonomy import AutonomyGrant
+from tesserix_adk.core.autonomy import AutonomyGrant, Revocation
 from tesserix_adk.core.errors import ConfigurationError
 
 if TYPE_CHECKING:
@@ -46,7 +47,7 @@ __all__ = [
     "PostgresGrantStore",
 ]
 
-GRANT_SCHEMA_VERSION = 1
+GRANT_SCHEMA_VERSION = 2
 """The shape this adapter was written for, recorded by the migration that applied it."""
 
 _IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
@@ -59,15 +60,17 @@ class GrantTables:
 
     Args:
         grants: Issued grants, one row per grant, expired and live alike.
+        revocations: Withdrawals, one row per withdrawal, appended and never removed.
         schema: Where the migration recorded which shape it applied.
     """
 
     grants: str = "adk_grants"
+    revocations: str = "adk_grant_revocations"
     schema: str = "adk_schema"
 
     def __post_init__(self) -> None:
         """Refuse a name that could carry SQL, since a table name cannot be a parameter."""
-        for name in (self.grants, self.schema):
+        for name in (self.grants, self.revocations, self.schema):
             if not _IDENTIFIER.fullmatch(name):
                 raise ConfigurationError(f"{name!r} is not a plain table identifier")
 
@@ -152,7 +155,7 @@ class PostgresGrantStore:
                 not a read of no grants.
         """
         rows = await self._fetch(
-            GRANTS_FOR.format(grants=self._tables.grants),
+            GRANTS_FOR.format(grants=self._tables.grants, revocations=self._tables.revocations),
             tenant,
             action_class,
             self._clock.now(),
@@ -187,6 +190,30 @@ class PostgresGrantStore:
             raise self._taken(grant)
         return grant
 
+    async def revoke(self, revocation: Revocation) -> None:
+        """Withdraw whatever `revocation` names, from the next action of every live run.
+
+        Appended, like everything else here: nothing reactivates a withdrawn grant, and a
+        withdrawal repeated is the same withdrawal rather than an error, because the caller
+        retrying one must not be told the authority is back.
+
+        Raises:
+            StatePersistenceError: If the database could not answer.
+        """
+        try:
+            await self._sql.fetch(
+                REVOKE.format(revocations=self._tables.revocations),
+                revocation.grant_id,
+                revocation.tenant,
+                revocation.action_class,
+                revocation.revoked_at,
+                revocation.model_dump_json(),
+            )
+        except Exception as failure:
+            if _sqlstate(failure) == _ALREADY_ISSUED:
+                return
+            raise self._unreachable(failure) from failure
+
     def _unreachable(self, failure: Exception) -> Exception:
         """What a database that could not take the write raises."""
         return _state_failure(type(self).__name__)(1, _sqlstate(failure) or "unavailable")
@@ -203,9 +230,21 @@ class PostgresGrantStore:
 
 
 GRANTS_FOR = """
-SELECT payload FROM {grants}
-WHERE action_class = $2 AND expires_at > $3
-  AND ($1 = tenant OR $1 LIKE tenant || '/%')
+SELECT payload FROM {grants} g
+WHERE g.action_class = $2 AND g.expires_at > $3
+  AND ($1 = g.tenant OR $1 LIKE g.tenant || '/%')
+  AND NOT EXISTS (
+    SELECT 1 FROM {revocations} r
+    WHERE r.grant_id = g.grant_id
+       OR (r.grant_id IS NULL
+           AND (r.tenant IS NULL OR r.tenant = g.tenant)
+           AND (r.action_class IS NULL OR r.action_class = g.action_class))
+  )
+"""
+
+REVOKE = """
+INSERT INTO {revocations} (grant_id, tenant, action_class, revoked_at, payload)
+VALUES ($1, $2, $3, $4, $5)
 """
 
 ISSUE = """
@@ -224,7 +263,7 @@ EXPECTED_GRANT_SCHEMA = """
 -- Owned by the platform's migration repository. The kit reads adk_schema and refuses a
 -- version it was not written for; it never applies this itself.
 
-INSERT INTO adk_schema (component, version) VALUES ('grants', 1);
+INSERT INTO adk_schema (component, version) VALUES ('grants', 2);
 
 -- Append-only. A grant is the record of a decision, so nothing here is ever updated:
 -- re-granting inserts a new id, and an id in use is refused by the primary key.
@@ -240,4 +279,20 @@ CREATE TABLE adk_grants (
 CREATE INDEX adk_grants_live ON adk_grants (tenant, action_class, expires_at);
 
 REVOKE UPDATE, DELETE ON adk_grants FROM PUBLIC;
+
+-- Append-only too. A withdrawal names one grant, or a whole tenant or action class; there
+-- is deliberately no statement anywhere that takes a row out of here, because a grant that
+-- could be reactivated is not a grant that was withdrawn.
+CREATE TABLE adk_grant_revocations (
+    revocation_id bigserial PRIMARY KEY,
+    grant_id      text UNIQUE,
+    tenant        text,
+    action_class  text,
+    revoked_at    double precision NOT NULL,
+    payload       jsonb NOT NULL
+);
+
+CREATE INDEX adk_grant_revocations_broad ON adk_grant_revocations (tenant, action_class);
+
+REVOKE UPDATE, DELETE ON adk_grant_revocations FROM PUBLIC;
 """

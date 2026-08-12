@@ -40,6 +40,7 @@ __all__ = [
     "FallbackExhaustedError",
     "FallbackUnsafeError",
     "FanOutLimitError",
+    "GrantRevokedError",
     "GuardrailError",
     "GuardrailEvaluationError",
     "GuardrailViolationError",
@@ -1589,6 +1590,20 @@ class AutonomyRefusedError(AdkError):
         self.tool = tool
         self.action_class = action_class
         super().__init__(*args, details={"tool": tool, "action_class": action_class})
+
+
+class GrantRevokedError(AdkError):
+    """Raised when the grant a run was acting under was withdrawn while it was under way.
+
+    Args:
+        grant_id: Which grant, so an operator can tell one withdrawal from another.
+        revoked_by: Who withdrew it.
+    """
+
+    def __init__(self, *args: object, grant_id: str = "", revoked_by: str = "") -> None:
+        self.grant_id = grant_id
+        self.revoked_by = revoked_by
+        super().__init__(*args, details={"grant_id": grant_id, "revoked_by": revoked_by})
 
 
 class DependencyCycleError(ConfigurationError):

@@ -1,7 +1,13 @@
 """Run loop, caps, cancellation, timeout, checkpointing, streaming."""
 
 from tesserix_adk.runtime.approvals import ApprovalLedger
-from tesserix_adk.runtime.autonomy import AutonomyGate, InMemoryReports, ReportLog
+from tesserix_adk.runtime.autonomy import (
+    AutonomyGate,
+    InMemoryReports,
+    ReportLog,
+    RevocationBroadcast,
+    RevocationWatch,
+)
 from tesserix_adk.runtime.blocking import (
     Ambient,
     LoopMonitor,
@@ -141,6 +147,8 @@ __all__ = [
     "ResultPolicy",
     "RetryPlan",
     "ReturningTool",
+    "RevocationBroadcast",
+    "RevocationWatch",
     "RunCancelled",
     "RunCompleted",
     "RunFailed",

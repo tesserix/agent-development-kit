@@ -41,7 +41,9 @@ __all__ = [
     "CommitmentLedger",
     "GrantIssuer",
     "GrantReader",
+    "InFlightPolicy",
     "InMemoryGrants",
+    "Revocation",
 ]
 
 RESERVED_ACTION_CLASS = "autonomy.grant"
@@ -240,6 +242,55 @@ class AutonomyDecision(AdkModel):
         return self.outcome is AutonomyOutcome.ACT
 
 
+class InFlightPolicy(StrEnum):
+    """What happens to a run that is already under way when its grant is withdrawn.
+
+    Declared per runner and recorded on the run, because the right answer is the
+    deployment's: a booking flow stops, and an unwind that is halfway through does not.
+    """
+
+    CANCEL = "cancel"
+    ASK_ALWAYS = "ask_always"
+
+
+class Revocation(AdkModel):
+    """Authority being taken back, by one grant, one class, or one tenant outright.
+
+    Args:
+        grant_id: The single grant withdrawn, where it is one.
+        tenant: Whose grants are withdrawn, where it is broader than one grant.
+        action_class: Narrows a tenant-wide revocation to one class.
+        revoked_by: The human or system identity that withdrew it.
+        revoked_at: Unix seconds. Nothing autonomous starts after this.
+        reason: Why, for the operator reading it back later.
+    """
+
+    grant_id: str | None = None
+    tenant: str | None = None
+    action_class: str | None = None
+    revoked_by: str = Field(min_length=1)
+    revoked_at: float
+    reason: str = ""
+
+    @model_validator(mode="after")
+    def _names_something(self) -> Self:
+        """Refuse a revocation that withdraws nothing, or everything by accident."""
+        if self.grant_id is None and self.tenant is None:
+            raise ValueError(
+                "a revocation names a grant or a tenant; one that names neither "
+                "would either do nothing or withdraw the world"
+            )
+        return self
+
+    def covers(self, grant: AutonomyGrant) -> bool:
+        """Whether this revocation withdraws `grant`."""
+        if self.grant_id is not None:
+            return self.grant_id == grant.id
+        if self.tenant != grant.tenant:
+            return False
+        return self.action_class is None or self.action_class == grant.action_class
+
+
 @runtime_checkable
 class GrantReader(Protocol):
     """What the runtime is allowed to know about grants: what is live, and nothing more."""
@@ -270,21 +321,36 @@ class GrantIssuer(Protocol):
         """Record `grant`, and return it as stored."""
         ...
 
+    async def revoke(self, revocation: Revocation) -> Revocation:
+        """Withdraw what `revocation` names, and return it as recorded."""
+        ...
+
 
 class InMemoryGrants:
     """Grants in a dict, for tests and single-process deployments."""
 
     def __init__(self, grants: Iterable[AutonomyGrant] = ()) -> None:
         self._grants: dict[str, AutonomyGrant] = {held.id: held for held in grants}
+        self._revocations: list[Revocation] = []
 
     async def grants_for(self, *, tenant: str, action_class: str) -> Sequence[AutonomyGrant]:
-        """Every grant for `action_class` that names `tenant` or a tenant above it."""
+        """Every live grant for `action_class` that names `tenant` or a tenant above it."""
         return [
             held
             for held in self._grants.values()
             if held.action_class == action_class
             and (held.tenant == tenant or tenant.startswith(f"{held.tenant}/"))
+            and not self._withdrawn(held)
         ]
+
+    def _withdrawn(self, grant: AutonomyGrant) -> bool:
+        """Whether anything recorded here has taken this grant back."""
+        return any(revocation.covers(grant) for revocation in self._revocations)
+
+    async def revoke(self, revocation: Revocation) -> Revocation:
+        """Record `revocation`. The grant it withdraws stays stored, and stays revoked."""
+        self._revocations.append(revocation)
+        return revocation
 
     async def issue(self, grant: AutonomyGrant) -> AutonomyGrant:
         """Record `grant`, refusing an id that already exists.
