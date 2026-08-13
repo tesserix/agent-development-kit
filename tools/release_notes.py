@@ -40,6 +40,9 @@ CHANGELOG = ROOT / "CHANGELOG.md"
 EXPERIMENTAL = "tesserix_adk.experimental"
 UNRELEASED = "## [Unreleased]"
 
+# Where the Unreleased body ends: the previous release, or the link definitions at the foot.
+_AFTER_UNRELEASED = re.compile(r"^(?:## |\[[^\]]+\]: )", re.MULTILINE)
+
 # The section each fragment kind is announced under. `removed` is breaking by definition,
 # so it shares the section with the migration notes rather than getting its own.
 SECTIONS = {
@@ -300,11 +303,22 @@ def render(
 
 
 def update_changelog(changelog: str, *, notes: str) -> str:
-    """Insert a rendered release section directly below the Unreleased heading."""
+    """Put a rendered release section below the Unreleased heading, in place of its body."""
     if UNRELEASED not in changelog:
         raise NoteError(f"CHANGELOG.md has no {UNRELEASED} heading to release from")
     head, _, tail = changelog.partition(UNRELEASED)
-    return f"{head}{UNRELEASED}\n\n{notes.rstrip()}\n{tail}"
+    return f"{head}{UNRELEASED}\n\n{notes.rstrip()}\n\n{_kept(tail)}"
+
+
+def _kept(tail: str) -> str:
+    """Everything after the Unreleased body: earlier releases, and the link definitions.
+
+    The body itself goes. Entries are written there by hand as each change merges and
+    describe the same work the fragments do, so carrying them into the released section
+    ships every entry twice — once derived, once as it was typed.
+    """
+    boundary = _AFTER_UNRELEASED.search(tail)
+    return tail[boundary.start() :] if boundary else ""
 
 
 def _history() -> tuple[Commit, ...]:

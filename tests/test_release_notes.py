@@ -287,6 +287,26 @@ class TestChangelog:
         assert "## [Unreleased]" in updated
         assert updated.index("## 0.3.0") > updated.index("## [Unreleased]")
 
+    def test_the_hand_written_unreleased_entries_do_not_ship_twice(self) -> None:
+        """They describe the same work the fragments do, written by hand as each merged."""
+        changelog = "# Changelog\n\n## [Unreleased]\n\n### Added\n\n- Old entry.\n"
+        updated = release_notes.update_changelog(changelog, notes="## 0.3.0\n\n- A.\n")
+        assert "Old entry" not in updated
+
+    def test_the_releases_already_published_are_left_alone(self) -> None:
+        changelog = "# Changelog\n\n## [Unreleased]\n\n- Pending.\n\n## 0.2.0\n\n- Shipped.\n"
+        updated = release_notes.update_changelog(changelog, notes="## 0.3.0\n\n- A.\n")
+        assert "## 0.2.0\n\n- Shipped." in updated
+        assert updated.index("## 0.3.0") < updated.index("## 0.2.0")
+
+    def test_the_link_definitions_at_the_foot_survive(self) -> None:
+        """Dropping them turns every reference in the file into literal brackets."""
+        changelog = (
+            "# Changelog\n\n## [Unreleased]\n\n- Pending.\n\n[Keep a Changelog]: https://x\n"
+        )
+        updated = release_notes.update_changelog(changelog, notes="## 0.3.0\n\n- A.\n")
+        assert updated.endswith("[Keep a Changelog]: https://x\n")
+
     def test_a_changelog_with_no_unreleased_heading_is_refused(self) -> None:
         with pytest.raises(NoteError, match="Unreleased"):
             release_notes.update_changelog("# Changelog\n", notes="## 0.3.0\n")
