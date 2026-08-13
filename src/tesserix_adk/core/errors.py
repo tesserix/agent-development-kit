@@ -49,6 +49,7 @@ __all__ = [
     "GuardrailError",
     "GuardrailEvaluationError",
     "GuardrailViolationError",
+    "HandoffContractError",
     "HookEvaluationError",
     "HookRefusedError",
     "HookRegistrationError",
@@ -1645,6 +1646,54 @@ class DelegationError(AdkError):
             run_id=run_id,
             tenant=tenant,
             details={"worker": specialist, "reason": reason, "path": " -> ".join(path)},
+        )
+
+
+class HandoffContractError(AdkError):
+    """Raised when a conversation could not be handed to the agent it was addressed to.
+
+    A handoff that half-happens is the worst outcome available: the source has moved on,
+    the target has a payload it cannot read, and nobody owns the conversation. So every
+    check here happens before the target is invoked and nothing is written on the way out.
+
+    Args:
+        source: The agent handing over.
+        target: Who it was addressed to, whether or not anything answers to that name.
+        reason: Why it did not happen. `"contract"` (the payload is not what the target
+            declared it accepts), `"unknown_target"`, `"no_tools"` (nothing in common
+            between what the target holds and what the source holds) or `"in_flight"`
+            (the source run has not settled, so a call would be left hanging).
+        violations: The fields the payload got wrong, in the order the model reports them.
+        path: The agents the conversation has passed through, root first.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        source: str = "",
+        target: str = "",
+        reason: str = "contract",
+        violations: tuple[str, ...] = (),
+        path: tuple[str, ...] = (),
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.source = source
+        self.target = target
+        self.reason = reason
+        self.violations = violations
+        self.path = path
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={
+                "source": source,
+                "target": target,
+                "reason": reason,
+                "violations": ", ".join(violations),
+                "path": " -> ".join(path),
+            },
         )
 
 

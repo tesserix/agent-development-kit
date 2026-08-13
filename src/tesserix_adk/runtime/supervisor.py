@@ -39,7 +39,7 @@ from tesserix_adk.core.errors import ConfigurationError, DelegationError, Guardr
 from tesserix_adk.core.primitives import Usage
 from tesserix_adk.core.run import Run, RunEvent, RunEventKind, RunGrant, RunState
 from tesserix_adk.runtime.cancellation import CancellationToken
-from tesserix_adk.runtime.delegation import handed_back
+from tesserix_adk.runtime.delegation import handed_back, narrowed_to
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Mapping, Sequence
@@ -363,7 +363,7 @@ class Supervisor:
             self._delegation.to(specialist.name, tools=held)  # enforces the caller's fan-out limits
         caller = self._delegation.context
         run = await self._runner.run(
-            _narrowed(specialist.agent, held),
+            narrowed_to(specialist.agent, held),
             task,
             tenant=caller.tenant.tenant,
             user=caller.tenant.user,
@@ -469,18 +469,3 @@ class Supervisor:
             run_id=run_id,
             tenant=self._delegation.context.tenant.tenant,
         )
-
-
-def _narrowed(agent: Agent[Any], held: tuple[str, ...]) -> Agent[Any]:
-    """The worker holding the intersection: its own allowlist, capped by its caller's."""
-    if agent.tools == held:
-        return agent
-    return agent.model_copy(
-        update={
-            "tools": held,
-            "idempotent_tools": tuple(name for name in agent.idempotent_tools if name in held),
-            "approval_required_tools": tuple(
-                name for name in agent.approval_required_tools if name in held
-            ),
-        }
-    )

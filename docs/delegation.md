@@ -195,6 +195,63 @@ Every hand-over lands on `supervisor.events` as `DELEGATED` or `DELEGATION_REFUS
 the worker's name, usage and reason — the record of what was handed to whom, for a run
 whose events span more than one agent.
 
+## Handing the conversation over
+
+Delegation asks a worker a question and reads the answer. A handoff is the other shape:
+triage does not want an answer, it wants the conversation to belong to billing from here
+on. The shortcut is forwarding the transcript, which leaks context the target has no
+business seeing, pays for it by the token on every later turn, and lets the target infer
+permissions nobody granted it.
+
+```python
+desk = HandoffDesk(
+    runner,
+    (
+        Receiver(agent=billing, contract=HandoffContract(accepts=Ticket)),
+        Receiver(queue=review_desk, name="review_desk",
+                 contract=HandoffContract(accepts=Escalation)),
+    ),
+    agent=triage,
+    delegation=Delegation.root(run_id="run_1", tenant="acme", agent="triage",
+                               user="ada", scope=scope),
+)
+
+result = await desk.hand_off(
+    "billing",
+    reason="the customer disputes a charge",
+    state=Ticket(account="ac_9", complaint="charged twice in March"),
+    task="sort the double charge",
+)
+result.handoff.scope     # ('read_account', 'issue_credit') — the intersection
+result.run.path          # ('triage', 'billing')
+```
+
+**What crosses is the target's requirement, not the source's convenience.** Each `Receiver`
+declares the Pydantic model it accepts. A payload that is not that model raises
+`HandoffContractError(reason="contract")` with the fields it got wrong, before the target is
+invoked — so a failed handoff leaves the conversation exactly where it was rather than half
+moved. Nothing else crosses: `history` and `memory` are forwarded only where the call passes
+them.
+
+**Identity is not a parameter.** `hand_off` takes no tenant and no user; both come from the
+delegation, so a handoff into another tenant is unrepresentable rather than checked. The
+target holds the intersection of its own allowlist and the source's, and one sharing no tool
+with the source is refused with `reason="no_tools"`.
+
+**A person is a receiver like any other.** A `Receiver` wrapping a `HandoffQueue` is held to
+the same contract, so escalating to a human desk is the same call rather than a second path
+with its own rules. `HandoffResult.queued` says a person has it and `run` is `None`, because
+an empty run would claim they had already answered.
+
+**A run still in flight cannot be handed over.** `hand_off(..., after=run)` refuses with
+`reason="in_flight"` unless the source run has settled: a handoff made with a tool call
+outstanding leaves that call owned by nobody.
+
+The payload passes the guardrail chain — redaction included — before it reaches the target,
+the record, or telemetry. Every transfer and every refusal lands on `desk.events` as
+`HANDED_OFF` or `HANDOFF_REFUSED`, and each `Handoff` carries the run id and the path, so a
+conversation that has changed hands three times still reads as one trace.
+
 ## Known limitations
 
 `Supervisor` slices budgets for the workers it dispatches; `Delegation` itself still does
@@ -203,6 +260,10 @@ resolved budget, so depth and delegation count are what bound spend on that path
 
 A write claim is held in the supervisor for the life of the supervisor, not in a store, so
 it coordinates workers under one supervisor and not two supervisors on one memory.
+
+A handoff back to an agent already on the path is bounded by `Delegation`'s cycle rule, not
+by the desk: a desk sees one hop at a time. Loop detection across a longer chain of handoffs
+is its own story.
 
 `DelegationScope.mutations` is not part of `RunGrant`: an agent declares tools, not
 mutation classes, so there is nothing at the run boundary to narrow. Deployments that

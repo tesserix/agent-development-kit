@@ -120,6 +120,8 @@ class RunEventKind(StrEnum):
     SCOPE_REFUSED = "scope_refused"
     DELEGATED = "delegated"
     DELEGATION_REFUSED = "delegation_refused"
+    HANDED_OFF = "handed_off"
+    HANDOFF_REFUSED = "handoff_refused"
     REPEAT_DETECTED = "repeat_detected"
     DEPTH_EXCEEDED = "depth_exceeded"
     HOOK_REWRITE = "hook_rewrite"

@@ -293,6 +293,7 @@ tesserix_adk.core.GuardrailEvaluationError :: class GuardrailEvaluationError(Gua
 tesserix_adk.core.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
 tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(GuardrailError)
 tesserix_adk.core.HANDLE_PREFIX :: HANDLE_PREFIX: str
+tesserix_adk.core.HandoffContractError :: class HandoffContractError(AdkError)
 tesserix_adk.core.Hold :: class Hold(AdkModel) {live(self, at: 'float') -> 'bool'}
 tesserix_adk.core.HoldState :: class HoldState(StrEnum)
 tesserix_adk.core.Hook :: class Hook(Protocol) {on(self, subject: 'HookSubject') -> 'HookDecision'}
@@ -599,6 +600,7 @@ tesserix_adk.core.errors.GrantRevokedError :: class GrantRevokedError(AdkError)
 tesserix_adk.core.errors.GuardrailError :: class GuardrailError(AdkError)
 tesserix_adk.core.errors.GuardrailEvaluationError :: class GuardrailEvaluationError(GuardrailError)
 tesserix_adk.core.errors.GuardrailViolationError :: class GuardrailViolationError(GuardrailError)
+tesserix_adk.core.errors.HandoffContractError :: class HandoffContractError(AdkError)
 tesserix_adk.core.errors.HookEvaluationError :: class HookEvaluationError(AdkError)
 tesserix_adk.core.errors.HookRefusedError :: class HookRefusedError(AdkError)
 tesserix_adk.core.errors.HookRegistrationError :: class HookRegistrationError(ConfigurationError)
@@ -1085,6 +1087,11 @@ tesserix_adk.runtime.DelegationLimits :: class DelegationLimits(object) {narrowe
 tesserix_adk.runtime.DelegationResult :: class DelegationResult(Generic)
 tesserix_adk.runtime.DelegationScope :: class DelegationScope(object) {holds(self, tool: 'str') -> 'bool'}
 tesserix_adk.runtime.GuardrailDecision :: class GuardrailDecision(ProgressEvent)
+tesserix_adk.runtime.Handoff :: class Handoff(object)
+tesserix_adk.runtime.HandoffContract :: class HandoffContract(object) {validated(self, state: 'Mapping[str, Any] | BaseModel') -> 'BaseModel'}
+tesserix_adk.runtime.HandoffDesk :: class HandoffDesk(object) {hand_off(self, to: 'str', *, reason: 'str', state: 'Mapping[str, Any] | BaseModel', task: 'str', history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), after: 'Run[Any] | None' = None) -> 'HandoffResult'}
+tesserix_adk.runtime.HandoffQueue :: class HandoffQueue(Protocol) {receive(self, handoff: 'Handoff') -> 'None'}
+tesserix_adk.runtime.HandoffResult :: class HandoffResult(object)
 tesserix_adk.runtime.InMemoryHistory :: class InMemoryHistory(object) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'; record(self, run: 'Run[OutputT]') -> 'None'}
 tesserix_adk.runtime.InMemoryReports :: class InMemoryReports(object) {delivered(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'; outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.IterationStarted :: class IterationStarted(ProgressEvent)
@@ -1108,6 +1115,7 @@ tesserix_adk.runtime.Prompt :: class Prompt(AdkModel)
 tesserix_adk.runtime.PromptLayer :: class PromptLayer(StrEnum)
 tesserix_adk.runtime.Provisional :: class Provisional(Generic) {snapshot(self) -> 'dict[str, object] | None'}
 tesserix_adk.runtime.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
+tesserix_adk.runtime.Receiver :: class Receiver(object)
 tesserix_adk.runtime.ReportLog :: class ReportLog(Protocol) {outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.ResultFinding :: class ResultFinding(object)
 tesserix_adk.runtime.ResultPolicy :: class ResultPolicy(object)
@@ -1189,6 +1197,7 @@ tesserix_adk.runtime.delegation.Delegation :: class Delegation(object) {to(self,
 tesserix_adk.runtime.delegation.DelegationLimits :: class DelegationLimits(object) {narrowed(self, other: 'DelegationLimits') -> 'DelegationLimits'}
 tesserix_adk.runtime.delegation.DelegationScope :: class DelegationScope(object) {holds(self, tool: 'str') -> 'bool'}
 tesserix_adk.runtime.delegation.handed_back :: def handed_back(run: 'Run[OutputT]') -> 'str'
+tesserix_adk.runtime.delegation.narrowed_to :: def narrowed_to(agent: 'Agent[Any]', held: 'tuple[str, ...]') -> 'Agent[Any]'
 tesserix_adk.runtime.determinism.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.determinism.canonical_digest :: def canonical_digest(value: 'Any') -> 'str'
 tesserix_adk.runtime.determinism.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
@@ -1214,11 +1223,18 @@ tesserix_adk.runtime.fanout.Turn :: class Turn(object)
 tesserix_adk.runtime.fanout.phased :: def phased(calls: 'Sequence[ToolCall]', *, serial: 'Container[str]') -> 'tuple[tuple[ToolCall, ...], ...]'
 tesserix_adk.runtime.fingerprint_of :: def fingerprint_of(request: 'ModelRequest', *, hooks: 'Iterable[str]' = ()) -> 'RunFingerprint'
 tesserix_adk.runtime.handed_back :: def handed_back(run: 'Run[OutputT]') -> 'str'
+tesserix_adk.runtime.handoff.Handoff :: class Handoff(object)
+tesserix_adk.runtime.handoff.HandoffContract :: class HandoffContract(object) {validated(self, state: 'Mapping[str, Any] | BaseModel') -> 'BaseModel'}
+tesserix_adk.runtime.handoff.HandoffDesk :: class HandoffDesk(object) {hand_off(self, to: 'str', *, reason: 'str', state: 'Mapping[str, Any] | BaseModel', task: 'str', history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), after: 'Run[Any] | None' = None) -> 'HandoffResult'}
+tesserix_adk.runtime.handoff.HandoffQueue :: class HandoffQueue(Protocol) {receive(self, handoff: 'Handoff') -> 'None'}
+tesserix_adk.runtime.handoff.HandoffResult :: class HandoffResult(object)
+tesserix_adk.runtime.handoff.Receiver :: class Receiver(object)
 tesserix_adk.runtime.idempotency.MemoryIdempotencyStore :: class MemoryIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.runtime.loop.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; resume(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; resume_with_decision(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', token: 'str', granted: 'bool', decided_by: 'str', reason: 'str' = '', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None, allow_model_drift: 'bool' = False) -> 'Run[OutputT]'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'RunStream[OutputT]'; stream_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'tuple[ProgressEvent, ...]'}
 tesserix_adk.runtime.loop.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.runtime.narrowed_to :: def narrowed_to(agent: 'Agent[Any]', held: 'tuple[str, ...]') -> 'Agent[Any]'
 tesserix_adk.runtime.plan_resume :: def plan_resume(checkpoint: 'Checkpoint', idempotency: 'IdempotencyStore | None' = None) -> 'ResumePlan'
 tesserix_adk.runtime.progress.AnswerDelta :: class AnswerDelta(ProgressEvent)
 tesserix_adk.runtime.progress.ApprovalRequired :: class ApprovalRequired(ProgressEvent)

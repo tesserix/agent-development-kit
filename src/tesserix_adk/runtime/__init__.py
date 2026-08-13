@@ -39,6 +39,7 @@ from tesserix_adk.runtime.delegation import (
     DelegationLimits,
     DelegationScope,
     handed_back,
+    narrowed_to,
 )
 from tesserix_adk.runtime.determinism import RunFingerprint, canonical_digest, fingerprint_of
 from tesserix_adk.runtime.estimate import (
@@ -57,6 +58,14 @@ from tesserix_adk.runtime.estimate import (
     calibrate,
     estimate_run,
     refuse_unaffordable,
+)
+from tesserix_adk.runtime.handoff import (
+    Handoff,
+    HandoffContract,
+    HandoffDesk,
+    HandoffQueue,
+    HandoffResult,
+    Receiver,
 )
 from tesserix_adk.runtime.idempotency import MemoryIdempotencyStore
 from tesserix_adk.runtime.loop import AgentRunner, ModelRequest, ModelResponse, SystemClock
@@ -141,6 +150,11 @@ __all__ = [
     "DelegationResult",
     "DelegationScope",
     "GuardrailDecision",
+    "Handoff",
+    "HandoffContract",
+    "HandoffDesk",
+    "HandoffQueue",
+    "HandoffResult",
     "InMemoryHistory",
     "InMemoryReports",
     "IterationStarted",
@@ -163,6 +177,7 @@ __all__ = [
     "PromptLayer",
     "Provisional",
     "RateLimiter",
+    "Receiver",
     "ReportLog",
     "ResultFinding",
     "ResultPolicy",
@@ -213,6 +228,7 @@ __all__ = [
     "estimate_run",
     "fingerprint_of",
     "handed_back",
+    "narrowed_to",
     "plan_resume",
     "refuse_if_undecidable",
     "refuse_unaffordable",

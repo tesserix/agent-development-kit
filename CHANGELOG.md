@@ -165,6 +165,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `HandoffDesk`, `Receiver`, `HandoffContract`, `Handoff`, `HandoffResult`, `HandoffQueue`,
+  `HandoffContractError` and `narrowed_to`, so a conversation changes hands under a declared
+  contract rather than by forwarding the transcript. Each receiver declares the model it
+  accepts; a payload that is not that model is refused with the fields it got wrong before
+  the target is invoked, so nothing partially moves. The target runs holding the intersection
+  of its own allowlist and the source's, under a tenant and user that are not parameters of
+  the call, and a `HandoffQueue` makes a human desk a receiver held to the same contract. The
+  payload passes the guardrail chain before it reaches the target, the record or telemetry.
+  **Stability:** additive — `narrowed_to` moves to `tesserix_adk.runtime.delegation` from a
+  private helper, so nothing that existed changes shape. Documented in `docs/delegation.md`,
+  exercised by `examples/handoff.py`.
+
 - `Supervisor`, `Roster`, `Specialist`, `DelegationResult`, `DelegationError` and
   `RunBudget.sliced`, so one agent handing work to another is a helper in the kit rather
   than something each product rebuilds around its own `runner.run` call. Work is routed to

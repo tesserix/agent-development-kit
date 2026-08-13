@@ -25,7 +25,7 @@ decisions behind these types are in `docs/delegation.md`.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -41,10 +41,11 @@ from tesserix_adk.runtime.results import ToolResult
 if TYPE_CHECKING:
     from collections.abc import Collection
 
+    from tesserix_adk.core.agent import Agent
     from tesserix_adk.core.protocols import Clock
     from tesserix_adk.core.run import Run
 
-__all__ = ["Delegation", "DelegationLimits", "DelegationScope", "handed_back"]
+__all__ = ["Delegation", "DelegationLimits", "DelegationScope", "handed_back", "narrowed_to"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -415,3 +416,28 @@ def _built(
     made._ledger = ledger
     made._clock = clock
     return made
+
+
+def narrowed_to(agent: Agent[Any], held: tuple[str, ...]) -> Agent[Any]:
+    """The agent holding the intersection: its own allowlist, capped by its caller's.
+
+    Args:
+        agent: What was configured, which is what it would hold if nothing narrowed it.
+        held: What its caller holds, in the order the caller declared them.
+
+    Returns:
+        The same agent where nothing was dropped, and otherwise a copy holding only what
+        both hold — approvals and idempotency narrowed with it, since a declaration about
+        a tool that is no longer there is a rule nothing applies.
+    """
+    if agent.tools == held:
+        return agent
+    return agent.model_copy(
+        update={
+            "tools": held,
+            "idempotent_tools": tuple(name for name in agent.idempotent_tools if name in held),
+            "approval_required_tools": tuple(
+                name for name in agent.approval_required_tools if name in held
+            ),
+        }
+    )

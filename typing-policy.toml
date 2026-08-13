@@ -406,3 +406,37 @@ docs/typing.md.
 """
 owner = "@sam123ben"
 review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.runtime.delegation.narrowed_to"
+kind = "provisional"
+removed_by = "#36"
+reason = """
+Takes `Agent[Any]`: narrowing an allowlist says nothing about what the agent answers in, and
+the callers that need it hold agents of different answer types. See docs/typing.md.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.runtime.handoff.HandoffContract"
+kind = "json"
+reason = """
+A payload may be handed over as the declared model or as the mapping it was decoded from,
+which is JSON the caller already holds. The contract validates it into the model before
+anything reads a field, so the `Any` never survives the call.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.runtime.handoff.HandoffDesk"
+kind = "provisional"
+removed_by = "#36"
+reason = """
+Takes `Agent[Any]` and a payload as the JSON mapping it was decoded from: a desk hands to
+receivers that answer in different types, so one parameter on the desk cannot name them.
+See docs/typing.md.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13
