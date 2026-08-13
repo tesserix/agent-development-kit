@@ -5,6 +5,8 @@ tesserix_adk.adapters.CEILING_SCHEMA_VERSION :: CEILING_SCHEMA_VERSION: int
 tesserix_adk.adapters.COUNTERS :: COUNTERS: tuple
 tesserix_adk.adapters.CeilingTables :: class CeilingTables(object)
 tesserix_adk.adapters.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
+tesserix_adk.adapters.ConsoleApprovals :: class ConsoleApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
+tesserix_adk.adapters.DEFAULT_APPROVAL_SUBJECT :: DEFAULT_APPROVAL_SUBJECT: str
 tesserix_adk.adapters.DEFAULT_CEILING_TABLES :: DEFAULT_CEILING_TABLES: CeilingTables
 tesserix_adk.adapters.DEFAULT_COLLECTION :: DEFAULT_COLLECTION: str
 tesserix_adk.adapters.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables
@@ -34,11 +36,14 @@ tesserix_adk.adapters.GraphMemoryStore :: class GraphMemoryStore(object) {append
 tesserix_adk.adapters.GraphSettings :: class GraphSettings(AdkModel)
 tesserix_adk.adapters.GraphitiClient :: class GraphitiClient(Protocol) {add_episode(self, *, name: 'str', episode_body: 'str', source_description: 'str', group_id: 'str', reference_time: 'float | None') -> 'None'; remove_episode(self, group_id: 'str') -> 'None'; search(self, query: 'str', *, group_ids: 'Sequence[str]', num_results: 'int', reference_time: 'float | None') -> 'Sequence[object]'}
 tesserix_adk.adapters.GraphitiEngine :: class GraphitiEngine(object) {commit(self, subgraph: 'ExtractedSubgraph') -> 'None'; drop(self, path: 'tuple[str, str, str, str]') -> 'Mapping[str, int]'; edges(self, path: 'tuple[str, str, str, str]', *, as_of: 'float | None', limit: 'int') -> 'Sequence[ExtractedEdge]'; group_id(self, path: 'tuple[str, str, str, str]') -> 'str'}
+tesserix_adk.adapters.HttpPoster :: class HttpPoster(Protocol) {post(self, url: 'str', *, content: 'bytes', headers: 'Mapping[str, str]') -> 'tuple[int, bytes]'}
 tesserix_adk.adapters.IN_FLIGHT :: IN_FLIGHT: str
 tesserix_adk.adapters.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.InspectableRedis :: class InspectableRedis(Protocol) {config_get(self, pattern: 'str') -> 'Mapping[str, str]'; eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
 tesserix_adk.adapters.MemoryPage :: class MemoryPage(AdkModel)
 tesserix_adk.adapters.MemoryStoreSettings :: class MemoryStoreSettings(AdkModel)
+tesserix_adk.adapters.MessagePublisher :: class MessagePublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
+tesserix_adk.adapters.NatsApprovals :: class NatsApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'None'}
 tesserix_adk.adapters.PayloadElided :: class PayloadElided(ProgressEvent)
 tesserix_adk.adapters.PgvectorMemoryStore :: class PgvectorMemoryStore(object) {erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; verify(self) -> 'None'}
 tesserix_adk.adapters.PostgresCeilingLedger :: class PostgresCeilingLedger(object) {commit(self, idempotency_key: 'str') -> 'Hold | None'; committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'; reap(self) -> 'int'; release(self, idempotency_key: 'str') -> 'None'; reserve(self, *, tenant: 'str', action_class: 'str', ceiling: 'Ceiling', amount: 'Decimal', idempotency_key: 'str') -> 'Hold'; verify(self) -> 'None'}
@@ -71,6 +76,13 @@ tesserix_adk.adapters.StreamGap :: class StreamGap(ProgressEvent)
 tesserix_adk.adapters.TransportAuthorizationError :: class TransportAuthorizationError(AdkError)
 tesserix_adk.adapters.WebSocketBridge :: class WebSocketBridge(Generic) {serve(self, connection: 'WebSocketLike', *, run_id: 'str', tenant: 'str', after: 'int | None' = None) -> 'None'}
 tesserix_adk.adapters.WebSocketLike :: class WebSocketLike(Protocol) {close(self, code: 'int' = 1000) -> 'None'; receive_text(self) -> 'str'; send_text(self, data: 'str') -> 'None'}
+tesserix_adk.adapters.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
+tesserix_adk.adapters.approvals.ConsoleApprovals :: class ConsoleApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
+tesserix_adk.adapters.approvals.DEFAULT_APPROVAL_SUBJECT :: DEFAULT_APPROVAL_SUBJECT: str
+tesserix_adk.adapters.approvals.HttpPoster :: class HttpPoster(Protocol) {post(self, url: 'str', *, content: 'bytes', headers: 'Mapping[str, str]') -> 'tuple[int, bytes]'}
+tesserix_adk.adapters.approvals.MessagePublisher :: class MessagePublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
+tesserix_adk.adapters.approvals.NatsApprovals :: class NatsApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'None'}
+tesserix_adk.adapters.approvals.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
 tesserix_adk.adapters.cache.DEFAULT_NAMESPACE :: DEFAULT_NAMESPACE: str
 tesserix_adk.adapters.cache.RedisCacheStore :: class RedisCacheStore(object) {get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
 tesserix_adk.adapters.ceiling.CEILING_SCHEMA_VERSION :: CEILING_SCHEMA_VERSION: int
@@ -161,6 +173,7 @@ tesserix_adk.core.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
 tesserix_adk.core.ApprovalBindingError :: class ApprovalBindingError(AdkError)
 tesserix_adk.core.ApprovalDecision :: class ApprovalDecision(AdkModel)
+tesserix_adk.core.ApprovalDeliveryError :: class ApprovalDeliveryError(AdkError)
 tesserix_adk.core.ApprovalDenial :: class ApprovalDenial(StrEnum)
 tesserix_adk.core.ApprovalDeniedError :: class ApprovalDeniedError(AdkError)
 tesserix_adk.core.ApprovalExpiredError :: class ApprovalExpiredError(AdkError)
@@ -168,6 +181,7 @@ tesserix_adk.core.ApprovalGate :: class ApprovalGate(Protocol) {request(self, re
 tesserix_adk.core.ApprovalPolicy :: class ApprovalPolicy(object) {applies_to(self, arguments: 'Mapping[str, Any]') -> 'bool'}
 tesserix_adk.core.ApprovalPredicate :: ApprovalPredicate: TypeAliasType
 tesserix_adk.core.ApprovalRecord :: class ApprovalRecord(AdkModel)
+tesserix_adk.core.ApprovalTransport :: class ApprovalTransport(Protocol) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
 tesserix_adk.core.AuthenticationError :: class AuthenticationError(ProviderError)
 tesserix_adk.core.AutonomyDecision :: class AutonomyDecision(AdkModel)
 tesserix_adk.core.AutonomyGrant :: class AutonomyGrant(AdkModel) {covers(self, *, tenant: 'str', user: 'str | None', now: 'float') -> 'bool'}
@@ -508,6 +522,7 @@ tesserix_adk.core.dispatch.NodeOutcome :: class NodeOutcome(StrEnum)
 tesserix_adk.core.dispatch.NodeResult :: class NodeResult(Generic)
 tesserix_adk.core.errors.AdkError :: class AdkError(Exception)
 tesserix_adk.core.errors.ApprovalBindingError :: class ApprovalBindingError(AdkError)
+tesserix_adk.core.errors.ApprovalDeliveryError :: class ApprovalDeliveryError(AdkError)
 tesserix_adk.core.errors.ApprovalDeniedError :: class ApprovalDeniedError(AdkError)
 tesserix_adk.core.errors.ApprovalExpiredError :: class ApprovalExpiredError(AdkError)
 tesserix_adk.core.errors.AuthenticationError :: class AuthenticationError(ProviderError)
@@ -608,6 +623,7 @@ tesserix_adk.core.hooks.ApprovalGate :: class ApprovalGate(Protocol) {request(se
 tesserix_adk.core.hooks.ApprovalPolicy :: class ApprovalPolicy(object) {applies_to(self, arguments: 'Mapping[str, Any]') -> 'bool'}
 tesserix_adk.core.hooks.ApprovalPredicate :: ApprovalPredicate: TypeAliasType
 tesserix_adk.core.hooks.ApprovalRecord :: class ApprovalRecord(AdkModel)
+tesserix_adk.core.hooks.ApprovalTransport :: class ApprovalTransport(Protocol) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
 tesserix_adk.core.hooks.Hook :: class Hook(Protocol) {on(self, subject: 'HookSubject') -> 'HookDecision'}
 tesserix_adk.core.hooks.HookAction :: class HookAction(StrEnum)
 tesserix_adk.core.hooks.HookChain :: class HookChain(object) {at(self, point: 'HookPoint') -> 'tuple[Hook, ...]'; register(self, hook: 'Hook') -> 'None'; sealed(self) -> 'HookChain'}
@@ -1001,6 +1017,7 @@ tesserix_adk.runtime.ClaimCheck :: class ClaimCheck(object) {stored(self, result
 tesserix_adk.runtime.Confidence :: class Confidence(StrEnum)
 tesserix_adk.runtime.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.CostEstimate :: class CostEstimate(AdkModel) {as_limits(self, *, headroom: 'Decimal' = Decimal('1')) -> 'BudgetLimits'; with_children(self, *children: 'CostEstimate') -> 'CostEstimate'}
+tesserix_adk.runtime.DEFAULT_APPROVAL_WAIT_SECONDS :: DEFAULT_APPROVAL_WAIT_SECONDS: float
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.Delegation :: class Delegation(object) {to(self, agent: 'str', *, tools: 'Collection[str] | None' = None, mutations: 'Collection[str] | None' = None, limits: 'DelegationLimits | None' = None) -> 'Delegation'}
 tesserix_adk.runtime.DelegationLimits :: class DelegationLimits(object) {narrowed(self, other: 'DelegationLimits') -> 'DelegationLimits'}
@@ -1047,6 +1064,7 @@ tesserix_adk.runtime.SequenceCheck :: class SequenceCheck(object) {accept(self, 
 tesserix_adk.runtime.Spread :: class Spread(AdkModel)
 tesserix_adk.runtime.StructuredDelta :: class StructuredDelta(ProgressEvent)
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
+tesserix_adk.runtime.TIMEOUT_IDENTITY :: TIMEOUT_IDENTITY: str
 tesserix_adk.runtime.Tokenizer :: class Tokenizer(Protocol)
 tesserix_adk.runtime.ToolCallFailed :: class ToolCallFailed(ProgressEvent)
 tesserix_adk.runtime.ToolCallFinished :: class ToolCallFinished(ProgressEvent)
@@ -1055,12 +1073,17 @@ tesserix_adk.runtime.ToolCallStarted :: class ToolCallStarted(ProgressEvent)
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.runtime.ToolResult :: class ToolResult(object) {rendered(self) -> 'str'}
 tesserix_adk.runtime.ToolResultBoundary :: class ToolResultBoundary(object) {checked(self, tool: 'ReturningTool', value: 'object', *, tenant: 'str' = '') -> 'ToolResult'}
+tesserix_adk.runtime.TransportGate :: class TransportGate(object) {abandon(self, record_id: 'str', *, why: 'str') -> 'None'; decide(self, decision: 'ApprovalDecision') -> 'bool'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
 tesserix_adk.runtime.UsageUpdated :: class UsageUpdated(ProgressEvent)
 tesserix_adk.runtime.WorkerPool :: class WorkerPool(object) {call(self, what: 'str', body: 'Callable[[], T]') -> 'T'; close(self) -> 'None'}
 tesserix_adk.runtime.Workers :: class Workers(object)
 tesserix_adk.runtime.affordable :: def affordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'BudgetDecision'
 tesserix_adk.runtime.approval_for :: def approval_for(estimate: 'CostEstimate', agent: 'Agent[OutputT]', *, run_id: 'str', tenant: 'str', requested_at: 'float' = 0.0) -> 'ApprovalRecord'
 tesserix_adk.runtime.approvals.ApprovalLedger :: class ApprovalLedger(object) {bind(self, record: 'ApprovalRecord') -> 'None'; spend(self, record: 'ApprovalRecord', arguments: 'Mapping[str, Any]') -> 'None'; void(self) -> 'None'}
+tesserix_adk.runtime.approvals.DEFAULT_APPROVAL_WAIT_SECONDS :: DEFAULT_APPROVAL_WAIT_SECONDS: float
+tesserix_adk.runtime.approvals.TIMEOUT_IDENTITY :: TIMEOUT_IDENTITY: str
+tesserix_adk.runtime.approvals.TransportGate :: class TransportGate(object) {abandon(self, record_id: 'str', *, why: 'str') -> 'None'; decide(self, decision: 'ApprovalDecision') -> 'bool'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
+tesserix_adk.runtime.approvals.self_granted :: def self_granted(record: 'ApprovalRecord', decision: 'ApprovalDecision') -> 'bool'
 tesserix_adk.runtime.approximate_tokens :: def approximate_tokens(text: 'str') -> 'int'
 tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), pinned: 'Iterable[str]' = (), retrieved: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None, tokenizer: 'Tokenizer | None' = None) -> 'Prompt'
 tesserix_adk.runtime.autonomy.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None, key: 'str | None' = None) -> 'AutonomyDecision'; settle(self, key: 'str', *, happened: 'bool') -> 'None'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
@@ -1167,6 +1190,7 @@ tesserix_adk.runtime.results.ReturningTool :: class ReturningTool(Protocol)
 tesserix_adk.runtime.results.ToolResult :: class ToolResult(object) {rendered(self) -> 'str'}
 tesserix_adk.runtime.results.ToolResultBoundary :: class ToolResultBoundary(object) {checked(self, tool: 'ReturningTool', value: 'object', *, tenant: 'str' = '') -> 'ToolResult'}
 tesserix_adk.runtime.retry.RetryPlan :: class RetryPlan(object) {delay_for(self, attempt: 'int', *, retry_after: 'float | None' = None) -> 'float | None'; retryable(self, failure: 'BaseException') -> 'bool'}
+tesserix_adk.runtime.self_granted :: def self_granted(record: 'ApprovalRecord', decision: 'ApprovalDecision') -> 'bool'
 tesserix_adk.runtime.spend.budgeted_stream :: def budgeted_stream(events: 'AsyncIterator[StreamEvent]', budget: 'BudgetPolicy') -> 'AsyncIterator[StreamEvent]'
 tesserix_adk.runtime.state.MemoryStateStore :: class MemoryStateStore(object) {delete_run(self, key: 'StateKey') -> 'None'; delete_session(self, key: 'StateKey', *, cascade: 'bool' = False) -> 'None'; get_run(self, key: 'StateKey') -> 'RunRecord | None'; get_session(self, key: 'StateKey') -> 'SessionRecord | None'; list_runs(self, query: 'StateQuery') -> 'StatePage'; patch_run(self, key: 'StateKey', delta: 'StateDelta') -> 'RunRecord'; put_run(self, record: 'RunRecord') -> 'RunRecord'; put_session(self, record: 'SessionRecord') -> 'SessionRecord'}
 tesserix_adk.runtime.structured.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'; repair_prompt(self, violation: 'SchemaViolationError') -> 'str'}

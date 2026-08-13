@@ -120,7 +120,7 @@ from tesserix_adk.core.autonomy import AutonomyOutcome, InFlightPolicy
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
-from tesserix_adk.runtime.approvals import ApprovalLedger
+from tesserix_adk.runtime.approvals import ApprovalLedger, self_granted
 from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.checkpoint import (
@@ -2428,7 +2428,20 @@ class AgentRunner:
     def _honoured(
         self, run: Run[Any], record: ApprovalRecord, decision: ApprovalDecision, call: ToolCall
     ) -> Run[Any]:
-        """An answer only clears the call it answers, and only while it is current."""
+        """An answer only clears the call it answers, while it is current, from somebody else."""
+        if decision.granted and self_granted(record, decision):
+            why = f"{decision.decided_by} is the agent that asked, so nobody else agreed"
+            self._refuse_the_call(
+                self._denied(run, call, why),
+                call,
+                "approval_self_granted",
+                why,
+                _named(
+                    ApprovalDeniedError(
+                        f"approval for {call.name!r} names the agent that asked for it"
+                    )
+                ),
+            )
         if decision.record_id != record.id:
             raise _Terminal(
                 self._denied(run, call, "the decision answers a different request"),

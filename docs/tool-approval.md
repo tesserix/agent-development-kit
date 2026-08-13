@@ -91,6 +91,45 @@ A gate that **cannot be reached** fails the run either way. An unanswered reques
 denial, and treating an outage as a refusal the agent may talk around is how the gate stops
 being one.
 
+## Where the question goes
+
+The gate is where the run waits; the transport is only where the question is delivered. They
+are separate because they fail differently — a queue that is down must not become silence, and
+an approver who is asleep must not become a grant.
+
+```python
+from tesserix_adk.adapters import NatsApprovals
+from tesserix_adk.runtime import TransportGate
+
+gate = TransportGate(NatsApprovals(nats), wait_seconds=900)
+AgentRunner(..., approvals=gate)
+```
+
+An `ApprovalTransport` has one method, `deliver(record)`. It returns the decision where it
+carries the answer back itself, and `None` where the answer will arrive out of band — in which
+case the answering process calls `gate.decide(decision)`.
+
+| Transport | Delivery | Answer |
+|---|---|---|
+| any callable you write | in-process | in the reply, or `gate.decide` |
+| `NatsApprovals` | published on `adk.approvals.<tenant>` | out of band, `gate.decide` |
+| `WebhookApprovals` | signed HTTPS POST | in the response body, or out of band |
+| `ConsoleApprovals` | a terminal | the line the operator types |
+
+The NATS subject carries the tenant so a subscriber can be authorised for its own and no other;
+a tenant that is not a plain subject token is refused rather than published wider. The webhook
+body is signed (`X-Adk-Signature: sha256=…`) over exactly the bytes sent, and a non-2xx answer
+is an `ApprovalDeliveryError` rather than silence.
+
+Two things the gate decides for itself, whichever transport is under it:
+
+- **Silence is a denial.** Nobody answering within `wait_seconds` produces a refusal decided by
+  `system:timeout` — never a person's name, because nobody decided it. `decide` after that is
+  stale and settles nothing, as is a second answer to a request already spent.
+- **An agent cannot approve itself.** A *grant* whose `decided_by` names the agent that asked —
+  bare, or as `agent:`, `service:`, `bot:` or `sa:` — is refused with the code
+  `approval_self_granted`. It is what an over-broad service token looks like in practice.
+
 ## What is recorded
 
 `APPROVAL_REQUIRED` with the reason, then `APPROVAL_GRANTED` or `APPROVAL_DENIED` with who
@@ -99,5 +138,8 @@ progress event lets a UI put the request in front of somebody while the run wait
 
 ## Stability
 
-The codes `approval_denied` and `approval_expired` are public API and are treated as such:
-new codes are a minor change, removing or repurposing one is major.
+The codes `approval_denied`, `approval_expired` and `approval_self_granted` are public API and
+are treated as such: new codes are a minor change, removing or repurposing one is major. So are
+`ApprovalGate`, `ApprovalTransport`, `ApprovalRecord` and `ApprovalDecision` — a transport
+written against `deliver(record) -> ApprovalDecision | None` keeps working across minor
+versions.

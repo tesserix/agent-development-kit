@@ -38,6 +38,7 @@ __all__ = [
     "ApprovalPolicy",
     "ApprovalPredicate",
     "ApprovalRecord",
+    "ApprovalTransport",
     "Hook",
     "HookAction",
     "HookChain",
@@ -250,6 +251,28 @@ class ApprovalGate(Protocol):
 
     async def request(self, record: ApprovalRecord) -> ApprovalDecision:
         """Return the decision for `record`, waiting for it if need be."""
+        ...
+
+
+@runtime_checkable
+class ApprovalTransport(Protocol):
+    """How the question reaches whoever answers it, apart from where the run waits.
+
+    Delivery and waiting are separated because they fail differently: a queue that is down
+    is a delivery that must not become silence, and a person who is asleep is a wait that
+    must not become a grant.
+    """
+
+    async def deliver(self, record: ApprovalRecord) -> ApprovalDecision | None:
+        """Put `record` in front of whoever decides about it.
+
+        Returns the decision where the transport carries the answer back itself, and
+        nothing where the answer will arrive out of band on the gate.
+
+        Raises:
+            Exception: Where the question could not be delivered at all. A gate turns that
+                into a failure rather than a decision, because nobody was asked.
+        """
         ...
 
 

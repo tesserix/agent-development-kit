@@ -1,5 +1,13 @@
 """Concrete backing stores and transports."""
 
+from tesserix_adk.adapters.approvals import (
+    DEFAULT_APPROVAL_SUBJECT,
+    ConsoleApprovals,
+    HttpPoster,
+    MessagePublisher,
+    NatsApprovals,
+    WebhookApprovals,
+)
 from tesserix_adk.adapters.cache import DEFAULT_NAMESPACE, RedisCacheStore
 from tesserix_adk.adapters.ceiling import (
     CEILING_SCHEMA_VERSION,
@@ -97,6 +105,7 @@ __all__ = [
     "BACKENDS",
     "CEILING_SCHEMA_VERSION",
     "COUNTERS",
+    "DEFAULT_APPROVAL_SUBJECT",
     "DEFAULT_CEILING_TABLES",
     "DEFAULT_COLLECTION",
     "DEFAULT_GRANT_TABLES",
@@ -120,6 +129,7 @@ __all__ = [
     "ApprovalInbox",
     "CeilingTables",
     "CoalescingLedger",
+    "ConsoleApprovals",
     "EntityExtractor",
     "ExtractedEdge",
     "ExtractedNode",
@@ -132,10 +142,13 @@ __all__ = [
     "GraphSettings",
     "GraphitiClient",
     "GraphitiEngine",
+    "HttpPoster",
     "InMemoryLedger",
     "InspectableRedis",
     "MemoryPage",
     "MemoryStoreSettings",
+    "MessagePublisher",
+    "NatsApprovals",
     "PayloadElided",
     "PgvectorMemoryStore",
     "PostgresCeilingLedger",
@@ -166,6 +179,7 @@ __all__ = [
     "TransportAuthorizationError",
     "WebSocketBridge",
     "WebSocketLike",
+    "WebhookApprovals",
     "open_graphiti",
     "sse_events",
     "wire_payload",

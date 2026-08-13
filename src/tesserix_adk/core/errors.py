@@ -16,6 +16,7 @@ __all__ = [
     "RETRYABLE_STATUS",
     "AdkError",
     "ApprovalBindingError",
+    "ApprovalDeliveryError",
     "ApprovalDeniedError",
     "ApprovalExpiredError",
     "AuthenticationError",
@@ -1119,6 +1120,13 @@ class HookRefusedError(AdkError):
 
 class ApprovalDeniedError(AdkError):
     """Raised when a human declined a held tool call."""
+
+
+class ApprovalDeliveryError(AdkError):
+    """Raised when the question could not be put in front of anybody.
+
+    Distinct from a denial: nobody decided, so nothing may proceed on the strength of it.
+    """
 
 
 class ApprovalExpiredError(AdkError):

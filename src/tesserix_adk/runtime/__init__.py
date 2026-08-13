@@ -1,6 +1,12 @@
 """Run loop, caps, cancellation, timeout, checkpointing, streaming."""
 
-from tesserix_adk.runtime.approvals import ApprovalLedger
+from tesserix_adk.runtime.approvals import (
+    DEFAULT_APPROVAL_WAIT_SECONDS,
+    TIMEOUT_IDENTITY,
+    ApprovalLedger,
+    TransportGate,
+    self_granted,
+)
 from tesserix_adk.runtime.autonomy import (
     AutonomyGate,
     InMemoryReports,
@@ -101,7 +107,9 @@ from tesserix_adk.runtime.state import MemoryStateStore
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
 
 __all__ = [
+    "DEFAULT_APPROVAL_WAIT_SECONDS",
     "PROMPT_LAYERS",
+    "TIMEOUT_IDENTITY",
     "AgentRunner",
     "Ambient",
     "AnswerDelta",
@@ -170,6 +178,7 @@ __all__ = [
     "ToolDeclaration",
     "ToolResult",
     "ToolResultBoundary",
+    "TransportGate",
     "UsageUpdated",
     "WorkerPool",
     "Workers",
@@ -191,6 +200,7 @@ __all__ = [
     "plan_resume",
     "refuse_if_undecidable",
     "refuse_unaffordable",
+    "self_granted",
     "unwrap_fenced",
     "wrap_untrusted",
 ]

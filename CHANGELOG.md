@@ -165,6 +165,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `ApprovalTransport`, `TransportGate` and the `NatsApprovals`, `WebhookApprovals` and
+  `ConsoleApprovals` transports, separating where an approval question is delivered from
+  where the run waits for the answer. They fail differently and so are no longer one thing:
+  a queue that is down raises, because nobody was asked; an approver who is asleep produces
+  a denial decided by `system:timeout` once `wait_seconds` is up, because silence is not
+  permission. A late answer, and a second answer to a request already spent, settle nothing.
+  **Stability:** additive — a transport written against
+  `deliver(record) -> ApprovalDecision | None` is public API. Documented in
+  `docs/tool-approval.md`, exercised by `examples/approval_transport.py`.
+
+- A granted approval whose `decided_by` names the agent that asked is refused with the code
+  `approval_self_granted`, via `self_granted`. An agent's own service identity approving its
+  own payment is not a second pair of eyes, and it is the shape an over-broad token takes in
+  practice. **Stability:** additive, and a behaviour change only for a deployment whose gate
+  was answering with the agent's own identity, which was never an approval.
+
 - `CeilingLedger`, `InMemoryCeilingLedger` and `PostgresCeilingLedger`, closing the three
   ways a ceiling leaks: two actions each reading the same headroom and both fitting, one
   action arriving as ten small ones, and a timed-out action being retried onto fresh
