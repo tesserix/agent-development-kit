@@ -105,6 +105,11 @@ from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.spend import budgeted_stream
 from tesserix_adk.runtime.state import MemoryStateStore
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
+from tesserix_adk.runtime.suspension import (
+    ApprovalDeferred,
+    DeferringGate,
+    MemorySuspensionStore,
+)
 
 __all__ = [
     "DEFAULT_APPROVAL_WAIT_SECONDS",
@@ -113,6 +118,7 @@ __all__ = [
     "AgentRunner",
     "Ambient",
     "AnswerDelta",
+    "ApprovalDeferred",
     "ApprovalLedger",
     "ApprovalRequired",
     "Assumptions",
@@ -126,6 +132,7 @@ __all__ = [
     "ContextWindow",
     "CostEstimate",
     "Deadline",
+    "DeferringGate",
     "Delegation",
     "DelegationLimits",
     "DelegationScope",
@@ -138,6 +145,7 @@ __all__ = [
     "MemoryClaimCheckStore",
     "MemoryIdempotencyStore",
     "MemoryStateStore",
+    "MemorySuspensionStore",
     "MemoryWorkQueue",
     "ModelRequest",
     "ModelResponse",

@@ -165,6 +165,28 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `DeferringGate`, `AgentRunner.resume_with_decision`, `RunState.SUSPENDED` and the
+  suspension vocabulary (`SuspendedRun`, `ApprovalToken`, `PendingDecision`, `TokenAttempt`,
+  `SuspensionStore`, `TokenRedeemer`, `MemorySuspensionStore`, `ApprovalDeferred`,
+  `ApprovalTokenError`, `mint_token`, `digest_of_token`, `DEFAULT_SUSPENSION_SECONDS`), so a
+  run can stop on a human decision for three days without holding a worker, a connection or
+  any in-memory state while it waits. The token is single-use, tenant-bound and expiring, and
+  every presentation is audited against the identity that made it. Resuming puts the held
+  call back through dispatch rather than round it, so an autonomy window that closed, a grant
+  withdrawn, or a tool schema that moved during the wait all still refuse — a person saying
+  yes is one of the conditions, not all of them. **Stability:** additive, but
+  `RunState.SUSPENDED` is the first non-terminal state a returned run can be in; only a gate
+  that defers produces it, and `TransportGate` never does. Documented in
+  `docs/suspension.md`, exercised by `examples/suspension.py`.
+
+- `tesserix_adk.cli.approvals_main` with `Waiting` and `Answering`, answering a suspended run
+  from a terminal — `list`, `approve`, `deny` — since the process that asked is long gone by
+  the time somebody decides. The store and the resume are supplied by the caller, because the
+  kit cannot know where a deployment keeps its suspensions or which agent to carry on. It
+  prints payload digests rather than payloads, and reports a token that bought nothing as
+  exit code `1` rather than a traceback. **Stability:** additive, and no console script is
+  installed. Documented in `docs/suspension.md`.
+
 - `ApprovalTransport`, `TransportGate` and the `NatsApprovals`, `WebhookApprovals` and
   `ConsoleApprovals` transports, separating where an approval question is delivered from
   where the run waits for the answer. They fail differently and so are no longer one thing:

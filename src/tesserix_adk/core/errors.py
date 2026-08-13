@@ -19,6 +19,7 @@ __all__ = [
     "ApprovalDeliveryError",
     "ApprovalDeniedError",
     "ApprovalExpiredError",
+    "ApprovalTokenError",
     "AuthenticationError",
     "AutonomyRefusedError",
     "BudgetExceededError",
@@ -1144,6 +1145,22 @@ class ApprovalBindingError(AdkError):
     on one decision, or a grant belonging to a run that has been cancelled all fail closed
     here rather than executing an unapproved variant.
     """
+
+
+class ApprovalTokenError(AdkError):
+    """Raised when a token cannot buy the decision it was presented for.
+
+    Unknown, already spent, or presented as a tenant it was not issued to. All three are
+    the shape of a decision being replayed, so none of them resumes anything.
+
+    Args:
+        run_id: The run named by the token, where it named a real one.
+        presented_by: Who presented it.
+    """
+
+    def __init__(self, *args: object, run_id: str = "", presented_by: str = "") -> None:
+        super().__init__(*args, run_id=run_id or None, details={"presented_by": presented_by})
+        self.presented_by = presented_by
 
 
 class IndeterminateOutcomeError(AdkError):

@@ -45,6 +45,7 @@ class RunState(StrEnum):
 
     PENDING = "pending"
     RUNNING = "running"
+    SUSPENDED = "suspended"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -72,7 +73,8 @@ _TERMINAL = frozenset(
 # A run that never started cannot have exhausted a budget or run out of iterations.
 _TRANSITIONS: dict[RunState, frozenset[RunState]] = {
     RunState.PENDING: frozenset({RunState.RUNNING, RunState.CANCELLED}),
-    RunState.RUNNING: _TERMINAL,
+    RunState.RUNNING: _TERMINAL | {RunState.SUSPENDED},
+    RunState.SUSPENDED: frozenset({RunState.RUNNING, RunState.CANCELLED, RunState.FAILED}),
 }
 
 
@@ -95,6 +97,7 @@ class RunEventKind(StrEnum):
     to anything that has to count tool failures or total the cost of model calls.
     """
 
+    RUN_SUSPENDED = "run_suspended"
     RUN_RESUMED = "run_resumed"
     MODEL_ROUTED = "model_routed"
     MODEL_FELL_BACK = "model_fell_back"

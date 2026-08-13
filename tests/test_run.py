@@ -71,7 +71,7 @@ class TestRunState:
         )
 
     def test_a_running_run_can_reach_every_terminal_state(self) -> None:
-        assert legal_transitions(RunState.RUNNING) == frozenset(
+        assert legal_transitions(RunState.RUNNING) >= frozenset(
             state for state in RunState if state.is_terminal
         )
 

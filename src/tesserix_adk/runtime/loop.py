@@ -80,6 +80,7 @@ from tesserix_adk.core import (
     ModelRequirements,
     ModelResponseError,
     ModelRouter,
+    PendingCall,
     RecursionLimitError,
     RepeatedCallError,
     RetryConfig,
@@ -95,8 +96,10 @@ from tesserix_adk.core import (
     ScopedLimits,
     ScopeEscalationError,
     StateNotFoundError,
+    SuspendedRun,
     TaskClass,
     TextPart,
+    TokenRedeemer,
     ToolArgumentValidationError,
     ToolCall,
     ToolError,
@@ -120,7 +123,7 @@ from tesserix_adk.core.autonomy import AutonomyOutcome, InFlightPolicy
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
-from tesserix_adk.runtime.approvals import ApprovalLedger, self_granted
+from tesserix_adk.runtime.approvals import TIMEOUT_IDENTITY, ApprovalLedger, self_granted
 from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.checkpoint import (
@@ -155,6 +158,7 @@ from tesserix_adk.runtime.prompt import (
 from tesserix_adk.runtime.results import ReturningTool, ToolResult, ToolResultBoundary
 from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
+from tesserix_adk.runtime.suspension import ApprovalDeferred
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Iterable, Iterator, Mapping, Sequence
@@ -252,6 +256,15 @@ class _GuardProgress:
         )
 
 
+@dataclass(slots=True)
+class _Frontier:
+    """Where the loop has got to, for a suspension that has to write it down."""
+
+    iteration: int = 0
+    model: str = ""
+    messages: list[Message] = field(default_factory=list)
+
+
 @dataclass(frozen=True, slots=True)
 class _Bounds:
     """What limits one run: the caller's switch, the run's instant, the step ceilings."""
@@ -267,6 +280,9 @@ class _Bounds:
     approvals: ApprovalLedger = field(default_factory=ApprovalLedger)
     granted: dict[str, ApprovalRecord] = field(default_factory=dict)
     keys: dict[str, str] = field(default_factory=dict)
+    decided: dict[str, ApprovalDecision] = field(default_factory=dict)
+    """Decisions taken while the run was stopped, by record. Used once, then gone."""
+    frontier: _Frontier = field(default_factory=_Frontier)
 
 
 @dataclass(frozen=True, slots=True)
@@ -777,10 +793,117 @@ class AgentRunner:
                     messages=list(prompt.messages),
                 )
             )
+        except _Suspended as stopped:
+            return stopped.run
         except _Terminal as stop:
             return await self._forgotten(
                 await self._terminate(stop.run, agent, stop.state, stop.detail, bounds)
             )
+
+    async def resume_with_decision[OutputT: BaseModel](
+        self,
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
+        run_id: str,
+        *,
+        tenant: str,
+        token: str,
+        granted: bool,
+        decided_by: str,
+        reason: str = "",
+        user: str | None = None,
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        budget: BudgetPolicy | None = None,
+        allow_model_drift: bool = False,
+    ) -> Run[OutputT]:
+        """Carry on a run that stopped on a question, now that somebody has answered it.
+
+        The decision is not trusted on its own: the token is redeemed once, the held call is
+        put back through dispatch, and everything that gates a call the first time gates it
+        again. An autonomy window that closed while the run slept closes it now, a tool
+        whose schema moved refuses the payload now, and a grant withdrawn in the meantime is
+        still withdrawn. A human saying yes is one of the conditions, not all of them.
+
+        A token past its expiry resumes the run as a denial rather than a grant, because a
+        question nobody answered for three days is not a question still open.
+
+        Args:
+            agent: What was running.
+            run_id: Which run.
+            tenant: The isolation boundary. A token issued for another one buys nothing.
+            token: What was handed to the approver.
+            granted: What they decided.
+            decided_by: Who they are. Recorded against the attempt either way.
+            reason: Why, where they gave one.
+            user: The acting principal, where there is one.
+            cancellation: The caller's switch.
+            deadline: A ceiling from the caller.
+            budget: The ceiling for what is left of the run.
+            allow_model_drift: Whether to carry on when the agent now names a different
+                model than the one the approver's question was produced by. Refused by
+                default: the answer was about what that model proposed.
+
+        Returns:
+            The run, in a terminal state.
+
+        Raises:
+            ApprovalTokenError: If the token is unknown to `tenant` or already spent.
+            ConfigurationError: If this runner's gate cannot redeem tokens, or the model
+                moved under a run that was not allowed to drift.
+        """
+        gate: object = self._approvals  # mypy cannot intersect two protocols
+        if not isinstance(gate, TokenRedeemer):
+            raise ConfigurationError(
+                "this runner's approval gate cannot redeem tokens, so a decision taken out "
+                "of band has nothing to resume; give it a gate that defers"
+            )
+        held = await gate.redeem(token, tenant=tenant, presented_by=decided_by)
+        now = self._clock.now()
+        expired = held.expired_by(now)
+        decision = ApprovalDecision(
+            record_id=held.record.id,
+            granted=granted and not expired,
+            decided_by=TIMEOUT_IDENTITY if expired else decided_by,
+            decided_at=now,
+            reason=self._why_decided(held, reason, expired=expired),
+        )
+        self._refuse_a_moved_model(agent, held, drifting=allow_model_drift)
+        return await self._resume(
+            agent,
+            run_id,
+            tenant=tenant,
+            user=user,
+            cancellation=cancellation,
+            deadline=deadline,
+            budget=budget,
+            decided={decision.record_id: decision},
+            held=held,
+        )
+
+    def _why_decided(self, held: SuspendedRun, reason: str, *, expired: bool) -> str:
+        """What the audit trail says this decision was, which is not always what was sent."""
+        if not expired:
+            return reason
+        return (
+            f"the token for {held.record.id} expired at {held.expires_at:g}, "
+            f"and an unanswered question is not permission"
+        )
+
+    def _refuse_a_moved_model(
+        self, agent: Agent[Any] | AgentDefinition[Any], held: SuspendedRun, *, drifting: bool
+    ) -> None:
+        """Stop a decision about one model's proposal being executed under another's.
+
+        Raises:
+            ConfigurationError: If the model moved and the caller did not say it may.
+        """
+        named = agent.agent.model if isinstance(agent, AgentDefinition) else agent.model
+        if drifting or not named or not held.model or named == held.model:
+            return
+        raise ConfigurationError(
+            f"{held.run_id} was stopped under {held.model!r} and would be carried on under "
+            f"{named!r}; the decision was about what {held.model!r} proposed"
+        )
 
     async def resume[OutputT: BaseModel](
         self,
@@ -822,6 +945,30 @@ class AgentRunner:
                 whether it happened. Retrying it is the duplicate this exists to prevent.
             ResumeConflictError: If another worker is already carrying the run on.
         """
+        return await self._resume(
+            agent,
+            run_id,
+            tenant=tenant,
+            user=user,
+            cancellation=cancellation,
+            deadline=deadline,
+            budget=budget,
+        )
+
+    async def _resume[OutputT: BaseModel](
+        self,
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
+        run_id: str,
+        *,
+        tenant: str,
+        user: str | None = None,
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        budget: BudgetPolicy | None = None,
+        decided: dict[str, ApprovalDecision] | None = None,
+        held: SuspendedRun | None = None,
+    ) -> Run[OutputT]:
+        """Carry a checkpointed run on, optionally with a decision taken while it slept."""
         if self._checkpoints is None:
             raise ConfigurationError(
                 "this runner was built without a checkpointer, so there is no frontier to "
@@ -849,6 +996,8 @@ class AgentRunner:
 
         decision = self._route(agent, tenant)
         bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision), budget)
+        if decided is not None:
+            bounds.decided.update(decided)
         run: Run[Any] = _carrier_for(agent.output_type)(
             id=run_id,
             tenant=tenant,
@@ -866,7 +1015,7 @@ class AgentRunner:
             self._event(
                 RunEventKind.RUN_RESUMED,
                 name=str(checkpoint.boundary),
-                detail=f"from iteration {checkpoint.iterations}",
+                detail=self._how_it_was_carried_on(checkpoint, held),
             )
         )
         self._emit(RunStarted(agent=agent.name, model=run.model, tenant=tenant))
@@ -881,6 +1030,9 @@ class AgentRunner:
                 )
             )
         contract = self._contract_for(agent, bounds.provider)
+        bounds.frontier.iteration = checkpoint.iterations
+        bounds.frontier.model = run.model
+        bounds.frontier.messages = messages
         try:
             if plan.to_dispatch:
                 run = await self._dispatch(
@@ -903,10 +1055,19 @@ class AgentRunner:
                     start=checkpoint.iterations + 1,
                 )
             )
+        except _Suspended as stopped:
+            return stopped.run
         except _Terminal as stop:
             return await self._forgotten(
                 await self._terminate(stop.run, agent, stop.state, stop.detail, bounds)
             )
+
+    def _how_it_was_carried_on(self, checkpoint: Checkpoint, held: SuspendedRun | None) -> str:
+        """What a reader of the trail is told about the gap, where there was one."""
+        carried = f"from iteration {checkpoint.iterations}"
+        if held is None:
+            return carried
+        return f"{carried}, suspended {held.held_for(self._clock.now()):g}s"
 
     async def _drive(
         self,
@@ -928,6 +1089,9 @@ class AgentRunner:
         returned. Both then want the same thing, so both get the same loop.
         """
         for iteration in range(start, self._max_iterations + 1):
+            bounds.frontier.iteration = iteration
+            bounds.frontier.model = model
+            bounds.frontier.messages = messages
             self._emit(IterationStarted(iteration=iteration))
             self._stop_if_over(run, bounds)
             await self._spent(run, bounds, _NOTHING, iterations=1)
@@ -977,6 +1141,7 @@ class AgentRunner:
         model: str,
         boundary: CheckpointBoundary,
         iteration: int,
+        pending: tuple[PendingCall, ...] = (),
     ) -> None:
         """Write the frontier, where the runner was given somewhere to write it.
 
@@ -993,6 +1158,7 @@ class AgentRunner:
                 model=model,
                 boundary=boundary,
                 messages=tuple(messages),
+                pending=pending,
                 usage=run.usage,
                 iterations=iteration,
                 agent_revision=run.definition_revision,
@@ -2384,6 +2550,12 @@ class AgentRunner:
             self._event(RunEventKind.APPROVAL_REQUIRED, name=call.name, detail=reason)
         )
         self._emit(ApprovalRequired(call_id=call.id, tool=call.name, reason=reason))
+        taken = bounds.decided.pop(record.id, None)
+        if taken is not None:
+            run = self._honoured(run, record, taken, call)
+            bounds.approvals.bind(record)
+            bounds.granted[call.id] = record
+            return run
         try:
             decision = await self._bounded(
                 self._approvals.request(record),
@@ -2391,6 +2563,8 @@ class AgentRunner:
                 bounds=bounds,
                 what=f"approval for {call.name}",
             )
+        except ApprovalDeferred as deferred:
+            raise await self._stopped(run, agent, call, record, deferred, bounds) from None
         except _Aborted as abort:
             raise self._cancelled(run, abort, name=call.name) from None
         except Exception as failure:
@@ -2403,6 +2577,72 @@ class AgentRunner:
         bounds.approvals.bind(record)
         bounds.granted[call.id] = record
         return run
+
+    async def _stopped(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        call: ToolCall,
+        record: ApprovalRecord,
+        deferred: ApprovalDeferred,
+        bounds: _Bounds,
+    ) -> _Suspended:
+        """Write down what is being asked and where the run got to, then let go of it.
+
+        The frontier is written before the suspension is stored, because a suspension a
+        resume cannot find a checkpoint for is a question nobody can answer usefully.
+
+        Raises:
+            ConfigurationError: If nothing here can write a frontier, which would make the
+                token a promise to resume a run that no longer exists anywhere.
+        """
+        self._refuse_a_suspension_nobody_can_resume(run)
+        await self._checkpoint(
+            run,
+            agent,
+            bounds.frontier.messages,
+            bounds.frontier.model or run.model,
+            CheckpointBoundary.BEFORE_APPROVAL,
+            bounds.frontier.iteration,
+            pending=(PendingCall(call=call),),
+        )
+        token = deferred.token
+        await deferred.store.put(
+            SuspendedRun(
+                run_id=run.id,
+                tenant=run.tenant,
+                agent_name=agent.name,
+                record=record,
+                call=call,
+                token_digest=token.digest,
+                suspended_at=self._clock.now(),
+                expires_at=token.expires_at,
+                model=bounds.frontier.model or run.model,
+                prompt_version=run.prompt_version or "",
+                iterations=bounds.frontier.iteration,
+            )
+        )
+        run = run.record_event(
+            self._event(
+                RunEventKind.RUN_SUSPENDED,
+                name=call.name,
+                detail=f"waiting on {record.id} until {token.expires_at:g}",
+            )
+        )
+        return _Suspended(run.transition_to(RunState.SUSPENDED, at=self._clock.now()))
+
+    def _refuse_a_suspension_nobody_can_resume(self, run: Run[Any]) -> None:
+        """Stop a gate deferring a run this runner could never carry on."""
+        if self._checkpoints is None:
+            raise ConfigurationError(
+                f"{run.id} was deferred for a later decision but this runner has no "
+                f"checkpointer, so nothing could carry it on"
+            )
+        if not self._checkpoints.policy.writes_at(CheckpointBoundary.BEFORE_APPROVAL):
+            raise ConfigurationError(
+                f"{run.id} was deferred for a later decision but the checkpoint policy "
+                f"does not write at {CheckpointBoundary.BEFORE_APPROVAL}"
+            )
 
     def _spend_the_approval(self, run: Run[Any], call: ToolCall, bounds: _Bounds) -> None:
         """Use the grant this call is holding, for the payload it was granted over.
@@ -3139,6 +3379,14 @@ class _Aborted(Exception):  # noqa: N818 — control flow, not an error the call
         self.reason = reason
         self.deadline = deadline
         self.orphaned = orphaned
+
+
+class _Suspended(Exception):  # noqa: N818 — control flow, not an error the caller sees
+    """Unwinds the loop to a run that has stopped on a question and holds nothing."""
+
+    def __init__(self, run: Run[Any]) -> None:
+        super().__init__(f"{run.id} is waiting on a decision")
+        self.run = run
 
 
 class _Terminal(Exception):  # noqa: N818 — control flow, not an error the caller sees
