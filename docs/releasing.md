@@ -23,27 +23,51 @@ Tags are `v<major>.<minor>.<patch>`, optionally with an `a`/`b`/`rc` suffix:
 ## Cutting a release
 
 1. Make sure `main` is green.
-2. Run the local gates: `make check`. The `release-check` target compares the public API
-   snapshot at the last tag against the working tree and tells you which release channel
-   the change requires — take that answer rather than guessing. `notes-check` fails if
-   any change in the range would ship undocumented.
-3. Read what the release will say: `make notes VERSION=0.3.0`.
-4. Fold the notes into the changelog and clear the consumed fragments, then push through
+2. Run the local gates: `make check`.
+3. Ask what the version has to be, and why:
+
+   ```
+   $ make release-plan
+   0.4.2 -> 0.5.0
+
+   breaking: 1
+     changes/126.breaking.md is breaking
+   surface: 12
+     changes/100.added.md adds surface
+     ... and 7 more
+
+   run `make release VERSION=0.5.0` to cut it.
+   ```
+
+   The number is derived from what is pending — the change fragments and the public API
+   snapshot diff — against the policy in [`versioning.md`](versioning.md), so the releaser
+   confirms an answer instead of remembering which digit moves. Where the fragments and
+   the snapshot disagree the snapshot wins: a fragment is a claim, the snapshot is
+   evidence, and a consumer meets the evidence. A breaking fragment carrying no migration
+   note stops the release here rather than at the review.
+
+   `VERSION=` is accepted to override the derived number — say, to take a major
+   deliberately — and the plan says so out loud when you do.
+
+4. Read what the release will say: `make notes VERSION=0.5.0`.
+5. Fold the notes into the changelog and clear the consumed fragments, then push through
    the normal review path:
 
    ```bash
-   uv run python -m tools.release_notes --version 0.3.0 --release
-   git commit -am "chore(release): notes for 0.3.0"
+   make release VERSION=0.5.0
+   git commit -am "chore(release): notes for 0.5.0"
    ```
 
-5. Tag the reviewed commit and push the tag:
+6. Tag the reviewed commit and push the tag:
 
    ```bash
-   git tag v0.3.0
-   git push origin v0.3.0
+   git tag -a v0.5.0 -m v0.5.0
+   git push origin v0.5.0
    ```
 
-The tag push is the only trigger. Pushing to `main` never publishes.
+`make release` stops before the commit and the tag and prints both: pushing the tag *is*
+the publish, so it stays a decision somebody makes. The tag push is the only trigger.
+Pushing to `main` never publishes.
 
 ## What the workflow does
 
@@ -56,10 +80,16 @@ The tag push is the only trigger. Pushing to `main` never publishes.
 | `sbom` | Checks every licence in the graph against the policy, then builds `sbom.cdx.json` from the lock at this tag and diffs it against the previous release. See [`security.md`](security.md). |
 | `notes` | Assembles the release body from the repository, appends the dependency diff, and fails if any change in the range has nothing describing it to a consumer. |
 | `build` | `uv build`, `twine check --strict` on the metadata, an assertion that the artefact filename carries the tag's version, and keyless signing with a build provenance attestation over `dist/*`. See [`verifying.md`](verifying.md). |
-| `publish` | Trusted publishing to PyPI via workflow identity, behind the `pypi` environment. |
+| `publish` | Trusted publishing to PyPI via workflow identity, behind the `pypi` environment. Runs only where the repository variable `PUBLISH_TO_PYPI` is `true`. |
 | `mirror` | The same artefacts, `sbom.cdx.json` and the attestation bundles attached to a GitHub Release, with the assembled notes as its body. A mirrored install has no attestation store to reach, so the bundles travel with the artefacts. |
 | `divergence` | Fails the release if PyPI succeeded and the mirror did not. |
-| `smoke` | Downloads the *published* wheel from PyPI, verifies its attestation against this repository and `release.yml` before installing anything, then installs it in a clean virtualenv once per extra and runs `examples/getting_started.py`. |
+| `smoke` | Downloads the *published* wheel from PyPI, verifies its attestation against this repository and `release.yml` before installing anything, then installs it in a clean virtualenv once per extra and runs `examples/getting_started.py`. Skipped with `publish`. |
+| `smoke-mirror` | The same, against the release assets a consumer resolves with `--find-links`. This is the channel that is always exercised, because it is the one that always ships. |
+
+`publish` is off until the trusted publisher exists on PyPI, and `mirror` is deliberately
+not downstream of it — a skipped job skips everything behind it, so a mirror that waited
+on `publish` would produce no consumable release at all. Until the
+[one-time setup](#one-time-setup) is done, the GitHub Release **is** the release.
 
 There is no signing key either, and none of these jobs holds a credential that outlives
 the run: signing is keyless against the workflow's own identity.
@@ -77,6 +107,9 @@ path nobody has tested by the time it matters.
 - PyPI: a trusted publisher for `tesserix/agent-development-kit`, workflow
   `release.yml`, environment `pypi`. A second one for `alpha.yml`, same environment.
 - GitHub: a `pypi` environment with the reviewers who are allowed to approve a publish.
+- GitHub: repository variable `PUBLISH_TO_PYPI=true`, once the publisher exists. Until it
+  is set, a tag builds, attests, mirrors and smoke-tests the release without uploading to
+  the index.
 - GitHub: repository variable `PUBLISH_ALPHAS=true`, once both publishers exist. Until it
   is set, `alpha.yml` builds and checks the alpha on every merge but does not upload it —
   a merge that fails on setup nobody can do from the pull request teaches the team to
@@ -142,8 +175,10 @@ url = "https://github.com/tesserix/agent-development-kit/releases/expanded_asset
 format = "flat"
 ```
 
-This gives a second source for the artefacts that does not depend on PyPI being
-reachable. It is not a resolvable index: it serves one version per URL and does no
+Until `PUBLISH_TO_PYPI` is set this is the only source for the artefacts, and afterwards
+it is a second one that does not depend on PyPI being reachable. Either way `smoke-mirror`
+installs from it on every release, so the path in this section is tested rather than
+described. It is not a resolvable index: it serves one version per URL and does no
 dependency resolution of its own, so transitive dependencies still come from whichever
 index the consumer has configured. A true second index — Azure Artifacts or GCP
 Artifact Registry, both of which do speak the simple API — is the follow-up if a

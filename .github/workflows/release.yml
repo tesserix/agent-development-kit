@@ -143,6 +143,9 @@ jobs:
   publish:
     name: publish to PyPI
     needs: [build, notes, sbom]
+    # Off until the trusted publisher exists on PyPI: a release that fails here would
+    # never reach the mirror consumers install from. See docs/releasing.md.
+    if: vars.PUBLISH_TO_PYPI == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -160,7 +163,7 @@ jobs:
 
   mirror:
     name: mirror to the internal index
-    needs: [build, notes, sbom, publish]
+    needs: [build, notes, sbom]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -251,4 +254,43 @@ jobs:
             target="tesserix-adk[$EXTRA]==$VERSION"
           fi
           .smoke/bin/python -m pip install "$target"
+      - run: .smoke/bin/python examples/getting_started.py
+
+  smoke-mirror:
+    name: installs from the release assets
+    needs: [build, mirror]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: [none, mcp, temporal, graphiti, redis, postgres, all]
+    permissions:
+      contents: read
+      attestations: read
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+      EXTRA: ${{ matrix.extra }}
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # The mirror is the path consumers actually use while PyPI publishing is off, so it
+      # is exercised the way they use it: assets in, nothing from this working tree.
+      - run: |
+          python -m venv .smoke
+          gh release download "$TAG" --pattern '*.whl' --pattern '*.tar.gz' --dir downloaded
+      - run: |
+          gh attestation verify downloaded/*.whl \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
+      - run: |
+          if [ "$EXTRA" = "none" ]; then
+            target="tesserix-adk==$VERSION"
+          else
+            target="tesserix-adk[$EXTRA]==$VERSION"
+          fi
+          .smoke/bin/python -m pip install --find-links downloaded "$target"
       - run: .smoke/bin/python examples/getting_started.py

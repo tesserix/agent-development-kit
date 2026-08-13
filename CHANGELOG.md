@@ -165,6 +165,15 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `make release-plan` and `make release VERSION=…`, so the release version is derived from
+  the pending change fragments and the public API snapshot diff rather than remembered at
+  the one moment nobody can take it back. The plan names every reason the number has to
+  move; a breaking fragment with no migration note is refused. `make release` folds the
+  notes, consumes the fragments and stops, printing the commit and tag commands rather
+  than running them. The GitHub Release is now the channel that always ships: `publish` is
+  gated on the repository variable `PUBLISH_TO_PYPI`, `mirror` no longer waits on it, and
+  a `smoke-mirror` leg installs every extra from the release assets the way a consumer
+  does. See `docs/releasing.md`.
 - `carried`, `arriving`, `in_payload`, `of_payload`, `restored` and `header_of`, so the tenant
   survives a hop that leaves the process under one wire contract — header `adk-tenant`, payload
   key `adk_tenant`, version `adk/1` — instead of a field name per integration. Ingress refuses

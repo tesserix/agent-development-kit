@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check typing-gate deprecations deprecations-check release-check notes notes-check alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
+.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check typing-gate deprecations deprecations-check release-check notes notes-check release-plan release alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -66,6 +66,12 @@ notes: ## Preview the release notes assembled from the change fragments
 
 notes-check: ## Fail if a change since the last tag has no note fragment or readable subject
 	uv run python -m tools.release_notes --version $(VERSION) --dry-run > /dev/null
+
+release-plan: ## Show the version the pending changes require, and why
+	uv run python -m tools.release
+
+release: ## Fold the notes, consume the fragments and print the commands that cut VERSION
+	uv run python -m tools.release --apply --version $(VERSION)
 
 alpha: ## Show the pre-release version the next merge to main would publish
 	uv run python -m tools.alpha

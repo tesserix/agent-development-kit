@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from tests.ci_config import RELEASE, load_yaml, pyproject, release_jobs, release_run_steps, triggers
 
 GUARD = "guard"
@@ -18,7 +20,12 @@ PUBLISH = "publish"
 MIRROR = "mirror"
 NOTES = "notes"
 SMOKE = "smoke"
+MIRROR_SMOKE = "smoke-mirror"
 DIVERGENCE = "divergence"
+
+# Both channels are installed from before the release is called done; the mirror is the
+# one consumers use while the index publish is switched off.
+SMOKE_JOBS = (SMOKE, MIRROR_SMOKE)
 
 WORKFLOW = load_yaml(RELEASE)
 TEXT = RELEASE.read_text(encoding="utf-8")
@@ -72,8 +79,16 @@ def test_publishing_is_gated_by_a_reviewed_environment() -> None:
     assert release_jobs()[PUBLISH]["environment"] == "pypi"
 
 
-def test_the_mirror_follows_the_index_publish() -> None:
-    assert PUBLISH in _needs(MIRROR)
+def test_the_index_publish_is_switched_on_deliberately_rather_than_by_default() -> None:
+    """The trusted publisher is a one-time setup on PyPI; until it exists, an unguarded
+    upload step fails the release before the mirror is written."""
+    assert release_jobs()[PUBLISH]["if"] == "vars.PUBLISH_TO_PYPI == 'true'"
+
+
+def test_the_mirror_does_not_wait_on_the_index_publish() -> None:
+    """The mirror is what consumers install from, so it cannot be downstream of a job
+    that is switched off — a skipped dependency skips everything behind it."""
+    assert PUBLISH not in _needs(MIRROR)
 
 
 def test_a_divergence_between_the_two_indexes_fails_the_release() -> None:
@@ -102,18 +117,27 @@ def test_the_release_uses_the_assembled_notes() -> None:
     assert "--generate-notes" not in steps
 
 
-def test_the_smoke_job_installs_from_the_index() -> None:
+@pytest.mark.parametrize("job", SMOKE_JOBS)
+def test_the_smoke_job_installs_what_was_published(job: str) -> None:
     """Installing the working tree would prove nothing about what consumers get."""
-    steps = " ".join(release_run_steps(SMOKE))
+    steps = " ".join(release_run_steps(job))
     assert "tesserix-adk" in steps
     assert "pip install -e" not in steps
     assert "uv sync" not in steps
 
 
-def test_the_smoke_job_installs_the_exact_version_that_was_published() -> None:
+def test_the_mirror_is_smoke_tested_the_way_a_consumer_reaches_it() -> None:
+    """Consumers resolve the release assets, not the index, while publishing is off."""
+    steps = " ".join(release_run_steps(MIRROR_SMOKE))
+    assert "gh release download" in steps
+    assert "--find-links" in steps
+
+
+@pytest.mark.parametrize("job", SMOKE_JOBS)
+def test_the_smoke_job_installs_the_exact_version_that_was_published(job: str) -> None:
     """ "Latest" would pass against whatever the index already had."""
-    assert "==$VERSION" in " ".join(release_run_steps(SMOKE))
-    assert release_jobs()[SMOKE]["env"]["VERSION"] == "${{ needs.build.outputs.version }}"
+    assert "==$VERSION" in " ".join(release_run_steps(job))
+    assert release_jobs()[job]["env"]["VERSION"] == "${{ needs.build.outputs.version }}"
 
 
 def test_no_step_interpolates_a_ref_into_a_shell_command() -> None:
@@ -123,20 +147,23 @@ def test_no_step_interpolates_a_ref_into_a_shell_command() -> None:
         assert all("${{" not in step for step in release_run_steps(job))
 
 
-def test_the_smoke_job_covers_every_extra() -> None:
-    """Extras must resolve from the index, not only from the repository."""
+@pytest.mark.parametrize("job", SMOKE_JOBS)
+def test_the_smoke_job_covers_every_extra(job: str) -> None:
+    """Extras must resolve from the published channel, not only from the repository."""
     declared = set(pyproject()["project"].get("optional-dependencies", {})) - {"all"}
-    legs = set(release_jobs()[SMOKE]["strategy"]["matrix"]["extra"])
+    legs = set(release_jobs()[job]["strategy"]["matrix"]["extra"])
     assert declared <= legs
     assert {"none", "all"} <= legs
 
 
-def test_the_smoke_job_runs_the_getting_started_example() -> None:
-    assert "getting_started.py" in " ".join(release_run_steps(SMOKE))
+@pytest.mark.parametrize("job", SMOKE_JOBS)
+def test_the_smoke_job_runs_the_getting_started_example(job: str) -> None:
+    assert "getting_started.py" in " ".join(release_run_steps(job))
 
 
-def test_the_smoke_job_does_not_stop_at_the_first_failing_extra() -> None:
-    assert release_jobs()[SMOKE]["strategy"]["fail-fast"] is False
+@pytest.mark.parametrize("job", SMOKE_JOBS)
+def test_the_smoke_job_does_not_stop_at_the_first_failing_extra(job: str) -> None:
+    assert release_jobs()[job]["strategy"]["fail-fast"] is False
 
 
 def test_the_workflow_reads_no_more_than_it_needs_by_default() -> None:
@@ -212,13 +239,15 @@ class TestProvenance:
         """A mirrored or air-gapped install has no attestation store to reach."""
         assert "attestation download" in " ".join(release_run_steps(MIRROR))
 
-    def test_the_published_artefact_is_verified_before_it_is_installed(self) -> None:
+    @pytest.mark.parametrize("job", SMOKE_JOBS)
+    def test_the_published_artefact_is_verified_before_it_is_installed(self, job: str) -> None:
         """Verification that runs after the install protects nothing."""
-        assert "attestation verify" in " ".join(release_run_steps(SMOKE))
+        assert "attestation verify" in " ".join(release_run_steps(job))
 
-    def test_verification_names_the_workflow_that_may_sign(self) -> None:
+    @pytest.mark.parametrize("job", SMOKE_JOBS)
+    def test_verification_names_the_workflow_that_may_sign(self, job: str) -> None:
         """Without it, any workflow in the repository is an acceptable signer."""
-        assert "--signer-workflow" in " ".join(release_run_steps(SMOKE))
+        assert "--signer-workflow" in " ".join(release_run_steps(job))
 
 
 class TestVerificationDocumentation:
