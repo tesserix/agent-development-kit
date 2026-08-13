@@ -290,6 +290,11 @@ class Supervisor:
         return tuple(self._events)
 
     @property
+    def tenant(self) -> str:
+        """Whose run this is, which every refusal raised on its behalf is attributed to."""
+        return self._delegation.context.tenant.tenant
+
+    @property
     def cancelled(self) -> bool:
         """Whether the supervisor has been asked to stop."""
         return self._token.cancelled

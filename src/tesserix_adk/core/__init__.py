@@ -108,6 +108,7 @@ from tesserix_adk.core.dispatch import (
 )
 from tesserix_adk.core.errors import (
     AdkError,
+    AggregationError,
     ApprovalBindingError,
     ApprovalDeliveryError,
     ApprovalDeniedError,
@@ -373,6 +374,7 @@ __all__ = [
     "AdkModel",
     "Agent",
     "AgentDefinition",
+    "AggregationError",
     "ApprovalBindingError",
     "ApprovalDecision",
     "ApprovalDeliveryError",

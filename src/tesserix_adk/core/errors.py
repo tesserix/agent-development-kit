@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 __all__ = [
     "RETRYABLE_STATUS",
     "AdkError",
+    "AggregationError",
     "ApprovalBindingError",
     "ApprovalDeliveryError",
     "ApprovalDeniedError",
@@ -1647,6 +1648,51 @@ class DelegationError(AdkError):
             run_id=run_id,
             tenant=tenant,
             details={"worker": specialist, "reason": reason, "path": " -> ".join(path)},
+        )
+
+
+class AggregationError(AdkError):
+    """Raised when concurrent branches did not add up to the aggregate that was asked for.
+
+    A partial result presented as a whole one is the failure mode this exists to stop: the
+    caller reads an answer built from three branches out of five and nothing on it says so.
+    So an aggregate that cannot be formed is a refusal carrying its own provenance —
+    which branches contributed, which were left out, and why each was.
+
+    Args:
+        strategy: What was asked for: `"all"`, `"first_success"`, `"quorum"` or `"reduce"`.
+        reason: Why it could not be formed. `"failed"` (a branch a strategy required did
+            not answer), `"quorum"` (fewer branches answered than the quorum needed),
+            `"none"` (no branch answered at all) or `"cancelled"` (the fan-out was stopped
+            while branches were still running).
+        contributed: The branches that did answer, in declared order.
+        excluded: Why each of the others is not in the aggregate, by branch name.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        strategy: str = "",
+        reason: str = "failed",
+        contributed: tuple[str, ...] = (),
+        excluded: Mapping[str, str] | None = None,
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.strategy = strategy
+        self.reason = reason
+        self.contributed = contributed
+        self.excluded = dict(excluded or {})
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={
+                "strategy": strategy,
+                "reason": reason,
+                "contributed": ", ".join(contributed),
+                "excluded": ", ".join(f"{name}: {why}" for name, why in self.excluded.items()),
+            },
         )
 
 

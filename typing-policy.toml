@@ -451,3 +451,15 @@ the executor reads a field, so the `Any` never survives the call.
 """
 owner = "@sam123ben"
 review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.runtime.parallel.fan_out"
+kind = "variadic"
+reason = """
+The overloads carry the caller's types: without `into` the aggregate is `tuple[str, ...]`,
+and with one it is that strategy's own value type. The implementation behind them has to
+accept any `Aggregation`, so its signature — which no caller is typed against — is where
+the `Any` lives.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13

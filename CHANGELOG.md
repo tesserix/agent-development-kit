@@ -165,6 +165,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `fan_out`, `Branch`, `BranchResult`, `BranchOutcome`, `Aggregate`, `Aggregation`, `All`,
+  `Quorum`, `FirstSuccess`, `Reduce` and `AggregationError`, so several branches run at once
+  under a cap somebody chose and add up under a rule that was declared. Fan-out adds no
+  authority: every branch goes through `Supervisor.delegate`, keeping scope intersection, the
+  one shared ledger, the memory-key claim and the guardrail chain on the way back. Spend is
+  attributed per branch — including branches excluded from the answer — and results are in
+  declared order whatever order they arrived in, so the same fan-out aggregates identically
+  twice. `All` is the default and fails closed; `Quorum(n)` refuses a quorum nobody reached
+  rather than rounding it down; `FirstSuccess` takes the first in declared order rather than
+  the first to finish; `Reduce` hands the contributing results to a caller's own rule. An
+  aggregate that cannot be formed is an `AggregationError` carrying `strategy`, `reason`,
+  `contributed` and `excluded`, never a smaller aggregate presented as a whole one — and a
+  cancelled fan-out refuses rather than aggregating what happened to have arrived.
+  `Supervisor.tenant` is exposed so refusals raised on a supervisor's behalf are attributed
+  the way its own are. **Stability:** additive — nothing that existed changes shape.
+  Documented in `docs/parallel.md`, exercised by `examples/parallel.py`.
+
 - `AgentPlanner`, `PlanExecutor`, `Plan`, `PlanStep`, `ToolContract`, `Planner`, `PlanStore`,
   `InMemoryPlanStore`, `PlanRecord`, `StepResult`, `ExecutedPlan` and `PlanValidationError`,
   so the agent that reasons and the code that acts are separate. A planner produces a typed
