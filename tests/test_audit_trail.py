@@ -271,10 +271,8 @@ class TestWhatIsNeverStored:
         assert "ada@acme.example" not in digest_of_arguments({"who": "ada@acme.example"})
 
     def test_a_bearer_token_is_not_in_the_digest_of_it(self) -> None:
-        keyed = {
-            "key": "sk-live-0123456789"
-        }  # gitleaks:allow — credential-shaped, credential to nothing
-        assert "sk-live-0123456789" not in digest_of_arguments(keyed)  # gitleaks:allow
+        bearer = "sk-live-0123456789"  # gitleaks:allow — credential to nothing
+        assert bearer not in digest_of_arguments({"key": bearer})
 
     def test_the_same_arguments_digest_the_same_whatever_the_key_order(self) -> None:
         """Two records of one action must be recognisable as one action."""
