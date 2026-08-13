@@ -11,8 +11,15 @@ from tesserix_adk.observability.attribution import (
     attributes_of,
     spend_of,
     totals_by,
+    totals_of,
 )
-from tesserix_adk.observability.emit import REDACTED_EVENT, SPAN_NAMES, record_spend
+from tesserix_adk.observability.emit import (
+    NODE_SPAN,
+    REDACTED_EVENT,
+    SPAN_NAMES,
+    record_spend,
+    record_tree,
+)
 from tesserix_adk.observability.metrics import (
     CACHED_TOKENS,
     CALLS,
@@ -23,29 +30,62 @@ from tesserix_adk.observability.metrics import (
     Meter,
 )
 from tesserix_adk.observability.redaction import MASK, Redaction, Redactor
+from tesserix_adk.observability.trace import (
+    HEADER,
+    VERSION,
+    Pattern,
+    TraceContext,
+    attributes_of_context,
+)
+from tesserix_adk.observability.tree import (
+    Node,
+    Rate,
+    RunTree,
+    TreeTotals,
+    node_of,
+    peer_node,
+    render,
+    tree,
+)
 
 __all__ = [
     "ATTRIBUTE_PREFIX",
     "CACHED_TOKENS",
     "CALLS",
     "COST",
+    "HEADER",
     "INPUT_TOKENS",
     "MASK",
+    "NODE_SPAN",
     "REDACTED_EVENT",
     "SPAN_NAMES",
     "TOKENS",
     "UNKNOWN",
+    "VERSION",
     "Attribution",
     "Dimensions",
     "Meter",
+    "Node",
     "Outcome",
+    "Pattern",
+    "Rate",
     "Redaction",
     "Redactor",
+    "RunTree",
     "SpendRecord",
     "Step",
     "Totals",
+    "TraceContext",
+    "TreeTotals",
     "attributes_of",
+    "attributes_of_context",
+    "node_of",
+    "peer_node",
     "record_spend",
+    "record_tree",
+    "render",
     "spend_of",
     "totals_by",
+    "totals_of",
+    "tree",
 ]

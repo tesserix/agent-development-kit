@@ -21,6 +21,7 @@ __all__ = [
     "ApprovalDeniedError",
     "ApprovalExpiredError",
     "ApprovalTokenError",
+    "AttributionError",
     "AuditUnavailableError",
     "AuthenticationError",
     "AutonomyRefusedError",
@@ -1694,6 +1695,31 @@ class AggregationError(AdkError):
                 "excluded": ", ".join(f"{name}: {why}" for name, why in self.excluded.items()),
             },
         )
+
+
+class AttributionError(AdkError):
+    """Raised when spend could not be attributed to the participants that incurred it.
+
+    Every case is one where carrying on would produce a total that reads as complete and
+    is not: a tree missing a participant, a participant counted twice, or a span exported
+    without the tenant that would let anyone find the money again. A number nobody can
+    reconcile is worse than a refusal, because only one of them gets noticed.
+
+    Args:
+        reason: What was wrong. `"empty"`, `"no_root"`, `"two_roots"`, `"duplicate"` and
+            `"orphan"` are trees that cannot be read as one run; `"no_tenant"` is an export
+            refused because the spend would be unattributable once it had left.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        reason: str = "orphan",
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.reason = reason
+        super().__init__(*args, run_id=run_id, tenant=tenant, details={"reason": reason})
 
 
 class HandoffContractError(AdkError):

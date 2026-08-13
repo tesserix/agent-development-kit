@@ -34,6 +34,7 @@ __all__ = [
     "attributes_of",
     "spend_of",
     "totals_by",
+    "totals_of",
 ]
 
 # What a run could not say. An explicit bucket, because spend attributed to a blank is
@@ -308,12 +309,25 @@ def totals_by(records: Iterable[SpendRecord], *by: str) -> dict[tuple[str, ...],
     for record in records:
         key = tuple(str(getattr(record.attribution, name)) for name in by)
         grouped.setdefault(key, []).append(record)
-    return {key: _totalled(group) for key, group in grouped.items()}
+    return {key: totals_of(group) for key, group in grouped.items()}
 
 
-def _totalled(group: Sequence[SpendRecord]) -> Totals:
+def totals_of(group: Sequence[SpendRecord]) -> Totals:
+    """Total one group of records, keeping every component and the weakest confidence.
+
+    Args:
+        group: The records to add up. One currency: totalling two is refused, because the
+            sum would be a number that is true in neither.
+
+    Returns:
+        What the group came to.
+
+    Example:
+        >>> totals_of(()).calls
+        0
+    """
     return Totals(
-        cost=reduce(lambda one, two: one + two, (record.cost for record in group)),
+        cost=reduce(lambda one, two: one + two, (record.cost for record in group), Cost.nothing()),
         input_tokens=sum(record.usage.input_tokens for record in group),
         output_tokens=sum(record.usage.output_tokens for record in group),
         cached_tokens=sum(record.usage.cached_tokens for record in group),

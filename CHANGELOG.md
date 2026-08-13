@@ -165,6 +165,22 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `TraceContext`, `Pattern`, `RunTree`, `Node`, `Rate`, `TreeTotals`, `tree`, `node_of`,
+  `peer_node`, `render`, `record_tree`, `attributes_of_context`, `AttributionError` and
+  `tesserix_adk.cli.inspect_main`, so a run spanning a supervisor, workers, an A2A peer and a
+  queued activity is one trace and one total rather than five of each. The context crosses a
+  process boundary as one percent-encoded `adk-trace` header; a missing or unreadable one is
+  recorded as `broken` and carried forward rather than raised, because dropping the work
+  because its trace went missing loses the spend too. `tree` refuses anything that is not one
+  run — `empty`, `no_root`, `two_roots`, `duplicate`, `orphan` — since each otherwise drops a
+  participant silently, and a dropped participant is dropped spend. `TreeTotals` names what is
+  outside the figure: a worker that never reported sets `lower_bound` rather than counting as
+  zero, and a peer billing in another currency is summed only through a `Rate` somebody
+  recorded, otherwise held unattributed. `record_tree` counts per participant whatever the
+  sampler did, so a wide fan-out cannot lose its cost to sampling, and refuses to export a
+  participant with no tenant. `observability.totals_of` is now public. **Stability:** additive.
+  Documented in `docs/multi-agent-trace.md`, exercised by `examples/multi_agent_trace.py`.
+
 - `fan_out`, `Branch`, `BranchResult`, `BranchOutcome`, `Aggregate`, `Aggregation`, `All`,
   `Quorum`, `FirstSuccess`, `Reduce` and `AggregationError`, so several branches run at once
   under a cap somebody chose and add up under a rule that was declared. Fan-out adds no
