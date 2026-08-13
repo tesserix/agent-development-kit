@@ -128,6 +128,7 @@ code lands here as the kit is built.
 | Planning — typed plans, a planner that cannot dispatch, validation before the first step, bounded replanning, resume | [`docs/planning.md`](docs/planning.md) |
 | Parallel fan-out — a concurrency cap somebody chose, per-branch spend, declared-order results, aggregates that refuse rather than go partial | [`docs/parallel.md`](docs/parallel.md) |
 | Dispatch — declared dependencies, derived schedule, cycles refused at construction, contained failure | [`docs/dispatch.md`](docs/dispatch.md) |
+| Escalation ladder — the measured bar for each step from one agent to many, roles that are not services, reasons that need no measurement | [`docs/escalation-ladder.md`](docs/escalation-ladder.md) |
 | Guardrails — declared order, redaction that carries, failing closed on a guard that cannot answer | [`docs/guardrails.md`](docs/guardrails.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
 | Tool concurrency — bounded fan-out, per-tool and per-tenant lanes, per-call failure | [`docs/tool-concurrency.md`](docs/tool-concurrency.md) |
