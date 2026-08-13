@@ -162,6 +162,7 @@ from tesserix_adk.core.errors import (
     MemoryScopeError,
     MemoryUnavailableError,
     MissingExtraError,
+    MissingTenantContextError,
     ModelResponseError,
     NoEligibleModelError,
     PartialErasureError,
@@ -188,6 +189,7 @@ from tesserix_adk.core.errors import (
     StateNotFoundError,
     StatePersistenceError,
     StreamInterruptedError,
+    TenantCrossingError,
     ToolArgumentValidationError,
     ToolDefinitionError,
     ToolError,
@@ -307,7 +309,6 @@ from tesserix_adk.core.run import (
     RunEventKind,
     RunGrant,
     RunState,
-    TenantContext,
     legal_transitions,
 )
 from tesserix_adk.core.schema import (
@@ -349,6 +350,13 @@ from tesserix_adk.core.suspension import (
     TokenRedeemer,
     digest_of_token,
     mint_token,
+)
+from tesserix_adk.core.tenancy import (
+    TenantContext,
+    bound,
+    current_tenant,
+    tenant_here,
+    tenant_scope,
 )
 from tesserix_adk.core.trust import TrustBoundary
 
@@ -511,6 +519,7 @@ __all__ = [
     "MemoryUnavailableError",
     "Message",
     "MissingExtraError",
+    "MissingTenantContextError",
     "ModelCapabilities",
     "ModelProvider",
     "ModelRef",
@@ -597,6 +606,7 @@ __all__ = [
     "TaskClass",
     "TelemetryConfig",
     "TenantContext",
+    "TenantCrossingError",
     "TenantLedger",
     "TextDelta",
     "TextPart",
@@ -634,7 +644,9 @@ __all__ = [
     "WorkState",
     "WorkersBusyError",
     "WriteQueueFullError",
+    "bound",
     "claim_handle",
+    "current_tenant",
     "deduplicate",
     "deprecate",
     "deprecations",
@@ -658,6 +670,8 @@ __all__ = [
     "schema_hash",
     "scrub",
     "telemetry_dump",
+    "tenant_here",
+    "tenant_scope",
     "validated",
     "verify_conformance",
     "weaker_source",

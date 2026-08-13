@@ -342,6 +342,7 @@ tesserix_adk.core.MemoryScopeError :: class MemoryScopeError(AdkError)
 tesserix_adk.core.MemoryUnavailableError :: class MemoryUnavailableError(AdkError)
 tesserix_adk.core.Message :: class Message(AdkModel)
 tesserix_adk.core.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
+tesserix_adk.core.MissingTenantContextError :: class MissingTenantContextError(AdkError)
 tesserix_adk.core.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
 tesserix_adk.core.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.core.ModelRef :: class ModelRef(AdkModel)
@@ -433,7 +434,8 @@ tesserix_adk.core.SuspendedRun :: class SuspendedRun(AdkModel) {expired_by(self,
 tesserix_adk.core.SuspensionStore :: class SuspensionStore(Protocol) {attempted(self, attempt: 'TokenAttempt') -> 'None'; by_token(self, token_digest: 'str', *, tenant: 'str') -> 'SuspendedRun | None'; forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; get(self, run_id: 'str', *, tenant: 'str') -> 'SuspendedRun | None'; pending(self, *, tenant: 'str') -> 'tuple[SuspendedRun, ...]'; put(self, suspended: 'SuspendedRun') -> 'None'; spend(self, run_id: 'str', *, tenant: 'str') -> 'bool'}
 tesserix_adk.core.TaskClass :: class TaskClass(str)
 tesserix_adk.core.TelemetryConfig :: class TelemetryConfig(AdkModel)
-tesserix_adk.core.TenantContext :: class TenantContext(AdkModel)
+tesserix_adk.core.TenantContext :: class TenantContext(AdkModel) {acting_as(self, user: 'str') -> 'Self'}
+tesserix_adk.core.TenantCrossingError :: class TenantCrossingError(AdkError)
 tesserix_adk.core.TenantLedger :: class TenantLedger(Protocol) {consume(self, tenant: 'str', window: 'str', spent: 'Consumed') -> 'Consumed'; total(self, tenant: 'str', window: 'str') -> 'Consumed'}
 tesserix_adk.core.TextDelta :: class TextDelta(StreamEvent)
 tesserix_adk.core.TextPart :: class TextPart(AdkModel)
@@ -494,6 +496,7 @@ tesserix_adk.core.autonomy.InFlightPolicy :: class InFlightPolicy(StrEnum)
 tesserix_adk.core.autonomy.InMemoryGrants :: class InMemoryGrants(object) {all_grants(self) -> 'Sequence[AutonomyGrant]'; grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
 tesserix_adk.core.autonomy.RESERVED_ACTION_CLASS :: RESERVED_ACTION_CLASS: str
 tesserix_adk.core.autonomy.Revocation :: class Revocation(AdkModel) {covers(self, grant: 'AutonomyGrant') -> 'bool'}
+tesserix_adk.core.bound :: def bound(call: 'Callable[ArgsT, ResultT]') -> 'Callable[ArgsT, ResultT]'
 tesserix_adk.core.budget.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
 tesserix_adk.core.budget.BudgetLimits :: class BudgetLimits(AdkModel) {filled(self) -> 'Self'}
 tesserix_adk.core.budget.BudgetScope :: class BudgetScope(StrEnum)
@@ -554,6 +557,7 @@ tesserix_adk.core.cost.Cost :: class Cost(AdkModel) {quantised(self, places: 'in
 tesserix_adk.core.cost.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.cost.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.cost.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
+tesserix_adk.core.current_tenant :: def current_tenant(*, where: 'str' = 'current_tenant') -> 'TenantContext'
 tesserix_adk.core.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
 tesserix_adk.core.definition.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
 tesserix_adk.core.definition.Owner :: class Owner(AdkModel)
@@ -626,6 +630,7 @@ tesserix_adk.core.errors.MemoryLimitError :: class MemoryLimitError(AdkError)
 tesserix_adk.core.errors.MemoryScopeError :: class MemoryScopeError(AdkError)
 tesserix_adk.core.errors.MemoryUnavailableError :: class MemoryUnavailableError(AdkError)
 tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
+tesserix_adk.core.errors.MissingTenantContextError :: class MissingTenantContextError(AdkError)
 tesserix_adk.core.errors.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.core.errors.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.errors.PartialErasureError :: class PartialErasureError(AdkError)
@@ -653,6 +658,7 @@ tesserix_adk.core.errors.StateInUseError :: class StateInUseError(AdkError)
 tesserix_adk.core.errors.StateNotFoundError :: class StateNotFoundError(AdkError)
 tesserix_adk.core.errors.StatePersistenceError :: class StatePersistenceError(AdkError)
 tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
+tesserix_adk.core.errors.TenantCrossingError :: class TenantCrossingError(AdkError)
 tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
 tesserix_adk.core.errors.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
 tesserix_adk.core.errors.ToolError :: class ToolError(AdkError)
@@ -768,7 +774,7 @@ tesserix_adk.core.run.RunContext :: class RunContext(AdkModel)
 tesserix_adk.core.run.RunEvent :: class RunEvent(AdkModel)
 tesserix_adk.core.run.RunEventKind :: class RunEventKind(StrEnum)
 tesserix_adk.core.run.RunState :: class RunState(StrEnum)
-tesserix_adk.core.run.TenantContext :: class TenantContext(AdkModel)
+tesserix_adk.core.run.TenantContext :: class TenantContext(AdkModel) {acting_as(self, user: 'str') -> 'Self'}
 tesserix_adk.core.run.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
 tesserix_adk.core.schema.INLINE_REFS :: INLINE_REFS: InlineRefs
 tesserix_adk.core.schema.InlineRefs :: class InlineRefs(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
@@ -807,6 +813,13 @@ tesserix_adk.core.suspension.TokenRedeemer :: class TokenRedeemer(Protocol) {red
 tesserix_adk.core.suspension.digest_of_token :: def digest_of_token(value: 'str') -> 'str'
 tesserix_adk.core.suspension.mint_token :: def mint_token(record: 'ApprovalRecord', *, issued_at: 'float' = 0.0, ttl_seconds: 'float' = 259200.0) -> 'ApprovalToken'
 tesserix_adk.core.telemetry_dump :: def telemetry_dump(model: 'BaseModel') -> 'dict[str, Any]'
+tesserix_adk.core.tenancy.TenantContext :: class TenantContext(AdkModel) {acting_as(self, user: 'str') -> 'Self'}
+tesserix_adk.core.tenancy.bound :: def bound(call: 'Callable[ArgsT, ResultT]') -> 'Callable[ArgsT, ResultT]'
+tesserix_adk.core.tenancy.current_tenant :: def current_tenant(*, where: 'str' = 'current_tenant') -> 'TenantContext'
+tesserix_adk.core.tenancy.tenant_here :: def tenant_here() -> 'TenantContext | None'
+tesserix_adk.core.tenancy.tenant_scope :: def tenant_scope(what: 'TenantContext | str', *, user: 'str | None' = None, crossing: 'str | None' = None) -> 'Iterator[TenantContext]'
+tesserix_adk.core.tenant_here :: def tenant_here() -> 'TenantContext | None'
+tesserix_adk.core.tenant_scope :: def tenant_scope(what: 'TenantContext | str', *, user: 'str | None' = None, crossing: 'str | None' = None) -> 'Iterator[TenantContext]'
 tesserix_adk.core.trust.AXES :: AXES: tuple
 tesserix_adk.core.trust.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'

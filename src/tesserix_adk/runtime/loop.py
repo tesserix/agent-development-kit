@@ -125,6 +125,7 @@ from tesserix_adk.core.autonomy import AutonomyOutcome, InFlightPolicy
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
+from tesserix_adk.core.tenancy import TenantContext, tenant_scope
 from tesserix_adk.runtime.approvals import TIMEOUT_IDENTITY, ApprovalLedger, self_granted
 from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
@@ -712,7 +713,41 @@ class AgentRunner:
             asyncio.CancelledError: If the surrounding task is cancelled. It is never
                 swallowed — a cancelled task that returns normally leaves its canceller
                 waiting forever.
+        The tenant is bound to the execution context for the whole run, so tools, memory
+        and stores below read it from there rather than from an argument somebody had to
+        remember to pass (`docs/tenancy.md`).
         """
+        with tenant_scope(TenantContext(tenant=tenant, user=user)):
+            return await self._driven(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=run_id,
+                history=history,
+                memory=memory,
+                cancellation=cancellation,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+            )
+
+    async def _driven[OutputT: BaseModel](
+        self,
+        agent: Agent[OutputT] | AgentDefinition[OutputT],
+        user_input: str,
+        *,
+        tenant: str,
+        user: str | None = None,
+        run_id: str | None = None,
+        history: Iterable[Message] = (),
+        memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
+    ) -> Run[OutputT]:
+        """The run itself, under a bound tenant context. See `run`."""
         revision = agent.revision if isinstance(agent, AgentDefinition) else None
         if isinstance(agent, AgentDefinition):
             agent = agent.agent
@@ -870,17 +905,18 @@ class AgentRunner:
             reason=self._why_decided(held, reason, expired=expired),
         )
         self._refuse_a_moved_model(agent, held, drifting=allow_model_drift)
-        return await self._resume(
-            agent,
-            run_id,
-            tenant=tenant,
-            user=user,
-            cancellation=cancellation,
-            deadline=deadline,
-            budget=budget,
-            decided={decision.record_id: decision},
-            held=held,
-        )
+        with tenant_scope(TenantContext(tenant=tenant, user=user)):
+            return await self._resume(
+                agent,
+                run_id,
+                tenant=tenant,
+                user=user,
+                cancellation=cancellation,
+                deadline=deadline,
+                budget=budget,
+                decided={decision.record_id: decision},
+                held=held,
+            )
 
     def _why_decided(self, held: SuspendedRun, reason: str, *, expired: bool) -> str:
         """What the audit trail says this decision was, which is not always what was sent."""
@@ -947,15 +983,16 @@ class AgentRunner:
                 whether it happened. Retrying it is the duplicate this exists to prevent.
             ResumeConflictError: If another worker is already carrying the run on.
         """
-        return await self._resume(
-            agent,
-            run_id,
-            tenant=tenant,
-            user=user,
-            cancellation=cancellation,
-            deadline=deadline,
-            budget=budget,
-        )
+        with tenant_scope(TenantContext(tenant=tenant, user=user)):
+            return await self._resume(
+                agent,
+                run_id,
+                tenant=tenant,
+                user=user,
+                cancellation=cancellation,
+                deadline=deadline,
+                budget=budget,
+            )
 
     async def _resume[OutputT: BaseModel](
         self,

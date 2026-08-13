@@ -68,6 +68,7 @@ __all__ = [
     "MemoryScopeError",
     "MemoryUnavailableError",
     "MissingExtraError",
+    "MissingTenantContextError",
     "ModelResponseError",
     "NoEligibleModelError",
     "PartialErasureError",
@@ -94,6 +95,7 @@ __all__ = [
     "StateNotFoundError",
     "StatePersistenceError",
     "StreamInterruptedError",
+    "TenantCrossingError",
     "ToolArgumentValidationError",
     "ToolDefinitionError",
     "ToolError",
@@ -1405,6 +1407,37 @@ class MemoryConflictError(AdkError):
                 "actual_version": str(actual_version),
             },
         )
+
+
+class MissingTenantContextError(AdkError):
+    """Raised when scoped work is attempted with no tenant context bound.
+
+    Absence is never read as "all tenants" and never filled with a default: an operation
+    that cannot say whose data it is about is refused before it reaches a store, because
+    the alternative is an unfiltered query that returns and looks like an answer.
+
+    Args:
+        where: What was about to happen — the accessor, or the egress point that asked.
+    """
+
+    def __init__(self, *args: object, where: str = "") -> None:
+        self.where = where
+        super().__init__(*args, details={"where": where})
+
+
+class TenantCrossingError(AdkError):
+    """Raised when a scope names a different tenant than the one it was entered from.
+
+    An administrative operation that reaches across tenants is legitimate and has to say
+    so; one that does it silently is the incident this refuses to let happen quietly.
+
+    Args:
+        into: The tenant the block asked for.
+    """
+
+    def __init__(self, *args: object, tenant: str | None = None, into: str = "") -> None:
+        self.into = into
+        super().__init__(*args, tenant=tenant, details={"into": into})
 
 
 class MemoryUnavailableError(AdkError):

@@ -24,6 +24,7 @@ from pydantic import Field
 from tesserix_adk.core.budget import ResolvedBudget  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.models import AdkModel, OutputT
 from tesserix_adk.core.primitives import Message, ToolCall, Usage
+from tesserix_adk.core.tenancy import TenantContext
 
 __all__ = [
     "Run",
@@ -166,18 +167,6 @@ class RunEvent(AdkModel):
     detail: str | None = None
     at: float | None = None
     usage: Usage | None = None
-
-
-class TenantContext(AdkModel):
-    """Who a run belongs to.
-
-    Args:
-        tenant: The isolation boundary. Cost attribution and access both key off it.
-        user: The acting principal within the tenant, where there is one.
-    """
-
-    tenant: str = Field(min_length=1)
-    user: str | None = None
 
 
 class RunGrant(AdkModel):

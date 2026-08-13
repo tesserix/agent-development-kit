@@ -7,9 +7,12 @@ discouraged.
 
 from __future__ import annotations
 
+from typing import Self
+
 from pydantic import field_validator
 
 from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.tenancy import current_tenant
 
 __all__ = ["MemoryScope"]
 
@@ -38,6 +41,41 @@ class MemoryScope(AdkModel):
         if not value.strip():
             raise ValueError("tenant_id must name a tenant")
         return value
+
+    @classmethod
+    def here(
+        cls,
+        *,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        agent: str | None = None,
+    ) -> Self:
+        """The scope for the tenant bound to the execution context.
+
+        The tenant stays a value on the record — what this removes is the call site that
+        had to remember which one to put there, which is the call site that forgets.
+
+        Args:
+            user_id: The person, where the memory is theirs. Defaults to the acting
+                principal on the context, where there is one.
+            session_id: The conversation.
+            agent: Which agent wrote it.
+
+        Returns:
+            A scope carrying the context's tenant.
+
+        Raises:
+            MissingTenantContextError: Where no context is bound. Refused rather than
+                widened: an unscoped recall reads every tenant's memory and looks like
+                an answer.
+        """
+        context = current_tenant(where="MemoryScope.here")
+        return cls(
+            tenant_id=context.tenant,
+            user_id=user_id if user_id is not None else context.user,
+            session_id=session_id,
+            agent=agent,
+        )
 
     @property
     def path(self) -> tuple[str, str, str, str]:

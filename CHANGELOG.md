@@ -165,6 +165,19 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `tenant_scope`, `current_tenant`, `tenant_here`, `bound`, `MissingTenantContextError` and
+  `TenantCrossingError`, so tenant identity is a property of the execution context rather than
+  an argument somebody remembers to pass. `AgentRunner.run`, `resume` and
+  `resume_with_decision` bind the tenant for the whole run, and the binding is a contextvar, so
+  it survives `await`, `gather`, `TaskGroup`, `to_thread` and `create_task`; `bound` carries it
+  into `run_in_executor`, which copies no context of its own. Absence raises rather than
+  defaulting — a default tenant is one typo away from being every tenant — and a crossing
+  between tenants has to declare why. `TenantContext` moves to `tesserix_adk.core.tenancy` and
+  gains `locale`, `region`, `correlation_id`, `crossing` and `acting_as`; `MemoryScope.here()`
+  builds a scope from the context. **Stability:** additive — `TenantContext` keeps `tenant` and
+  `user`, stays frozen, and is still importable from `tesserix_adk.core` and
+  `tesserix_adk.core.run`. Documented in `docs/tenancy.md`, exercised by `examples/tenancy.py`.
+
 - `TraceContext`, `Pattern`, `RunTree`, `Node`, `Rate`, `TreeTotals`, `tree`, `node_of`,
   `peer_node`, `render`, `record_tree`, `attributes_of_context`, `AttributionError` and
   `tesserix_adk.cli.inspect_main`, so a run spanning a supervisor, workers, an A2A peer and a
