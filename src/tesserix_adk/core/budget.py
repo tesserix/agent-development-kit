@@ -510,6 +510,28 @@ class RunBudget:
         """A budget for a run this one called, sharing this ledger and this ceiling."""
         return _ChildBudget(self)
 
+    def sliced(self, limits: BudgetLimits) -> RunBudget:
+        """A tighter ceiling for one delegated run, still spent against this ledger.
+
+        A worker is bounded twice: by what it was allocated and by what its caller has
+        left. A slice wider than the remainder is the remainder, so an allocation cannot
+        be a way to hand out room that is not there.
+
+        Args:
+            limits: What the worker may spend.
+
+        Returns:
+            The worker's budget. What it spends lands here, so a worker that stops early
+            gives the rest back and one that overruns its slice cannot overrun this one.
+        """
+        return _SlicedBudget(
+            self,
+            most_restrictive(
+                ScopedLimits(scope=BudgetScope.RUN, limits=self.limits()),
+                ScopedLimits(scope=BudgetScope.AGENT, limits=limits),
+            ),
+        )
+
     async def reserve(self, estimate: int) -> None:
         """Hold `estimate` input tokens before a call.
 
@@ -645,6 +667,18 @@ class _ChildBudget(RunBudget):
         self._held = 0
 
 
+class _SlicedBudget(RunBudget):
+    """A worker's allowance: its own tighter ceiling, spent against its caller's ledger."""
+
+    def __init__(self, parent: RunBudget, resolved: ResolvedBudget) -> None:
+        super().__init__(resolved, parent._clock)
+        self._parent = parent
+
+    def _absorb(self, consumed: Consumed) -> None:
+        self._parent._absorb(consumed)
+        super()._absorb(consumed)
+
+
 def _window_key(now: float, window_seconds: float | None) -> str:
     """The window a run belongs to, decided once at the start and not revisited."""
     if window_seconds is None:
@@ -686,6 +720,16 @@ class UnlimitedBudget:
 
     def child(self) -> UnlimitedBudget:
         """A child of no ceiling is no ceiling, for the same recorded reason."""
+        return self
+
+    def sliced(self, limits: BudgetLimits) -> UnlimitedBudget:  # noqa: ARG002 — nothing to deduct from
+        """Still no ceiling: a slice is deducted from a ledger, and there is none here.
+
+        Args:
+            limits: What a caller asked to allocate. Ignored, deliberately — a workload
+                somebody signed off as unbounded does not get a ceiling back by the side
+                door, where nobody would review it.
+        """
         return self
 
     async def reserve(self, estimate: int) -> None:

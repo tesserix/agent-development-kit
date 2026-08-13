@@ -35,6 +35,7 @@ __all__ = [
     "ContentFilteredError",
     "ContextBudgetError",
     "ContextWindowExceededError",
+    "DelegationError",
     "DelegationLimitError",
     "DependencyCycleError",
     "EmbeddingDimensionError",
@@ -1606,6 +1607,45 @@ class DelegationLimitError(LoopLimitError):
         self.reason = reason
         self.path = path
         super().__init__(*args, details={"reason": reason, "path": " -> ".join(path)})
+
+
+class DelegationError(AdkError):
+    """Raised when work handed to a worker did not come back as an answer.
+
+    A supervisor that cannot tell a refusal from an empty answer reads one as the other,
+    so this says which worker, and why. It is a value by default — the supervisor is
+    handed it and can route the task elsewhere, ask a person, or answer without it — and
+    is raised only where the delegation was declared fatal, or where the wiring itself is
+    wrong and no worker could have run.
+
+    Args:
+        specialist: Which worker the task went to, or was going to.
+        reason: Why there is no answer. `"no_worker"` (nobody on the roster can do it),
+            `"no_tools"` (nothing in common between what it holds and what its caller
+            holds), `"blocked"` (a guardrail stopped what came back), `"budget"` (it
+            spent its slice), `"cancelled"`, `"conflict"` (a second worker for one memory
+            key) or `"failed"`.
+        path: The agents this ran through, root first.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        specialist: str = "",
+        reason: str = "failed",
+        path: tuple[str, ...] = (),
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.specialist = specialist
+        self.reason = reason
+        self.path = path
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={"worker": specialist, "reason": reason, "path": " -> ".join(path)},
+        )
 
 
 class ScopeEscalationError(AdkError):

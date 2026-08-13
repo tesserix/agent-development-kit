@@ -118,6 +118,8 @@ class RunEventKind(StrEnum):
     COMPENSATION_REQUIRED = "compensation_required"
     FAN_OUT_REFUSED = "fan_out_refused"
     SCOPE_REFUSED = "scope_refused"
+    DELEGATED = "delegated"
+    DELEGATION_REFUSED = "delegation_refused"
     REPEAT_DETECTED = "repeat_detected"
     DEPTH_EXCEEDED = "depth_exceeded"
     HOOK_REWRITE = "hook_rewrite"

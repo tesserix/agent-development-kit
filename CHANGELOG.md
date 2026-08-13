@@ -165,6 +165,19 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `Supervisor`, `Roster`, `Specialist`, `DelegationResult`, `DelegationError` and
+  `RunBudget.sliced`, so one agent handing work to another is a helper in the kit rather
+  than something each product rebuilds around its own `runner.run` call. Work is routed to
+  the narrowest worker whose declared capabilities cover the need; a worker holds the
+  intersection of its own tools and its caller's, spends a slice deducted from the caller's
+  ledger under its own agent name, and hands its answer back through the supervisor's
+  guardrail chain inside the `<untrusted-data>` envelope. An unmatched roster, a worker
+  sharing no tool with its caller, and a second worker reaching for a key another holds are
+  each a typed refusal; a worker that exhausts its slice ends its own run without ending the
+  supervisor's unless the call declared `fatal=True`. **Stability:** additive — `sliced` is
+  new on the concrete budgets and the `BudgetPolicy` protocol is unchanged. Documented in
+  `docs/delegation.md`, exercised by `examples/supervisor.py`.
+
 - `AuditTrail`, `MemoryAuditSink`, `AutonomyGate.record` and the audit vocabulary
   (`AuditEvent`, `AuditDecision`, `AuditSink`, `AuditUnavailableError`,
   `digest_of_arguments`, `pseudonym`), with `PostgresAuditSink`, `JetStreamAudit` and

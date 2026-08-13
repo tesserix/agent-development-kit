@@ -137,12 +137,72 @@ A child a guard stopped hands back the guard and its code rather than an empty s
 refusal inside a delegation reaches the caller as a refusal it can reason about rather than
 as an unexplained silence.
 
+## Handing work to a roster
+
+`Delegation` says what a child may hold; `Supervisor` is the thing that actually hands the
+work over, so the narrowing above is not something each product rebuilds around its own
+`runner.run` call.
+
+```python
+roster = Roster((
+    Specialist(agent=researcher, capabilities=frozenset({"flights", "research"})),
+    Specialist(agent=accountant, capabilities=frozenset({"refund"}),
+               budget=BudgetLimits(max_input_tokens=2_000)),
+))
+
+supervisor = Supervisor(
+    runner, roster,
+    agent=planner,
+    delegation=Delegation.root(run_id="run_1", tenant="acme", agent="planner", scope=scope),
+    budget=run_budget,
+    guardrails=guardrails,
+)
+
+result = await supervisor.delegate("find two refundable flights", needs={"flights"})
+result.data                 # the answer, inside <untrusted-data>
+result.answered             # False if the worker was stopped
+supervisor.spent["researcher"]   # what that worker cost, under its own name
+```
+
+**Routing is by declared capability.** A `Specialist` declares what it can do, and
+`delegate(needs=...)` picks the narrowest worker that covers all of it — narrowest, so a
+generalist does not absorb work a specialist declared. A roster with nobody in it, or with
+nobody matching, is a `DelegationError(reason="no_worker")` rather than the supervisor
+quietly doing the work itself with its own wider access.
+
+**A worker holds the intersection** of its own tools and what the supervisor holds under
+its scope. A worker sharing no tool with its caller never starts —
+`DelegationError(reason="no_tools")` — because a run that could call nothing would burn
+tokens to say so.
+
+**The allowance is a slice of the caller's ledger.** `budget.sliced(limits)` is a tighter
+ceiling that is still deducted from the parent, so a worker cannot spend what the run does
+not have, and the run cannot spend more because it delegated. A worker that hits its slice
+ends in `BUDGET_EXHAUSTED` and comes back as a refusal the supervisor can read; it does not
+end the supervisor's run unless the call declared `fatal=True`. Spend is attributed by
+worker name whether the work finished or not, so a cancelled worker's partial cost is still
+on the ledger.
+
+**Cancellation flows down.** `supervisor.cancel(reason)` cancels every worker in flight,
+including the provider call one is waiting on.
+
+**Two workers, one key.** `delegate(..., writes="itinerary")` claims a key for the run.
+A second worker claiming the same key is refused with `reason="conflict"` rather than
+overwriting the first, since concurrent workers writing one key silently is the failure
+nobody sees until the answer is wrong.
+
+Every hand-over lands on `supervisor.events` as `DELEGATED` or `DELEGATION_REFUSED`, with
+the worker's name, usage and reason — the record of what was handed to whom, for a run
+whose events span more than one agent.
+
 ## Known limitations
 
-Budgets are not narrowed by `Delegation`. A child inherits the run budget its parent
-resolved, so depth and delegation count are what bound spend on this path today.
-Per-delegation budget narrowing belongs with the spend ledger (`docs/ledger.md`) and is not
-implemented.
+`Supervisor` slices budgets for the workers it dispatches; `Delegation` itself still does
+not. A run that calls `runner.run(child, parent=...)` directly inherits the parent's
+resolved budget, so depth and delegation count are what bound spend on that path.
+
+A write claim is held in the supervisor for the life of the supervisor, not in a store, so
+it coordinates workers under one supervisor and not two supervisors on one memory.
 
 `DelegationScope.mutations` is not part of `RunGrant`: an agent declares tools, not
 mutation classes, so there is nothing at the run boundary to narrow. Deployments that

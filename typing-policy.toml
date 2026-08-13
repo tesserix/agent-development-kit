@@ -393,3 +393,16 @@ that is never interpreted.
 """
 owner = "@sam123ben"
 review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.runtime.supervisor.Supervisor"
+kind = "provisional"
+removed_by = "#36"
+reason = """
+Takes and returns `Agent[Any]` / `DelegationResult[Any]`: a roster holds workers that answer
+in different types, so one parameter on the supervisor cannot name them. Narrowing to the
+supervisor's own answer type would be a guarantee about its workers it cannot make — see
+docs/typing.md.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13

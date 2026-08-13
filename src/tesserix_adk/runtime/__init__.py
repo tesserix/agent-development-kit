@@ -106,6 +106,7 @@ from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.spend import budgeted_stream
 from tesserix_adk.runtime.state import MemoryStateStore
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
+from tesserix_adk.runtime.supervisor import DelegationResult, Roster, Specialist, Supervisor
 from tesserix_adk.runtime.suspension import (
     ApprovalDeferred,
     DeferringGate,
@@ -137,6 +138,7 @@ __all__ = [
     "DeferringGate",
     "Delegation",
     "DelegationLimits",
+    "DelegationResult",
     "DelegationScope",
     "GuardrailDecision",
     "InMemoryHistory",
@@ -168,6 +170,7 @@ __all__ = [
     "ReturningTool",
     "RevocationBroadcast",
     "RevocationWatch",
+    "Roster",
     "RunCancelled",
     "RunCompleted",
     "RunFailed",
@@ -178,8 +181,10 @@ __all__ = [
     "Scope",
     "Segment",
     "SequenceCheck",
+    "Specialist",
     "Spread",
     "StructuredDelta",
+    "Supervisor",
     "SystemClock",
     "Tokenizer",
     "ToolCallFailed",
