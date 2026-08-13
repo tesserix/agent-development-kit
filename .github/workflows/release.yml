@@ -22,7 +22,8 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-      - run: git fetch origin main --depth=0
+      # The checkout above is already unshallow; this only needs main's ref to compare against.
+      - run: git fetch origin main
       - run: uv sync --frozen --all-groups
       # Everything after this job is irreversible on the index.
       - run: uv run python -m tools.release_guard --tag "$TAG"

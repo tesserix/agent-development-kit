@@ -48,6 +48,15 @@ def test_the_guard_runs_before_anything_irreversible() -> None:
     assert GUARD in _needs(GATES)
 
 
+def test_the_guard_can_see_main_to_compare_the_tag_against() -> None:
+    """This job runs on a tag push and nowhere else, so a command git rejects sits
+    unnoticed until the one moment somebody is trying to release."""
+    steps = " ".join(release_run_steps(GUARD))
+    assert "git fetch origin main" in steps
+    assert "--depth=0" not in steps
+    assert release_jobs()[GUARD]["steps"][0]["with"]["fetch-depth"] == 0
+
+
 def test_the_full_gates_run_before_the_build() -> None:
     """Publishing a version the matrix never saw is how a bad release becomes permanent."""
     assert release_jobs()[GATES]["uses"].endswith("ci.yml")
