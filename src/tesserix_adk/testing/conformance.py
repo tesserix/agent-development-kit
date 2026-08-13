@@ -44,6 +44,7 @@ from tesserix_adk.core.errors import (
 from tesserix_adk.core.idempotency import IdempotencyStore
 from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
 from tesserix_adk.core.primitives import Message, TextPart, ToolCall, Usage
+from tesserix_adk.core.propagation import HEADER, arriving, carried, restored
 from tesserix_adk.core.protocols import (
     BudgetPolicy,
     Clock,
@@ -63,6 +64,7 @@ from tesserix_adk.core.state import (
     StateQuery,
     StateStore,
 )
+from tesserix_adk.core.tenancy import TenantContext, tenant_here
 from tesserix_adk.memory import (
     Derivation,
     MemoryKind,
@@ -73,6 +75,8 @@ from tesserix_adk.memory import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from pydantic import JsonValue
 
 __all__ = [
@@ -84,6 +88,7 @@ __all__ = [
     "MemoryStoreConformance",
     "ModelProviderConformance",
     "StateStoreConformance",
+    "TenantPropagationConformance",
     "TracerConformance",
     "WorkQueueConformance",
 ]
@@ -1127,3 +1132,51 @@ class WorkQueueConformance(ABC):
         await queue.claim(worker="w1")
         stats = await queue.stats()
         assert (stats.depth, stats.claimed) == (1, 1)
+
+
+class TenantPropagationConformance(ABC):
+    """Behaviour every transport that carries the tenant across a hop must exhibit.
+
+    Subclassed by an integration — a broker, an MCP server, a peer client — to prove the
+    context survives its particular idea of a message. The guarantees are that the whole
+    context arrives, that header case is not load-bearing, that a transport with a header
+    ceiling still delivers an intact tenant, and that consecutive messages on one
+    connection do not bleed into each other.
+    """
+
+    @abstractmethod
+    def round_trip(self, headers: Mapping[str, str]) -> Mapping[str, str]:
+        """Return `headers` as the far side of this transport would see them."""
+
+    def test_the_tenant_survives_the_hop(self) -> None:
+        sent = carried(TenantContext(tenant="conformance"))
+        assert restored(self.round_trip(sent)).tenant == "conformance"
+
+    def test_the_rest_of_the_context_survives_with_it(self) -> None:
+        """A tenant that arrives without its principal cannot be audited on the far side."""
+        sent = carried(TenantContext(tenant="conformance", user="ada", locale="en-GB"))
+        arrived = restored(self.round_trip(sent))
+        assert (arrived.user, arrived.locale) == ("ada", "en-GB")
+
+    def test_header_case_is_not_load_bearing(self) -> None:
+        sent = {HEADER.upper(): carried(TenantContext(tenant="conformance"))[HEADER]}
+        assert restored(self.round_trip(sent)).tenant == "conformance"
+
+    def test_a_context_too_large_for_the_transport_still_delivers_the_tenant(self) -> None:
+        """Shedding an optional field is acceptable; losing the tenant is not."""
+        wordy = TenantContext(tenant="conformance", user="ada", correlation_id="c" * 4096)
+        arrived = restored(self.round_trip(carried(wordy)))
+        assert (arrived.tenant, arrived.user, arrived.partial) == ("conformance", "ada", True)
+
+    def test_consecutive_messages_do_not_bleed(self) -> None:
+        """One connection carrying two tenants is two scopes, never one over the pair."""
+        seen = []
+        for tenant in ("one", "two"):
+            with arriving(self.round_trip(carried(TenantContext(tenant=tenant)))) as here:
+                seen.append(here.tenant)
+        assert seen == ["one", "two"]
+
+    def test_the_binding_does_not_outlive_the_message(self) -> None:
+        with arriving(self.round_trip(carried(TenantContext(tenant="conformance")))):
+            pass
+        assert tenant_here() is None

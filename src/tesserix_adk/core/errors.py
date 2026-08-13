@@ -7,7 +7,7 @@ kit's failures without catching `Exception` and swallowing its own bugs alongsid
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -95,7 +95,9 @@ __all__ = [
     "StateNotFoundError",
     "StatePersistenceError",
     "StreamInterruptedError",
+    "TenantContextError",
     "TenantCrossingError",
+    "TenantRefusal",
     "ToolArgumentValidationError",
     "ToolDefinitionError",
     "ToolError",
@@ -118,6 +120,11 @@ _DISTRIBUTION = "tesserix-adk"
 # limit is transient by construction; a quota that is not transient is caught by the
 # `Retry-After` ceiling rather than by retrying until it clears.
 RETRYABLE_STATUS = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+
+# Which refusal a rejected tenant context is, so consumers branch on a value rather than
+# on message text: `missing` and `malformed` are dead-letter cases, `contradicted` is an
+# authorization event, `version` is a deploy-skew signal.
+type TenantRefusal = Literal["missing", "malformed", "version", "contradicted", "oversized"]
 
 
 class AdkError(Exception):
@@ -1438,6 +1445,33 @@ class TenantCrossingError(AdkError):
     def __init__(self, *args: object, tenant: str | None = None, into: str = "") -> None:
         self.into = into
         super().__init__(*args, tenant=tenant, details={"into": into})
+
+
+class TenantContextError(AdkError):
+    """Raised when a tenant context arriving from elsewhere cannot be trusted or read.
+
+    The refusal is deliberate in every case. A message with no context is not run under
+    the consuming worker's own tenant, because a worker's default is exactly the wrong
+    answer. A context contradicting the caller's authenticated claim is not honoured,
+    because the payload never outranks the credential. A version this side does not know
+    is not read field by field, because that is how a tenant becomes a locale.
+
+    Args:
+        reason: Which refusal this is — `missing`, `malformed`, `version`, `contradicted`
+            or `oversized` — so a consumer can retry, dead-letter or alert on the right
+            ones without matching on message text.
+        tenant: The tenant the refusal is about: the authenticated one for `contradicted`,
+            the offered one otherwise, where there was a readable one at all.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        reason: TenantRefusal,
+        tenant: str | None = None,
+    ) -> None:
+        self.reason: TenantRefusal = reason
+        super().__init__(*args, tenant=tenant, details={"reason": reason})
 
 
 class MemoryUnavailableError(AdkError):

@@ -53,6 +53,9 @@ class TenantContext(AdkModel):
             can be found in their logs as well as in ours.
         crossing: Why this context is for a different tenant than the one it was entered
             from. Set by `tenant_scope`, never by hand, and empty for ordinary work.
+        partial: Whether optional fields were dropped to fit a transport's header ceiling
+            on the way here. The tenant is always intact; a consumer that reads `locale`
+            or `correlation_id` can tell absence from loss.
     """
 
     tenant: str
@@ -61,6 +64,7 @@ class TenantContext(AdkModel):
     region: str | None = None
     correlation_id: str | None = None
     crossing: str | None = None
+    partial: bool = False
 
     @field_validator("tenant")
     @classmethod

@@ -165,6 +165,15 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `carried`, `arriving`, `in_payload`, `of_payload`, `restored` and `header_of`, so the tenant
+  survives a hop that leaves the process under one wire contract — header `adk-tenant`, payload
+  key `adk_tenant`, version `adk/1` — instead of a field name per integration. Ingress refuses
+  rather than guesses: `TenantContextError.reason` is `missing`, `malformed`, `version`,
+  `contradicted` or `oversized`, so a consumer dead-letters, alerts or retries on a value rather
+  than on message text. A context that disagrees with the caller's authenticated tenant is
+  refused, never overridden. Durable work carries the context as input, so a replay or a
+  redelivery lands on the tenant it started under rather than the worker's. Transports prove
+  themselves with `TenantPropagationConformance`. See `docs/tenant-propagation.md`.
 - `tenant_scope`, `current_tenant`, `tenant_here`, `bound`, `MissingTenantContextError` and
   `TenantCrossingError`, so tenant identity is a property of the execution context rather than
   an argument somebody remembers to pass. `AgentRunner.run`, `resume` and

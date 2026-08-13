@@ -21,6 +21,7 @@ from tesserix_adk.testing.conformance import (
     ModelProviderConformance,
     SpendLedgerConformance,
     StateStoreConformance,
+    TenantPropagationConformance,
     TracerConformance,
     WorkQueueConformance,
 )
@@ -98,6 +99,7 @@ __all__ = [
     "SpendLedgerConformance",
     "StallingProvider",
     "StateStoreConformance",
+    "TenantPropagationConformance",
     "ToolExecutionError",
     "TracerConformance",
     "WorkQueueConformance",

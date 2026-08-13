@@ -299,6 +299,7 @@ tesserix_adk.core.GuardrailEvaluationError :: class GuardrailEvaluationError(Gua
 tesserix_adk.core.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
 tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(GuardrailError)
 tesserix_adk.core.HANDLE_PREFIX :: HANDLE_PREFIX: str
+tesserix_adk.core.HEADER :: HEADER: str
 tesserix_adk.core.HandoffContractError :: class HandoffContractError(AdkError)
 tesserix_adk.core.Hold :: class Hold(AdkModel) {live(self, at: 'float') -> 'bool'}
 tesserix_adk.core.HoldState :: class HoldState(StrEnum)
@@ -333,6 +334,7 @@ tesserix_adk.core.LedgerKey :: class LedgerKey(AdkModel) {at(self, now: 'float')
 tesserix_adk.core.LoopConfig :: class LoopConfig(AdkModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
 tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.MASK :: MASK: str
+tesserix_adk.core.MAX_HEADER_BYTES :: MAX_HEADER_BYTES: int
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
 tesserix_adk.core.MemoryConflictError :: class MemoryConflictError(AdkError)
 tesserix_adk.core.MemoryContradictionError :: class MemoryContradictionError(AdkError)
@@ -357,6 +359,7 @@ tesserix_adk.core.NoOutput :: class NoOutput(AdkModel)
 tesserix_adk.core.NodeOutcome :: class NodeOutcome(StrEnum)
 tesserix_adk.core.NodeResult :: class NodeResult(Generic)
 tesserix_adk.core.Owner :: class Owner(AdkModel)
+tesserix_adk.core.PAYLOAD_KEY :: PAYLOAD_KEY: str
 tesserix_adk.core.PartialErasureError :: class PartialErasureError(AdkError)
 tesserix_adk.core.PendingCall :: class PendingCall(AdkModel)
 tesserix_adk.core.PendingDecision :: class PendingDecision(AdkModel)
@@ -435,8 +438,10 @@ tesserix_adk.core.SuspensionStore :: class SuspensionStore(Protocol) {attempted(
 tesserix_adk.core.TaskClass :: class TaskClass(str)
 tesserix_adk.core.TelemetryConfig :: class TelemetryConfig(AdkModel)
 tesserix_adk.core.TenantContext :: class TenantContext(AdkModel) {acting_as(self, user: 'str') -> 'Self'}
+tesserix_adk.core.TenantContextError :: class TenantContextError(AdkError)
 tesserix_adk.core.TenantCrossingError :: class TenantCrossingError(AdkError)
 tesserix_adk.core.TenantLedger :: class TenantLedger(Protocol) {consume(self, tenant: 'str', window: 'str', spent: 'Consumed') -> 'Consumed'; total(self, tenant: 'str', window: 'str') -> 'Consumed'}
+tesserix_adk.core.TenantRefusal :: TenantRefusal: TypeAliasType
 tesserix_adk.core.TextDelta :: class TextDelta(StreamEvent)
 tesserix_adk.core.TextPart :: class TextPart(AdkModel)
 tesserix_adk.core.TokenAttempt :: class TokenAttempt(AdkModel)
@@ -463,6 +468,7 @@ tesserix_adk.core.TrustBoundaryError :: class TrustBoundaryError(ConfigurationEr
 tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'; sliced(self, limits: 'BudgetLimits') -> 'UnlimitedBudget'}
 tesserix_adk.core.Usage :: class Usage(AdkModel)
 tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
+tesserix_adk.core.VERSION :: VERSION: str
 tesserix_adk.core.Window :: class Window(AdkModel) {bucket(self, now: 'float') -> 'int'; opened_at(self, now: 'float') -> 'float'; resets_at(self, now: 'float') -> 'float'}
 tesserix_adk.core.WindowKind :: class WindowKind(StrEnum)
 tesserix_adk.core.WindowSpend :: class WindowSpend(AdkModel) {remaining(self, ceiling: 'Decimal') -> 'Decimal'}
@@ -475,6 +481,7 @@ tesserix_adk.core.WorkersBusyError :: class WorkersBusyError(AdkError)
 tesserix_adk.core.WriteQueueFullError :: class WriteQueueFullError(AdkError)
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
+tesserix_adk.core.arriving :: def arriving(headers: 'Mapping[str, str]', *, authenticated: 'str | None' = None) -> 'Iterator[TenantContext]'
 tesserix_adk.core.audit.AuditDecision :: class AuditDecision(StrEnum)
 tesserix_adk.core.audit.AuditEvent :: class AuditEvent(AdkModel)
 tesserix_adk.core.audit.AuditSink :: class AuditSink(Protocol) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'}
@@ -513,6 +520,7 @@ tesserix_adk.core.capabilities.CapabilitySet :: CapabilitySet = typing.Annotated
 tesserix_adk.core.capabilities.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
 tesserix_adk.core.capabilities.ModelRef :: class ModelRef(AdkModel)
 tesserix_adk.core.capabilities.ModelSpec :: class ModelSpec(AdkModel) {with_capabilities(self, **overrides: 'object') -> 'Self'}
+tesserix_adk.core.carried :: def carried(context: 'TenantContext') -> 'dict[str, str]'
 tesserix_adk.core.ceiling.CeilingLedger :: class CeilingLedger(Protocol) {commit(self, idempotency_key: 'str') -> 'Hold | None'; committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'; release(self, idempotency_key: 'str') -> 'None'; reserve(self, *, tenant: 'str', action_class: 'str', ceiling: 'Ceiling', amount: 'Decimal', idempotency_key: 'str') -> 'Hold'}
 tesserix_adk.core.ceiling.Credit :: class Credit(AdkModel)
 tesserix_adk.core.ceiling.Hold :: class Hold(AdkModel) {live(self, at: 'float') -> 'bool'}
@@ -658,7 +666,9 @@ tesserix_adk.core.errors.StateInUseError :: class StateInUseError(AdkError)
 tesserix_adk.core.errors.StateNotFoundError :: class StateNotFoundError(AdkError)
 tesserix_adk.core.errors.StatePersistenceError :: class StatePersistenceError(AdkError)
 tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
+tesserix_adk.core.errors.TenantContextError :: class TenantContextError(AdkError)
 tesserix_adk.core.errors.TenantCrossingError :: class TenantCrossingError(AdkError)
+tesserix_adk.core.errors.TenantRefusal :: TenantRefusal: TypeAliasType
 tesserix_adk.core.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
 tesserix_adk.core.errors.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
 tesserix_adk.core.errors.ToolError :: class ToolError(AdkError)
@@ -682,6 +692,7 @@ tesserix_adk.core.guards.GuardResult :: class GuardResult(object)
 tesserix_adk.core.guards.GuardStage :: class GuardStage(StrEnum)
 tesserix_adk.core.guards.GuardVerdict :: class GuardVerdict(StrEnum)
 tesserix_adk.core.guards.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
+tesserix_adk.core.header_of :: def header_of(context: 'TenantContext') -> 'str'
 tesserix_adk.core.hooks.ApprovalDecision :: class ApprovalDecision(AdkModel)
 tesserix_adk.core.hooks.ApprovalDenial :: class ApprovalDenial(StrEnum)
 tesserix_adk.core.hooks.ApprovalGate :: class ApprovalGate(Protocol) {request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
@@ -702,6 +713,7 @@ tesserix_adk.core.idempotency.IdempotencyPolicy :: class IdempotencyPolicy(objec
 tesserix_adk.core.idempotency.IdempotencyStore :: class IdempotencyStore(Protocol) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.core.idempotency.idempotency_key :: def idempotency_key(*, tenant: 'str', run_id: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key_arguments: 'tuple[str, ...]' = ()) -> 'str | None'
 tesserix_adk.core.idempotency_key :: def idempotency_key(*, tenant: 'str', run_id: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key_arguments: 'tuple[str, ...]' = ()) -> 'str | None'
+tesserix_adk.core.in_payload :: def in_payload(context: 'TenantContext', payload: 'Mapping[str, str]') -> 'dict[str, str]'
 tesserix_adk.core.ledger.LedgerKey :: class LedgerKey(AdkModel) {at(self, now: 'float') -> 'str'}
 tesserix_adk.core.ledger.Reservation :: class Reservation(AdkModel)
 tesserix_adk.core.ledger.SEPARATOR :: SEPARATOR: str
@@ -722,6 +734,7 @@ tesserix_adk.core.models.parsed_from_strings :: def parsed_from_strings(annotati
 tesserix_adk.core.models.telemetry_dump :: def telemetry_dump(model: 'BaseModel') -> 'dict[str, Any]'
 tesserix_adk.core.models.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.most_restrictive :: def most_restrictive(*scoped: 'ScopedLimits') -> 'ResolvedBudget'
+tesserix_adk.core.of_payload :: def of_payload(payload: 'Mapping[str, str]') -> 'TenantContext'
 tesserix_adk.core.parsed_from_strings :: def parsed_from_strings(annotation: 'type[Value] | Any', value: 'object') -> 'Value'
 tesserix_adk.core.primitives.BinaryPart :: class BinaryPart(AdkModel)
 tesserix_adk.core.primitives.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.core.primitives.TextPart | tesserix_adk.core.primitives.BinaryPart, FieldInfo(annotation=NoneType, required=True, discriminator='kind')]
@@ -731,6 +744,16 @@ tesserix_adk.core.primitives.TextPart :: class TextPart(AdkModel)
 tesserix_adk.core.primitives.ToolCall :: class ToolCall(AdkModel)
 tesserix_adk.core.primitives.Usage :: class Usage(AdkModel)
 tesserix_adk.core.primitives.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
+tesserix_adk.core.propagation.HEADER :: HEADER: str
+tesserix_adk.core.propagation.MAX_HEADER_BYTES :: MAX_HEADER_BYTES: int
+tesserix_adk.core.propagation.PAYLOAD_KEY :: PAYLOAD_KEY: str
+tesserix_adk.core.propagation.VERSION :: VERSION: str
+tesserix_adk.core.propagation.arriving :: def arriving(headers: 'Mapping[str, str]', *, authenticated: 'str | None' = None) -> 'Iterator[TenantContext]'
+tesserix_adk.core.propagation.carried :: def carried(context: 'TenantContext') -> 'dict[str, str]'
+tesserix_adk.core.propagation.header_of :: def header_of(context: 'TenantContext') -> 'str'
+tesserix_adk.core.propagation.in_payload :: def in_payload(context: 'TenantContext', payload: 'Mapping[str, str]') -> 'dict[str, str]'
+tesserix_adk.core.propagation.of_payload :: def of_payload(payload: 'Mapping[str, str]') -> 'TenantContext'
+tesserix_adk.core.propagation.restored :: def restored(headers: 'Mapping[str, str]', *, authenticated: 'str | None' = None) -> 'TenantContext'
 tesserix_adk.core.protocols.BudgetPolicy :: class BudgetPolicy(Protocol) {check(self) -> 'BudgetDecision'; child(self) -> 'BudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.core.protocols.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.core.protocols.DeclaresEmulation :: class DeclaresEmulation(Protocol)
@@ -761,6 +784,7 @@ tesserix_adk.core.redaction.scrub :: def scrub(value: 'str', extra_patterns: 'Se
 tesserix_adk.core.require_extra :: def require_extra(extra: 'str', module: 'str') -> 'ModuleType'
 tesserix_adk.core.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
 tesserix_adk.core.resolve_hooks :: def resolve_hooks(decisions: 'Sequence[HookDecision] | Iterable[HookDecision]') -> 'HookDecision'
+tesserix_adk.core.restored :: def restored(headers: 'Mapping[str, str]', *, authenticated: 'str | None' = None) -> 'TenantContext'
 tesserix_adk.core.routing.CHEAP :: CHEAP: TaskClass
 tesserix_adk.core.routing.ModelRequirements :: class ModelRequirements(AdkModel) {unsatisfied_by(self, declared: 'object') -> 'tuple[str, ...]'}
 tesserix_adk.core.routing.ModelRouter :: class ModelRouter(Protocol) {resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
@@ -1428,6 +1452,7 @@ tesserix_adk.testing.SequentialIds :: class SequentialIds(object)
 tesserix_adk.testing.SpendLedgerConformance :: class SpendLedgerConformance(ABC) {a_key(self, tenant: 'str' = 'conformance') -> 'LedgerKey'; make_ledger(self) -> 'SpendLedger'; test_a_hold_counts_before_it_settles(self) -> 'None'; test_a_release_gives_the_allowance_back(self) -> 'None'; test_concurrent_holds_do_not_pass_the_ceiling(self) -> 'None'; test_erasure_leaves_nothing_of_the_tenant_behind(self) -> 'None'; test_one_tenant_cannot_read_another_s_window(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_settled_spend_is_visible_to_the_next_reader(self) -> 'None'; test_settling_twice_is_refused(self) -> 'None'; test_the_ceiling_refuses_rather_than_overshoots(self) -> 'None'}
 tesserix_adk.testing.StallingProvider :: class StallingProvider(object) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; release(self) -> 'None'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.testing.StateStoreConformance :: class StateStoreConformance(ABC) {make_store(self) -> 'StateStore'; test_a_cascade_takes_the_runs_with_it(self) -> 'None'; test_a_create_that_finds_something_there_is_refused(self) -> 'None'; test_a_cursor_walks_every_run_exactly_once(self) -> 'None'; test_a_finished_run_does_not_hold_its_session_open(self) -> 'None'; test_a_first_write_lands_at_version_one(self) -> 'None'; test_a_listing_can_be_narrowed_by_age(self) -> 'None'; test_a_listing_can_be_narrowed_to_one_state(self) -> 'None'; test_a_listing_returns_what_was_written(self) -> 'None'; test_a_patch_adds_rather_than_sets(self) -> 'None'; test_a_patch_of_a_run_that_is_not_there_is_refused(self) -> 'None'; test_a_pending_tool_call_survives_a_round_trip(self) -> 'None'; test_a_run_that_was_never_written_is_none(self) -> 'None'; test_a_second_write_of_a_stale_version_is_refused(self) -> 'None'; test_a_secret_in_a_tool_argument_is_masked_before_it_is_stored(self) -> 'None'; test_a_session_round_trips(self) -> 'None'; test_a_session_with_a_live_run_is_not_deleted(self) -> 'None'; test_a_stale_session_write_is_refused(self) -> 'None'; test_a_written_run_comes_back(self) -> 'None'; test_an_exhausted_listing_carries_no_cursor(self) -> 'None'; test_concurrent_patches_all_land(self) -> 'None'; test_deleting_a_run_removes_it(self) -> 'None'; test_deleting_a_run_that_is_not_there_is_not_an_error(self) -> 'None'; test_deleting_a_session_that_is_not_there_is_not_an_error(self) -> 'None'; test_one_tenant_cannot_list_another_s_runs(self) -> 'None'; test_one_tenant_cannot_read_another_s_run(self) -> 'None'; test_only_one_of_many_concurrent_creates_wins(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
+tesserix_adk.testing.TenantPropagationConformance :: class TenantPropagationConformance(ABC) {round_trip(self, headers: 'Mapping[str, str]') -> 'Mapping[str, str]'; test_a_context_too_large_for_the_transport_still_delivers_the_tenant(self) -> 'None'; test_consecutive_messages_do_not_bleed(self) -> 'None'; test_header_case_is_not_load_bearing(self) -> 'None'; test_the_binding_does_not_outlive_the_message(self) -> 'None'; test_the_rest_of_the_context_survives_with_it(self) -> 'None'; test_the_tenant_survives_the_hop(self) -> 'None'}
 tesserix_adk.testing.ToolExecutionError :: class ToolExecutionError(AdkError)
 tesserix_adk.testing.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Tracer'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
 tesserix_adk.testing.WorkQueueConformance :: class WorkQueueConformance(ABC) {advance(self, queue: 'WorkQueue', seconds: 'float') -> 'None'; make_queue(self) -> 'WorkQueue'; test_a_claimed_item_is_not_handed_to_a_second_worker(self) -> 'None'; test_a_completed_item_never_comes_back(self) -> 'None'; test_a_duplicate_job_is_collapsed_into_the_first(self) -> 'None'; test_a_failure_comes_back_for_another_attempt(self) -> 'None'; test_a_lapsed_claim_is_requeued_with_its_attempt_counted(self) -> 'None'; test_a_live_worker_keeps_its_claim(self) -> 'None'; test_a_restarted_worker_gives_back_what_it_held(self) -> 'None'; test_a_worker_that_lost_its_claim_is_refused(self) -> 'None'; test_an_empty_queue_hands_out_nothing(self) -> 'None'; test_an_enqueued_item_is_claimable(self) -> 'None'; test_an_item_that_cannot_succeed_skips_its_remaining_attempts(self) -> 'None'; test_an_item_the_queue_does_not_hold_is_a_refusal(self) -> 'None'; test_one_tenant_cannot_act_on_another_s_item(self) -> 'None'; test_one_tenant_cannot_starve_another(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_the_depth_counts_what_is_waiting(self) -> 'None'}
@@ -1464,6 +1489,7 @@ tesserix_adk.testing.conformance.KeyValueStoreConformance :: class KeyValueStore
 tesserix_adk.testing.conformance.MemoryStoreConformance :: class MemoryStoreConformance(ABC) {make_store(self) -> 'MemoryStore'; test_a_dry_run_reports_without_removing(self) -> 'None'; test_a_profile_upsert_is_read_back(self) -> 'None'; test_a_record_from_another_scope_is_refused(self) -> 'None'; test_a_scope_cannot_read_another_s_records(self) -> 'None'; test_a_sensitive_value_is_masked_on_the_way_in(self) -> 'None'; test_a_stale_expected_version_is_refused(self) -> 'None'; test_a_superseded_record_is_closed_and_kept(self) -> 'None'; test_a_window_excludes_what_falls_outside_it(self) -> 'None'; test_appends_are_ordered_and_none_is_lost(self) -> 'None'; test_belief_says_nothing_rather_than_guessing(self) -> 'None'; test_episodes_come_back_newest_first(self) -> 'None'; test_erasing_a_second_time_removes_nothing(self) -> 'None'; test_erasure_it_never_declared_is_refused(self) -> 'None'; test_erasure_removes_every_kind_under_the_scope(self) -> 'None'; test_erasure_stops_at_the_scope_it_was_given(self) -> 'None'; test_kinds_do_not_share_a_key_space(self) -> 'None'; test_only_one_record_is_live_after_a_supersession(self) -> 'None'; test_reading_an_absent_key_is_none(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_semantic_recall_it_never_declared_is_refused(self) -> 'None'; test_semantic_search_ranks_the_closer_record_higher(self) -> 'None'; test_supersession_it_never_declared_is_refused(self) -> 'None'; test_what_was_derived_is_reported_before_it_is_erased(self) -> 'None'; test_working_memory_round_trips(self) -> 'None'; test_writing_replaces_rather_than_merges(self) -> 'None'}
 tesserix_adk.testing.conformance.ModelProviderConformance :: class ModelProviderConformance(ABC) {make_provider(self) -> 'ModelProvider'; test_a_longer_prompt_does_not_count_for_less(self) -> 'None'; test_it_answers_with_a_response(self) -> 'None'; test_it_counts_tokens_without_going_negative(self) -> 'None'; test_it_declares_what_it_can_do(self) -> 'None'; test_it_is_named(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_streaming_it_never_declared_is_refused(self) -> 'None'; test_the_declaration_does_not_change_between_reads(self) -> 'None'}
 tesserix_adk.testing.conformance.StateStoreConformance :: class StateStoreConformance(ABC) {make_store(self) -> 'StateStore'; test_a_cascade_takes_the_runs_with_it(self) -> 'None'; test_a_create_that_finds_something_there_is_refused(self) -> 'None'; test_a_cursor_walks_every_run_exactly_once(self) -> 'None'; test_a_finished_run_does_not_hold_its_session_open(self) -> 'None'; test_a_first_write_lands_at_version_one(self) -> 'None'; test_a_listing_can_be_narrowed_by_age(self) -> 'None'; test_a_listing_can_be_narrowed_to_one_state(self) -> 'None'; test_a_listing_returns_what_was_written(self) -> 'None'; test_a_patch_adds_rather_than_sets(self) -> 'None'; test_a_patch_of_a_run_that_is_not_there_is_refused(self) -> 'None'; test_a_pending_tool_call_survives_a_round_trip(self) -> 'None'; test_a_run_that_was_never_written_is_none(self) -> 'None'; test_a_second_write_of_a_stale_version_is_refused(self) -> 'None'; test_a_secret_in_a_tool_argument_is_masked_before_it_is_stored(self) -> 'None'; test_a_session_round_trips(self) -> 'None'; test_a_session_with_a_live_run_is_not_deleted(self) -> 'None'; test_a_stale_session_write_is_refused(self) -> 'None'; test_a_written_run_comes_back(self) -> 'None'; test_an_exhausted_listing_carries_no_cursor(self) -> 'None'; test_concurrent_patches_all_land(self) -> 'None'; test_deleting_a_run_removes_it(self) -> 'None'; test_deleting_a_run_that_is_not_there_is_not_an_error(self) -> 'None'; test_deleting_a_session_that_is_not_there_is_not_an_error(self) -> 'None'; test_one_tenant_cannot_list_another_s_runs(self) -> 'None'; test_one_tenant_cannot_read_another_s_run(self) -> 'None'; test_only_one_of_many_concurrent_creates_wins(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'}
+tesserix_adk.testing.conformance.TenantPropagationConformance :: class TenantPropagationConformance(ABC) {round_trip(self, headers: 'Mapping[str, str]') -> 'Mapping[str, str]'; test_a_context_too_large_for_the_transport_still_delivers_the_tenant(self) -> 'None'; test_consecutive_messages_do_not_bleed(self) -> 'None'; test_header_case_is_not_load_bearing(self) -> 'None'; test_the_binding_does_not_outlive_the_message(self) -> 'None'; test_the_rest_of_the_context_survives_with_it(self) -> 'None'; test_the_tenant_survives_the_hop(self) -> 'None'}
 tesserix_adk.testing.conformance.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Tracer'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
 tesserix_adk.testing.conformance.WorkQueueConformance :: class WorkQueueConformance(ABC) {advance(self, queue: 'WorkQueue', seconds: 'float') -> 'None'; make_queue(self) -> 'WorkQueue'; test_a_claimed_item_is_not_handed_to_a_second_worker(self) -> 'None'; test_a_completed_item_never_comes_back(self) -> 'None'; test_a_duplicate_job_is_collapsed_into_the_first(self) -> 'None'; test_a_failure_comes_back_for_another_attempt(self) -> 'None'; test_a_lapsed_claim_is_requeued_with_its_attempt_counted(self) -> 'None'; test_a_live_worker_keeps_its_claim(self) -> 'None'; test_a_restarted_worker_gives_back_what_it_held(self) -> 'None'; test_a_worker_that_lost_its_claim_is_refused(self) -> 'None'; test_an_empty_queue_hands_out_nothing(self) -> 'None'; test_an_enqueued_item_is_claimable(self) -> 'None'; test_an_item_that_cannot_succeed_skips_its_remaining_attempts(self) -> 'None'; test_an_item_the_queue_does_not_hold_is_a_refusal(self) -> 'None'; test_one_tenant_cannot_act_on_another_s_item(self) -> 'None'; test_one_tenant_cannot_starve_another(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_the_depth_counts_what_is_waiting(self) -> 'None'}
 tesserix_adk.testing.estimate_tokens :: def estimate_tokens(messages: 'Sequence[Message]') -> 'int'
