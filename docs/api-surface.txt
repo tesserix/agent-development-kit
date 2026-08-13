@@ -1,5 +1,7 @@
 tesserix_adk.__version__ :: __version__: str
+tesserix_adk.adapters.AUDIT_SCHEMA_VERSION :: AUDIT_SCHEMA_VERSION: int
 tesserix_adk.adapters.ApprovalInbox :: class ApprovalInbox(object) {decide(self, decision: 'ApprovalDecision', *, tenant: 'str') -> 'None'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'; wait_for(self, record_id: 'str') -> 'None'}
+tesserix_adk.adapters.AuditTables :: class AuditTables(object)
 tesserix_adk.adapters.BACKENDS :: BACKENDS: tuple
 tesserix_adk.adapters.CEILING_SCHEMA_VERSION :: CEILING_SCHEMA_VERSION: int
 tesserix_adk.adapters.COUNTERS :: COUNTERS: tuple
@@ -7,6 +9,8 @@ tesserix_adk.adapters.CeilingTables :: class CeilingTables(object)
 tesserix_adk.adapters.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.ConsoleApprovals :: class ConsoleApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
 tesserix_adk.adapters.DEFAULT_APPROVAL_SUBJECT :: DEFAULT_APPROVAL_SUBJECT: str
+tesserix_adk.adapters.DEFAULT_AUDIT_SUBJECT :: DEFAULT_AUDIT_SUBJECT: str
+tesserix_adk.adapters.DEFAULT_AUDIT_TABLES :: DEFAULT_AUDIT_TABLES: AuditTables
 tesserix_adk.adapters.DEFAULT_CEILING_TABLES :: DEFAULT_CEILING_TABLES: CeilingTables
 tesserix_adk.adapters.DEFAULT_COLLECTION :: DEFAULT_COLLECTION: str
 tesserix_adk.adapters.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables
@@ -19,6 +23,7 @@ tesserix_adk.adapters.DEFAULT_RETRY_MILLISECONDS :: DEFAULT_RETRY_MILLISECONDS: 
 tesserix_adk.adapters.DEFAULT_STATE_NAMESPACE :: DEFAULT_STATE_NAMESPACE: str
 tesserix_adk.adapters.DEFAULT_TABLE :: DEFAULT_TABLE: str
 tesserix_adk.adapters.DISTANCE_OPERATORS :: DISTANCE_OPERATORS: dict
+tesserix_adk.adapters.EXPECTED_AUDIT_SCHEMA :: EXPECTED_AUDIT_SCHEMA: str
 tesserix_adk.adapters.EXPECTED_CEILING_SCHEMA :: EXPECTED_CEILING_SCHEMA: str
 tesserix_adk.adapters.EXPECTED_GRANT_SCHEMA :: EXPECTED_GRANT_SCHEMA: str
 tesserix_adk.adapters.EXPECTED_SCHEMA :: EXPECTED_SCHEMA: str
@@ -40,12 +45,16 @@ tesserix_adk.adapters.HttpPoster :: class HttpPoster(Protocol) {post(self, url: 
 tesserix_adk.adapters.IN_FLIGHT :: IN_FLIGHT: str
 tesserix_adk.adapters.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.InspectableRedis :: class InspectableRedis(Protocol) {config_get(self, pattern: 'str') -> 'Mapping[str, str]'; eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
+tesserix_adk.adapters.JetStreamAudit :: class JetStreamAudit(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'}
+tesserix_adk.adapters.JetStreamPublisher :: class JetStreamPublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
 tesserix_adk.adapters.MemoryPage :: class MemoryPage(AdkModel)
 tesserix_adk.adapters.MemoryStoreSettings :: class MemoryStoreSettings(AdkModel)
 tesserix_adk.adapters.MessagePublisher :: class MessagePublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
 tesserix_adk.adapters.NatsApprovals :: class NatsApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'None'}
 tesserix_adk.adapters.PayloadElided :: class PayloadElided(ProgressEvent)
 tesserix_adk.adapters.PgvectorMemoryStore :: class PgvectorMemoryStore(object) {erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; verify(self) -> 'None'}
+tesserix_adk.adapters.PostgresAuditSettings :: class PostgresAuditSettings(PostgresStoreSettings)
+tesserix_adk.adapters.PostgresAuditSink :: class PostgresAuditSink(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'; verify(self) -> 'None'}
 tesserix_adk.adapters.PostgresCeilingLedger :: class PostgresCeilingLedger(object) {commit(self, idempotency_key: 'str') -> 'Hold | None'; committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'; reap(self) -> 'int'; release(self, idempotency_key: 'str') -> 'None'; reserve(self, *, tenant: 'str', action_class: 'str', ceiling: 'Ceiling', amount: 'Decimal', idempotency_key: 'str') -> 'Hold'; verify(self) -> 'None'}
 tesserix_adk.adapters.PostgresCeilingSettings :: class PostgresCeilingSettings(PostgresStoreSettings)
 tesserix_adk.adapters.PostgresGrantSettings :: class PostgresGrantSettings(PostgresStoreSettings)
@@ -83,6 +92,15 @@ tesserix_adk.adapters.approvals.HttpPoster :: class HttpPoster(Protocol) {post(s
 tesserix_adk.adapters.approvals.MessagePublisher :: class MessagePublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
 tesserix_adk.adapters.approvals.NatsApprovals :: class NatsApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'None'}
 tesserix_adk.adapters.approvals.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
+tesserix_adk.adapters.audit.AUDIT_SCHEMA_VERSION :: AUDIT_SCHEMA_VERSION: int
+tesserix_adk.adapters.audit.AuditTables :: class AuditTables(object)
+tesserix_adk.adapters.audit.DEFAULT_AUDIT_SUBJECT :: DEFAULT_AUDIT_SUBJECT: str
+tesserix_adk.adapters.audit.DEFAULT_AUDIT_TABLES :: DEFAULT_AUDIT_TABLES: AuditTables
+tesserix_adk.adapters.audit.EXPECTED_AUDIT_SCHEMA :: EXPECTED_AUDIT_SCHEMA: str
+tesserix_adk.adapters.audit.JetStreamAudit :: class JetStreamAudit(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'}
+tesserix_adk.adapters.audit.JetStreamPublisher :: class JetStreamPublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
+tesserix_adk.adapters.audit.PostgresAuditSettings :: class PostgresAuditSettings(PostgresStoreSettings)
+tesserix_adk.adapters.audit.PostgresAuditSink :: class PostgresAuditSink(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'; verify(self) -> 'None'}
 tesserix_adk.adapters.cache.DEFAULT_NAMESPACE :: DEFAULT_NAMESPACE: str
 tesserix_adk.adapters.cache.RedisCacheStore :: class RedisCacheStore(object) {get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
 tesserix_adk.adapters.ceiling.CEILING_SCHEMA_VERSION :: CEILING_SCHEMA_VERSION: int
@@ -190,6 +208,10 @@ tesserix_adk.core.ApprovalRecord :: class ApprovalRecord(AdkModel)
 tesserix_adk.core.ApprovalToken :: class ApprovalToken(AdkModel) {expired_by(self, now: 'float') -> 'bool'}
 tesserix_adk.core.ApprovalTokenError :: class ApprovalTokenError(AdkError)
 tesserix_adk.core.ApprovalTransport :: class ApprovalTransport(Protocol) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
+tesserix_adk.core.AuditDecision :: class AuditDecision(StrEnum)
+tesserix_adk.core.AuditEvent :: class AuditEvent(AdkModel)
+tesserix_adk.core.AuditSink :: class AuditSink(Protocol) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'}
+tesserix_adk.core.AuditUnavailableError :: class AuditUnavailableError(AdkError)
 tesserix_adk.core.AuthenticationError :: class AuthenticationError(ProviderError)
 tesserix_adk.core.AutonomyDecision :: class AutonomyDecision(AdkModel)
 tesserix_adk.core.AutonomyGrant :: class AutonomyGrant(AdkModel) {covers(self, *, tenant: 'str', user: 'str | None', now: 'float') -> 'bool'}
@@ -442,6 +464,11 @@ tesserix_adk.core.WorkersBusyError :: class WorkersBusyError(AdkError)
 tesserix_adk.core.WriteQueueFullError :: class WriteQueueFullError(AdkError)
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
+tesserix_adk.core.audit.AuditDecision :: class AuditDecision(StrEnum)
+tesserix_adk.core.audit.AuditEvent :: class AuditEvent(AdkModel)
+tesserix_adk.core.audit.AuditSink :: class AuditSink(Protocol) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'}
+tesserix_adk.core.audit.digest_of_arguments :: def digest_of_arguments(arguments: 'Mapping[str, Any]', *, extra_patterns: 'Sequence[str]' = ()) -> 'str'
+tesserix_adk.core.audit.pseudonym :: def pseudonym(subject: 'str', *, salt: 'str' = '') -> 'str'
 tesserix_adk.core.autonomy.ActionClass :: class ActionClass(AdkModel)
 tesserix_adk.core.autonomy.ActionRegistry :: class ActionRegistry(object) {named(self, action_class: 'str') -> 'ActionClass | None'; of(self, tool: 'str') -> 'ActionClass | None'}
 tesserix_adk.core.autonomy.ActionRequest :: class ActionRequest(AdkModel)
@@ -529,6 +556,7 @@ tesserix_adk.core.deprecation.WARNINGS_AS_ERRORS_ENV :: WARNINGS_AS_ERRORS_ENV: 
 tesserix_adk.core.deprecation.deprecate :: def deprecate(*, since: 'str', removal: 'str', alternative: 'str', reason: 'str | None' = None) -> 'Callable[[_T], _T]'
 tesserix_adk.core.deprecation.deprecations :: def deprecations() -> 'tuple[Deprecation, ...]'
 tesserix_adk.core.deprecations :: def deprecations() -> 'tuple[Deprecation, ...]'
+tesserix_adk.core.digest_of_arguments :: def digest_of_arguments(arguments: 'Mapping[str, Any]', *, extra_patterns: 'Sequence[str]' = ()) -> 'str'
 tesserix_adk.core.digest_of_token :: def digest_of_token(value: 'str') -> 'str'
 tesserix_adk.core.dispatch.Dispatch :: class Dispatch(Generic) {run(self) -> 'DispatchResult[T]'}
 tesserix_adk.core.dispatch.DispatchNode :: class DispatchNode(Generic)
@@ -541,6 +569,7 @@ tesserix_adk.core.errors.ApprovalDeliveryError :: class ApprovalDeliveryError(Ad
 tesserix_adk.core.errors.ApprovalDeniedError :: class ApprovalDeniedError(AdkError)
 tesserix_adk.core.errors.ApprovalExpiredError :: class ApprovalExpiredError(AdkError)
 tesserix_adk.core.errors.ApprovalTokenError :: class ApprovalTokenError(AdkError)
+tesserix_adk.core.errors.AuditUnavailableError :: class AuditUnavailableError(AdkError)
 tesserix_adk.core.errors.AuthenticationError :: class AuthenticationError(ProviderError)
 tesserix_adk.core.errors.AutonomyRefusedError :: class AutonomyRefusedError(AdkError)
 tesserix_adk.core.errors.BudgetExceededError :: class BudgetExceededError(AdkError)
@@ -698,6 +727,7 @@ tesserix_adk.core.provider.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.core.provider.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.core.provider.StopReason :: class StopReason(StrEnum)
 tesserix_adk.core.provider.ToolDeclaration :: class ToolDeclaration(AdkModel)
+tesserix_adk.core.pseudonym :: def pseudonym(subject: 'str', *, salt: 'str' = '') -> 'str'
 tesserix_adk.core.queue.QueuePolicy :: class QueuePolicy(AdkModel) {backoff_for(self, attempts: 'int') -> 'float'; claimed(self, item: 'WorkItem', *, worker: 'str', now: 'float', lease_seconds: 'float | None' = None) -> 'WorkItem'; completed(self, item: 'WorkItem') -> 'WorkItem'; exhausted(self, attempts: 'int') -> 'bool'; overheld(self, item: 'WorkItem', now: 'float') -> 'bool'; renewed(self, item: 'WorkItem', *, now: 'float') -> 'WorkItem'; returned(self, item: 'WorkItem', *, error: 'str', now: 'float', retryable: 'bool' = True, backoff: 'bool' = True) -> 'WorkItem'}
 tesserix_adk.core.queue.QueueStats :: class QueueStats(AdkModel)
 tesserix_adk.core.queue.WorkItem :: class WorkItem(AdkModel) {lapsed_at(self, now: 'float') -> 'bool'}
@@ -1035,7 +1065,8 @@ tesserix_adk.runtime.ApprovalDeferred :: class ApprovalDeferred(Exception)
 tesserix_adk.runtime.ApprovalLedger :: class ApprovalLedger(object) {bind(self, record: 'ApprovalRecord') -> 'None'; spend(self, record: 'ApprovalRecord', arguments: 'Mapping[str, Any]') -> 'None'; void(self) -> 'None'}
 tesserix_adk.runtime.ApprovalRequired :: class ApprovalRequired(ProgressEvent)
 tesserix_adk.runtime.Assumptions :: class Assumptions(AdkModel)
-tesserix_adk.runtime.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None, key: 'str | None' = None) -> 'AutonomyDecision'; settle(self, key: 'str', *, happened: 'bool') -> 'None'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
+tesserix_adk.runtime.AuditTrail :: class AuditTrail(object) {record(self, decided: 'AutonomyDecision | None', decision: 'AuditDecision', *, run_id: 'str', tenant: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key: 'str | None' = None, user: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '', approver: 'str | None' = None, amount: 'Decimal | None' = None, reason: 'str' = '') -> 'AuditEvent'}
+tesserix_adk.runtime.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None, key: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '') -> 'AutonomyDecision'; record(self, decided: 'AutonomyDecision | None', decision: 'AuditDecision', *, run_id: 'str', tenant: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key: 'str | None' = None, user: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '', approver: 'str | None' = None, reason: 'str' = '') -> 'None'; settle(self, key: 'str', *, happened: 'bool') -> 'None'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
 tesserix_adk.runtime.Backpressure :: class Backpressure(object)
 tesserix_adk.runtime.Calibration :: class Calibration(AdkModel)
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
@@ -1055,6 +1086,7 @@ tesserix_adk.runtime.InMemoryHistory :: class InMemoryHistory(object) {observed(
 tesserix_adk.runtime.InMemoryReports :: class InMemoryReports(object) {delivered(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'; outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.IterationStarted :: class IterationStarted(ProgressEvent)
 tesserix_adk.runtime.LoopMonitor :: class LoopMonitor(object) {watching(self, what: 'str', work: 'Callable[[], Awaitable[T]]') -> 'T'}
+tesserix_adk.runtime.MemoryAuditSink :: class MemoryAuditSink(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'}
 tesserix_adk.runtime.MemoryCheckpointStore :: class MemoryCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
 tesserix_adk.runtime.MemoryClaimCheckStore :: class MemoryClaimCheckStore(object) {fetch(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'; forget(self, *, tenant: 'str', run_id: 'str' = '') -> 'int'; put(self, handle: 'str', content: 'str', *, tenant: 'str', run_id: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.runtime.MemoryIdempotencyStore :: class MemoryIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
@@ -1115,7 +1147,9 @@ tesserix_adk.runtime.approvals.TransportGate :: class TransportGate(object) {aba
 tesserix_adk.runtime.approvals.self_granted :: def self_granted(record: 'ApprovalRecord', decision: 'ApprovalDecision') -> 'bool'
 tesserix_adk.runtime.approximate_tokens :: def approximate_tokens(text: 'str') -> 'int'
 tesserix_adk.runtime.assemble_prompt :: def assemble_prompt(agent: 'Agent[Any]', user_input: 'str', *, history: 'Iterable[Message]' = (), pinned: 'Iterable[str]' = (), retrieved: 'Iterable[str]' = (), tools: 'Iterable[ToolDeclaration]' = (), output: 'OutputContract | None' = None, tokenizer: 'Tokenizer | None' = None) -> 'Prompt'
-tesserix_adk.runtime.autonomy.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None, key: 'str | None' = None) -> 'AutonomyDecision'; settle(self, key: 'str', *, happened: 'bool') -> 'None'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
+tesserix_adk.runtime.audit.AuditTrail :: class AuditTrail(object) {record(self, decided: 'AutonomyDecision | None', decision: 'AuditDecision', *, run_id: 'str', tenant: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key: 'str | None' = None, user: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '', approver: 'str | None' = None, amount: 'Decimal | None' = None, reason: 'str' = '') -> 'AuditEvent'}
+tesserix_adk.runtime.audit.MemoryAuditSink :: class MemoryAuditSink(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'}
+tesserix_adk.runtime.autonomy.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None, key: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '') -> 'AutonomyDecision'; record(self, decided: 'AutonomyDecision | None', decision: 'AuditDecision', *, run_id: 'str', tenant: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key: 'str | None' = None, user: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '', approver: 'str | None' = None, reason: 'str' = '') -> 'None'; settle(self, key: 'str', *, happened: 'bool') -> 'None'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
 tesserix_adk.runtime.autonomy.InMemoryReports :: class InMemoryReports(object) {delivered(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'; outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.autonomy.ReportLog :: class ReportLog(Protocol) {outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.autonomy.RevocationBroadcast :: class RevocationBroadcast(Protocol) {listen(self) -> 'AsyncIterator[Revocation]'; publish(self, revocation: 'Revocation') -> 'None'}

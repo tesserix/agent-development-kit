@@ -165,6 +165,18 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `AuditTrail`, `MemoryAuditSink`, `AutonomyGate.record` and the audit vocabulary
+  (`AuditEvent`, `AuditDecision`, `AuditSink`, `AuditUnavailableError`,
+  `digest_of_arguments`, `pseudonym`), with `PostgresAuditSink`, `JetStreamAudit` and
+  `EXPECTED_AUDIT_SCHEMA` as the stores, so every autonomous decision — executed, escalated,
+  refused, revoked — is recorded once with the grant, the action class and the ceiling
+  headroom either side of it, on a path sampling cannot drop. Arguments are redacted and
+  digested, never stored; an erasure pseudonymises the person and keeps the decision. If the
+  sink cannot take the record the call does not go out: `AuditTrail` raises
+  `AuditUnavailableError` and the loop fails the run before dispatch. **Stability:**
+  additive — `AutonomyGate` takes `audit` as an optional keyword and behaves as before
+  without it. Documented in `docs/audit.md`, exercised by `examples/audit.py`.
+
 - `DeferringGate`, `AgentRunner.resume_with_decision`, `RunState.SUSPENDED` and the
   suspension vocabulary (`SuspendedRun`, `ApprovalToken`, `PendingDecision`, `TokenAttempt`,
   `SuspensionStore`, `TokenRedeemer`, `MemorySuspensionStore`, `ApprovalDeferred`,

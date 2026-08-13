@@ -38,6 +38,8 @@ from tesserix_adk.core import (
     ApprovalExpiredError,
     ApprovalGate,
     ApprovalRecord,
+    AuditDecision,
+    AuditUnavailableError,
     AutonomyRefusedError,
     BinaryPart,
     BudgetExceededError,
@@ -2403,17 +2405,58 @@ class AgentRunner:
         )
         if decision.action is HookAction.REFUSE:
             raise _Terminal(run, RunState.FAILED, _named(HookRefusedError(decision.reason)))
-        run, escalated = await self._within_autonomy(run, call)
+        run, escalated = await self._within_autonomy(run, agent, call)
         declared = self._declares_approval(agent, call)
         asked = decision.action is HookAction.REQUIRE_APPROVAL
         if not declared and escalated is None and not asked:
-            return run
+            return await self._audited(run, agent, call, escalated, approver=None)
         reason = self._why_held(call, decision, escalated, declared=declared)
-        run = await self._approved(run, agent, call, reason, bounds)
-        return self._still_granted(run, call, escalated)
+        run, approver = await self._approved(run, agent, call, reason, bounds)
+        run = await self._still_granted(run, agent, call, escalated, approver)
+        return await self._audited(run, agent, call, escalated, approver=approver)
 
-    def _still_granted(
-        self, run: Run[Any], call: ToolCall, escalated: AutonomyDecision | None
+    async def _audited(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        call: ToolCall,
+        escalated: AutonomyDecision | None,
+        *,
+        approver: str | None,
+    ) -> Run[Any]:
+        """Write down that this call was cleared, before any of it happens.
+
+        The last thing between a decision and the world, because a record written after the
+        call is the record an outage eats. A store that cannot take it fails the run: an
+        action nobody could record is an action nobody can defend afterwards.
+        """
+        if self._autonomy is None:
+            return run
+        try:
+            await self._autonomy.record(
+                escalated,
+                AuditDecision.EXECUTED,
+                run_id=run.id,
+                tenant=run.tenant,
+                tool=call.name,
+                arguments=call.arguments,
+                key=_commitment_key(run, call),
+                user=run.user,
+                agent=agent.name,
+                agent_version=agent.version,
+                approver=approver,
+            )
+        except AuditUnavailableError as unrecorded:
+            raise _Terminal(run, RunState.FAILED, _named(unrecorded)) from None
+        return run
+
+    async def _still_granted(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        call: ToolCall,
+        escalated: AutonomyDecision | None,
+        approver: str | None,
     ) -> Run[Any]:
         """Re-check the withdrawn grants after a human decided, before anything goes out.
 
@@ -2427,6 +2470,20 @@ class AgentRunner:
         withdrawn = gate.withdrawn(escalated)
         if withdrawn is None:
             return run
+        await gate.record(
+            escalated,
+            AuditDecision.REVOKED,
+            run_id=run.id,
+            tenant=run.tenant,
+            tool=call.name,
+            arguments=call.arguments,
+            key=_commitment_key(run, call),
+            user=run.user,
+            agent=agent.name,
+            agent_version=agent.version,
+            approver=approver,
+            reason=f"{withdrawn.grant_id} withdrawn by {withdrawn.revoked_by}",
+        )
         run = run.record_event(
             self._event(
                 RunEventKind.GRANT_REVOKED,
@@ -2464,7 +2521,7 @@ class AgentRunner:
         return f"beyond this agent's autonomy: {escalated.reason}"
 
     async def _within_autonomy(
-        self, run: Run[Any], call: ToolCall
+        self, run: Run[Any], agent: Agent[Any], call: ToolCall
     ) -> tuple[Run[Any], AutonomyDecision | None]:
         """What the grants say about this call, and why where they say it needs a human.
 
@@ -2481,6 +2538,8 @@ class AgentRunner:
             run_id=run.id,
             user=run.user,
             key=_commitment_key(run, call),
+            agent=agent.name,
+            agent_version=agent.version,
         )
         if decided.outcome is AutonomyOutcome.REFUSE:
             run = run.record_event(
@@ -2526,8 +2585,8 @@ class AgentRunner:
 
     async def _approved(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall, reason: str, bounds: _Bounds
-    ) -> Run[Any]:
-        """Hold the call until a human decides, and record what they decided.
+    ) -> tuple[Run[Any], str]:
+        """Hold the call until a human decides, and say who decided it.
 
         The record carries a digest of the arguments rather than the arguments: an
         approval queue outlives the run and is read by people who are not party to it.
@@ -2555,7 +2614,7 @@ class AgentRunner:
             run = self._honoured(run, record, taken, call)
             bounds.approvals.bind(record)
             bounds.granted[call.id] = record
-            return run
+            return run, taken.decided_by
         try:
             decision = await self._bounded(
                 self._approvals.request(record),
@@ -2576,7 +2635,7 @@ class AgentRunner:
         run = self._honoured(run, record, decision, call)
         bounds.approvals.bind(record)
         bounds.granted[call.id] = record
-        return run
+        return run, decision.decided_by
 
     async def _stopped(
         self,

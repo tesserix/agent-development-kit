@@ -371,3 +371,25 @@ convert JSON it already holds.
 """
 owner = "@sam123ben"
 review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.core.audit.digest_of_arguments"
+kind = "json"
+reason = """
+The digest is taken over the arguments a tool's schema already validated, which is JSON the
+loop already carries. Nothing here reads a field; the payload is redacted, serialised and
+hashed, and typing it as a record would make every caller convert what it already holds.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.runtime.audit.AuditTrail"
+kind = "json"
+reason = """
+The trail records a decision about the same tool arguments the gate and the loop pass around
+as JSON, and it stores only their digest. Narrowing the type here would convert a payload
+that is never interpreted.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13

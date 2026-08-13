@@ -8,6 +8,17 @@ from tesserix_adk.adapters.approvals import (
     NatsApprovals,
     WebhookApprovals,
 )
+from tesserix_adk.adapters.audit import (
+    AUDIT_SCHEMA_VERSION,
+    DEFAULT_AUDIT_SUBJECT,
+    DEFAULT_AUDIT_TABLES,
+    EXPECTED_AUDIT_SCHEMA,
+    AuditTables,
+    JetStreamAudit,
+    JetStreamPublisher,
+    PostgresAuditSettings,
+    PostgresAuditSink,
+)
 from tesserix_adk.adapters.cache import DEFAULT_NAMESPACE, RedisCacheStore
 from tesserix_adk.adapters.ceiling import (
     CEILING_SCHEMA_VERSION,
@@ -102,10 +113,13 @@ from tesserix_adk.adapters.transport import (
 )
 
 __all__ = [
+    "AUDIT_SCHEMA_VERSION",
     "BACKENDS",
     "CEILING_SCHEMA_VERSION",
     "COUNTERS",
     "DEFAULT_APPROVAL_SUBJECT",
+    "DEFAULT_AUDIT_SUBJECT",
+    "DEFAULT_AUDIT_TABLES",
     "DEFAULT_CEILING_TABLES",
     "DEFAULT_COLLECTION",
     "DEFAULT_GRANT_TABLES",
@@ -118,6 +132,7 @@ __all__ = [
     "DEFAULT_STATE_NAMESPACE",
     "DEFAULT_TABLE",
     "DISTANCE_OPERATORS",
+    "EXPECTED_AUDIT_SCHEMA",
     "EXPECTED_CEILING_SCHEMA",
     "EXPECTED_GRANT_SCHEMA",
     "EXPECTED_SCHEMA",
@@ -127,6 +142,7 @@ __all__ = [
     "SCHEMA_VERSION",
     "SSE_HEADERS",
     "ApprovalInbox",
+    "AuditTables",
     "CeilingTables",
     "CoalescingLedger",
     "ConsoleApprovals",
@@ -145,12 +161,16 @@ __all__ = [
     "HttpPoster",
     "InMemoryLedger",
     "InspectableRedis",
+    "JetStreamAudit",
+    "JetStreamPublisher",
     "MemoryPage",
     "MemoryStoreSettings",
     "MessagePublisher",
     "NatsApprovals",
     "PayloadElided",
     "PgvectorMemoryStore",
+    "PostgresAuditSettings",
+    "PostgresAuditSink",
     "PostgresCeilingLedger",
     "PostgresCeilingSettings",
     "PostgresGrantSettings",

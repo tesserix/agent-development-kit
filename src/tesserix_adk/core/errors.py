@@ -20,6 +20,7 @@ __all__ = [
     "ApprovalDeniedError",
     "ApprovalExpiredError",
     "ApprovalTokenError",
+    "AuditUnavailableError",
     "AuthenticationError",
     "AutonomyRefusedError",
     "BudgetExceededError",
@@ -1034,6 +1035,33 @@ class BudgetUnavailableError(AdkError):
     becomes an unbounded bill. Permitting degraded operation is an explicit configuration
     choice and is recorded on the run.
     """
+
+
+class AuditUnavailableError(AdkError):
+    """Raised when a decision about an autonomous action could not be recorded.
+
+    The runtime fails closed on it: an action taken with no durable record that it was
+    permitted is exactly the action nobody can defend afterwards, and an audit store that
+    is down is the moment somebody would most like it to have been optional.
+
+    Args:
+        tool: The call that did not go out.
+        decision: What was being recorded when the store could not be reached.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        tool: str = "",
+        decision: str = "",
+        run_id: str | None = None,
+        tenant: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        super().__init__(message, run_id=run_id, tenant=tenant, details=details)
+        self.tool = tool
+        self.decision = decision
 
 
 class EstimateUnavailableError(AdkError):

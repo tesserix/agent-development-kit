@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from tesserix_adk.core.audit import AuditDecision
 from tesserix_adk.core.autonomy import (
     ActionRequest,
     AutonomyDecision,
@@ -26,8 +27,14 @@ if TYPE_CHECKING:
     from tesserix_adk.core.autonomy import AutonomyGrant, AutonomyLadder, Revocation
     from tesserix_adk.core.ceiling import CeilingLedger
     from tesserix_adk.core.protocols import Clock
+    from tesserix_adk.runtime.audit import AuditTrail
 
 __all__ = ["AutonomyGate", "InMemoryReports", "ReportLog", "RevocationBroadcast", "RevocationWatch"]
+
+_AUDITED = {
+    AutonomyOutcome.ESCALATE: AuditDecision.ESCALATED,
+    AutonomyOutcome.REFUSE: AuditDecision.REFUSED,
+}
 
 
 @runtime_checkable
@@ -141,6 +148,9 @@ class AutonomyGate:
             human just approved turns out to have been withdrawn.
         commitments: Where headroom is taken and settled. Absent, the ladder's read of the
             ceiling is the only check, which two concurrent processes can both pass.
+        audit: Where decisions are written down. Absent, nothing is recorded and the gate
+            behaves as it always did — a deployment that wants unattended action to be
+            defensible afterwards wires one.
     """
 
     def __init__(
@@ -151,11 +161,13 @@ class AutonomyGate:
         revocations: RevocationWatch | None = None,
         revoked_runs: InFlightPolicy = InFlightPolicy.CANCEL,
         commitments: CeilingLedger | None = None,
+        audit: AuditTrail | None = None,
     ) -> None:
         self._ladder = ladder
         self._reports = reports
         self._revocations = revocations
         self._commitments = commitments
+        self._audit = audit
         self.revoked_runs = revoked_runs
 
     async def decide(
@@ -167,11 +179,22 @@ class AutonomyGate:
         run_id: str,
         user: str | None = None,
         key: str | None = None,
+        agent: str = "",
+        agent_version: str = "",
     ) -> AutonomyDecision:
         """What may happen about this call, and record the report acting on it owes.
 
         `key` identifies the call rather than the attempt, so a retry of a call that may
         already have gone out asks about the same action instead of taking headroom twice.
+
+        An escalation or a refusal is written to the audit trail here, because this is
+        where it was decided. An action the ladder permits is not: only the loop knows
+        whether every other gate cleared it too, and a record of an action that never went
+        out is as misleading as no record of one that did.
+
+        Raises:
+            AuditUnavailableError: If a trail is wired and a refusal or escalation could
+                not be recorded.
         """
         action_class = self._ladder.classify(tool)
         decided = await self._ladder.decide(
@@ -189,7 +212,62 @@ class AutonomyGate:
             await self._reports.owed(
                 tenant=tenant, action_class=decided.action_class, run_id=run_id
             )
+        if decided.outcome is not AutonomyOutcome.ACT:
+            await self.record(
+                decided,
+                _AUDITED[decided.outcome],
+                run_id=run_id,
+                tenant=tenant,
+                tool=tool,
+                arguments=arguments,
+                key=key,
+                user=user,
+                agent=agent,
+                agent_version=agent_version,
+            )
         return decided
+
+    async def record(
+        self,
+        decided: AutonomyDecision | None,
+        decision: AuditDecision,
+        *,
+        run_id: str,
+        tenant: str,
+        tool: str,
+        arguments: Mapping[str, Any],
+        key: str | None = None,
+        user: str | None = None,
+        agent: str = "",
+        agent_version: str = "",
+        approver: str | None = None,
+        reason: str = "",
+    ) -> None:
+        """Write one decision to the audit trail, or do nothing where none is wired.
+
+        The loop calls this for the two decisions it owns rather than the ladder: a call
+        cleared to go out, and a grant withdrawn under a run that was waiting on a human.
+
+        Raises:
+            AuditUnavailableError: If the trail could not take the record.
+        """
+        if self._audit is None:
+            return
+        await self._audit.record(
+            decided,
+            decision,
+            run_id=run_id,
+            tenant=tenant,
+            tool=tool,
+            arguments=arguments,
+            key=key,
+            user=user,
+            agent=agent,
+            agent_version=agent_version,
+            approver=approver,
+            amount=self._ladder.amount_in(tool, arguments),
+            reason=reason,
+        )
 
     async def _held(
         self,

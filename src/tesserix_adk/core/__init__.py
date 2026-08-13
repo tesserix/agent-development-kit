@@ -1,6 +1,13 @@
 """Frozen primitives, protocols and error types. The vocabulary every other layer speaks."""
 
 from tesserix_adk.core.agent import Agent, ToolFailurePolicy
+from tesserix_adk.core.audit import (
+    AuditDecision,
+    AuditEvent,
+    AuditSink,
+    digest_of_arguments,
+    pseudonym,
+)
 from tesserix_adk.core.autonomy import (
     RESERVED_ACTION_CLASS,
     ActionClass,
@@ -106,6 +113,7 @@ from tesserix_adk.core.errors import (
     ApprovalDeniedError,
     ApprovalExpiredError,
     ApprovalTokenError,
+    AuditUnavailableError,
     AuthenticationError,
     AutonomyRefusedError,
     BudgetExceededError,
@@ -375,6 +383,10 @@ __all__ = [
     "ApprovalToken",
     "ApprovalTokenError",
     "ApprovalTransport",
+    "AuditDecision",
+    "AuditEvent",
+    "AuditSink",
+    "AuditUnavailableError",
     "AuthenticationError",
     "AutonomyDecision",
     "AutonomyGrant",
@@ -616,6 +628,7 @@ __all__ = [
     "deduplicate",
     "deprecate",
     "deprecations",
+    "digest_of_arguments",
     "digest_of_token",
     "exact",
     "fallback_eligible",
@@ -627,6 +640,7 @@ __all__ = [
     "mint_token",
     "most_restrictive",
     "parsed_from_strings",
+    "pseudonym",
     "require_extra",
     "resolve_config",
     "resolve_hooks",

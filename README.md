@@ -123,6 +123,7 @@ code lands here as the kit is built.
 | Work queues — leases, reaper, capped attempts, dead letter, per-tenant fairness | [`docs/work-queue.md`](docs/work-queue.md) |
 | State and queue adapters — Redis and PostgreSQL backings, `SKIP LOCKED` claims, one transaction for state and work | [`docs/state-adapters.md`](docs/state-adapters.md) |
 | Autonomy — grants with ceilings and expiry, fail-closed levels, reports enforced, instant revocation, nobody grants themselves | [`docs/autonomy.md`](docs/autonomy.md) |
+| Audit — one record per autonomous decision, refusals as visible as executions, digests not payloads, erasure that keeps the decision | [`docs/audit.md`](docs/audit.md) |
 | Delegation — depth, fan-out and run ceilings, scope narrowing, escalation refused, expiry, and the guards a sub-run inherits | [`docs/delegation.md`](docs/delegation.md) |
 | Dispatch — declared dependencies, derived schedule, cycles refused at construction, contained failure | [`docs/dispatch.md`](docs/dispatch.md) |
 | Guardrails — declared order, redaction that carries, failing closed on a guard that cannot answer | [`docs/guardrails.md`](docs/guardrails.md) |

@@ -7,6 +7,7 @@ from tesserix_adk.runtime.approvals import (
     TransportGate,
     self_granted,
 )
+from tesserix_adk.runtime.audit import AuditTrail, MemoryAuditSink
 from tesserix_adk.runtime.autonomy import (
     AutonomyGate,
     InMemoryReports,
@@ -122,6 +123,7 @@ __all__ = [
     "ApprovalLedger",
     "ApprovalRequired",
     "Assumptions",
+    "AuditTrail",
     "AutonomyGate",
     "Backpressure",
     "Calibration",
@@ -141,6 +143,7 @@ __all__ = [
     "InMemoryReports",
     "IterationStarted",
     "LoopMonitor",
+    "MemoryAuditSink",
     "MemoryCheckpointStore",
     "MemoryClaimCheckStore",
     "MemoryIdempotencyStore",
