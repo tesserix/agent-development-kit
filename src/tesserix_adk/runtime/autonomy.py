@@ -17,12 +17,14 @@ from tesserix_adk.core.autonomy import (
     AutonomyOutcome,
     InFlightPolicy,
 )
+from tesserix_adk.core.errors import CeilingExceededError
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
     from typing import Any
 
     from tesserix_adk.core.autonomy import AutonomyGrant, AutonomyLadder, Revocation
+    from tesserix_adk.core.ceiling import CeilingLedger
     from tesserix_adk.core.protocols import Clock
 
 __all__ = ["AutonomyGate", "InMemoryReports", "ReportLog", "RevocationBroadcast", "RevocationWatch"]
@@ -137,6 +139,8 @@ class AutonomyGate:
             is the only check, which is correct but no faster than the next action.
         revoked_runs: What a run already under way does when the grant behind the call a
             human just approved turns out to have been withdrawn.
+        commitments: Where headroom is taken and settled. Absent, the ladder's read of the
+            ceiling is the only check, which two concurrent processes can both pass.
     """
 
     def __init__(
@@ -146,10 +150,12 @@ class AutonomyGate:
         reports: ReportLog | None = None,
         revocations: RevocationWatch | None = None,
         revoked_runs: InFlightPolicy = InFlightPolicy.CANCEL,
+        commitments: CeilingLedger | None = None,
     ) -> None:
         self._ladder = ladder
         self._reports = reports
         self._revocations = revocations
+        self._commitments = commitments
         self.revoked_runs = revoked_runs
 
     async def decide(
@@ -160,8 +166,13 @@ class AutonomyGate:
         arguments: Mapping[str, Any],
         run_id: str,
         user: str | None = None,
+        key: str | None = None,
     ) -> AutonomyDecision:
-        """What may happen about this call, and record the report acting on it owes."""
+        """What may happen about this call, and record the report acting on it owes.
+
+        `key` identifies the call rather than the attempt, so a retry of a call that may
+        already have gone out asks about the same action instead of taking headroom twice.
+        """
         action_class = self._ladder.classify(tool)
         decided = await self._ladder.decide(
             ActionRequest(
@@ -173,11 +184,56 @@ class AutonomyGate:
             )
         )
         decided = self._still_granted(decided)
+        decided = await self._held(decided, tool=tool, tenant=tenant, arguments=arguments, key=key)
         if decided.unattended and decided.reports and self._reports is not None:
             await self._reports.owed(
                 tenant=tenant, action_class=decided.action_class, run_id=run_id
             )
         return decided
+
+    async def _held(
+        self,
+        decided: AutonomyDecision,
+        *,
+        tool: str,
+        tenant: str,
+        arguments: Mapping[str, Any],
+        key: str | None,
+    ) -> AutonomyDecision:
+        """Take the headroom this call would use, before it is anybody's to use twice.
+
+        Headroom is taken for a pending escalation too: the money a human is being asked
+        about is not available to a parallel action while they are deciding. Where the
+        ledger refuses, the ladder's answer was made against a window somebody else has
+        since filled, and the call goes to a human rather than out.
+        """
+        amount = self._ladder.amount_in(tool, arguments)
+        if self._commitments is None or key is None or decided.ceiling is None or amount is None:
+            return decided
+        if decided.outcome is AutonomyOutcome.REFUSE:
+            return decided
+        try:
+            await self._commitments.reserve(
+                tenant=tenant,
+                action_class=decided.action_class,
+                ceiling=decided.ceiling,
+                amount=amount,
+                idempotency_key=key,
+            )
+        except CeilingExceededError as refused:
+            return decided.model_copy(
+                update={"outcome": AutonomyOutcome.ESCALATE, "reason": str(refused)}
+            )
+        return decided
+
+    async def settle(self, key: str, *, happened: bool) -> None:
+        """Commit the headroom a call used, or give it back where the call did not happen."""
+        if self._commitments is None:
+            return
+        if happened:
+            await self._commitments.commit(key)
+            return
+        await self._commitments.release(key)
 
     def _still_granted(self, decided: AutonomyDecision) -> AutonomyDecision:
         """Refuse an unattended action whose authority is withdrawn, or unverifiable."""

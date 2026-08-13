@@ -360,3 +360,14 @@ loop already carries; the gate reads one field out of them and never interprets 
 """
 owner = "@sam123ben"
 review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.core.autonomy.AutonomyLadder"
+kind = "json"
+reason = """
+`amount_in` reads one field out of the arguments a tool's schema already validated. The
+ladder never interprets the rest, and typing them as a record would make every caller
+convert JSON it already holds.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13

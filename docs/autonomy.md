@@ -147,6 +147,49 @@ last heard — a process cut off from the bus cannot know a grant is still live.
 manufactures authority in the other direction: a stale watch turns `act` into `refuse` and
 leaves an escalation exactly as it was.
 
+## Ceilings that hold
+
+A ceiling is only a ceiling if it cannot be walked around, and it leaks in three standard
+ways: two actions each read the same headroom and both fit, one action arrives as ten small
+ones, and a timed-out action is retried onto fresh headroom on top of spend that already
+happened. `CeilingLedger` answers all three with the same thing — headroom is *taken* before
+the action and settled after it, never merely read.
+
+```python
+ledger = InMemoryCeilingLedger(clock=clock)
+gate = AutonomyGate(ladder, commitments=ledger)
+```
+
+The ledger passed to `AutonomyLadder(commitments=...)` is read from; the one passed to
+`AutonomyGate(commitments=...)` is written to. They are normally the same object, and the
+split is the same one as `GrantReader` / `GrantIssuer`: what a run can reach is the read.
+
+| Leak | What closes it |
+|---|---|
+| Two actions, one headroom | The reserve is atomic. In-process that is a lock; in PostgreSQL it is one `INSERT ... SELECT` whose `WHERE` is the ceiling test. |
+| One action split into ten | Every part reserves against the same tenant, class, currency and window, so the tenth meets what the first nine took. |
+| A retry onto fresh headroom | The reservation is keyed by the call (`run_id:call_id`), not the attempt. The same key returns the reservation it already took. |
+
+What is *held* counts against the ceiling exactly as what is committed does, which is why a
+pending escalation is not undercut by a parallel action spending the money a human is being
+asked about. A hold nobody settles expires after `hold_seconds` (300 by default) and is
+reaped, so a process that dies mid-call does not hold headroom until somebody notices.
+
+Settlement follows what went out, not what was asked for. A call a human declined, or one
+the batch stopped before it was made, gives its headroom back. **A call that errored keeps
+it**: a tool that raised may still have moved the money, and a ceiling that assumes
+otherwise is one a flaky tool walks through.
+
+Amounts are `Decimal` end to end and arrive through `exact`, which refuses a float rather
+than rounding it. `0.1 + 0.2` is not `0.3`, and a limit built on that arithmetic is off by
+whatever the hardware felt like. Credits are recorded and never netted off: money coming
+back is a fact worth auditing, but subtracting it would hand an agent fresh headroom nobody
+granted.
+
+`PostgresCeilingLedger` is the cross-process story — `EXPECTED_CEILING_SCHEMA` is the shape
+it was written for, `numeric` rather than `double precision`, with `idempotency_key` unique
+so a retry meets an index rather than a lookup somebody could race.
+
 ## Grants in PostgreSQL
 
 `PostgresGrantStore` is append-only. An id already in use is refused, never updated: a
@@ -168,9 +211,6 @@ store = await PostgresGrantStore.open(pool, clock=clock, settings=settings)
 
 ## Not here
 
-- **Ceiling arithmetic against splitting and retries.** `CommitmentLedger` is the seam; how
-  a deployment counts what is committed, and how it resists an agent splitting one action
-  into ten, is its own story.
 - **The audit record shape.** The ladder names the grant on every decision, including
   escalations — which grant was not enough is the question an operator asks — but what that
   record looks like on disk belongs elsewhere.

@@ -1,6 +1,14 @@
 """Concrete backing stores and transports."""
 
 from tesserix_adk.adapters.cache import DEFAULT_NAMESPACE, RedisCacheStore
+from tesserix_adk.adapters.ceiling import (
+    CEILING_SCHEMA_VERSION,
+    DEFAULT_CEILING_TABLES,
+    EXPECTED_CEILING_SCHEMA,
+    CeilingTables,
+    PostgresCeilingLedger,
+    PostgresCeilingSettings,
+)
 from tesserix_adk.adapters.grants import (
     DEFAULT_GRANT_TABLES,
     EXPECTED_GRANT_SCHEMA,
@@ -87,7 +95,9 @@ from tesserix_adk.adapters.transport import (
 
 __all__ = [
     "BACKENDS",
+    "CEILING_SCHEMA_VERSION",
     "COUNTERS",
+    "DEFAULT_CEILING_TABLES",
     "DEFAULT_COLLECTION",
     "DEFAULT_GRANT_TABLES",
     "DEFAULT_HEARTBEAT_SECONDS",
@@ -99,6 +109,7 @@ __all__ = [
     "DEFAULT_STATE_NAMESPACE",
     "DEFAULT_TABLE",
     "DISTANCE_OPERATORS",
+    "EXPECTED_CEILING_SCHEMA",
     "EXPECTED_GRANT_SCHEMA",
     "EXPECTED_SCHEMA",
     "EXTRACTION_INSTRUCTION",
@@ -107,6 +118,7 @@ __all__ = [
     "SCHEMA_VERSION",
     "SSE_HEADERS",
     "ApprovalInbox",
+    "CeilingTables",
     "CoalescingLedger",
     "EntityExtractor",
     "ExtractedEdge",
@@ -126,6 +138,8 @@ __all__ = [
     "MemoryStoreSettings",
     "PayloadElided",
     "PgvectorMemoryStore",
+    "PostgresCeilingLedger",
+    "PostgresCeilingSettings",
     "PostgresGrantSettings",
     "PostgresGrantStore",
     "PostgresIdempotencyStore",

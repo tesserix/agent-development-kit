@@ -24,6 +24,7 @@ __all__ = [
     "BudgetUnavailableError",
     "CancelledError",
     "CapabilityError",
+    "CeilingExceededError",
     "CheckpointFormatError",
     "CheckpointTooLargeError",
     "ClaimUnavailableError",
@@ -48,6 +49,7 @@ __all__ = [
     "HookRefusedError",
     "HookRegistrationError",
     "IndeterminateToolCallError",
+    "InexactAmountError",
     "InvalidRequestError",
     "LeaseLostError",
     "LoopLimitError",
@@ -1573,6 +1575,40 @@ class ScopeEscalationError(AdkError):
         super().__init__(
             *args, details={"requested": ", ".join(requested), "path": " -> ".join(path)}
         )
+
+
+class CeilingExceededError(AdkError):
+    """Raised when an action would take more headroom than the ceiling has left.
+
+    Args:
+        action_class: Which class ran out.
+        headroom: What was left, as an exact string.
+        requested: What was asked for, as an exact string.
+    """
+
+    def __init__(
+        self, *args: object, action_class: str = "", headroom: str = "", requested: str = ""
+    ) -> None:
+        self.action_class = action_class
+        super().__init__(
+            *args,
+            details={"action_class": action_class, "headroom": headroom, "requested": requested},
+        )
+
+
+class InexactAmountError(AdkError):
+    """Raised when an amount cannot be counted against a ceiling without drifting.
+
+    A float, a phrase, or a negative number. Each is refused at the boundary rather than
+    coerced, because a ceiling is only enforceable in arithmetic that is exact.
+
+    Args:
+        amount: What arrived, as it arrived.
+    """
+
+    def __init__(self, *args: object, amount: str = "") -> None:
+        self.amount = amount
+        super().__init__(*args, details={"amount": amount})
 
 
 class AutonomyRefusedError(AdkError):

@@ -295,6 +295,8 @@ class _Outcome:
     source: str = "tool_error"
     failure: _Terminal | None = None
     result: ToolResult | None = None
+    dispatched: bool = True
+    """Whether the call went out. A call that did not is what headroom is given back for."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1899,6 +1901,7 @@ class AgentRunner:
             )
 
         outcomes = await self._fanned_out(run, agent, calls, bounds, refused)
+        await self._settled(run, calls, outcomes)
         recorded = [event for call in calls for event in outcomes[call.id].events]
         run = run.model_copy(update={"events": [*run.events, *recorded]})
         for call in calls:
@@ -1924,6 +1927,23 @@ class AgentRunner:
             )
             run = _carrying(run, messages)
         return run
+
+    async def _settled(
+        self, run: Run[Any], calls: Sequence[ToolCall], outcomes: Mapping[str, _Outcome]
+    ) -> None:
+        """Commit the headroom the calls that went out used, and give back the rest.
+
+        A call that errored keeps its headroom: a tool that raised may still have moved the
+        money, and a ceiling that assumes otherwise is one a flaky tool walks through. Only
+        a call that provably never went out gives it back. A call the ledger never held
+        settles to nothing, and a retry of one that did settles the same reservation.
+        """
+        if self._autonomy is None:
+            return
+        for call in calls:
+            await self._autonomy.settle(
+                _commitment_key(run, call), happened=outcomes[call.id].dispatched
+            )
 
     async def _fanned_out(
         self,
@@ -2025,6 +2045,7 @@ class AgentRunner:
             events=(self._event(RunEventKind.TOOL_REFUSED, name=call.name, detail=detail),),
             text=detail,
             source="tool_refusal",
+            dispatched=False,
         )
 
     def _never_dispatched(self, call: ToolCall, why: str) -> _Outcome:
@@ -2036,6 +2057,7 @@ class AgentRunner:
         return _Outcome(
             events=(self._event(RunEventKind.TOOL_ERROR, name=call.name, detail=detail),),
             text=f"error: {detail}",
+            dispatched=False,
         )
 
     def _stopped_short(self, agent: Agent[Any], ticket: _Ticket, bounds: _Bounds) -> _Outcome:
@@ -2292,6 +2314,7 @@ class AgentRunner:
             arguments=call.arguments,
             run_id=run.id,
             user=run.user,
+            key=_commitment_key(run, call),
         )
         if decided.outcome is AutonomyOutcome.REFUSE:
             run = run.record_event(
@@ -3145,6 +3168,11 @@ def _exhausted(spent: Sequence[tuple[str, str]]) -> FallbackExhaustedError:
 def _named(error: AdkError) -> str:
     """A terminal detail that says which cap or fault ended the run, not just that one did."""
     return f"{type(error).__name__}: {error}"
+
+
+def _commitment_key(run: Run[Any], call: ToolCall) -> str:
+    """What a reservation is taken under: the call, not the attempt at it."""
+    return f"{run.id}:{call.id}"
 
 
 def _same_call_count(calls: Iterable[ToolCall], call: ToolCall) -> int:

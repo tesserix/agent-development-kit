@@ -165,6 +165,31 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `CeilingLedger`, `InMemoryCeilingLedger` and `PostgresCeilingLedger`, closing the three
+  ways a ceiling leaks: two actions each reading the same headroom and both fitting, one
+  action arriving as ten small ones, and a timed-out action being retried onto fresh
+  headroom. All three are answered by taking headroom rather than reading it — a `Hold` is
+  reserved before the action and committed or released after it, keyed by tenant, action
+  class, currency and window. What is held counts against the ceiling exactly as what is
+  committed does, so a pending escalation is not undercut by a parallel action spending the
+  money a human is being asked about.
+
+  The reservation is keyed by the call (`run_id:call_id`) rather than the attempt, so a
+  retry of a call that may already have gone out asks about the same action instead of
+  taking headroom twice. `AutonomyGate(commitments=...)` takes the headroom at decision
+  time and the loop settles it after dispatch: a call a human declined or one the batch
+  never made gives it back, while a call that errored keeps it, because a tool that raised
+  may still have moved the money.
+
+  Arithmetic is `Decimal` end to end and amounts arrive through `exact`, which refuses a
+  float rather than rounding it. Credits are recorded and never netted off — money coming
+  back is auditable, but subtracting it would hand an agent fresh headroom nobody granted.
+  `PostgresCeilingLedger` makes the reserve one `INSERT ... SELECT` whose `WHERE` is the
+  ceiling test, so nothing decides between two reads; `EXPECTED_CEILING_SCHEMA` is the
+  shape it was written for. `AutonomyDecision` now carries the `ceiling` that applied.
+  **Stability:** additive. A gate or ladder given no ledger behaves exactly as before.
+  Documented in `docs/autonomy.md`, exercised by `examples/ceiling.py`.
+
 - `Revocation`, `RevocationWatch` and `InFlightPolicy`, taking autonomy back from work
   already under way. Grants are read from the store on every attempted action, so a
   withdrawal lands on the very next one; a withdrawal names one grant, or a tenant, or a

@@ -124,7 +124,7 @@ class Ceiling(AdkModel):
 
     Args:
         amount: The most that may be committed in the window. Decimal, because a ceiling
-            held as a float is a ceiling that is occasionally a hundredth wrong.
+            held as a float is one that is occasionally a hundredth wrong.
         currency: ISO 4217. A grant in one currency does not cover an action in another.
         window_seconds: The rolling window the amount applies over.
     """
@@ -225,6 +225,8 @@ class AutonomyDecision(AdkModel):
         grant_id: Which grant answered, where one did. Recorded on escalations too: the
             question of which grant was not enough is the one an operator asks.
         headroom: What was left under the ceiling, where there was a ceiling.
+        ceiling: The ceiling that applied, where one did. Carried so that a runtime can
+            take headroom against the same window the decision was made under.
         reports: Whether acting obliges a report before the next action of this class.
     """
 
@@ -234,6 +236,7 @@ class AutonomyDecision(AdkModel):
     reason: str = Field(min_length=1)
     grant_id: str | None = None
     headroom: Decimal | None = None
+    ceiling: Ceiling | None = None
     reports: bool = False
 
     @property
@@ -399,6 +402,11 @@ class AutonomyLadder:
         known = self._registry.of(tool)
         return known.name if known else None
 
+    def amount_in(self, tool: str, arguments: Mapping[str, Any]) -> Decimal | None:
+        """What this call would commit, read from the field its class names."""
+        known = self._registry.of(tool)
+        return _amount_in(arguments, known.amount_field) if known else None
+
     async def decide(self, request: ActionRequest) -> AutonomyDecision:
         """What may happen about `request`: act, escalate to a human, or refuse."""
         known = self._registry.of(request.tool)
@@ -537,6 +545,7 @@ class AutonomyLadder:
             reason=reason,
             grant_id=held.id,
             headroom=headroom,
+            ceiling=held.ceiling,
             reports=reports,
         )
 
@@ -556,6 +565,7 @@ class AutonomyLadder:
             reason=reason,
             grant_id=held.id if held else None,
             headroom=headroom,
+            ceiling=held.ceiling if held else None,
         )
 
 
