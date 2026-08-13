@@ -186,7 +186,7 @@ jobs:
       - run: |
           mkdir -p attestations
           for artefact in dist/* sbom.cdx.json; do
-            gh attestation download "$artefact" --repo "$GITHUB_REPOSITORY" --format jsonl
+            gh attestation download "$artefact" --repo "$GITHUB_REPOSITORY"
           done
           mv ./*.jsonl attestations/
         env:
