@@ -440,3 +440,14 @@ See docs/typing.md.
 """
 owner = "@sam123ben"
 review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.runtime.planner.ToolContract"
+kind = "json"
+reason = """
+A plan step's arguments are the JSON mapping a model wrote, so they arrive as
+`Mapping[str, Any]`. The contract validates them strictly into the declared model before
+the executor reads a field, so the `Any` never survives the call.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-13

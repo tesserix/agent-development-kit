@@ -165,6 +165,21 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Added
 
+- `AgentPlanner`, `PlanExecutor`, `Plan`, `PlanStep`, `ToolContract`, `Planner`, `PlanStore`,
+  `InMemoryPlanStore`, `PlanRecord`, `StepResult`, `ExecutedPlan` and `PlanValidationError`,
+  so the agent that reasons and the code that acts are separate. A planner produces a typed
+  plan and is refused at construction if it declares any tool or answers as anything but a
+  `Plan`; the executor validates the whole plan against the registry, the agent's allowlist,
+  the delegated scope, each tool's declared argument model and the dependency graph before
+  the first step runs. Nothing is coerced, trimmed or repaired: an undeclared argument, a
+  wrong type, an over-long plan and a dependency cycle are all refusals carrying the step,
+  the tool and the raw planner payload. Every step is cleared — by a matching autonomy grant
+  or by a person — before any step runs, so a denial leaves nothing half-done. Replanning is
+  bounded by `max_replans`, and a plan written to a `PlanStore` is revalidated on `resume()`
+  against the contracts as they are now. Four `RunEventKind` values are added: `PLANNED`,
+  `PLAN_REFUSED`, `REPLANNED`, `STEP_EXECUTED`. **Stability:** additive — nothing that
+  existed changes shape. Documented in `docs/planning.md`, exercised by `examples/planner.py`.
+
 - `HandoffDesk`, `Receiver`, `HandoffContract`, `Handoff`, `HandoffResult`, `HandoffQueue`,
   `HandoffContractError` and `narrowed_to`, so a conversation changes hands under a declared
   contract rather than by forwarding the transcript. Each receiver declares the model it

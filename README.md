@@ -125,6 +125,7 @@ code lands here as the kit is built.
 | Autonomy — grants with ceilings and expiry, fail-closed levels, reports enforced, instant revocation, nobody grants themselves | [`docs/autonomy.md`](docs/autonomy.md) |
 | Audit — one record per autonomous decision, refusals as visible as executions, digests not payloads, erasure that keeps the decision | [`docs/audit.md`](docs/audit.md) |
 | Delegation — depth, fan-out and run ceilings, scope narrowing, escalation refused, expiry, and the guards a sub-run inherits | [`docs/delegation.md`](docs/delegation.md) |
+| Planning — typed plans, a planner that cannot dispatch, validation before the first step, bounded replanning, resume | [`docs/planning.md`](docs/planning.md) |
 | Dispatch — declared dependencies, derived schedule, cycles refused at construction, contained failure | [`docs/dispatch.md`](docs/dispatch.md) |
 | Guardrails — declared order, redaction that carries, failing closed on a guard that cannot answer | [`docs/guardrails.md`](docs/guardrails.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |

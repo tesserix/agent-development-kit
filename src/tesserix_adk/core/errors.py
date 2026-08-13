@@ -69,6 +69,7 @@ __all__ = [
     "ModelResponseError",
     "NoEligibleModelError",
     "PartialErasureError",
+    "PlanValidationError",
     "PoolExhaustedError",
     "ProtocolConformanceError",
     "ProviderError",
@@ -1693,6 +1694,60 @@ class HandoffContractError(AdkError):
                 "reason": reason,
                 "violations": ", ".join(violations),
                 "path": " -> ".join(path),
+            },
+        )
+
+
+class PlanValidationError(AdkError):
+    """Raised when a plan is not something the runtime could execute as written.
+
+    Every check that produces this happens before the first step runs, because a plan
+    refused halfway is a plan that half happened. Nothing here repairs what it refuses: an
+    executor that dropped an undeclared argument or trimmed a plan to fit would be deciding
+    what the planner meant, which is exactly the decision the planner/executor split exists
+    to keep out of the runtime.
+
+    Args:
+        step: Which step, where one step is at fault.
+        tool: What that step wanted to call.
+        reason: Why it was refused. `"empty"` (no steps at all), `"too_long"`,
+            `"unknown_tool"`, `"not_allowed"` (outside the agent's allowlist or the
+            delegated scope), `"arguments"`, `"dependency"` (waits for a step nobody
+            planned), `"cycle"`, or `"replan"` (the planner kept producing invalid plans).
+        violations: What was wrong — the argument names, the stray dependencies, or the
+            steps in the loop.
+        payload: The arguments the planner wrote, as it wrote them, so the plan that
+            produced this can be read back in a log rather than reconstructed.
+        attempts: How many plans were refused, for `reason="replan"`.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        step: str = "",
+        tool: str = "",
+        reason: str = "arguments",
+        violations: tuple[str, ...] = (),
+        payload: Mapping[str, Any] | None = None,
+        attempts: int = 0,
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.step = step
+        self.tool = tool
+        self.reason = reason
+        self.violations = violations
+        self.payload = payload
+        self.attempts = attempts
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={
+                "step": step,
+                "tool": tool,
+                "reason": reason,
+                "violations": ", ".join(violations),
             },
         )
 

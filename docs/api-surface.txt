@@ -353,6 +353,7 @@ tesserix_adk.core.Owner :: class Owner(AdkModel)
 tesserix_adk.core.PartialErasureError :: class PartialErasureError(AdkError)
 tesserix_adk.core.PendingCall :: class PendingCall(AdkModel)
 tesserix_adk.core.PendingDecision :: class PendingDecision(AdkModel)
+tesserix_adk.core.PlanValidationError :: class PlanValidationError(AdkError)
 tesserix_adk.core.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.Provenance :: class Provenance(object)
@@ -620,6 +621,7 @@ tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, 
 tesserix_adk.core.errors.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.core.errors.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.errors.PartialErasureError :: class PartialErasureError(AdkError)
+tesserix_adk.core.errors.PlanValidationError :: class PlanValidationError(AdkError)
 tesserix_adk.core.errors.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.errors.ProviderError :: class ProviderError(AdkError)
@@ -1062,6 +1064,7 @@ tesserix_adk.observability.redaction.Redaction :: class Redaction(AdkModel)
 tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
 tesserix_adk.observability.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
+tesserix_adk.runtime.AgentPlanner :: class AgentPlanner(object) {plan(self, task: 'str', *, feedback: 'str' = '') -> 'Plan'}
 tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; resume(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; resume_with_decision(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', token: 'str', granted: 'bool', decided_by: 'str', reason: 'str' = '', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None, allow_model_drift: 'bool' = False) -> 'Run[OutputT]'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'RunStream[OutputT]'; stream_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'tuple[ProgressEvent, ...]'}
 tesserix_adk.runtime.Ambient :: class Ambient(object) {raise_if_cancelled(self) -> 'None'}
 tesserix_adk.runtime.AnswerDelta :: class AnswerDelta(ProgressEvent)
@@ -1086,6 +1089,7 @@ tesserix_adk.runtime.Delegation :: class Delegation(object) {to(self, agent: 'st
 tesserix_adk.runtime.DelegationLimits :: class DelegationLimits(object) {narrowed(self, other: 'DelegationLimits') -> 'DelegationLimits'}
 tesserix_adk.runtime.DelegationResult :: class DelegationResult(Generic)
 tesserix_adk.runtime.DelegationScope :: class DelegationScope(object) {holds(self, tool: 'str') -> 'bool'}
+tesserix_adk.runtime.ExecutedPlan :: class ExecutedPlan(object)
 tesserix_adk.runtime.GuardrailDecision :: class GuardrailDecision(ProgressEvent)
 tesserix_adk.runtime.Handoff :: class Handoff(object)
 tesserix_adk.runtime.HandoffContract :: class HandoffContract(object) {validated(self, state: 'Mapping[str, Any] | BaseModel') -> 'BaseModel'}
@@ -1093,6 +1097,7 @@ tesserix_adk.runtime.HandoffDesk :: class HandoffDesk(object) {hand_off(self, to
 tesserix_adk.runtime.HandoffQueue :: class HandoffQueue(Protocol) {receive(self, handoff: 'Handoff') -> 'None'}
 tesserix_adk.runtime.HandoffResult :: class HandoffResult(object)
 tesserix_adk.runtime.InMemoryHistory :: class InMemoryHistory(object) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'; record(self, run: 'Run[OutputT]') -> 'None'}
+tesserix_adk.runtime.InMemoryPlanStore :: class InMemoryPlanStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'PlanRecord | None'; put(self, record: 'PlanRecord') -> 'None'}
 tesserix_adk.runtime.InMemoryReports :: class InMemoryReports(object) {delivered(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'; outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.IterationStarted :: class IterationStarted(ProgressEvent)
 tesserix_adk.runtime.LoopMonitor :: class LoopMonitor(object) {watching(self, what: 'str', work: 'Callable[[], Awaitable[T]]') -> 'T'}
@@ -1108,6 +1113,12 @@ tesserix_adk.runtime.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.Observed :: class Observed(AdkModel)
 tesserix_adk.runtime.OutputContract :: class OutputContract(object) {parse(self, content: 'str') -> 'BaseModel'; repair_prompt(self, violation: 'SchemaViolationError') -> 'str'}
 tesserix_adk.runtime.PROMPT_LAYERS :: PROMPT_LAYERS: tuple
+tesserix_adk.runtime.Plan :: class Plan(AdkModel) {step(self, id: 'str') -> 'PlanStep | None'}
+tesserix_adk.runtime.PlanExecutor :: class PlanExecutor(object) {execute(self, plan: 'Plan') -> 'ExecutedPlan'; planned(self, planner: 'Planner', task: 'str') -> 'Plan'; resume(self) -> 'ExecutedPlan'; validate(self, plan: 'Plan') -> 'Plan'}
+tesserix_adk.runtime.PlanRecord :: class PlanRecord(AdkModel)
+tesserix_adk.runtime.PlanStep :: class PlanStep(AdkModel)
+tesserix_adk.runtime.PlanStore :: class PlanStore(Protocol) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'PlanRecord | None'; put(self, record: 'PlanRecord') -> 'None'}
+tesserix_adk.runtime.Planner :: class Planner(Protocol) {plan(self, task: 'str', *, feedback: 'str' = '') -> 'Plan'}
 tesserix_adk.runtime.Pressure :: class Pressure(object)
 tesserix_adk.runtime.Pricer :: class Pricer(Protocol)
 tesserix_adk.runtime.ProgressEvent :: class ProgressEvent(AdkModel)
@@ -1136,6 +1147,7 @@ tesserix_adk.runtime.Segment :: class Segment(AdkModel)
 tesserix_adk.runtime.SequenceCheck :: class SequenceCheck(object) {accept(self, event: 'ProgressEvent') -> 'bool'}
 tesserix_adk.runtime.Specialist :: class Specialist(object)
 tesserix_adk.runtime.Spread :: class Spread(AdkModel)
+tesserix_adk.runtime.StepResult :: class StepResult(AdkModel)
 tesserix_adk.runtime.StructuredDelta :: class StructuredDelta(ProgressEvent)
 tesserix_adk.runtime.Supervisor :: class Supervisor(object) {cancel(self, reason: 'str' = 'the supervisor was cancelled') -> 'None'; delegate(self, task: 'str', *, needs: 'Collection[str]', budget: 'BudgetLimits | None' = None, writes: 'str | None' = None, fatal: 'bool' = False, run_id: 'str | None' = None) -> 'DelegationResult[Any]'}
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
@@ -1145,6 +1157,7 @@ tesserix_adk.runtime.ToolCallFailed :: class ToolCallFailed(ProgressEvent)
 tesserix_adk.runtime.ToolCallFinished :: class ToolCallFinished(ProgressEvent)
 tesserix_adk.runtime.ToolCallIndeterminate :: class ToolCallIndeterminate(ProgressEvent)
 tesserix_adk.runtime.ToolCallStarted :: class ToolCallStarted(ProgressEvent)
+tesserix_adk.runtime.ToolContract :: class ToolContract(object) {validated(self, arguments: 'Mapping[str, Any]') -> 'BaseModel'}
 tesserix_adk.runtime.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.runtime.ToolResult :: class ToolResult(object) {rendered(self) -> 'str'}
 tesserix_adk.runtime.ToolResultBoundary :: class ToolResultBoundary(object) {checked(self, tool: 'ReturningTool', value: 'object', *, tenant: 'str' = '') -> 'ToolResult'}
@@ -1236,6 +1249,17 @@ tesserix_adk.runtime.loop.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.runtime.loop.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.narrowed_to :: def narrowed_to(agent: 'Agent[Any]', held: 'tuple[str, ...]') -> 'Agent[Any]'
 tesserix_adk.runtime.plan_resume :: def plan_resume(checkpoint: 'Checkpoint', idempotency: 'IdempotencyStore | None' = None) -> 'ResumePlan'
+tesserix_adk.runtime.planner.AgentPlanner :: class AgentPlanner(object) {plan(self, task: 'str', *, feedback: 'str' = '') -> 'Plan'}
+tesserix_adk.runtime.planner.ExecutedPlan :: class ExecutedPlan(object)
+tesserix_adk.runtime.planner.InMemoryPlanStore :: class InMemoryPlanStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'PlanRecord | None'; put(self, record: 'PlanRecord') -> 'None'}
+tesserix_adk.runtime.planner.Plan :: class Plan(AdkModel) {step(self, id: 'str') -> 'PlanStep | None'}
+tesserix_adk.runtime.planner.PlanExecutor :: class PlanExecutor(object) {execute(self, plan: 'Plan') -> 'ExecutedPlan'; planned(self, planner: 'Planner', task: 'str') -> 'Plan'; resume(self) -> 'ExecutedPlan'; validate(self, plan: 'Plan') -> 'Plan'}
+tesserix_adk.runtime.planner.PlanRecord :: class PlanRecord(AdkModel)
+tesserix_adk.runtime.planner.PlanStep :: class PlanStep(AdkModel)
+tesserix_adk.runtime.planner.PlanStore :: class PlanStore(Protocol) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'PlanRecord | None'; put(self, record: 'PlanRecord') -> 'None'}
+tesserix_adk.runtime.planner.Planner :: class Planner(Protocol) {plan(self, task: 'str', *, feedback: 'str' = '') -> 'Plan'}
+tesserix_adk.runtime.planner.StepResult :: class StepResult(AdkModel)
+tesserix_adk.runtime.planner.ToolContract :: class ToolContract(object) {validated(self, arguments: 'Mapping[str, Any]') -> 'BaseModel'}
 tesserix_adk.runtime.progress.AnswerDelta :: class AnswerDelta(ProgressEvent)
 tesserix_adk.runtime.progress.ApprovalRequired :: class ApprovalRequired(ProgressEvent)
 tesserix_adk.runtime.progress.Backpressure :: class Backpressure(object)
