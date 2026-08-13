@@ -159,6 +159,9 @@ def tenant_scope(
         'acme'
     """
     outer = _CURRENT.get()
+    if isinstance(what, str) and outer is not None and outer.tenant == what and outer.user == user:
+        yield outer  # already bound; a second identical context is an allocation nobody reads
+        return
     context = what if isinstance(what, TenantContext) else TenantContext(tenant=what)
     if user is not None:
         context = context.acting_as(user)

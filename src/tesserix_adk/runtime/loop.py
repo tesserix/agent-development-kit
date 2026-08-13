@@ -125,7 +125,7 @@ from tesserix_adk.core.autonomy import AutonomyOutcome, InFlightPolicy
 from tesserix_adk.core.provider import ModelRequest, ModelResponse
 from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
-from tesserix_adk.core.tenancy import TenantContext, tenant_scope
+from tesserix_adk.core.tenancy import tenant_scope
 from tesserix_adk.runtime.approvals import TIMEOUT_IDENTITY, ApprovalLedger, self_granted
 from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
@@ -717,7 +717,7 @@ class AgentRunner:
         and stores below read it from there rather than from an argument somebody had to
         remember to pass (`docs/tenancy.md`).
         """
-        with tenant_scope(TenantContext(tenant=tenant, user=user)):
+        with tenant_scope(tenant, user=user):
             return await self._driven(
                 agent,
                 user_input,
@@ -905,7 +905,7 @@ class AgentRunner:
             reason=self._why_decided(held, reason, expired=expired),
         )
         self._refuse_a_moved_model(agent, held, drifting=allow_model_drift)
-        with tenant_scope(TenantContext(tenant=tenant, user=user)):
+        with tenant_scope(tenant, user=user):
             return await self._resume(
                 agent,
                 run_id,
@@ -983,7 +983,7 @@ class AgentRunner:
                 whether it happened. Retrying it is the duplicate this exists to prevent.
             ResumeConflictError: If another worker is already carrying the run on.
         """
-        with tenant_scope(TenantContext(tenant=tenant, user=user)):
+        with tenant_scope(tenant, user=user):
             return await self._resume(
                 agent,
                 run_id,
