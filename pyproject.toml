@@ -69,13 +69,13 @@ dev = [
   "pip-audit>=2.7,<3",
 ]
 test = [
-  "pytest>=8.3,<9",
-  "pytest-asyncio>=0.24,<0.25",
-  "pytest-cov>=6,<7",
+  "pytest>=9.0.3,<10",
+  "pytest-asyncio>=1.4,<2",
+  "pytest-cov>=7,<8",
   "hypothesis>=6.112,<7",
   "pyyaml>=6.0.2,<7",
   "types-pyyaml>=6,<7",
-  "pytest-randomly>=3.15,<4",
+  "pytest-randomly>=4,<5",
   "packaging>=24,<27",
   # Test-only: proves an emitted schema accepts exactly what its Python type accepts.
   "jsonschema>=4.23,<5",
