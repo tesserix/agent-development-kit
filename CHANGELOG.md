@@ -8,6 +8,62 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.7.0
+
+### Added
+
+- **tesserix_adk.rag.citation**: `tesserix_adk.rag` now produces citations that resolve. `cite` turns a `RetrievalResult`
+into `Citation` values pinning the document, the version that was retrieved, the chunk and
+its character `Span`, along with the tenant, the score, the branches that found it and a
+`SourceLocator`. A chunk whose metadata carries no version or no span raises
+`ConfigurationError` rather than yielding a citation that would resolve against whatever
+the document says now.
+
+`CitedAnswer` is claims and citations rather than prose containing footnote-shaped strings:
+each `Claim` names the `citation_ids` it rests on, several citations may support one claim,
+and one may support several. `check_grounding` runs before an answer is returned and fails
+closed — `UncitedClaimError` for a claim resting on nothing, `UngroundedCitationError` for
+a citation this run did not retrieve or one whose version has moved, and
+`TenantCrossingError` for a citation into another tenant. Nothing is stripped to make an
+answer look sourced.
+
+`excerpt` resolves a citation back to the exact characters of the document version it was
+made from, and refuses a document that has since been updated. `CitationResolver` and
+`ResolvedCitation` cover a live corpus, where an erased chunk resolves to a tombstone.
+
+`answer.provenance()` and the new `MemoryRecord.citations` field carry the sources of a
+fact derived from retrieved content into memory, and `citation_attributes` gives span
+attributes — counts, document ids and versions, never document text.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.UncitedClaimError`
+- Added: `tesserix_adk.core.UngroundedCitationError`
+- Added: `tesserix_adk.core.errors.UncitedClaimError`
+- Added: `tesserix_adk.core.errors.UngroundedCitationError`
+- Added: `tesserix_adk.rag.Citation`
+- Added: `tesserix_adk.rag.CitationResolver`
+- Added: `tesserix_adk.rag.CitedAnswer`
+- Added: `tesserix_adk.rag.Claim`
+- Added: `tesserix_adk.rag.ResolvedCitation`
+- Added: `tesserix_adk.rag.SourceLocator`
+- Added: `tesserix_adk.rag.Span`
+- Added: `tesserix_adk.rag.check_grounding`
+- Added: `tesserix_adk.rag.citation.Citation`
+- Added: `tesserix_adk.rag.citation.CitationResolver`
+- Added: `tesserix_adk.rag.citation.CitedAnswer`
+- Added: `tesserix_adk.rag.citation.Claim`
+- Added: `tesserix_adk.rag.citation.ResolvedCitation`
+- Added: `tesserix_adk.rag.citation.SourceLocator`
+- Added: `tesserix_adk.rag.citation.Span`
+- Added: `tesserix_adk.rag.citation.check_grounding`
+- Added: `tesserix_adk.rag.citation.citation_attributes`
+- Added: `tesserix_adk.rag.citation.cite`
+- Added: `tesserix_adk.rag.citation.excerpt`
+- Added: `tesserix_adk.rag.citation_attributes`
+- Added: `tesserix_adk.rag.cite`
+- Added: `tesserix_adk.rag.excerpt`
+
 ## 0.6.0
 
 ### Added
