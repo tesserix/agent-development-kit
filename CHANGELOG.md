@@ -8,6 +8,12 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+### Fixed
+
+- **tesserix_adk.testing**: Importing a fake no longer requires `pytest`. The conformance
+suites and the pytest plugin are loaded on first use, so a wheel install can reach the
+fakes without a test-time dependency it was never given.
+
 ## 0.1.0
 
 ### Breaking changes
