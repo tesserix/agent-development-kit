@@ -8,6 +8,67 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.12.0
+
+### Added
+
+- **tesserix_adk.memory.admission**: `tesserix_adk.memory` now decides what is allowed to become a durable fact, and records
+where everything durable came from. Prompt injection affects one turn; the same instruction
+written into long-term memory re-influences every future run for that user, and arrives on
+later turns wearing the costume of a trusted internal fact. The kit already redacted on
+write and erased on request, but nothing decided whether a thing should have been stored at
+all.
+
+`WriteGate.admit` judges a candidate against an `AdmissionPolicy` before the write. It never
+returns the record it was given: what comes back carries its `Provenance` — origin, run,
+turn, source, citations, and the policy that let it in — and whatever confidence the policy
+is willing to believe it at. A refusal raises `MemoryAdmissionError` after the audit event
+is written, so the refusal survives a caller that swallows the exception. The event names
+the source and digests the value; an audit trail that quotes the poisoned fact has copied
+the poisoned fact somewhere else.
+
+The defaults are the ones worth arguing with. Retrieved content does not persist, because
+it is data about a corpus rather than a fact about a user, and that distance is exactly the
+one an injection has to travel. Tool output persists only with a citation. Nothing a model
+inferred is believed as far as something a person said — an inference is capped at
+`inferred_ceiling` and never silently promoted to an assertion, since a store that records
+"the customer approves all refunds" at confidence 1.0 whether the model concluded it or the
+customer said it has destroyed the signal that could tell them apart later.
+Instruction-shaped content is refused whatever its origin.
+
+`WriteGate.recall` is the boundary the write gate cannot cover. It re-judges stored records
+against the policy in force *now* and re-runs the guardrail on the content. A fact persisted
+before any policy existed carries no provenance, so it is `UNPROVEN`, so it does not come
+back; one admitted under a policy since tightened is re-judged the same way. A record does
+not become trustworthy by surviving.
+
+`MemoryRecord` gains an optional `provenance`. `MemoryGuard` is the narrow part of a guard a
+recall needs, so any `guardrails.Guard` satisfies it without memory importing that package.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.MemoryAdmissionError`
+- Added: `tesserix_adk.memory.Admission`
+- Added: `tesserix_adk.memory.AdmissionPolicy`
+- Added: `tesserix_adk.memory.INSTRUCTION_SIGNATURES`
+- Added: `tesserix_adk.memory.MemoryGuard`
+- Added: `tesserix_adk.memory.Origin`
+- Added: `tesserix_adk.memory.Provenance`
+- Added: `tesserix_adk.memory.Recall`
+- Added: `tesserix_adk.memory.Verdict`
+- Added: `tesserix_adk.memory.WriteGate`
+- Added: `tesserix_adk.memory.admission.Admission`
+- Added: `tesserix_adk.memory.admission.AdmissionPolicy`
+- Added: `tesserix_adk.memory.admission.INSTRUCTION_SIGNATURES`
+- Added: `tesserix_adk.memory.admission.MemoryGuard`
+- Added: `tesserix_adk.memory.admission.Recall`
+- Added: `tesserix_adk.memory.admission.Verdict`
+- Added: `tesserix_adk.memory.admission.WriteGate`
+- Added: `tesserix_adk.memory.admission.instruction_shaped`
+- Added: `tesserix_adk.memory.instruction_shaped`
+- Added: `tesserix_adk.memory.provenance.Origin`
+- Added: `tesserix_adk.memory.provenance.Provenance`
+
 ## 0.11.0
 
 ### Added
