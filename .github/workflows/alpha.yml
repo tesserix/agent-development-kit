@@ -21,9 +21,29 @@ jobs:
     name: full gates
     uses: ./.github/workflows/ci.yml
 
+  whether:
+    name: is there an alpha to build
+    runs-on: ubuntu-latest
+    outputs:
+      alpha: ${{ steps.check.outputs.alpha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # The release commit is pushed with its tag, so it already has a version of its
+      # own; an alpha built from it would number below the release it was cut from.
+      - id: check
+        run: |
+          if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+            echo "alpha=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "alpha=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: build the alpha
-    needs: gates
+    needs: [gates, whether]
+    if: needs.whether.outputs.alpha == 'true'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
