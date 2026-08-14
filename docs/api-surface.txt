@@ -361,6 +361,7 @@ tesserix_adk.core.MemoryUnavailableError :: class MemoryUnavailableError(AdkErro
 tesserix_adk.core.Message :: class Message(AdkModel)
 tesserix_adk.core.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
 tesserix_adk.core.MissingTenantContextError :: class MissingTenantContextError(AdkError)
+tesserix_adk.core.ModelArtifactError :: class ModelArtifactError(ConfigurationError)
 tesserix_adk.core.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
 tesserix_adk.core.ModelProvider :: class ModelProvider(Protocol) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; count_tokens(self, messages: 'Sequence[Message]') -> 'int'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.core.ModelRef :: class ModelRef(AdkModel)
@@ -670,6 +671,7 @@ tesserix_adk.core.errors.MemoryScopeError :: class MemoryScopeError(AdkError)
 tesserix_adk.core.errors.MemoryUnavailableError :: class MemoryUnavailableError(AdkError)
 tesserix_adk.core.errors.MissingExtraError :: class MissingExtraError(AdkError, ImportError)
 tesserix_adk.core.errors.MissingTenantContextError :: class MissingTenantContextError(AdkError)
+tesserix_adk.core.errors.ModelArtifactError :: class ModelArtifactError(ConfigurationError)
 tesserix_adk.core.errors.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.core.errors.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.errors.PartialErasureError :: class PartialErasureError(AdkError)
@@ -999,9 +1001,11 @@ tesserix_adk.models.ClientKey :: class ClientKey(object)
 tesserix_adk.models.ClientPool :: class ClientPool(object) {aclose(self) -> 'None'; config_for(self, provider: 'str') -> 'PoolConfig'; retire(self, *, provider: 'str', base_url: 'str', credential: 'str' = '', timeout_seconds: 'float | None' = None, connect_seconds: 'float | None' = None) -> 'None'}
 tesserix_adk.models.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
 tesserix_adk.models.Credential :: class Credential(object) {value(self) -> 'str'}
+tesserix_adk.models.Device :: class Device(StrEnum)
 tesserix_adk.models.EmbeddingLimits :: class EmbeddingLimits(object)
 tesserix_adk.models.EmbeddingMetrics :: class EmbeddingMetrics(object)
 tesserix_adk.models.EmbeddingProvider :: class EmbeddingProvider(Protocol) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
+tesserix_adk.models.Encoded :: class Encoded(AdkModel)
 tesserix_adk.models.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.models.MemoryCacheStore :: class MemoryCacheStore(object) {every(self) -> 'list[CacheEntry]'; get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
 tesserix_adk.models.MemorySemanticIndex :: class MemorySemanticIndex(object) {add(self, digest: 'str', vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'None'; nearest(self, vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'tuple[str, float] | None'; purge(self, **by: 'str | None') -> 'int'}
@@ -1013,6 +1017,12 @@ tesserix_adk.models.ModelRequest :: class ModelRequest(AdkModel)
 tesserix_adk.models.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.models.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.models.ModelSpec :: class ModelSpec(AdkModel) {with_capabilities(self, **overrides: 'object') -> 'Self'}
+tesserix_adk.models.ONNX_MODELS :: ONNX_MODELS: tuple
+tesserix_adk.models.OnnxCrossEncoder :: class OnnxCrossEncoder(object) {score(self, pairs: 'Sequence[tuple[str, str]]') -> 'Sequence[float]'}
+tesserix_adk.models.OnnxEmbeddings :: class OnnxEmbeddings(object) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
+tesserix_adk.models.OnnxMetrics :: class OnnxMetrics(AdkModel)
+tesserix_adk.models.OnnxModel :: class OnnxModel(AdkModel)
+tesserix_adk.models.OnnxSession :: class OnnxSession(Protocol) {run(self, encoded: 'Encoded') -> 'Sequence[Sequence[float]]'}
 tesserix_adk.models.PoolConfig :: class PoolConfig(object) {for_provider(self, provider: 'str') -> 'PoolConfig'}
 tesserix_adk.models.PoolMetrics :: class PoolMetrics(object)
 tesserix_adk.models.Pricing :: class Pricing(AdkModel)
@@ -1026,6 +1036,8 @@ tesserix_adk.models.StreamEnd :: class StreamEnd(StreamEvent)
 tesserix_adk.models.StreamEvent :: class StreamEvent(AdkModel)
 tesserix_adk.models.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
 tesserix_adk.models.TextDelta :: class TextDelta(StreamEvent)
+tesserix_adk.models.Throughput :: class Throughput(AdkModel)
+tesserix_adk.models.Tokenizing :: class Tokenizing(Protocol) {encode(self, texts: 'Sequence[str]', *, max_tokens: 'int') -> 'Encoded'}
 tesserix_adk.models.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
 tesserix_adk.models.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.models.ToolDeclaration :: class ToolDeclaration(AdkModel)
@@ -1068,8 +1080,23 @@ tesserix_adk.models.gguf.Quantization :: class Quantization(StrEnum)
 tesserix_adk.models.gguf.quantization_for :: def quantization_for(parameters_b: 'float', *, context_tokens: 'int', available_bytes: 'int', kv_bytes_per_token: 'int' = 131072) -> 'Quantization'
 tesserix_adk.models.gguf.refuse_if_it_will_not_fit :: def refuse_if_it_will_not_fit(model: 'GgufModel', *, context_tokens: 'int', available_bytes: 'int') -> 'None'
 tesserix_adk.models.known_models :: def known_models(provider: 'str | None' = None) -> 'tuple[ModelCard, ...]'
+tesserix_adk.models.load_session :: def load_session(model: 'OnnxModel', *, directory: 'Path', device: 'Device' = <Device.CPU: 'cpu'>, threads: 'int' = 0) -> 'OnnxSession'
 tesserix_adk.models.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
 tesserix_adk.models.not_cacheable :: def not_cacheable(reason: 'str') -> 'Iterator[None]'
+tesserix_adk.models.onnx.Device :: class Device(StrEnum)
+tesserix_adk.models.onnx.Encoded :: class Encoded(AdkModel)
+tesserix_adk.models.onnx.ONNX_MODELS :: ONNX_MODELS: tuple
+tesserix_adk.models.onnx.OnnxCrossEncoder :: class OnnxCrossEncoder(object) {score(self, pairs: 'Sequence[tuple[str, str]]') -> 'Sequence[float]'}
+tesserix_adk.models.onnx.OnnxEmbeddings :: class OnnxEmbeddings(object) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
+tesserix_adk.models.onnx.OnnxMetrics :: class OnnxMetrics(AdkModel)
+tesserix_adk.models.onnx.OnnxModel :: class OnnxModel(AdkModel)
+tesserix_adk.models.onnx.OnnxSession :: class OnnxSession(Protocol) {run(self, encoded: 'Encoded') -> 'Sequence[Sequence[float]]'}
+tesserix_adk.models.onnx.Throughput :: class Throughput(AdkModel)
+tesserix_adk.models.onnx.Tokenizing :: class Tokenizing(Protocol) {encode(self, texts: 'Sequence[str]', *, max_tokens: 'int') -> 'Encoded'}
+tesserix_adk.models.onnx.load_session :: def load_session(model: 'OnnxModel', *, directory: 'Path', device: 'Device' = <Device.CPU: 'cpu'>, threads: 'int' = 0) -> 'OnnxSession'
+tesserix_adk.models.onnx.onnx_model :: def onnx_model(name: 'str') -> 'OnnxModel'
+tesserix_adk.models.onnx.verify_artefact :: def verify_artefact(model: 'OnnxModel', *, directory: 'Path') -> 'Path'
+tesserix_adk.models.onnx_model :: def onnx_model(name: 'str') -> 'OnnxModel'
 tesserix_adk.models.pool.ClientKey :: class ClientKey(object)
 tesserix_adk.models.pool.ClientPool :: class ClientPool(object) {aclose(self) -> 'None'; config_for(self, provider: 'str') -> 'PoolConfig'; retire(self, *, provider: 'str', base_url: 'str', credential: 'str' = '', timeout_seconds: 'float | None' = None, connect_seconds: 'float | None' = None) -> 'None'}
 tesserix_adk.models.pool.PoolConfig :: class PoolConfig(object) {for_provider(self, provider: 'str') -> 'PoolConfig'}
@@ -1115,6 +1142,7 @@ tesserix_adk.models.routing.RoutingTable :: class RoutingTable(AdkModel) {matchi
 tesserix_adk.models.routing.TABLE_VERSION :: TABLE_VERSION: int
 tesserix_adk.models.routing.TableRouter :: class TableRouter(object) {reloaded(self, table: 'RoutingTable') -> 'TableRouter'; resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
 tesserix_adk.models.routing.routing_table :: def routing_table(path: 'Path | str | None' = None, *, env: 'Mapping[str, str] | None' = None) -> 'RoutingTable'
+tesserix_adk.models.verify_artefact :: def verify_artefact(model: 'OnnxModel', *, directory: 'Path') -> 'Path'
 tesserix_adk.observability.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
 tesserix_adk.observability.Attribution :: class Attribution(AdkModel)
 tesserix_adk.observability.CACHED_TOKENS :: CACHED_TOKENS: str

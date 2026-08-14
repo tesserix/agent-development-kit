@@ -71,6 +71,7 @@ __all__ = [
     "MemoryUnavailableError",
     "MissingExtraError",
     "MissingTenantContextError",
+    "ModelArtifactError",
     "ModelResponseError",
     "NoEligibleModelError",
     "PartialErasureError",
@@ -346,6 +347,24 @@ class ContextWindowExceededError(CapabilityError):
         super().__init__(
             *args, provider=provider, model=model, run_id=run_id, tenant=tenant, details=details
         )
+
+
+class ModelArtifactError(ConfigurationError):
+    """Raised when a model file on disk is not one that can be loaded.
+
+    At load, never at the first query: a corrupt weights file discovered by the query that
+    needed it has already told a user their request failed, and the operator finds out from
+    them. A `ConfigurationError` because that is what a half-downloaded file is.
+
+    Args:
+        path: The file, as it was looked for.
+        reason: Which check failed — `missing`, `empty` or `digest`.
+    """
+
+    def __init__(self, *args: object, path: str = "", reason: str = "") -> None:
+        self.path = path
+        self.reason = reason
+        super().__init__(*args, details={"path": path, "reason": reason})
 
 
 class ModelResponseError(AdkError):
