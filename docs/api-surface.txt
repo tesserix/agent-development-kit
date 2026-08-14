@@ -1197,6 +1197,9 @@ tesserix_adk.rag.ChunkerFactory :: ChunkerFactory: TypeAliasType
 tesserix_adk.rag.ChunkerRegistry :: class ChunkerRegistry(object) {chunker_for(self, collection: 'str') -> 'Chunker'; register(self, strategy: 'str', build: 'ChunkerFactory') -> 'None'; spec_for(self, collection: 'str') -> 'ChunkingSpec'}
 tesserix_adk.rag.ChunkingSpec :: class ChunkingSpec(AdkModel)
 tesserix_adk.rag.CodeAware :: class CodeAware(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
+tesserix_adk.rag.CrossEncoder :: class CrossEncoder(Protocol) {score(self, pairs: 'Sequence[tuple[str, str]]') -> 'Sequence[float]'}
+tesserix_adk.rag.CrossEncoderReranker :: class CrossEncoderReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
+tesserix_adk.rag.DEGRADED :: DEGRADED: str
 tesserix_adk.rag.Document :: class Document(AdkModel)
 tesserix_adk.rag.EmbeddedBatch :: class EmbeddedBatch(AdkModel)
 tesserix_adk.rag.Embedder :: class Embedder(Protocol) {embed_documents(self, texts: 'Sequence[str]') -> 'EmbeddedBatch'; embed_query(self, text: 'str') -> 'Vector'}
@@ -1210,8 +1213,14 @@ tesserix_adk.rag.HybridRetriever :: class HybridRetriever(object) {retrieve(self
 tesserix_adk.rag.IndexQuery :: class IndexQuery(AdkModel)
 tesserix_adk.rag.IndexRetriever :: class IndexRetriever(object) {branch_hits(self, query: 'str', *, asked: 'Admissible') -> 'Sequence[Hit]'; retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
 tesserix_adk.rag.MemoryEmbeddingCache :: class MemoryEmbeddingCache(object) {get(self, keys: 'Sequence[str]') -> 'Mapping[str, Vector]'; put(self, vectors: 'Mapping[str, Vector]') -> 'None'}
+tesserix_adk.rag.ModelReranker :: class ModelReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
+tesserix_adk.rag.NoReranking :: class NoReranking(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
 tesserix_adk.rag.Overflow :: class Overflow(StrEnum)
 tesserix_adk.rag.ReciprocalRankFusion :: class ReciprocalRankFusion(object) {fuse(self, ranked: 'Mapping[Branch, Sequence[Hit]]', k: 'int') -> 'Sequence[Hit]'}
+tesserix_adk.rag.RerankScore :: class RerankScore(AdkModel)
+tesserix_adk.rag.Reranker :: class Reranker(Protocol) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
+tesserix_adk.rag.Reranking :: class Reranking(AdkModel)
+tesserix_adk.rag.RerankingRetriever :: class RerankingRetriever(object) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
 tesserix_adk.rag.RetrievalResult :: class RetrievalResult(AdkModel)
 tesserix_adk.rag.RetrievalScope :: class RetrievalScope(AdkModel)
 tesserix_adk.rag.Retriever :: class Retriever(Protocol) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
@@ -1251,6 +1260,15 @@ tesserix_adk.rag.embedding.embedding_key :: def embedding_key(model: 'EmbeddingM
 tesserix_adk.rag.embedding.normalised :: def normalised(text: 'str') -> 'str'
 tesserix_adk.rag.embedding_key :: def embedding_key(model: 'EmbeddingModel', text: 'str', *, tenant: 'str') -> 'str'
 tesserix_adk.rag.normalised :: def normalised(text: 'str') -> 'str'
+tesserix_adk.rag.reranking.CrossEncoder :: class CrossEncoder(Protocol) {score(self, pairs: 'Sequence[tuple[str, str]]') -> 'Sequence[float]'}
+tesserix_adk.rag.reranking.CrossEncoderReranker :: class CrossEncoderReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
+tesserix_adk.rag.reranking.DEGRADED :: DEGRADED: str
+tesserix_adk.rag.reranking.ModelReranker :: class ModelReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
+tesserix_adk.rag.reranking.NoReranking :: class NoReranking(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
+tesserix_adk.rag.reranking.RerankScore :: class RerankScore(AdkModel)
+tesserix_adk.rag.reranking.Reranker :: class Reranker(Protocol) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
+tesserix_adk.rag.reranking.Reranking :: class Reranking(AdkModel)
+tesserix_adk.rag.reranking.RerankingRetriever :: class RerankingRetriever(object) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
 tesserix_adk.rag.retrieval.Branch :: class Branch(StrEnum)
 tesserix_adk.rag.retrieval.BranchScore :: class BranchScore(AdkModel)
 tesserix_adk.rag.retrieval.Fusion :: class Fusion(Protocol) {fuse(self, ranked: 'Mapping[Branch, Sequence[Hit]]', k: 'int') -> 'Sequence[Hit]'}

@@ -30,6 +30,17 @@ from tesserix_adk.rag.embedding import (
     embedding_key,
     normalised,
 )
+from tesserix_adk.rag.reranking import (
+    DEGRADED,
+    CrossEncoder,
+    CrossEncoderReranker,
+    ModelReranker,
+    NoReranking,
+    Reranker,
+    Reranking,
+    RerankingRetriever,
+    RerankScore,
+)
 from tesserix_adk.rag.retrieval import (
     Branch,
     BranchScore,
@@ -47,6 +58,7 @@ from tesserix_adk.rag.retrieval import (
 )
 
 __all__ = [
+    "DEGRADED",
     "BatchVectors",
     "BatchedEmbedder",
     "Branch",
@@ -57,6 +69,8 @@ __all__ = [
     "ChunkerRegistry",
     "ChunkingSpec",
     "CodeAware",
+    "CrossEncoder",
+    "CrossEncoderReranker",
     "Document",
     "EmbeddedBatch",
     "Embedder",
@@ -70,8 +84,14 @@ __all__ = [
     "IndexQuery",
     "IndexRetriever",
     "MemoryEmbeddingCache",
+    "ModelReranker",
+    "NoReranking",
     "Overflow",
     "ReciprocalRankFusion",
+    "RerankScore",
+    "Reranker",
+    "Reranking",
+    "RerankingRetriever",
     "RetrievalResult",
     "RetrievalScope",
     "Retriever",

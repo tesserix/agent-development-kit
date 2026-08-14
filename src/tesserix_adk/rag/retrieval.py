@@ -88,6 +88,8 @@ class Hit(AdkModel):
         metadata: What the store holds beside the text, for filtering and for display.
         contributions: One entry per branch that found it. A hit with one entry was found
             one way only, which is worth knowing before trusting its rank.
+        rerank_score: What a reranking stage scored it, where one ran. `score` is left as
+            fusion computed it, so a ranking decision can be read back afterwards.
     """
 
     chunk_id: str = Field(min_length=1)
@@ -96,6 +98,7 @@ class Hit(AdkModel):
     score: float = 0.0
     metadata: Mapping[str, str] = Field(default_factory=dict)
     contributions: tuple[BranchScore, ...] = ()
+    rerank_score: float | None = None
 
     def found_by(self, branch: Branch) -> bool:
         """Whether `branch` contributed to this hit."""
@@ -173,12 +176,16 @@ class RetrievalResult(AdkModel):
         branches: The branches that answered.
         partial: Whether a branch was asked and did not answer. A caller that reads a
             narrower result set as a complete answer is the reason this is not silent.
+        reranked: Whether a reranking stage ordered these hits. False where none was
+            configured and also where one was and could not run, which is why the flag is
+            about the ordering rather than about the configuration.
     """
 
     query: str
     hits: tuple[Hit, ...] = ()
     branches: tuple[Branch, ...] = ()
     partial: bool = False
+    reranked: bool = False
 
     def __bool__(self) -> bool:
         """Whether anything was found, so an empty result reads as one at a call site."""

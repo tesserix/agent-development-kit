@@ -117,6 +117,7 @@ code lands here as the kit is built.
 | Chunking — token-sized pieces, strategies per collection, spans a citation can quote | [`docs/chunking.md`](docs/chunking.md) |
 | Embedding — batching, a content-addressed cache per tenant, and no substituted vectors | [`docs/embedding.md`](docs/embedding.md) |
 | Retrieval — both branches, fused by rank, with the tenant predicate inside the query | [`docs/retrieval.md`](docs/retrieval.md) |
+| Reranking — a bounded candidate set, a budgeted call, and the fused order when it fails | [`docs/reranking.md`](docs/reranking.md) |
 | Estimation — pre-flight cost, confidence, refusal, calibration | [`docs/estimation.md`](docs/estimation.md) |
 | The spend ledger — shared ceilings, windows, leases, sharding, coalescing | [`docs/ledger.md`](docs/ledger.md) |
 | Structured output — declared answer shapes, provider fallback, violations | [`docs/structured-output.md`](docs/structured-output.md) |
