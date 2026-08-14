@@ -73,13 +73,16 @@ from tesserix_adk.memory import (
     MemoryScope,
     MemoryStore,
 )
+from tesserix_adk.rag.retrieval import Branch, IndexQuery, SearchIndex
+from tesserix_adk.testing.retrieval import Indexed
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from pydantic import JsonValue
 
 __all__ = [
+    "CONFORMANCE_CORPUS",
     "BudgetPolicyConformance",
     "CheckpointStoreConformance",
     "ClockConformance",
@@ -87,6 +90,7 @@ __all__ = [
     "KeyValueStoreConformance",
     "MemoryStoreConformance",
     "ModelProviderConformance",
+    "SearchIndexConformance",
     "StateStoreConformance",
     "TenantPropagationConformance",
     "TracerConformance",
@@ -1180,3 +1184,122 @@ class TenantPropagationConformance(ABC):
         with arriving(self.round_trip(carried(TenantContext(tenant="conformance")))):
             pass
         assert tenant_here() is None
+
+
+CONFORMANCE_CORPUS = (
+    Indexed(
+        "refunds",
+        "Refunds are paid within fourteen days of the request.",
+        vector=(1.0, 0.0, 0.0),
+        document_id="handbook",
+        tenant="conformance",
+        metadata={"section": "refunds"},
+    ),
+    Indexed(
+        "berths",
+        "Berths are allocated by seniority at the start of a voyage.",
+        vector=(0.0, 1.0, 0.0),
+        document_id="handbook",
+        tenant="conformance",
+        metadata={"section": "berths"},
+    ),
+    Indexed(
+        "somebody-elses",
+        "Refunds are paid within fourteen days of the request.",
+        vector=(1.0, 0.0, 0.0),
+        document_id="handbook",
+        tenant="other",
+        metadata={"section": "refunds"},
+    ),
+)
+"""The corpus every `SearchIndex` suite is run against. Two tenants, on purpose."""
+
+
+class SearchIndexConformance(ABC):
+    """Behaviour every `SearchIndex` implementation must exhibit.
+
+    The guarantee that matters is that the tenant and the predicates are applied inside
+    the store's own query, not to its answer: a store that fetches `k` neighbours and
+    filters them afterwards returns fewer than `k` of the caller's chunks, and none at all
+    where the nearest `k` all belong to somebody else. The corpus holds one passage of a
+    second tenant identical to the first tenant's, so a store that leaks fails here rather
+    than in production.
+    """
+
+    @abstractmethod
+    async def make_index(self, passages: Sequence[Indexed]) -> SearchIndex:
+        """Return a store holding exactly `passages` and nothing else."""
+
+    @abstractmethod
+    def branch(self) -> Branch:
+        """Which branch the store under test is being verified for."""
+
+    async def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(await self.make_index(()), SearchIndex)
+
+    async def test_it_supports_the_branch_it_is_verified_for(self) -> None:
+        assert (await self.make_index(())).supports(self.branch())
+
+    async def test_an_empty_store_returns_nothing(self) -> None:
+        index = await self.make_index(())
+        assert list(await index.search(self._asking("refunds"))) == []
+
+    async def test_it_finds_the_passage_the_query_is_about(self) -> None:
+        index = await self.make_index(CONFORMANCE_CORPUS)
+        found = await index.search(self._asking("refunds"))
+        assert [hit.chunk_id for hit in found][:1] == ["refunds"]
+
+    async def test_another_tenants_passage_is_never_returned(self) -> None:
+        """Identical text under a second tenant: only a predicate inside the query stops it."""
+        index = await self.make_index(CONFORMANCE_CORPUS)
+        found = await index.search(self._asking("refunds", k=10))
+        assert "somebody-elses" not in [hit.chunk_id for hit in found]
+
+    async def test_k_caps_what_comes_back(self) -> None:
+        index = await self.make_index(CONFORMANCE_CORPUS)
+        assert len(await index.search(self._asking("refunds", k=1))) <= 1
+
+    async def test_hits_come_back_best_first(self) -> None:
+        index = await self.make_index(CONFORMANCE_CORPUS)
+        scores = [hit.score for hit in await index.search(self._asking("refunds", k=10))]
+        assert scores == sorted(scores, reverse=True)
+
+    async def test_a_hit_carries_what_a_citation_needs(self) -> None:
+        index = await self.make_index(CONFORMANCE_CORPUS)
+        found = await index.search(self._asking("refunds"))
+        assert found
+        assert (found[0].chunk_id, found[0].document_id) == ("refunds", "handbook")
+        assert found[0].text
+
+    async def test_a_predicate_excludes_what_does_not_satisfy_it(self) -> None:
+        index = await self.make_index(CONFORMANCE_CORPUS)
+        found = await index.search(
+            self._asking("refunds", k=10, predicates={"section": ("berths",)})
+        )
+        assert "refunds" not in [hit.chunk_id for hit in found]
+
+    async def test_a_predicate_nothing_satisfies_returns_nothing(self) -> None:
+        index = await self.make_index(CONFORMANCE_CORPUS)
+        found = await index.search(
+            self._asking("refunds", k=10, predicates={"section": ("galley",)})
+        )
+        assert list(found) == []
+
+    def _asking(
+        self,
+        chunk_id: str,
+        *,
+        k: int = 5,
+        predicates: Mapping[str, tuple[str, ...]] | None = None,
+    ) -> IndexQuery:
+        """A query for the corpus passage `chunk_id`, in the branch under test."""
+        wanted = next(passage for passage in CONFORMANCE_CORPUS if passage.chunk_id == chunk_id)
+        return IndexQuery(
+            tenant="conformance",
+            collection="handbook",
+            branch=self.branch(),
+            k=k,
+            text=wanted.text,
+            vector=wanted.vector,
+            predicates=dict(predicates or {}),
+        )

@@ -44,6 +44,7 @@ from tesserix_adk.testing.http_cassette import (
 )
 from tesserix_adk.testing.injection import INJECTION_FIXTURES, InjectionFixture
 from tesserix_adk.testing.memory import InMemoryMemoryStore
+from tesserix_adk.testing.retrieval import FakeIndex, Indexed
 
 if TYPE_CHECKING:
     from tesserix_adk.testing.conformance import (
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
         KeyValueStoreConformance,
         MemoryStoreConformance,
         ModelProviderConformance,
+        SearchIndexConformance,
         SpendLedgerConformance,
         StateStoreConformance,
         TenantPropagationConformance,
@@ -77,6 +79,7 @@ __all__ = [
     "FakeClock",
     "FakeEmbedder",
     "FakeGuardrail",
+    "FakeIndex",
     "FakeKeyValueStore",
     "FakeMeter",
     "FakeSecrets",
@@ -88,6 +91,7 @@ __all__ = [
     "HttpReplay",
     "IdempotencyStoreConformance",
     "InMemoryMemoryStore",
+    "Indexed",
     "InjectionFixture",
     "Interaction",
     "KeyValueStoreConformance",
@@ -101,6 +105,7 @@ __all__ = [
     "RecordingProvider",
     "ReplayingProvider",
     "ScriptedProvider",
+    "SearchIndexConformance",
     "SentRequest",
     "SequentialIds",
     "SpendLedgerConformance",

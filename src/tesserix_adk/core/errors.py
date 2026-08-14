@@ -85,6 +85,7 @@ __all__ = [
     "RecursionLimitError",
     "RepeatedCallError",
     "ResumeConflictError",
+    "RetrievalDegradedError",
     "RunningLoopError",
     "SandboxError",
     "SandboxMemoryError",
@@ -1374,6 +1375,32 @@ class ChunkingError(AdkError):
         self.document = document
         self.offset = offset
         super().__init__(*args, details={"document": document, "offset": str(offset)})
+
+
+class RetrievalDegradedError(AdkError):
+    """Raised when retrieval could not run every branch the caller required.
+
+    Returning what the surviving branch found would be a narrower result set that reads
+    downstream as a complete answer: the agent says what it found and nothing says the
+    keyword branch, and with it every exact identifier match, was missing.
+
+    Args:
+        missing: The branches that did not answer.
+        answered: The branches that did.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        missing: Sequence[str] = (),
+        answered: Sequence[str] = (),
+    ) -> None:
+        self.missing = tuple(missing)
+        self.answered = tuple(answered)
+        super().__init__(
+            *args,
+            details={"missing": ",".join(missing), "answered": ",".join(answered)},
+        )
 
 
 class EmbeddingUnavailableError(AdkError):
