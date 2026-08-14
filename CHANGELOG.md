@@ -8,6 +8,116 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.11.0
+
+### Added
+
+- **tesserix_adk.tools.intake**: `tesserix_adk.tools` now reads scanned documents and recordings into text an agent can cite.
+Intake is the same job in every product that has it, and rebuilding it per product means
+each rebuild leaves out provenance: a page of OCR without a page number cannot be traced
+back to, and a transcript without timestamps cannot be checked.
+
+PaddleOCR and whisper.cpp are the CPU paths worth using and neither is installed here, for
+the reason `models.onnx` gives about `onnxruntime`. The kit takes `OcrBackend` and
+`TranscriptionBackend` protocols instead.
+
+`ocr_document` yields an `OcrPage` at a time, so a hundred-page contract costs one page of
+memory and a caller that wanted page three can stop after it. Each `Region` carries the box
+it was read from as fractions of the page — a reference that survives a re-render at another
+resolution — with the backend's confidence and a `RegionKind` from the layout pass, because
+an answer built from a footer and one built from a clause are not equally trustworthy.
+`OcrPage.scripts` names every writing system on the page, so a mixed-script document
+announces itself. `transcribe_audio` is the same shape for audio, with `Segment.reference()`
+giving the span it was said in and the speaker label where the backend supplied one.
+
+The new `MediaIntakeError` says which check failed: `unsupported` (refused before the file
+is opened), `missing`, `empty` or `corrupt`. `empty` covers a backend that produced nothing
+at all, which is the case that matters — returning `""` for a document that could not be
+read is indistinguishable from a blank page, and it ends with an agent answering
+confidently from nothing. A backend raising `MediaIntakeError` itself is passed through
+untouched.
+
+`ocr_tool` and `transcribe_tool` are the tools a model calls. A model names a file; what
+that is allowed to mean is decided by `root`, and a name resolving outside it is a
+`ToolRefusal`. Output is windowed at `max_chars`, since a tool returning a whole contract
+would put the document back into the context one call later, and every page and span is
+prefixed with its reference so what the model quotes can be cited.
+- **tesserix_adk.observability.latency**: `tesserix_adk.observability` now records the latency numbers that decide whether CPU
+inference is usable. "Kit overhead under twenty milliseconds" is easy to state and says
+almost nothing against a model call of five to thirty seconds; time to first token, the
+sustained rate after it, and the share of the prompt that did not have to be prefilled are
+what a user actually feels.
+
+`RunTimer` times one run — `first_token()` is safe to call on every event, only the first
+counts — and `LatencyReport` carries what it cost. The sustained rate excludes the wait for
+the first token, because a slow prefill averaged into the decode rate flatters a run that
+felt slow. Cold and warm, streamed and blocking, are dimensions on every metric and
+separate scenarios in the benchmark suite: averaged together the cold number looks fine and
+the warm one looks bad.
+
+`CacheHits` tracks the prompt cache beside the latency rather than in another dashboard,
+since prefill is where CPU latency goes. A provider that reports no cached-token count
+leaves the ratio `None`. It is not zero and it is not one — both are answers, and an
+unknown that reads as an answer is how a cache that quietly stopped working goes unnoticed
+for a quarter.
+
+Every number is emitted through `Meter` and not only attached to the span, for the reason
+`observability.metrics` gives: traces are sampled, and a percentile computed from whatever
+the sampler kept is precise-looking and wrong. Span attributes stay durations and counts,
+never content.
+
+The benchmark suite gains `first-token-cold`, `first-token-warm` and `sustained-stream`,
+and the harness gains the three metrics with thresholds and noise floors. A shared runner
+cannot measure CPU inference reproducibly, so model time is modelled from a declared
+profile for the documented target CPU and the uncached token count is measured — that is
+the part a change moves. A change that puts something volatile near the front of the prompt
+now fails the gate naming both the first-token latency and the hit ratio.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.MediaIntakeError`
+- Added: `tesserix_adk.core.errors.MediaIntakeError`
+- Added: `tesserix_adk.observability.CACHE_HIT_RATIO`
+- Added: `tesserix_adk.observability.CacheHits`
+- Added: `tesserix_adk.observability.LATENCY_SECONDS`
+- Added: `tesserix_adk.observability.LatencyReport`
+- Added: `tesserix_adk.observability.RunTimer`
+- Added: `tesserix_adk.observability.TIME_TO_FIRST_TOKEN`
+- Added: `tesserix_adk.observability.TOKENS_PER_SECOND`
+- Added: `tesserix_adk.observability.latency.CACHE_HIT_RATIO`
+- Added: `tesserix_adk.observability.latency.CacheHits`
+- Added: `tesserix_adk.observability.latency.LATENCY_SECONDS`
+- Added: `tesserix_adk.observability.latency.LatencyReport`
+- Added: `tesserix_adk.observability.latency.RunTimer`
+- Added: `tesserix_adk.observability.latency.TIME_TO_FIRST_TOKEN`
+- Added: `tesserix_adk.observability.latency.TOKENS_PER_SECOND`
+- Added: `tesserix_adk.tools.DEFAULT_INTAKE_CHARS`
+- Added: `tesserix_adk.tools.OcrBackend`
+- Added: `tesserix_adk.tools.OcrPage`
+- Added: `tesserix_adk.tools.Region`
+- Added: `tesserix_adk.tools.RegionKind`
+- Added: `tesserix_adk.tools.SUPPORTED_AUDIO`
+- Added: `tesserix_adk.tools.SUPPORTED_DOCUMENTS`
+- Added: `tesserix_adk.tools.Segment`
+- Added: `tesserix_adk.tools.TranscriptionBackend`
+- Added: `tesserix_adk.tools.intake.DEFAULT_INTAKE_CHARS`
+- Added: `tesserix_adk.tools.intake.OcrBackend`
+- Added: `tesserix_adk.tools.intake.OcrPage`
+- Added: `tesserix_adk.tools.intake.Region`
+- Added: `tesserix_adk.tools.intake.RegionKind`
+- Added: `tesserix_adk.tools.intake.SUPPORTED_AUDIO`
+- Added: `tesserix_adk.tools.intake.SUPPORTED_DOCUMENTS`
+- Added: `tesserix_adk.tools.intake.Segment`
+- Added: `tesserix_adk.tools.intake.TranscriptionBackend`
+- Added: `tesserix_adk.tools.intake.ocr_document`
+- Added: `tesserix_adk.tools.intake.ocr_tool`
+- Added: `tesserix_adk.tools.intake.transcribe_audio`
+- Added: `tesserix_adk.tools.intake.transcribe_tool`
+- Added: `tesserix_adk.tools.ocr_document`
+- Added: `tesserix_adk.tools.ocr_tool`
+- Added: `tesserix_adk.tools.transcribe_audio`
+- Added: `tesserix_adk.tools.transcribe_tool`
+
 ## 0.10.0
 
 ### Added
