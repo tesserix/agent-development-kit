@@ -97,7 +97,9 @@ __all__ = [
     "StreamInterruptedError",
     "TenantContextError",
     "TenantCrossingError",
+    "TenantLimitError",
     "TenantRefusal",
+    "TenantUnconfiguredError",
     "ToolArgumentValidationError",
     "ToolDefinitionError",
     "ToolError",
@@ -109,6 +111,7 @@ __all__ = [
     "ToolResultError",
     "ToolTimedOutError",
     "TrustBoundaryError",
+    "UnknownTenantError",
     "WorkItemNotFoundError",
     "WorkersBusyError",
     "WriteQueueFullError",
@@ -1472,6 +1475,53 @@ class TenantContextError(AdkError):
     ) -> None:
         self.reason: TenantRefusal = reason
         super().__init__(*args, tenant=tenant, details={"reason": reason})
+
+
+class UnknownTenantError(ConfigurationError):
+    """Raised when work arrives for a tenant nothing is configured for.
+
+    Rejected rather than given the global defaults: a tenant nobody has entitled is a
+    tenant nobody has priced, and running them on whatever the deployment happens to
+    permit is how an unbounded spend gets attributed to a name in a header.
+
+    Args:
+        tenant: Who was asked for.
+    """
+
+    def __init__(self, *args: object, tenant: str | None = None) -> None:
+        super().__init__(*args, tenant=tenant)
+
+
+class TenantUnconfiguredError(ConfigurationError):
+    """Raised when a tenant's configuration exists somewhere but could not be read.
+
+    Distinct from `UnknownTenantError` because the responses differ: an unknown tenant is
+    a request to reject, an unreadable store is an outage to page on. Both fail closed —
+    the kit never falls back to permissive defaults, because a limits system that keeps
+    running when it cannot read the limits is not enforcing anything.
+
+    Args:
+        tenant: Who could not be answered for, where there was one.
+    """
+
+    def __init__(self, *args: object, tenant: str | None = None) -> None:
+        super().__init__(*args, tenant=tenant)
+
+
+class TenantLimitError(AdkError):
+    """Raised when a tenant's configuration does not permit what was asked for.
+
+    A ceiling catches spend after it happens; this refuses the call. Not retryable — the
+    same request will be refused by the same setting until somebody changes the plan.
+
+    Args:
+        limit: Which setting refused — `models`, `region` — so a caller can respond to
+            the right one without matching on message text.
+    """
+
+    def __init__(self, *args: object, tenant: str | None = None, limit: str = "") -> None:
+        self.limit = limit
+        super().__init__(*args, tenant=tenant, details={"limit": limit})
 
 
 class MemoryUnavailableError(AdkError):

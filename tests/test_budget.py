@@ -369,6 +369,19 @@ class TestATenantCeilingIsSharedBetweenRuns:
         )
         await second.reserve(90)
 
+    @pytest.mark.anyio
+    async def test_a_tenant_ceiling_with_no_ledger_holds_the_run_it_is_on(self) -> None:
+        """A deployment that has not wired a ledger still gets the ceiling, run by run."""
+        under = RunBudget(
+            resolved=most_restrictive(
+                ScopedLimits(scope=BudgetScope.TENANT, limits=limits(max_input_tokens=100))
+            ),
+            clock=FakeClock(),
+        )
+        await under.record(usage(input_tokens=90))
+        with pytest.raises(BudgetExceededError, match="max_input_tokens"):
+            await under.reserve(30)
+
 
 class TestNoRuntimeCanBeBuiltWithoutACeiling:
     """A runtime with no policy is the unbounded agent, arrived at by omission."""

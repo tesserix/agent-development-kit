@@ -117,6 +117,7 @@ from tesserix_adk.core import (
     fallback_eligible,
     idempotency_key,
     most_restrictive,
+    policy_here,
     resolve_hooks,
     scrub,
     verify_conformance,
@@ -1452,14 +1453,19 @@ class AgentRunner:
         A runner given no policy does not run unbounded: it resolves the agent's own
         limits against the conservative defaults, which is a ceiling somebody can read off
         the run afterwards. Removing it takes `UnlimitedBudget` and a stated reason.
+
+        A tenant policy bound for the run contributes its ceiling as one more scope, so a
+        plan tier holds without the agent knowing which tenant it is running for. It
+        cannot widen the agent's own — `most_restrictive` decides.
         """
         if self._budget is not None:
             return self._budget
-        stated = (
-            (ScopedLimits(scope=BudgetScope.AGENT, limits=agent.budget),)
-            if agent.budget is not None
-            else ()
-        )
+        stated: tuple[ScopedLimits, ...] = ()
+        if agent.budget is not None:
+            stated += (ScopedLimits(scope=BudgetScope.AGENT, limits=agent.budget),)
+        policy = policy_here()
+        if policy is not None and (tenant_ceiling := policy.budget_scope()) is not None:
+            stated += (tenant_ceiling,)
         return RunBudget(resolved=most_restrictive(*stated), clock=self._clock)
 
     def _stop_if_over(self, run: Run[Any], bounds: _Bounds) -> None:

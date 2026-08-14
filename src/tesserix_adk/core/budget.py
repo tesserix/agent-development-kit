@@ -599,9 +599,10 @@ class RunBudget:
     def _used(self, name: str) -> Decimal:
         if name == "max_seconds":
             return Decimal(str(self._clock.now() - self._started))
-        used = (
-            self._tenant_spent.against(name) if name in self._shared else self._spent.against(name)
-        )
+        # A shared dimension is the ledger's total, but only where there is a ledger: with
+        # none, a tenant ceiling holds this run alone rather than holding nothing.
+        shared = name in self._shared and self._ledger is not None
+        used = self._tenant_spent.against(name) if shared else self._spent.against(name)
         return used + Decimal(self._held) if name == "max_input_tokens" else used
 
     async def _read_the_ledger(self) -> None:
