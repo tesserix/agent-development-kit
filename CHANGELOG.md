@@ -8,6 +8,52 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.4.0
+
+### Added
+
+- **tesserix_adk.rag.embedding**: `tesserix_adk.rag` embeds behind an `Embedder` protocol. `BatchedEmbedder` wraps a
+`VectorSource` — one provider call, one batch — and adds batching to the model's declared
+limit, a cap on calls in flight, jittered retries through the kit's `RetryConfig`, and a
+content-addressed cache keyed on model name, version, width and the normalised text, so an
+unchanged corpus re-indexes for free. Cache entries are tenant-isolated by default, with
+`shared=True` for a public corpus. A batch that cannot be embedded within the retry budget
+raises `EmbeddingUnavailableError` naming the batch and the cursor to resume from, with
+everything that did land already cached; nothing is ever substituted for a missing vector.
+`MemoryEmbeddingCache` is a bounded in-process backend and `tesserix_adk.testing`
+publishes `FakeEmbedder`, whose vectors are the same in every run.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.EmbeddingUnavailableError`
+- Added: `tesserix_adk.core.errors.EmbeddingUnavailableError`
+- Added: `tesserix_adk.rag.BatchVectors`
+- Added: `tesserix_adk.rag.BatchedEmbedder`
+- Added: `tesserix_adk.rag.EmbeddedBatch`
+- Added: `tesserix_adk.rag.Embedder`
+- Added: `tesserix_adk.rag.EmbeddingCache`
+- Added: `tesserix_adk.rag.EmbeddingModel`
+- Added: `tesserix_adk.rag.EmbeddingStats`
+- Added: `tesserix_adk.rag.MemoryEmbeddingCache`
+- Added: `tesserix_adk.rag.Vector`
+- Added: `tesserix_adk.rag.VectorSource`
+- Added: `tesserix_adk.rag.embedding.BatchVectors`
+- Added: `tesserix_adk.rag.embedding.BatchedEmbedder`
+- Added: `tesserix_adk.rag.embedding.EmbeddedBatch`
+- Added: `tesserix_adk.rag.embedding.Embedder`
+- Added: `tesserix_adk.rag.embedding.EmbeddingCache`
+- Added: `tesserix_adk.rag.embedding.EmbeddingModel`
+- Added: `tesserix_adk.rag.embedding.EmbeddingStats`
+- Added: `tesserix_adk.rag.embedding.MemoryEmbeddingCache`
+- Added: `tesserix_adk.rag.embedding.Vector`
+- Added: `tesserix_adk.rag.embedding.VectorSource`
+- Added: `tesserix_adk.rag.embedding.embedding_key`
+- Added: `tesserix_adk.rag.embedding.normalised`
+- Added: `tesserix_adk.rag.embedding_key`
+- Added: `tesserix_adk.rag.normalised`
+- Added: `tesserix_adk.testing.FakeEmbedder`
+- Added: `tesserix_adk.testing.embedding.FakeEmbedder`
+
 ## 0.3.0
 
 ### Added
