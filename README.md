@@ -100,6 +100,7 @@ code lands here as the kit is built.
 | Graph memory — relations over a temporal graph, metered extraction, tenant ceilings, queued writes | [`docs/graph-memory.md`](docs/graph-memory.md) |
 | Sandboxed code execution — what the code cannot reach, ceilings, artifacts, stronger backends | [`docs/sandbox.md`](docs/sandbox.md) |
 | Claim-check tool results — heads and handles, thresholds, handle scope, reading back | [`docs/claim-check.md`](docs/claim-check.md) |
+| Document and audio intake — OCR and transcription on the CPU, cited by page and timestamp | [`docs/document-intake.md`](docs/document-intake.md) |
 | Context assembly — the plan, the provider's budget, pinning, compaction strategies, failing closed | [`docs/context-assembly.md`](docs/context-assembly.md) |
 | Providers — the protocol, capability declaration, conformance | [`docs/providers.md`](docs/providers.md) |
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |

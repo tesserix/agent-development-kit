@@ -352,6 +352,7 @@ tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.MASK :: MASK: str
 tesserix_adk.core.MAX_HEADER_BYTES :: MAX_HEADER_BYTES: int
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
+tesserix_adk.core.MediaIntakeError :: class MediaIntakeError(AdkError)
 tesserix_adk.core.MemoryConflictError :: class MemoryConflictError(AdkError)
 tesserix_adk.core.MemoryContradictionError :: class MemoryContradictionError(AdkError)
 tesserix_adk.core.MemoryCorruptionError :: class MemoryCorruptionError(AdkError)
@@ -663,6 +664,7 @@ tesserix_adk.core.errors.InvalidRequestError :: class InvalidRequestError(Provid
 tesserix_adk.core.errors.LeaseLostError :: class LeaseLostError(AdkError)
 tesserix_adk.core.errors.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
+tesserix_adk.core.errors.MediaIntakeError :: class MediaIntakeError(AdkError)
 tesserix_adk.core.errors.MemoryConflictError :: class MemoryConflictError(AdkError)
 tesserix_adk.core.errors.MemoryContradictionError :: class MemoryContradictionError(AdkError)
 tesserix_adk.core.errors.MemoryCorruptionError :: class MemoryCorruptionError(AdkError)
@@ -1762,13 +1764,21 @@ tesserix_adk.testing.retrieval.POISONED_CORPUS :: POISONED_CORPUS: tuple
 tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int
+tesserix_adk.tools.DEFAULT_INTAKE_CHARS :: DEFAULT_INTAKE_CHARS: int
 tesserix_adk.tools.DEFAULT_LIMITS :: DEFAULT_LIMITS: SandboxLimits
 tesserix_adk.tools.LENIENT :: LENIENT: ArgumentPolicy
+tesserix_adk.tools.OcrBackend :: class OcrBackend(Protocol) {pages(self, path: 'Path') -> 'AsyncIterator[OcrPage]'}
+tesserix_adk.tools.OcrPage :: class OcrPage(AdkModel)
+tesserix_adk.tools.Region :: class Region(AdkModel) {reference(self, page: 'int') -> 'str'}
+tesserix_adk.tools.RegionKind :: class RegionKind(StrEnum)
 tesserix_adk.tools.STRICT :: STRICT: ArgumentPolicy
+tesserix_adk.tools.SUPPORTED_AUDIO :: SUPPORTED_AUDIO: frozenset
+tesserix_adk.tools.SUPPORTED_DOCUMENTS :: SUPPORTED_DOCUMENTS: frozenset
 tesserix_adk.tools.Sandbox :: class Sandbox(Protocol) {run(self, code: 'str', *, limits: 'SandboxLimits | None' = None, files: 'Mapping[str, str] | None' = None) -> 'SandboxResult'}
 tesserix_adk.tools.SandboxArtifact :: class SandboxArtifact(object)
 tesserix_adk.tools.SandboxLimits :: class SandboxLimits(object)
 tesserix_adk.tools.SandboxResult :: class SandboxResult(object)
+tesserix_adk.tools.Segment :: class Segment(AdkModel) {reference(self) -> 'str'}
 tesserix_adk.tools.SubprocessSandbox :: class SubprocessSandbox(object) {run(self, code: 'str', *, limits: 'SandboxLimits | None' = None, files: 'Mapping[str, str] | None' = None) -> 'SandboxResult'}
 tesserix_adk.tools.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any] | str | bytes', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'; requires_approval(self, arguments: 'Mapping[str, Any] | str | bytes') -> 'bool'}
 tesserix_adk.tools.ToolArgumentValidator :: class ToolArgumentValidator(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'; validate(self, arguments: 'object') -> 'Any'}
@@ -1780,6 +1790,7 @@ tesserix_adk.tools.ToolErrorRule :: class ToolErrorRule(object) {raised_by(self,
 tesserix_adk.tools.ToolFailure :: class ToolFailure(ToolError)
 tesserix_adk.tools.ToolRefusal :: class ToolRefusal(ToolError)
 tesserix_adk.tools.ToolRegistry :: class ToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; observe(self, observer: 'Callable[[ToolCallSpan], None]') -> 'None'; register(self, tool: 'Tool[Any, Any]', *, origin: 'str' = '') -> 'None'; resolve(self, name: 'str') -> 'Tool[Any, Any]'; timeout_for(self, name: 'str') -> 'float | None'; view(self, *, allow: 'Sequence[str]', agent: 'str' = '') -> 'AgentToolView'}
+tesserix_adk.tools.TranscriptionBackend :: class TranscriptionBackend(Protocol) {segments(self, path: 'Path') -> 'AsyncIterator[Segment]'}
 tesserix_adk.tools.claim_check.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int
 tesserix_adk.tools.claim_check.claim_check_tool :: def claim_check_tool(store: 'ClaimCheckStore', *, name: 'str' = 'fetch_result', max_chars: 'int' = 4096) -> 'Tool[..., str]'
 tesserix_adk.tools.claim_check_tool :: def claim_check_tool(store: 'ClaimCheckStore', *, name: 'str' = 'fetch_result', max_chars: 'int' = 4096) -> 'Tool[..., str]'
@@ -1799,6 +1810,21 @@ tesserix_adk.tools.errors.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.tools.errors.permanent :: def permanent(code: 'str', *, message: 'str' = '') -> 'ToolErrorRule'
 tesserix_adk.tools.errors.refusal :: def refusal(code: 'str', message: 'str') -> 'ToolErrorRule'
 tesserix_adk.tools.errors.transient :: def transient(code: 'str', *, retry_after: 'float | None' = None, message: 'str' = '') -> 'ToolErrorRule'
+tesserix_adk.tools.intake.DEFAULT_INTAKE_CHARS :: DEFAULT_INTAKE_CHARS: int
+tesserix_adk.tools.intake.OcrBackend :: class OcrBackend(Protocol) {pages(self, path: 'Path') -> 'AsyncIterator[OcrPage]'}
+tesserix_adk.tools.intake.OcrPage :: class OcrPage(AdkModel)
+tesserix_adk.tools.intake.Region :: class Region(AdkModel) {reference(self, page: 'int') -> 'str'}
+tesserix_adk.tools.intake.RegionKind :: class RegionKind(StrEnum)
+tesserix_adk.tools.intake.SUPPORTED_AUDIO :: SUPPORTED_AUDIO: frozenset
+tesserix_adk.tools.intake.SUPPORTED_DOCUMENTS :: SUPPORTED_DOCUMENTS: frozenset
+tesserix_adk.tools.intake.Segment :: class Segment(AdkModel) {reference(self) -> 'str'}
+tesserix_adk.tools.intake.TranscriptionBackend :: class TranscriptionBackend(Protocol) {segments(self, path: 'Path') -> 'AsyncIterator[Segment]'}
+tesserix_adk.tools.intake.ocr_document :: def ocr_document(path: 'Path', *, backend: 'OcrBackend') -> 'AsyncIterator[OcrPage]'
+tesserix_adk.tools.intake.ocr_tool :: def ocr_tool(backend: 'OcrBackend', *, root: 'Path', name: 'str' = 'read_document', max_chars: 'int' = 4096) -> 'Tool[..., str]'
+tesserix_adk.tools.intake.transcribe_audio :: def transcribe_audio(path: 'Path', *, backend: 'TranscriptionBackend') -> 'AsyncIterator[Segment]'
+tesserix_adk.tools.intake.transcribe_tool :: def transcribe_tool(backend: 'TranscriptionBackend', *, root: 'Path', name: 'str' = 'transcribe_recording', max_chars: 'int' = 4096) -> 'Tool[..., str]'
+tesserix_adk.tools.ocr_document :: def ocr_document(path: 'Path', *, backend: 'OcrBackend') -> 'AsyncIterator[OcrPage]'
+tesserix_adk.tools.ocr_tool :: def ocr_tool(backend: 'OcrBackend', *, root: 'Path', name: 'str' = 'read_document', max_chars: 'int' = 4096) -> 'Tool[..., str]'
 tesserix_adk.tools.permanent :: def permanent(code: 'str', *, message: 'str' = '') -> 'ToolErrorRule'
 tesserix_adk.tools.refusal :: def refusal(code: 'str', message: 'str') -> 'ToolErrorRule'
 tesserix_adk.tools.registry.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
@@ -1813,6 +1839,8 @@ tesserix_adk.tools.sandbox.SubprocessSandbox :: class SubprocessSandbox(object) 
 tesserix_adk.tools.sandbox.sandbox_tool :: def sandbox_tool(sandbox: 'Sandbox', *, name: 'str' = 'run_python', limits: 'SandboxLimits | None' = None) -> 'Tool[..., str]'
 tesserix_adk.tools.sandbox_tool :: def sandbox_tool(sandbox: 'Sandbox', *, name: 'str' = 'run_python', limits: 'SandboxLimits | None' = None) -> 'Tool[..., str]'
 tesserix_adk.tools.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True, requires_approval: 'bool | ApprovalPredicate | ApprovalPolicy' = False, idempotency: 'Idempotency | str | IdempotencyPolicy | None' = None) -> 'Tool[Any, Any] | _Decorator'
+tesserix_adk.tools.transcribe_audio :: def transcribe_audio(path: 'Path', *, backend: 'TranscriptionBackend') -> 'AsyncIterator[Segment]'
+tesserix_adk.tools.transcribe_tool :: def transcribe_tool(backend: 'TranscriptionBackend', *, root: 'Path', name: 'str' = 'transcribe_recording', max_chars: 'int' = 4096) -> 'Tool[..., str]'
 tesserix_adk.tools.transient :: def transient(code: 'str', *, retry_after: 'float | None' = None, message: 'str' = '') -> 'ToolErrorRule'
 tesserix_adk.tools.validation.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.validation.LENIENT :: LENIENT: ArgumentPolicy

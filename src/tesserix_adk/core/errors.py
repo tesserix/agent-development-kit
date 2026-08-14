@@ -63,6 +63,7 @@ __all__ = [
     "LeaseLostError",
     "LoopLimitError",
     "MaxIterationsError",
+    "MediaIntakeError",
     "MemoryConflictError",
     "MemoryContradictionError",
     "MemoryCorruptionError",
@@ -359,6 +360,24 @@ class ModelArtifactError(ConfigurationError):
     Args:
         path: The file, as it was looked for.
         reason: Which check failed — `missing`, `empty` or `digest`.
+    """
+
+    def __init__(self, *args: object, path: str = "", reason: str = "") -> None:
+        self.path = path
+        self.reason = reason
+        super().__init__(*args, details={"path": path, "reason": reason})
+
+
+class MediaIntakeError(AdkError):
+    """Raised when a document or recording could not be read into text.
+
+    A file the kit cannot read must say so. Returning the empty string is the one outcome
+    that is indistinguishable from a blank page, and it is the one that ends with an agent
+    answering confidently from nothing.
+
+    Args:
+        path: The file, as it was given.
+        reason: Which check failed — `unsupported`, `missing`, `empty` or `corrupt`.
     """
 
     def __init__(self, *args: object, path: str = "", reason: str = "") -> None:
