@@ -33,6 +33,16 @@ from tesserix_adk.runtime.checkpoint import (
     refuse_if_undecidable,
 )
 from tesserix_adk.runtime.claim_check import ClaimCheck, MemoryClaimCheckStore
+from tesserix_adk.runtime.compaction import (
+    CITATIONS,
+    COMPACTED,
+    Compaction,
+    CompactionEvent,
+    Summariser,
+    citations_of,
+    cited,
+    compact_conversation,
+)
 from tesserix_adk.runtime.context import ContextWindow, Segment
 from tesserix_adk.runtime.delegation import (
     Delegation,
@@ -148,6 +158,8 @@ from tesserix_adk.runtime.suspension import (
 )
 
 __all__ = [
+    "CITATIONS",
+    "COMPACTED",
     "DEFAULT_APPROVAL_WAIT_SECONDS",
     "PROMPT_LAYERS",
     "TIMEOUT_IDENTITY",
@@ -172,6 +184,8 @@ __all__ = [
     "CancellationToken",
     "Checkpointer",
     "ClaimCheck",
+    "Compaction",
+    "CompactionEvent",
     "Confidence",
     "ContextWindow",
     "CostEstimate",
@@ -243,6 +257,7 @@ __all__ = [
     "Spread",
     "StepResult",
     "StructuredDelta",
+    "Summariser",
     "Supervisor",
     "SystemClock",
     "Tokenizer",
@@ -266,7 +281,10 @@ __all__ = [
     "calibrate",
     "canonical_digest",
     "carrying",
+    "citations_of",
+    "cited",
     "claim_resume",
+    "compact_conversation",
     "current_ambient",
     "decode_progress",
     "drive",

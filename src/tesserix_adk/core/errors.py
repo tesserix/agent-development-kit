@@ -77,6 +77,7 @@ __all__ = [
     "PlanValidationError",
     "PoolExhaustedError",
     "ProtocolConformanceError",
+    "ProvenanceLostError",
     "ProviderError",
     "ProviderTimeoutError",
     "ProviderUnavailableError",
@@ -1444,6 +1445,23 @@ class UncitedClaimError(AdkError):
     def __init__(self, *args: object, claims: Sequence[str] = ()) -> None:
         self.claims = tuple(claims)
         super().__init__(*args, details={"claims": str(len(self.claims))})
+
+
+class ProvenanceLostError(AdkError):
+    """Raised when compacting a conversation would drop a source it was carrying.
+
+    Prose may be lost — that is what compaction is. Provenance may not: a summary of turns
+    that cited something, carrying no citation, reads as a claim the agent made itself.
+
+    Args:
+        lost: The citation ids present before compaction and absent after.
+        folded: How many turns the summary was standing for.
+    """
+
+    def __init__(self, *args: object, lost: Sequence[str] = (), folded: int = 0) -> None:
+        self.lost = tuple(lost)
+        self.folded = folded
+        super().__init__(*args, details={"lost": ",".join(self.lost), "folded": str(folded)})
 
 
 class EmbeddingUnavailableError(AdkError):

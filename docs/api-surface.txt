@@ -383,6 +383,7 @@ tesserix_adk.core.PlanValidationError :: class PlanValidationError(AdkError)
 tesserix_adk.core.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.Provenance :: class Provenance(object)
+tesserix_adk.core.ProvenanceLostError :: class ProvenanceLostError(AdkError)
 tesserix_adk.core.ProviderConfig :: class ProviderConfig(AdkModel)
 tesserix_adk.core.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
@@ -675,6 +676,7 @@ tesserix_adk.core.errors.PartialErasureError :: class PartialErasureError(AdkErr
 tesserix_adk.core.errors.PlanValidationError :: class PlanValidationError(AdkError)
 tesserix_adk.core.errors.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
+tesserix_adk.core.errors.ProvenanceLostError :: class ProvenanceLostError(AdkError)
 tesserix_adk.core.errors.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.errors.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
 tesserix_adk.core.errors.ProviderUnavailableError :: class ProviderUnavailableError(ProviderError)
@@ -1338,10 +1340,14 @@ tesserix_adk.runtime.Backpressure :: class Backpressure(object)
 tesserix_adk.runtime.Branch :: class Branch(object)
 tesserix_adk.runtime.BranchOutcome :: class BranchOutcome(StrEnum)
 tesserix_adk.runtime.BranchResult :: class BranchResult(object)
+tesserix_adk.runtime.CITATIONS :: CITATIONS: str
+tesserix_adk.runtime.COMPACTED :: COMPACTED: str
 tesserix_adk.runtime.Calibration :: class Calibration(AdkModel)
 tesserix_adk.runtime.CancellationToken :: class CancellationToken(object) {cancel(self, reason: 'str' = 'cancelled by the caller') -> 'None'; raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
 tesserix_adk.runtime.Checkpointer :: class Checkpointer(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; record(self, checkpoint: 'Checkpoint') -> 'bool'}
 tesserix_adk.runtime.ClaimCheck :: class ClaimCheck(object) {stored(self, result: 'ToolResult', *, tenant: 'str', run_id: 'str') -> 'ClaimTicket | None'}
+tesserix_adk.runtime.Compaction :: class Compaction(AdkModel)
+tesserix_adk.runtime.CompactionEvent :: class CompactionEvent(AdkModel) {attributes(self) -> 'dict[str, str]'}
 tesserix_adk.runtime.Confidence :: class Confidence(StrEnum)
 tesserix_adk.runtime.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.CostEstimate :: class CostEstimate(AdkModel) {as_limits(self, *, headroom: 'Decimal' = Decimal('1')) -> 'BudgetLimits'; with_children(self, *children: 'CostEstimate') -> 'CostEstimate'}
@@ -1415,6 +1421,7 @@ tesserix_adk.runtime.Specialist :: class Specialist(object)
 tesserix_adk.runtime.Spread :: class Spread(AdkModel)
 tesserix_adk.runtime.StepResult :: class StepResult(AdkModel)
 tesserix_adk.runtime.StructuredDelta :: class StructuredDelta(ProgressEvent)
+tesserix_adk.runtime.Summariser :: class Summariser(Protocol)
 tesserix_adk.runtime.Supervisor :: class Supervisor(object) {cancel(self, reason: 'str' = 'the supervisor was cancelled') -> 'None'; delegate(self, task: 'str', *, needs: 'Collection[str]', budget: 'BudgetLimits | None' = None, writes: 'str | None' = None, fatal: 'bool' = False, run_id: 'str | None' = None) -> 'DelegationResult[Any]'}
 tesserix_adk.runtime.SystemClock :: class SystemClock(object) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.runtime.TIMEOUT_IDENTITY :: TIMEOUT_IDENTITY: str
@@ -1465,9 +1472,20 @@ tesserix_adk.runtime.checkpoint.MemoryCheckpointStore :: class MemoryCheckpointS
 tesserix_adk.runtime.checkpoint.claim_resume :: def claim_resume(run_id: 'str', *, tenant: 'str', idempotency: 'IdempotencyStore', ttl_seconds: 'float | None' = None) -> 'None'
 tesserix_adk.runtime.checkpoint.plan_resume :: def plan_resume(checkpoint: 'Checkpoint', idempotency: 'IdempotencyStore | None' = None) -> 'ResumePlan'
 tesserix_adk.runtime.checkpoint.refuse_if_undecidable :: def refuse_if_undecidable(plan: 'ResumePlan') -> 'None'
+tesserix_adk.runtime.citations_of :: def citations_of(message: 'Message') -> 'tuple[str, ...]'
+tesserix_adk.runtime.cited :: def cited(message: 'Message', citations: 'Sequence[str]') -> 'Message'
 tesserix_adk.runtime.claim_check.ClaimCheck :: class ClaimCheck(object) {stored(self, result: 'ToolResult', *, tenant: 'str', run_id: 'str') -> 'ClaimTicket | None'}
 tesserix_adk.runtime.claim_check.MemoryClaimCheckStore :: class MemoryClaimCheckStore(object) {fetch(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'; forget(self, *, tenant: 'str', run_id: 'str' = '') -> 'int'; put(self, handle: 'str', content: 'str', *, tenant: 'str', run_id: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.runtime.claim_resume :: def claim_resume(run_id: 'str', *, tenant: 'str', idempotency: 'IdempotencyStore', ttl_seconds: 'float | None' = None) -> 'None'
+tesserix_adk.runtime.compact_conversation :: def compact_conversation(history: 'Sequence[Message]', *, summarise: 'Summariser', threshold_tokens: 'int', keep_recent: 'int' = 4, tokenizer: 'Tokenizer | None' = None, run_id: 'str' = '') -> 'Compaction'
+tesserix_adk.runtime.compaction.CITATIONS :: CITATIONS: str
+tesserix_adk.runtime.compaction.COMPACTED :: COMPACTED: str
+tesserix_adk.runtime.compaction.Compaction :: class Compaction(AdkModel)
+tesserix_adk.runtime.compaction.CompactionEvent :: class CompactionEvent(AdkModel) {attributes(self) -> 'dict[str, str]'}
+tesserix_adk.runtime.compaction.Summariser :: class Summariser(Protocol)
+tesserix_adk.runtime.compaction.citations_of :: def citations_of(message: 'Message') -> 'tuple[str, ...]'
+tesserix_adk.runtime.compaction.cited :: def cited(message: 'Message', citations: 'Sequence[str]') -> 'Message'
+tesserix_adk.runtime.compaction.compact_conversation :: def compact_conversation(history: 'Sequence[Message]', *, summarise: 'Summariser', threshold_tokens: 'int', keep_recent: 'int' = 4, tokenizer: 'Tokenizer | None' = None, run_id: 'str' = '') -> 'Compaction'
 tesserix_adk.runtime.context.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.context.Segment :: class Segment(AdkModel)
 tesserix_adk.runtime.current_ambient :: def current_ambient() -> 'Ambient | None'
