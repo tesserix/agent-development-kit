@@ -8,6 +8,74 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.2.0
+
+### Added
+
+- **tesserix_adk.core.tenant_config**: What a tenant is permitted is now data rather than a branch in agent code. A
+`TenantConfigProvider` answers for one tenant at a time — `FileTenantConfig` reads a TOML
+file per tenant, `CachingTenantConfig` puts a bounded, per-tenant-invalidated cache in
+front of any provider — and `resolve_tenant_policy` resolves the bound tenant's
+entitlement once, at the boundary that already knows whose work this is.
+`tenant_policy(policy)` binds it; `current_policy()` is what everything below reads.
+
+`TenantLimits` states the model allowlist, the task-class routing table, the tool
+allowlist, the data region, the memory retention window and the budget ceiling.
+`check_model`, `check_tool` and `check_region` refuse before the call rather than
+reporting after it — a ceiling catches spend once it has happened, an allowlist stops it.
+An absent setting states nothing and leaves the decision to whatever else is in force; an
+empty one is a stated refusal.
+
+Budget is the exception to "the tenant layer is highest": a tenant ceiling arrives as one
+more `ScopedLimits` under `BudgetScope.TENANT` and `most_restrictive` decides, so a tenant
+configuration can narrow a run's ceiling and never widen it. `AgentRunner` folds the bound
+policy's ceiling in where it was given no explicit `BudgetPolicy`, so the same agent code
+halts at the cheap plan's ceiling for one tenant and continues for another.
+
+A tenant-scoped ceiling with no `TenantLedger` wired now holds the run it is on, where
+before it was checked against a ledger total that nothing updated and so bound nothing.
+
+Every path that could end in a permissive default ends in a refusal: an unknown tenant is
+`UnknownTenantError` rather than the global defaults, an unreadable store is
+`TenantUnconfiguredError` — a distinct type, because one is a request to reject and the
+other is an outage to page on — and a cache entry past its window is not served even when
+the store behind it is down. Secrets in tenant configuration are named by `SecretRef` and
+resolved from the `SecretProvider` in force; a literal where a reference belongs does not
+validate.
+
+Documented in `docs/tenant-config.md`.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.CachingTenantConfig`
+- Added: `tesserix_adk.core.FileTenantConfig`
+- Added: `tesserix_adk.core.SecretRef`
+- Added: `tesserix_adk.core.TenantConfig`
+- Added: `tesserix_adk.core.TenantConfigProvider`
+- Added: `tesserix_adk.core.TenantLimitError`
+- Added: `tesserix_adk.core.TenantLimits`
+- Added: `tesserix_adk.core.TenantPolicy`
+- Added: `tesserix_adk.core.TenantUnconfiguredError`
+- Added: `tesserix_adk.core.UnknownTenantError`
+- Added: `tesserix_adk.core.current_policy`
+- Added: `tesserix_adk.core.errors.TenantLimitError`
+- Added: `tesserix_adk.core.errors.TenantUnconfiguredError`
+- Added: `tesserix_adk.core.errors.UnknownTenantError`
+- Added: `tesserix_adk.core.policy_here`
+- Added: `tesserix_adk.core.resolve_tenant_policy`
+- Added: `tesserix_adk.core.tenant_config.CachingTenantConfig`
+- Added: `tesserix_adk.core.tenant_config.FileTenantConfig`
+- Added: `tesserix_adk.core.tenant_config.SecretRef`
+- Added: `tesserix_adk.core.tenant_config.TenantConfig`
+- Added: `tesserix_adk.core.tenant_config.TenantConfigProvider`
+- Added: `tesserix_adk.core.tenant_config.TenantLimits`
+- Added: `tesserix_adk.core.tenant_config.TenantPolicy`
+- Added: `tesserix_adk.core.tenant_config.current_policy`
+- Added: `tesserix_adk.core.tenant_config.policy_here`
+- Added: `tesserix_adk.core.tenant_config.resolve_tenant_policy`
+- Added: `tesserix_adk.core.tenant_config.tenant_policy`
+- Added: `tesserix_adk.core.tenant_policy`
+
 ## 0.1.1
 
 ### Fixed
