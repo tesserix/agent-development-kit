@@ -38,7 +38,7 @@ bench-quick: ## The same, cut down for a fast local check before opening a chang
 	uv run python -m tools.benchmark --rounds 3 --iterations 10
 
 bench-record: ## Record a new baseline, which belongs in a reviewed commit of its own
-	uv run python -m tools.benchmark --write --only tokens,peak_bytes
+	uv run python -m tools.benchmark --write --only tokens,peak_bytes,time_to_first_token,tokens_per_second,cache_hit_ratio
 
 api-snapshot: ## Regenerate docs/api-surface.txt after a deliberate surface change
 	uv run python -m tools.api_surface --write

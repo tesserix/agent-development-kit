@@ -152,6 +152,7 @@ code lands here as the kit is built.
 | Async and sync — the sync surface, the running-loop refusal, worker pools, stall detection | [`docs/async-and-sync.md`](docs/async-and-sync.md) |
 | The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |
 | Benchmarks — the gated metrics, variance controls, updating a baseline | [`docs/benchmarks.md`](docs/benchmarks.md) |
+| Latency objectives — first token, sustained rate, cache hit ratio, sampling versus audit | [`docs/latency-objectives.md`](docs/latency-objectives.md) |
 | Determinism, cassettes & replay | [`docs/determinism.md`](docs/determinism.md) |
 | Backlog conventions | [`docs/backlog.md`](docs/backlog.md) |
 | Versioning & deprecations | [`docs/versioning.md`](docs/versioning.md) |

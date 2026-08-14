@@ -60,11 +60,14 @@ class Metric(StrEnum):
     PEAK_BYTES = "peak_bytes"
     ALLOCATIONS = "allocations"
     TOKENS = "tokens"
+    TIME_TO_FIRST_TOKEN = "time_to_first_token"  # noqa: S105 — a metric name, not a secret
+    TOKENS_PER_SECOND = "tokens_per_second"
+    CACHE_HIT_RATIO = "cache_hit_ratio"
 
     @property
     def higher_is_better(self) -> bool:
-        """Whether a larger number is an improvement, which only throughput is."""
-        return self is Metric.THROUGHPUT
+        """Whether a larger number is an improvement."""
+        return self in _HIGHER_IS_BETTER
 
     @property
     def scales_with_iterations(self) -> bool:
@@ -86,6 +89,9 @@ DEFAULT_LIMITS: Mapping[Metric, float] = {
     Metric.PEAK_BYTES: 0.10,
     Metric.ALLOCATIONS: 0.05,
     Metric.TOKENS: 0.0,
+    Metric.TIME_TO_FIRST_TOKEN: 0.10,
+    Metric.TOKENS_PER_SECOND: 0.10,
+    Metric.CACHE_HIT_RATIO: 0.05,
 }
 
 
@@ -100,7 +106,15 @@ DEFAULT_FLOORS: Mapping[Metric, float] = {
     Metric.PEAK_BYTES: 4096.0,
     Metric.ALLOCATIONS: 1.0,
     Metric.TOKENS: 0.0,
+    Metric.TIME_TO_FIRST_TOKEN: 5e-3,
+    Metric.TOKENS_PER_SECOND: 0.5,
+    Metric.CACHE_HIT_RATIO: 0.02,
 }
+
+
+# Read by `Metric.higher_is_better`, and kept beside the enum so adding a metric means
+# deciding which way it runs rather than inheriting the wrong default.
+_HIGHER_IS_BETTER = frozenset({Metric.THROUGHPUT, Metric.TOKENS_PER_SECOND, Metric.CACHE_HIT_RATIO})
 
 
 class Verdict(StrEnum):
@@ -128,6 +142,9 @@ class Scenario:
             stall on a shared runner does not become the result.
         tokens: Cumulative tokens the scenario has consumed, read either side of the last
             measured round. `None` where the scenario has no token cost to report.
+        observed: Numbers the scenario measured itself — time to first token, sustained
+            rate, cache hit ratio — read after the last measured round. The harness cannot
+            time a first token from the outside, so a scenario that cares reports it.
 
     Raises:
         ValueError: If iterations or rounds is below one, or warmup is negative.
@@ -140,6 +157,7 @@ class Scenario:
     rounds: int = 5
     drop_slowest: bool = True
     tokens: Callable[[], int] | None = None
+    observed: Callable[[], Mapping[Metric, float]] | None = None
 
     def __post_init__(self) -> None:
         """Refuse a configuration that would produce a number nobody can read."""
@@ -355,6 +373,8 @@ async def measure(
     values[Metric.ALLOCATIONS] = allocations / scenario.iterations
     if spent is not None:
         values[Metric.TOKENS] = spent / scenario.iterations
+    if scenario.observed is not None:
+        values.update(scenario.observed())
     return Measurement(
         scenario=scenario.name,
         python=python or f"{sys.version_info.major}.{sys.version_info.minor}",

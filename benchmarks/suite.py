@@ -13,20 +13,24 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import statistics
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
-from tesserix_adk.core import Agent, ToolCall, Usage
+from tesserix_adk.core import Agent, TextPart, ToolCall, Usage
 from tesserix_adk.models import BatchingEmbedder, EmbeddingLimits
+from tesserix_adk.observability import CacheHits, LatencyReport, RunTimer
 from tesserix_adk.runtime import AgentRunner, ModelResponse, ToolDeclaration
 from tesserix_adk.testing import CAPABLE, FakeToolRegistry, ScriptedProvider, estimate_tokens
-from tesserix_adk.testing.benchmarks import Scenario
+from tesserix_adk.testing.benchmarks import Metric, Scenario
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from tesserix_adk.core import Message
     from tesserix_adk.models import Vector
+    from tesserix_adk.runtime import ModelRequest
 
 NATIVE = CAPABLE.declaring(structured_output=True)
 LOOKUPS = ("timetable", "weather", "hotels", "events")
@@ -112,6 +116,7 @@ def declarations() -> FakeToolRegistry:
 def scenarios() -> tuple[Scenario, ...]:
     """Every path the suite defends, in the order the report reads best."""
     tokens = Tokens()
+    cold, warm, sustained = Latencies(), Latencies(), Latencies()
     return (
         Scenario(name="single-turn", run=_single_turn(tokens), tokens=tokens, iterations=20),
         Scenario(name="tool-turn", run=_tool_turn(tokens), tokens=tokens, iterations=20),
@@ -119,6 +124,24 @@ def scenarios() -> tuple[Scenario, ...]:
         Scenario(name="structured-output", run=_structured_output, iterations=20),
         Scenario(name="embedding-batch", run=_embedding_batch, iterations=5),
         Scenario(name="run-fanout", run=_run_fanout, iterations=5, rounds=3),
+        Scenario(
+            name="first-token-cold",
+            run=_first_token(cold, cold_start=True),
+            observed=cold,
+            iterations=20,
+        ),
+        Scenario(
+            name="first-token-warm",
+            run=_first_token(warm, cold_start=False),
+            observed=warm,
+            iterations=20,
+        ),
+        Scenario(
+            name="sustained-stream",
+            run=_sustained_stream(sustained),
+            observed=sustained,
+            iterations=20,
+        ),
     )
 
 
@@ -211,3 +234,158 @@ async def _run_fanout() -> None:
         for _ in range(20)
     ]
     await asyncio.gather(*(one.run(PLANNER, ASKED, tenant="acme") for one in runners))
+
+
+class CpuProfile:
+    """Declared prefill and decode rates for the CPU these objectives are stated against.
+
+    A shared CI runner cannot measure CPU inference reproducibly — its cores are contended
+    and its neighbours are invisible — so the model's own time is modelled from these rates
+    and only the kit's time and the token counts are measured. The counts are the part a
+    change can move: break prefix stability and the uncached count rises, and the modelled
+    first token rises with it. See `docs/latency-objectives.md`.
+
+    Args:
+        prefill: Tokens per second the target CPU prefills, for tokens not already cached.
+        decode: Tokens per second it emits after the first one.
+    """
+
+    def __init__(self, *, prefill: float, decode: float) -> None:
+        self.prefill = prefill
+        self.decode = decode
+
+    def modelled(self, measured: LatencyReport, hits: CacheHits) -> LatencyReport:
+        """Add the model time this run would have cost to the kit time it did cost."""
+        uncached = hits.input_tokens - (hits.cached_tokens or 0)
+        first = (measured.time_to_first_token or 0.0) + uncached / self.prefill
+        seconds = measured.seconds + uncached / self.prefill + measured.output_tokens / self.decode
+        decoding = seconds - first
+        return measured.model_copy(
+            update={
+                "time_to_first_token": first,
+                "seconds": seconds,
+                "tokens_per_second": measured.output_tokens / decoding if decoding > 0 else None,
+                "hits": hits,
+            }
+        )
+
+
+TARGET_CPU = CpuProfile(prefill=420.0, decode=18.0)
+"""Eight contemporary x86 cores, no GPU, an int8-quantized small model."""
+
+
+class Latencies:
+    """What every run of a scenario reported, folded into the metrics the measurement records."""
+
+    def __init__(self) -> None:
+        self.reports: list[LatencyReport] = []
+
+    def record(self, report: LatencyReport) -> None:
+        """Keep one run's report."""
+        self.reports.append(report)
+
+    def __call__(self) -> dict[Metric, float]:
+        """The median of what was kept, then start again for the next measurement.
+
+        A median, not a mean: one round descheduled by a noisy neighbour would drag a mean
+        far enough to fail the gate for a reason no change caused.
+        """
+        kept, self.reports = self.reports, []
+        measured: dict[Metric, float] = {}
+        for metric, values in (
+            (Metric.TIME_TO_FIRST_TOKEN, [one.time_to_first_token for one in kept]),
+            (Metric.TOKENS_PER_SECOND, [one.tokens_per_second for one in kept]),
+            (Metric.CACHE_HIT_RATIO, [one.hits.ratio for one in kept]),
+        ):
+            known = [one for one in values if one is not None]
+            if known:
+                measured[metric] = statistics.median(known)
+        return measured
+
+
+class Prefill:
+    """How much of each request a prefix cache would already hold, from the last one seen."""
+
+    def __init__(self) -> None:
+        self._last = ""
+
+    def hits(self, request: ModelRequest) -> CacheHits:
+        """Count what was sent and what a prefix cache would not have to prefill again."""
+        rendered = _rendered(request.messages)
+        shared = 0
+        for mine, theirs in zip(self._last, rendered, strict=False):
+            if mine != theirs:
+                break
+            shared += 1
+        self._last = rendered
+        return CacheHits(input_tokens=len(rendered) // 4, cached_tokens=shared // 4)
+
+
+def _rendered(messages: Sequence[Message]) -> str:
+    """The text of a request, as a prefix cache would see it."""
+    return "".join(
+        part.text for one in messages for part in one.content if isinstance(part, TextPart)
+    )
+
+
+async def _timed(
+    provider: ScriptedProvider, prefill: Prefill, latencies: Latencies, *, cold: bool, asked: str
+) -> None:
+    """One streamed run, timed where it is measurable and modelled where it is not."""
+    runner = AgentRunner(provider=provider, tools=declarations())
+    timer = RunTimer(streaming=True, cold=cold)
+    stream = runner.stream(PLANNER, asked, tenant="acme")
+    async with stream:
+        async for _ in stream:
+            timer.first_token()
+    result = await stream
+    hits = prefill.hits(provider.requests[-1])
+    latencies.record(
+        TARGET_CPU.modelled(timer.finished(output_tokens=result.usage.output_tokens), hits)
+    )
+
+
+FOLLOW_UPS = (
+    "Which of those legs has a reserved-seat requirement I should book ahead?",
+    "If the second night moves to Nara instead, what changes about the transfers?",
+    "Give me the same plan again but arriving in the evening rather than at midday.",
+    "What is the walking distance from each hotel to the nearest limited express stop?",
+)
+
+
+def _follow_up(index: int) -> str:
+    """A fresh turn on a stable prefix, which is what a warm conversation actually is."""
+    return f"{ASKED} {FOLLOW_UPS[index % len(FOLLOW_UPS)]}"
+
+
+def _first_token(latencies: Latencies, *, cold_start: bool) -> Any:  # noqa: ANN401 — typed by Scenario
+    """First-token latency, cold and warm kept apart because averaging them hides both."""
+    prefill = Prefill()
+    asked = iter(range(1_000_000))
+
+    async def body() -> None:
+        provider = ScriptedProvider(answered(), capabilities=NATIVE)
+        await _timed(
+            provider,
+            Prefill() if cold_start else prefill,
+            latencies,
+            cold=cold_start,
+            asked=ASKED if cold_start else _follow_up(next(asked)),
+        )
+
+    return body
+
+
+def _sustained_stream(latencies: Latencies) -> Any:  # noqa: ANN401 — typed by Scenario
+    """The rate a reader perceives once tokens are arriving, over a longer answer."""
+    prefill = Prefill()
+    asked = iter(range(1_000_000))
+    long_answer = ModelResponse(
+        content="Kyoto, four nights. " * 40, usage=Usage(input_tokens=812, output_tokens=200)
+    )
+
+    async def body() -> None:
+        provider = ScriptedProvider(long_answer, capabilities=NATIVE)
+        await _timed(provider, prefill, latencies, cold=False, asked=_follow_up(next(asked)))
+
+    return body

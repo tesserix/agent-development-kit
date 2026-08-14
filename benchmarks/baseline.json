@@ -19,6 +19,32 @@
         }
       }
     },
+    "first-token-cold": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0358,
+        "metrics": {
+          "cache_hit_ratio": 0.0,
+          "peak_bytes": 85134.0,
+          "time_to_first_token": 0.05987,
+          "tokens_per_second": 17.995722
+        }
+      }
+    },
+    "first-token-warm": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.048,
+        "metrics": {
+          "cache_hit_ratio": 0.561869,
+          "peak_bytes": 85060.0,
+          "time_to_first_token": 0.0473,
+          "tokens_per_second": 17.996052
+        }
+      }
+    },
     "run-fanout": {
       "3.13": {
         "rounds": 2,
@@ -90,6 +116,19 @@
         "spread": 0.0574,
         "metrics": {
           "peak_bytes": 143696.0
+        }
+      }
+    },
+    "sustained-stream": {
+      "3.13": {
+        "rounds": 4,
+        "iterations": 20,
+        "spread": 0.0213,
+        "metrics": {
+          "cache_hit_ratio": 0.561869,
+          "peak_bytes": 156439.0,
+          "time_to_first_token": 0.047266,
+          "tokens_per_second": 17.997069
         }
       }
     },
