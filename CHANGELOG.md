@@ -8,6 +8,50 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.8.0
+
+### Added
+
+- **tesserix_adk.rag.quarantine**: Retrieved content now leaves `tesserix_adk.rag` as data. `quarantine` turns a
+`RetrievalResult` into `UntrustedText` values, which are deliberately not `str`: every
+instruction-position parameter in the kit is typed `str`, so putting a passage there does
+not type-check, and `str()` of one raises `TrustBoundaryError` rather than producing prose
+the model will read as its own. `Quarantined.for_layer` hands out the fenced blocks for the
+retrieved prompt layer and refuses every other section by name, and the fence delimiter is
+escaped inside each block, so a passage containing `</untrusted-data>` cannot close it
+early.
+
+`screen` normalises a passage the way the model reads it — NFKC, zero-width characters
+stripped, Cyrillic homoglyphs folded, base64 runs decoded — and returns `InjectionSignal`
+values naming what it recognised: `OVERRIDE`, `TOOL_SHAPED`, `FENCE`, `ENCODED`,
+`SYSTEM_ECHO` for the agent's own instructions quoted back at it, `METADATA` for an
+instruction in a field nobody reads as prose, and `SPLIT` for one assembled across two
+adjacent chunks. Nothing is dropped: a flagged passage still reaches the prompt, fenced,
+because pattern matching loses to paraphrase and a silently shortened corpus answers the
+question wrongly while looking like it worked. `Quarantined.attributes` gives counts and
+kinds under `adk.retrieval.injection_*`, never document text.
+
+`tesserix_adk.testing.POISONED_CORPUS` is a corpus somebody has written to, covering each
+of those shapes, for testing a pipeline against corpus poisoning without writing the
+payloads by hand.
+
+### Public API surface
+
+- Added: `tesserix_adk.rag.InjectionSignal`
+- Added: `tesserix_adk.rag.Quarantined`
+- Added: `tesserix_adk.rag.SignalKind`
+- Added: `tesserix_adk.rag.UntrustedText`
+- Added: `tesserix_adk.rag.quarantine`
+- Added: `tesserix_adk.rag.quarantine.InjectionSignal`
+- Added: `tesserix_adk.rag.quarantine.Quarantined`
+- Added: `tesserix_adk.rag.quarantine.SignalKind`
+- Added: `tesserix_adk.rag.quarantine.UntrustedText`
+- Added: `tesserix_adk.rag.quarantine.quarantine`
+- Added: `tesserix_adk.rag.quarantine.screen`
+- Added: `tesserix_adk.rag.screen`
+- Added: `tesserix_adk.testing.POISONED_CORPUS`
+- Added: `tesserix_adk.testing.retrieval.POISONED_CORPUS`
+
 ## 0.7.0
 
 ### Added
