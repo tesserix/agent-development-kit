@@ -114,6 +114,8 @@ __all__ = [
     "ToolResultError",
     "ToolTimedOutError",
     "TrustBoundaryError",
+    "UncitedClaimError",
+    "UngroundedCitationError",
     "UnknownTenantError",
     "WorkItemNotFoundError",
     "WorkersBusyError",
@@ -1401,6 +1403,47 @@ class RetrievalDegradedError(AdkError):
             *args,
             details={"missing": ",".join(missing), "answered": ",".join(answered)},
         )
+
+
+class UngroundedCitationError(AdkError):
+    """Raised when an answer cites something the run did not retrieve.
+
+    The citation is neither dropped nor repaired: an answer that looked sourced and was
+    not is the failure this whole surface exists to catch, and stripping the offending
+    citation would leave a claim standing with nothing behind it.
+
+    Args:
+        missing: The citation ids the answer used that nothing retrieved.
+        available: The citation ids the retrieval result actually offered.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        missing: Sequence[str] = (),
+        available: Sequence[str] = (),
+    ) -> None:
+        self.missing = tuple(missing)
+        self.available = tuple(available)
+        super().__init__(
+            *args,
+            details={"missing": ",".join(missing), "available": ",".join(available)},
+        )
+
+
+class UncitedClaimError(AdkError):
+    """Raised when a claim carries no citation at all.
+
+    Where the corpus returned nothing, the answer is a refusal. An uncited claim reads
+    exactly like a cited one to the person acting on it.
+
+    Args:
+        claims: The claims that cite nothing.
+    """
+
+    def __init__(self, *args: object, claims: Sequence[str] = ()) -> None:
+        self.claims = tuple(claims)
+        super().__init__(*args, details={"claims": str(len(self.claims))})
 
 
 class EmbeddingUnavailableError(AdkError):

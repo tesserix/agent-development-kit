@@ -489,6 +489,8 @@ tesserix_adk.core.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
 tesserix_adk.core.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
 tesserix_adk.core.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
+tesserix_adk.core.UncitedClaimError :: class UncitedClaimError(AdkError)
+tesserix_adk.core.UngroundedCitationError :: class UngroundedCitationError(AdkError)
 tesserix_adk.core.UnknownTenantError :: class UnknownTenantError(ConfigurationError)
 tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'; sliced(self, limits: 'BudgetLimits') -> 'UnlimitedBudget'}
 tesserix_adk.core.Usage :: class Usage(AdkModel)
@@ -711,6 +713,8 @@ tesserix_adk.core.errors.ToolRefusal :: class ToolRefusal(ToolError)
 tesserix_adk.core.errors.ToolResultError :: class ToolResultError(AdkError)
 tesserix_adk.core.errors.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.errors.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
+tesserix_adk.core.errors.UncitedClaimError :: class UncitedClaimError(AdkError)
+tesserix_adk.core.errors.UngroundedCitationError :: class UngroundedCitationError(AdkError)
 tesserix_adk.core.errors.UnknownTenantError :: class UnknownTenantError(ConfigurationError)
 tesserix_adk.core.errors.WorkItemNotFoundError :: class WorkItemNotFoundError(AdkError)
 tesserix_adk.core.errors.WorkersBusyError :: class WorkersBusyError(AdkError)
@@ -1196,6 +1200,10 @@ tesserix_adk.rag.Chunker :: class Chunker(Protocol) {chunk(self, document: 'Docu
 tesserix_adk.rag.ChunkerFactory :: ChunkerFactory: TypeAliasType
 tesserix_adk.rag.ChunkerRegistry :: class ChunkerRegistry(object) {chunker_for(self, collection: 'str') -> 'Chunker'; register(self, strategy: 'str', build: 'ChunkerFactory') -> 'None'; spec_for(self, collection: 'str') -> 'ChunkingSpec'}
 tesserix_adk.rag.ChunkingSpec :: class ChunkingSpec(AdkModel)
+tesserix_adk.rag.Citation :: class Citation(AdkModel)
+tesserix_adk.rag.CitationResolver :: class CitationResolver(Protocol) {resolve(self, citation: 'Citation') -> 'ResolvedCitation'}
+tesserix_adk.rag.CitedAnswer :: class CitedAnswer(AdkModel) {provenance(self) -> 'tuple[str, ...]'; sources(self, claim: 'Claim') -> 'tuple[Citation, ...]'}
+tesserix_adk.rag.Claim :: class Claim(AdkModel)
 tesserix_adk.rag.CodeAware :: class CodeAware(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
 tesserix_adk.rag.CrossEncoder :: class CrossEncoder(Protocol) {score(self, pairs: 'Sequence[tuple[str, str]]') -> 'Sequence[float]'}
 tesserix_adk.rag.CrossEncoderReranker :: class CrossEncoderReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
@@ -1221,16 +1229,20 @@ tesserix_adk.rag.RerankScore :: class RerankScore(AdkModel)
 tesserix_adk.rag.Reranker :: class Reranker(Protocol) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
 tesserix_adk.rag.Reranking :: class Reranking(AdkModel)
 tesserix_adk.rag.RerankingRetriever :: class RerankingRetriever(object) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
+tesserix_adk.rag.ResolvedCitation :: class ResolvedCitation(Protocol)
 tesserix_adk.rag.RetrievalResult :: class RetrievalResult(AdkModel)
 tesserix_adk.rag.RetrievalScope :: class RetrievalScope(AdkModel)
 tesserix_adk.rag.Retriever :: class Retriever(Protocol) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
 tesserix_adk.rag.SearchIndex :: class SearchIndex(Protocol) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'}
 tesserix_adk.rag.SentenceWindow :: class SentenceWindow(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
+tesserix_adk.rag.SourceLocator :: class SourceLocator(AdkModel)
+tesserix_adk.rag.Span :: class Span(AdkModel)
 tesserix_adk.rag.Structural :: class Structural(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
 tesserix_adk.rag.TokenCount :: TokenCount: TypeAliasType
 tesserix_adk.rag.Vector :: Vector: TypeAliasType
 tesserix_adk.rag.VectorSource :: class VectorSource(Protocol) {vectors_for(self, texts: 'Sequence[str]') -> 'BatchVectors'}
 tesserix_adk.rag.WeightedSum :: class WeightedSum(object) {fuse(self, ranked: 'Mapping[Branch, Sequence[Hit]]', k: 'int') -> 'Sequence[Hit]'}
+tesserix_adk.rag.check_grounding :: def check_grounding(answer: 'CitedAnswer', retrieved: 'Sequence[Citation]') -> 'None'
 tesserix_adk.rag.chunk_id :: def chunk_id(document_id: 'str', text: 'str') -> 'str'
 tesserix_adk.rag.chunking.Chunk :: class Chunk(AdkModel)
 tesserix_adk.rag.chunking.Chunker :: class Chunker(Protocol) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
@@ -1246,6 +1258,19 @@ tesserix_adk.rag.chunking.Structural :: class Structural(_Splitter) {chunk(self,
 tesserix_adk.rag.chunking.TokenCount :: TokenCount: TypeAliasType
 tesserix_adk.rag.chunking.chunk_id :: def chunk_id(document_id: 'str', text: 'str') -> 'str'
 tesserix_adk.rag.chunking.tokens_via :: def tokens_via(provider: 'ModelProvider') -> 'TokenCount'
+tesserix_adk.rag.citation.Citation :: class Citation(AdkModel)
+tesserix_adk.rag.citation.CitationResolver :: class CitationResolver(Protocol) {resolve(self, citation: 'Citation') -> 'ResolvedCitation'}
+tesserix_adk.rag.citation.CitedAnswer :: class CitedAnswer(AdkModel) {provenance(self) -> 'tuple[str, ...]'; sources(self, claim: 'Claim') -> 'tuple[Citation, ...]'}
+tesserix_adk.rag.citation.Claim :: class Claim(AdkModel)
+tesserix_adk.rag.citation.ResolvedCitation :: class ResolvedCitation(Protocol)
+tesserix_adk.rag.citation.SourceLocator :: class SourceLocator(AdkModel)
+tesserix_adk.rag.citation.Span :: class Span(AdkModel)
+tesserix_adk.rag.citation.check_grounding :: def check_grounding(answer: 'CitedAnswer', retrieved: 'Sequence[Citation]') -> 'None'
+tesserix_adk.rag.citation.citation_attributes :: def citation_attributes(citations: 'Sequence[Citation]') -> 'dict[str, str]'
+tesserix_adk.rag.citation.cite :: def cite(result: 'RetrievalResult', *, retrieved_at: 'datetime | None' = None) -> 'tuple[Citation, ...]'
+tesserix_adk.rag.citation.excerpt :: def excerpt(citation: 'Citation', document: 'Document') -> 'str'
+tesserix_adk.rag.citation_attributes :: def citation_attributes(citations: 'Sequence[Citation]') -> 'dict[str, str]'
+tesserix_adk.rag.cite :: def cite(result: 'RetrievalResult', *, retrieved_at: 'datetime | None' = None) -> 'tuple[Citation, ...]'
 tesserix_adk.rag.embedding.BatchVectors :: class BatchVectors(AdkModel)
 tesserix_adk.rag.embedding.BatchedEmbedder :: class BatchedEmbedder(object) {embed_documents(self, texts: 'Sequence[str]') -> 'EmbeddedBatch'; embed_query(self, text: 'str') -> 'Vector'}
 tesserix_adk.rag.embedding.EmbeddedBatch :: class EmbeddedBatch(AdkModel)
@@ -1259,6 +1284,7 @@ tesserix_adk.rag.embedding.VectorSource :: class VectorSource(Protocol) {vectors
 tesserix_adk.rag.embedding.embedding_key :: def embedding_key(model: 'EmbeddingModel', text: 'str', *, tenant: 'str') -> 'str'
 tesserix_adk.rag.embedding.normalised :: def normalised(text: 'str') -> 'str'
 tesserix_adk.rag.embedding_key :: def embedding_key(model: 'EmbeddingModel', text: 'str', *, tenant: 'str') -> 'str'
+tesserix_adk.rag.excerpt :: def excerpt(citation: 'Citation', document: 'Document') -> 'str'
 tesserix_adk.rag.normalised :: def normalised(text: 'str') -> 'str'
 tesserix_adk.rag.reranking.CrossEncoder :: class CrossEncoder(Protocol) {score(self, pairs: 'Sequence[tuple[str, str]]') -> 'Sequence[float]'}
 tesserix_adk.rag.reranking.CrossEncoderReranker :: class CrossEncoderReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}

@@ -67,6 +67,9 @@ class MemoryRecord(AdkModel):
         embedding: The vector, for semantic records. None for the other three kinds.
         redacted: The paths inside `value` that were masked on the way in. Named rather
             than counted, so a reader can tell a masked field from one that was empty.
+        citations: The citation ids this was derived from, where it came out of retrieved
+            content. A summary of a document that loses the document is a claim about the
+            corpus that the corpus cannot be asked about.
     """
 
     id: str
@@ -85,6 +88,7 @@ class MemoryRecord(AdkModel):
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     embedding: tuple[float, ...] | None = None
     redacted: tuple[str, ...] = ()
+    citations: tuple[str, ...] = ()
 
     @property
     def about(self) -> str:
