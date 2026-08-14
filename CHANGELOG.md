@@ -8,6 +8,52 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.9.0
+
+### Added
+
+- **tesserix_adk.runtime.compaction**: `tesserix_adk.runtime` now compacts a long conversation without losing where its claims
+came from. `compact_conversation` folds the oldest turns into one summary once the
+conversation passes `threshold_tokens`, keeping the newest `keep_recent` verbatim, and does
+nothing below the threshold so it can be called every turn.
+
+Citation ids travel on the message itself — `cited` writes them under `adk.citations` and
+`citations_of` reads them back — because a history is what gets persisted, replayed and
+handed to a provider, and a parallel list of sources is what does not survive that. The
+`Summariser` is handed the turns and returns the replacement message, so it can carry across
+whatever else its messages hold; what is not left to it is the provenance. Every id carried
+by a folded turn must be on the message replacing them, or the new `ProvenanceLostError`
+names the ids that would have been dropped and the history is returned untouched. Prose is
+what a summary may lose.
+
+Compaction touches only the conversation layer, so `assemble_prompt` produces the same
+prefix fingerprint before and after. The summary is marked `adk.compacted` and is not
+summarised again, which makes a second pass a no-op and folds it in with new turns on a
+later one. `Compaction.event` is a `CompactionEvent` giving the run, the turns folded, the
+ids carried and the tokens before and after, with `attributes()` for the span — counts
+only, never the conversation.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.ProvenanceLostError`
+- Added: `tesserix_adk.core.errors.ProvenanceLostError`
+- Added: `tesserix_adk.runtime.CITATIONS`
+- Added: `tesserix_adk.runtime.COMPACTED`
+- Added: `tesserix_adk.runtime.Compaction`
+- Added: `tesserix_adk.runtime.CompactionEvent`
+- Added: `tesserix_adk.runtime.Summariser`
+- Added: `tesserix_adk.runtime.citations_of`
+- Added: `tesserix_adk.runtime.cited`
+- Added: `tesserix_adk.runtime.compact_conversation`
+- Added: `tesserix_adk.runtime.compaction.CITATIONS`
+- Added: `tesserix_adk.runtime.compaction.COMPACTED`
+- Added: `tesserix_adk.runtime.compaction.Compaction`
+- Added: `tesserix_adk.runtime.compaction.CompactionEvent`
+- Added: `tesserix_adk.runtime.compaction.Summariser`
+- Added: `tesserix_adk.runtime.compaction.citations_of`
+- Added: `tesserix_adk.runtime.compaction.cited`
+- Added: `tesserix_adk.runtime.compaction.compact_conversation`
+
 ## 0.8.0
 
 ### Added
