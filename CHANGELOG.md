@@ -8,11 +8,23 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.1.1
+
 ### Fixed
 
-- **tesserix_adk.testing**: Importing a fake no longer requires `pytest`. The conformance
-suites and the pytest plugin are loaded on first use, so a wheel install can reach the
-fakes without a test-time dependency it was never given.
+- **tesserix_adk.testing**: Importing a fake from `tesserix_adk.testing` no longer requires `pytest`. The package
+imported its conformance suites and pytest plugin eagerly, and both import `pytest` at
+module scope, so on a wheel install `import tesserix_adk.testing` raised
+`ModuleNotFoundError: No module named 'pytest'` — which reached every consumer who only
+wanted a fake, and the getting-started example with them.
+
+Both modules are now loaded on first use behind a module-level `__getattr__`. Every name
+is still importable exactly as before, still exported from `__all__`, and still carries
+its real type for a type checker; a name the package does not have still fails as an
+`AttributeError` rather than being swallowed.
+
+**Stability:** no API change. `from tesserix_adk.testing import TracerConformance` and
+subclassing the suites work unchanged; running them still needs `pytest`, as it always did.
 
 ## 0.1.0
 
