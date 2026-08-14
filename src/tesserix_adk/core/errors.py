@@ -32,6 +32,7 @@ __all__ = [
     "CeilingExceededError",
     "CheckpointFormatError",
     "CheckpointTooLargeError",
+    "ChunkingError",
     "ClaimUnavailableError",
     "ConfigurationError",
     "ContentFilteredError",
@@ -1354,6 +1355,24 @@ class EmbeddingDimensionError(AdkError):
         self.expected = expected
         self.received = received
         super().__init__(*args, details={"expected": str(expected), "received": str(received)})
+
+
+class ChunkingError(AdkError):
+    """Raised when a run of text cannot be divided under the chunk token limit.
+
+    Emitting the over-long chunk instead would push the failure to a model call, where it
+    reads as a context window error about a document nobody can name. Not retryable: the
+    document divides no better on a second attempt.
+
+    Args:
+        document: Which document could not be split.
+        offset: Where in it the indivisible run begins, in characters.
+    """
+
+    def __init__(self, *args: object, document: str = "", offset: int = 0) -> None:
+        self.document = document
+        self.offset = offset
+        super().__init__(*args, details={"document": document, "offset": str(offset)})
 
 
 class ContextBudgetError(AdkError):

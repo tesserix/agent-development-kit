@@ -114,6 +114,7 @@ code lands here as the kit is built.
 | Tenancy — context-carried tenant identity, refusal on absence, declared crossings | [`docs/tenancy.md`](docs/tenancy.md) |
 | Tenant propagation — one wire contract across queues, peers and workflows | [`docs/tenant-propagation.md`](docs/tenant-propagation.md) |
 | Per-tenant configuration — entitlements as data, resolved once, failing closed | [`docs/tenant-config.md`](docs/tenant-config.md) |
+| Chunking — token-sized pieces, strategies per collection, spans a citation can quote | [`docs/chunking.md`](docs/chunking.md) |
 | Estimation — pre-flight cost, confidence, refusal, calibration | [`docs/estimation.md`](docs/estimation.md) |
 | The spend ledger — shared ceilings, windows, leases, sharding, coalescing | [`docs/ledger.md`](docs/ledger.md) |
 | Structured output — declared answer shapes, provider fallback, violations | [`docs/structured-output.md`](docs/structured-output.md) |
