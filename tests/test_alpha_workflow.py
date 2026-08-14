@@ -86,8 +86,11 @@ class TestPublishing:
         trains the team to ignore a red main, which costs more than the delay."""
         assert "PUBLISH_ALPHAS" in alpha_jobs()["publish"]["if"]
 
-    def test_the_build_is_not_gated_so_every_merge_is_proven_publishable(self) -> None:
-        assert "if" not in alpha_jobs()["build"]
+    def test_the_build_is_gated_only_on_the_commit_being_a_release(self) -> None:
+        """Every other merge is proven publishable; a release already has a version, and an
+        alpha built from it would number below the release it was cut from."""
+        assert alpha_jobs()["build"]["if"] == "needs.whether.outputs.alpha == 'true'"
+        assert any("describe --exact-match" in step for step in run_steps("whether"))
 
     def test_the_workflow_cannot_write_to_the_repository_by_default(self) -> None:
         assert load_yaml(ALPHA)["permissions"] == {"contents": "read"}
