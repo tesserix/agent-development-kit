@@ -8,6 +8,80 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.5.0
+
+### Added
+
+- **tesserix_adk.rag.retrieval**: `tesserix_adk.rag` now retrieves behind a `Retriever` protocol. `IndexRetriever` runs one
+branch over a `SearchIndex`, and `HybridRetriever` runs several and fuses them by rank —
+`ReciprocalRankFusion` by default, `WeightedSum` for a corpus that has been measured. Every
+hit carries a `BranchScore` per branch that found it, so `hit.found_by(Branch.KEYWORD)`
+answers whether a passage was an exact match or the vector's opinion.
+
+The tenant predicate is set from the tenant context into `IndexQuery.tenant` and applied
+inside the store's own query; a caller filter named `tenant` is refused with
+`SchemaViolationError` rather than merged or dropped. Other filters are pushed down
+alongside it, so nothing is filtered after the fetch.
+
+A branch that fails or times out leaves the result `partial` and names the branches that
+did answer; `require=` turns that into a `RetrievalDegradedError` naming what is missing,
+and a retrieval where no branch answered always raises.
+
+`tesserix_adk.adapters` adds `PgvectorIndex`, running both branches over one chunk table,
+with `EXPECTED_CHUNK_SCHEMA` for the migration repository to own. `tesserix_adk.testing`
+adds `FakeIndex`, `Indexed` and a `SearchIndexConformance` suite whose corpus holds a
+second tenant's identical passage, so a store that filters after the fetch fails the suite.
+
+### Public API surface
+
+- Added: `tesserix_adk.adapters.CHUNK_SCHEMA_VERSION`
+- Added: `tesserix_adk.adapters.ChunkTables`
+- Added: `tesserix_adk.adapters.DEFAULT_CHUNK_TABLES`
+- Added: `tesserix_adk.adapters.EXPECTED_CHUNK_SCHEMA`
+- Added: `tesserix_adk.adapters.PgvectorIndex`
+- Added: `tesserix_adk.adapters.PgvectorSettings`
+- Added: `tesserix_adk.adapters.pgvector.CHUNK_SCHEMA_VERSION`
+- Added: `tesserix_adk.adapters.pgvector.ChunkTables`
+- Added: `tesserix_adk.adapters.pgvector.DEFAULT_CHUNK_TABLES`
+- Added: `tesserix_adk.adapters.pgvector.EXPECTED_CHUNK_SCHEMA`
+- Added: `tesserix_adk.adapters.pgvector.PgvectorIndex`
+- Added: `tesserix_adk.adapters.pgvector.PgvectorSettings`
+- Added: `tesserix_adk.core.RetrievalDegradedError`
+- Added: `tesserix_adk.core.errors.RetrievalDegradedError`
+- Added: `tesserix_adk.rag.Branch`
+- Added: `tesserix_adk.rag.BranchScore`
+- Added: `tesserix_adk.rag.Fusion`
+- Added: `tesserix_adk.rag.Hit`
+- Added: `tesserix_adk.rag.HybridRetriever`
+- Added: `tesserix_adk.rag.IndexQuery`
+- Added: `tesserix_adk.rag.IndexRetriever`
+- Added: `tesserix_adk.rag.ReciprocalRankFusion`
+- Added: `tesserix_adk.rag.RetrievalResult`
+- Added: `tesserix_adk.rag.RetrievalScope`
+- Added: `tesserix_adk.rag.Retriever`
+- Added: `tesserix_adk.rag.SearchIndex`
+- Added: `tesserix_adk.rag.WeightedSum`
+- Added: `tesserix_adk.rag.retrieval.Branch`
+- Added: `tesserix_adk.rag.retrieval.BranchScore`
+- Added: `tesserix_adk.rag.retrieval.Fusion`
+- Added: `tesserix_adk.rag.retrieval.Hit`
+- Added: `tesserix_adk.rag.retrieval.HybridRetriever`
+- Added: `tesserix_adk.rag.retrieval.IndexQuery`
+- Added: `tesserix_adk.rag.retrieval.IndexRetriever`
+- Added: `tesserix_adk.rag.retrieval.ReciprocalRankFusion`
+- Added: `tesserix_adk.rag.retrieval.RetrievalResult`
+- Added: `tesserix_adk.rag.retrieval.RetrievalScope`
+- Added: `tesserix_adk.rag.retrieval.Retriever`
+- Added: `tesserix_adk.rag.retrieval.SearchIndex`
+- Added: `tesserix_adk.rag.retrieval.WeightedSum`
+- Added: `tesserix_adk.testing.FakeIndex`
+- Added: `tesserix_adk.testing.Indexed`
+- Added: `tesserix_adk.testing.SearchIndexConformance`
+- Added: `tesserix_adk.testing.conformance.CONFORMANCE_CORPUS`
+- Added: `tesserix_adk.testing.conformance.SearchIndexConformance`
+- Added: `tesserix_adk.testing.retrieval.FakeIndex`
+- Added: `tesserix_adk.testing.retrieval.Indexed`
+
 ## 0.4.0
 
 ### Added
