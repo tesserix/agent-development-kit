@@ -27,7 +27,7 @@ jobs:
     outputs:
       alpha: ${{ steps.check.outputs.alpha }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # The release commit is pushed with its tag, so it already has a version of its
@@ -54,7 +54,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         # hatch-vcs derives the version from the tag, so the history has to be there.
         with:
           fetch-depth: 0
@@ -124,7 +124,7 @@ jobs:
           gh attestation verify downloaded/*.whl --repo "$KIT" \
             --signer-workflow "$KIT/.github/workflows/alpha.yml"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: ${{ vars.DOWNSTREAM_REPO }}
           token: ${{ secrets.DOWNSTREAM_TOKEN }}
@@ -141,7 +141,7 @@ jobs:
           uv run --directory consumer --with "tesserix-adk==$VERSION" \
             pytest --junitxml=../candidate.xml
         continue-on-error: true
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           path: kit
       - run: |
@@ -155,7 +155,7 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
