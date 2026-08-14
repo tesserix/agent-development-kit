@@ -27,7 +27,7 @@ jobs:
     name: advisories against the lock
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
@@ -44,7 +44,7 @@ jobs:
     name: licence policy across the graph
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
@@ -57,7 +57,7 @@ jobs:
     name: credentials in the tree and the history
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         # A credential removed in a later commit is still in the history and still live.
         with:
           fetch-depth: 0
@@ -80,7 +80,7 @@ jobs:
     name: disclosure commitments
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
