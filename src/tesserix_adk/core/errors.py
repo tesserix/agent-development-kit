@@ -42,6 +42,7 @@ __all__ = [
     "DelegationLimitError",
     "DependencyCycleError",
     "EmbeddingDimensionError",
+    "EmbeddingUnavailableError",
     "EstimateUnavailableError",
     "EventLoopStalledError",
     "ExtractionError",
@@ -1373,6 +1374,24 @@ class ChunkingError(AdkError):
         self.document = document
         self.offset = offset
         super().__init__(*args, details={"document": document, "offset": str(offset)})
+
+
+class EmbeddingUnavailableError(AdkError):
+    """Raised when an ingest cannot embed a batch and stops rather than filling the gap.
+
+    A zero or random vector for the batch that failed would keep the pipeline moving and
+    leave a hole in the index that nothing surfaces: the passages are simply never
+    retrieved. Carries where to resume from so the ingest is restartable, not restarted.
+
+    Args:
+        batch: Which batch failed, counting from zero.
+        cursor: The index into the texts of the first one not embedded.
+    """
+
+    def __init__(self, *args: object, batch: int = 0, cursor: int = 0) -> None:
+        self.batch = batch
+        self.cursor = cursor
+        super().__init__(*args, details={"batch": str(batch), "cursor": str(cursor)})
 
 
 class ContextBudgetError(AdkError):

@@ -282,6 +282,7 @@ tesserix_adk.core.Dispatch :: class Dispatch(Generic) {run(self) -> 'DispatchRes
 tesserix_adk.core.DispatchNode :: class DispatchNode(Generic)
 tesserix_adk.core.DispatchResult :: class DispatchResult(Generic) {value(self, name: 'str') -> 'T'}
 tesserix_adk.core.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
+tesserix_adk.core.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
 tesserix_adk.core.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
 tesserix_adk.core.EventLoopStalledError :: class EventLoopStalledError(AdkError)
 tesserix_adk.core.ExtractionError :: class ExtractionError(AdkError)
@@ -624,6 +625,7 @@ tesserix_adk.core.errors.DelegationError :: class DelegationError(AdkError)
 tesserix_adk.core.errors.DelegationLimitError :: class DelegationLimitError(LoopLimitError)
 tesserix_adk.core.errors.DependencyCycleError :: class DependencyCycleError(ConfigurationError)
 tesserix_adk.core.errors.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
+tesserix_adk.core.errors.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
 tesserix_adk.core.errors.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
 tesserix_adk.core.errors.EventLoopStalledError :: class EventLoopStalledError(AdkError)
 tesserix_adk.core.errors.ExtractionError :: class ExtractionError(AdkError)
@@ -1171,6 +1173,8 @@ tesserix_adk.observability.tree.node_of :: def node_of(run: 'Run[OutputT]', cont
 tesserix_adk.observability.tree.peer_node :: def peer_node(context: 'TraceContext', *, usage: 'Usage | None' = None, cost: 'Cost | None' = None, rate: 'Rate | None' = None, started_at: 'float | None' = None, ended_at: 'float | None' = None) -> 'Node'
 tesserix_adk.observability.tree.render :: def render(assembled: 'RunTree') -> 'str'
 tesserix_adk.observability.tree.tree :: def tree(nodes: 'Sequence[Node]') -> 'RunTree'
+tesserix_adk.rag.BatchVectors :: class BatchVectors(AdkModel)
+tesserix_adk.rag.BatchedEmbedder :: class BatchedEmbedder(object) {embed_documents(self, texts: 'Sequence[str]') -> 'EmbeddedBatch'; embed_query(self, text: 'str') -> 'Vector'}
 tesserix_adk.rag.Chunk :: class Chunk(AdkModel)
 tesserix_adk.rag.Chunker :: class Chunker(Protocol) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
 tesserix_adk.rag.ChunkerFactory :: ChunkerFactory: TypeAliasType
@@ -1178,11 +1182,19 @@ tesserix_adk.rag.ChunkerRegistry :: class ChunkerRegistry(object) {chunker_for(s
 tesserix_adk.rag.ChunkingSpec :: class ChunkingSpec(AdkModel)
 tesserix_adk.rag.CodeAware :: class CodeAware(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
 tesserix_adk.rag.Document :: class Document(AdkModel)
+tesserix_adk.rag.EmbeddedBatch :: class EmbeddedBatch(AdkModel)
+tesserix_adk.rag.Embedder :: class Embedder(Protocol) {embed_documents(self, texts: 'Sequence[str]') -> 'EmbeddedBatch'; embed_query(self, text: 'str') -> 'Vector'}
+tesserix_adk.rag.EmbeddingCache :: class EmbeddingCache(Protocol) {get(self, keys: 'Sequence[str]') -> 'Mapping[str, Vector]'; put(self, vectors: 'Mapping[str, Vector]') -> 'None'}
+tesserix_adk.rag.EmbeddingModel :: class EmbeddingModel(AdkModel)
+tesserix_adk.rag.EmbeddingStats :: class EmbeddingStats(AdkModel)
 tesserix_adk.rag.FixedTokens :: class FixedTokens(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
+tesserix_adk.rag.MemoryEmbeddingCache :: class MemoryEmbeddingCache(object) {get(self, keys: 'Sequence[str]') -> 'Mapping[str, Vector]'; put(self, vectors: 'Mapping[str, Vector]') -> 'None'}
 tesserix_adk.rag.Overflow :: class Overflow(StrEnum)
 tesserix_adk.rag.SentenceWindow :: class SentenceWindow(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
 tesserix_adk.rag.Structural :: class Structural(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
 tesserix_adk.rag.TokenCount :: TokenCount: TypeAliasType
+tesserix_adk.rag.Vector :: Vector: TypeAliasType
+tesserix_adk.rag.VectorSource :: class VectorSource(Protocol) {vectors_for(self, texts: 'Sequence[str]') -> 'BatchVectors'}
 tesserix_adk.rag.chunk_id :: def chunk_id(document_id: 'str', text: 'str') -> 'str'
 tesserix_adk.rag.chunking.Chunk :: class Chunk(AdkModel)
 tesserix_adk.rag.chunking.Chunker :: class Chunker(Protocol) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
@@ -1198,6 +1210,20 @@ tesserix_adk.rag.chunking.Structural :: class Structural(_Splitter) {chunk(self,
 tesserix_adk.rag.chunking.TokenCount :: TokenCount: TypeAliasType
 tesserix_adk.rag.chunking.chunk_id :: def chunk_id(document_id: 'str', text: 'str') -> 'str'
 tesserix_adk.rag.chunking.tokens_via :: def tokens_via(provider: 'ModelProvider') -> 'TokenCount'
+tesserix_adk.rag.embedding.BatchVectors :: class BatchVectors(AdkModel)
+tesserix_adk.rag.embedding.BatchedEmbedder :: class BatchedEmbedder(object) {embed_documents(self, texts: 'Sequence[str]') -> 'EmbeddedBatch'; embed_query(self, text: 'str') -> 'Vector'}
+tesserix_adk.rag.embedding.EmbeddedBatch :: class EmbeddedBatch(AdkModel)
+tesserix_adk.rag.embedding.Embedder :: class Embedder(Protocol) {embed_documents(self, texts: 'Sequence[str]') -> 'EmbeddedBatch'; embed_query(self, text: 'str') -> 'Vector'}
+tesserix_adk.rag.embedding.EmbeddingCache :: class EmbeddingCache(Protocol) {get(self, keys: 'Sequence[str]') -> 'Mapping[str, Vector]'; put(self, vectors: 'Mapping[str, Vector]') -> 'None'}
+tesserix_adk.rag.embedding.EmbeddingModel :: class EmbeddingModel(AdkModel)
+tesserix_adk.rag.embedding.EmbeddingStats :: class EmbeddingStats(AdkModel)
+tesserix_adk.rag.embedding.MemoryEmbeddingCache :: class MemoryEmbeddingCache(object) {get(self, keys: 'Sequence[str]') -> 'Mapping[str, Vector]'; put(self, vectors: 'Mapping[str, Vector]') -> 'None'}
+tesserix_adk.rag.embedding.Vector :: Vector: TypeAliasType
+tesserix_adk.rag.embedding.VectorSource :: class VectorSource(Protocol) {vectors_for(self, texts: 'Sequence[str]') -> 'BatchVectors'}
+tesserix_adk.rag.embedding.embedding_key :: def embedding_key(model: 'EmbeddingModel', text: 'str', *, tenant: 'str') -> 'str'
+tesserix_adk.rag.embedding.normalised :: def normalised(text: 'str') -> 'str'
+tesserix_adk.rag.embedding_key :: def embedding_key(model: 'EmbeddingModel', text: 'str', *, tenant: 'str') -> 'str'
+tesserix_adk.rag.normalised :: def normalised(text: 'str') -> 'str'
 tesserix_adk.rag.tokens_via :: def tokens_via(provider: 'ModelProvider') -> 'TokenCount'
 tesserix_adk.runtime.AgentPlanner :: class AgentPlanner(object) {plan(self, task: 'str', *, feedback: 'str' = '') -> 'Plan'}
 tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; resume(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; resume_with_decision(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', token: 'str', granted: 'bool', decided_by: 'str', reason: 'str' = '', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None, allow_model_drift: 'bool' = False) -> 'Run[OutputT]'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'RunStream[OutputT]'; stream_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'tuple[ProgressEvent, ...]'}
@@ -1478,6 +1504,7 @@ tesserix_adk.testing.CheckpointStoreConformance :: class CheckpointStoreConforma
 tesserix_adk.testing.ClockConformance :: class ClockConformance(ABC) {make_clock(self) -> 'Clock'; test_now_does_not_go_backwards(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_sleep_does_not_move_time_backwards(self) -> 'None'}
 tesserix_adk.testing.FakeBudgetPolicy :: class FakeBudgetPolicy(object) {check(self) -> 'BudgetDecision'; child(self) -> 'FakeBudgetPolicy'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'}
 tesserix_adk.testing.FakeClock :: class FakeClock(object) {advance(self, seconds: 'float') -> 'None'; now(self) -> 'float'; set(self, when: 'float') -> 'None'; sleep(self, seconds: 'float') -> 'None'; wait_for_sleep(self, count: 'int' = 1) -> 'None'}
+tesserix_adk.testing.FakeEmbedder :: class FakeEmbedder(object) {vectors_for(self, texts: 'Sequence[str]') -> 'BatchVectors'}
 tesserix_adk.testing.FakeGuardrail :: class FakeGuardrail(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.testing.FakeKeyValueStore :: class FakeKeyValueStore(object) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
 tesserix_adk.testing.FakeMeter :: class FakeMeter(object) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'; total(self, name: 'str', **dimensions: 'str') -> 'float'}
@@ -1550,6 +1577,7 @@ tesserix_adk.testing.conformance.StateStoreConformance :: class StateStoreConfor
 tesserix_adk.testing.conformance.TenantPropagationConformance :: class TenantPropagationConformance(ABC) {round_trip(self, headers: 'Mapping[str, str]') -> 'Mapping[str, str]'; test_a_context_too_large_for_the_transport_still_delivers_the_tenant(self) -> 'None'; test_consecutive_messages_do_not_bleed(self) -> 'None'; test_header_case_is_not_load_bearing(self) -> 'None'; test_the_binding_does_not_outlive_the_message(self) -> 'None'; test_the_rest_of_the_context_survives_with_it(self) -> 'None'; test_the_tenant_survives_the_hop(self) -> 'None'}
 tesserix_adk.testing.conformance.TracerConformance :: class TracerConformance(ABC) {make_tracer(self) -> 'Tracer'; test_event_never_raises(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_span_does_not_swallow_the_bodys_exception(self) -> 'None'; test_span_yields_and_closes(self) -> 'None'}
 tesserix_adk.testing.conformance.WorkQueueConformance :: class WorkQueueConformance(ABC) {advance(self, queue: 'WorkQueue', seconds: 'float') -> 'None'; make_queue(self) -> 'WorkQueue'; test_a_claimed_item_is_not_handed_to_a_second_worker(self) -> 'None'; test_a_completed_item_never_comes_back(self) -> 'None'; test_a_duplicate_job_is_collapsed_into_the_first(self) -> 'None'; test_a_failure_comes_back_for_another_attempt(self) -> 'None'; test_a_lapsed_claim_is_requeued_with_its_attempt_counted(self) -> 'None'; test_a_live_worker_keeps_its_claim(self) -> 'None'; test_a_restarted_worker_gives_back_what_it_held(self) -> 'None'; test_a_worker_that_lost_its_claim_is_refused(self) -> 'None'; test_an_empty_queue_hands_out_nothing(self) -> 'None'; test_an_enqueued_item_is_claimable(self) -> 'None'; test_an_item_that_cannot_succeed_skips_its_remaining_attempts(self) -> 'None'; test_an_item_the_queue_does_not_hold_is_a_refusal(self) -> 'None'; test_one_tenant_cannot_act_on_another_s_item(self) -> 'None'; test_one_tenant_cannot_starve_another(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_the_depth_counts_what_is_waiting(self) -> 'None'}
+tesserix_adk.testing.embedding.FakeEmbedder :: class FakeEmbedder(object) {vectors_for(self, texts: 'Sequence[str]') -> 'BatchVectors'}
 tesserix_adk.testing.estimate_tokens :: def estimate_tokens(messages: 'Sequence[Message]') -> 'int'
 tesserix_adk.testing.fakes.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.testing.fakes.CAPABLE :: CAPABLE: ModelCapabilities

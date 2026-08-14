@@ -14,6 +14,7 @@ from tesserix_adk.testing.cassette import (
     assert_same_run,
     redacted,
 )
+from tesserix_adk.testing.embedding import FakeEmbedder
 from tesserix_adk.testing.fakes import (
     CAPABLE,
     BudgetExceededError,
@@ -74,6 +75,7 @@ __all__ = [
     "ClockConformance",
     "FakeBudgetPolicy",
     "FakeClock",
+    "FakeEmbedder",
     "FakeGuardrail",
     "FakeKeyValueStore",
     "FakeMeter",
