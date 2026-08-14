@@ -8,6 +8,50 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.3.0
+
+### Added
+
+- **tesserix_adk.rag.chunking**: `tesserix_adk.rag` chunks documents behind a `Chunker` protocol: fixed-token windows with
+overlap, recursive structural splitting, sentence windows and code-aware splitting, chosen
+per collection through a `ChunkerRegistry`. Chunks are sized by the tokeniser of the model
+that will read them, carry the exact character span they came from, and take
+content-addressed ids. Text that will not divide under the limit raises `ChunkingError`
+naming the document and offset rather than emitting an over-long chunk.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.ChunkingError`
+- Added: `tesserix_adk.core.errors.ChunkingError`
+- Added: `tesserix_adk.rag.Chunk`
+- Added: `tesserix_adk.rag.Chunker`
+- Added: `tesserix_adk.rag.ChunkerFactory`
+- Added: `tesserix_adk.rag.ChunkerRegistry`
+- Added: `tesserix_adk.rag.ChunkingSpec`
+- Added: `tesserix_adk.rag.CodeAware`
+- Added: `tesserix_adk.rag.Document`
+- Added: `tesserix_adk.rag.FixedTokens`
+- Added: `tesserix_adk.rag.Overflow`
+- Added: `tesserix_adk.rag.SentenceWindow`
+- Added: `tesserix_adk.rag.Structural`
+- Added: `tesserix_adk.rag.TokenCount`
+- Added: `tesserix_adk.rag.chunk_id`
+- Added: `tesserix_adk.rag.chunking.Chunk`
+- Added: `tesserix_adk.rag.chunking.Chunker`
+- Added: `tesserix_adk.rag.chunking.ChunkerFactory`
+- Added: `tesserix_adk.rag.chunking.ChunkerRegistry`
+- Added: `tesserix_adk.rag.chunking.ChunkingSpec`
+- Added: `tesserix_adk.rag.chunking.CodeAware`
+- Added: `tesserix_adk.rag.chunking.Document`
+- Added: `tesserix_adk.rag.chunking.FixedTokens`
+- Added: `tesserix_adk.rag.chunking.Overflow`
+- Added: `tesserix_adk.rag.chunking.SentenceWindow`
+- Added: `tesserix_adk.rag.chunking.Structural`
+- Added: `tesserix_adk.rag.chunking.TokenCount`
+- Added: `tesserix_adk.rag.chunking.chunk_id`
+- Added: `tesserix_adk.rag.chunking.tokens_via`
+- Added: `tesserix_adk.rag.tokens_via`
+
 ## 0.2.0
 
 ### Added
