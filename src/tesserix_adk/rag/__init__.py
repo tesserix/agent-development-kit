@@ -43,6 +43,14 @@ from tesserix_adk.rag.embedding import (
     embedding_key,
     normalised,
 )
+from tesserix_adk.rag.quarantine import (
+    InjectionSignal,
+    Quarantined,
+    SignalKind,
+    UntrustedText,
+    quarantine,
+    screen,
+)
 from tesserix_adk.rag.reranking import (
     DEGRADED,
     CrossEncoder,
@@ -100,10 +108,12 @@ __all__ = [
     "HybridRetriever",
     "IndexQuery",
     "IndexRetriever",
+    "InjectionSignal",
     "MemoryEmbeddingCache",
     "ModelReranker",
     "NoReranking",
     "Overflow",
+    "Quarantined",
     "ReciprocalRankFusion",
     "RerankScore",
     "Reranker",
@@ -115,10 +125,12 @@ __all__ = [
     "Retriever",
     "SearchIndex",
     "SentenceWindow",
+    "SignalKind",
     "SourceLocator",
     "Span",
     "Structural",
     "TokenCount",
+    "UntrustedText",
     "Vector",
     "VectorSource",
     "WeightedSum",
@@ -129,5 +141,7 @@ __all__ = [
     "embedding_key",
     "excerpt",
     "normalised",
+    "quarantine",
+    "screen",
     "tokens_via",
 ]

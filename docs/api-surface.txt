@@ -1220,10 +1220,12 @@ tesserix_adk.rag.Hit :: class Hit(AdkModel) {found_by(self, branch: 'Branch') ->
 tesserix_adk.rag.HybridRetriever :: class HybridRetriever(object) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
 tesserix_adk.rag.IndexQuery :: class IndexQuery(AdkModel)
 tesserix_adk.rag.IndexRetriever :: class IndexRetriever(object) {branch_hits(self, query: 'str', *, asked: 'Admissible') -> 'Sequence[Hit]'; retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
+tesserix_adk.rag.InjectionSignal :: class InjectionSignal(AdkModel)
 tesserix_adk.rag.MemoryEmbeddingCache :: class MemoryEmbeddingCache(object) {get(self, keys: 'Sequence[str]') -> 'Mapping[str, Vector]'; put(self, vectors: 'Mapping[str, Vector]') -> 'None'}
 tesserix_adk.rag.ModelReranker :: class ModelReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
 tesserix_adk.rag.NoReranking :: class NoReranking(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
 tesserix_adk.rag.Overflow :: class Overflow(StrEnum)
+tesserix_adk.rag.Quarantined :: class Quarantined(AdkModel) {attributes(self) -> 'dict[str, str]'; for_layer(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.rag.ReciprocalRankFusion :: class ReciprocalRankFusion(object) {fuse(self, ranked: 'Mapping[Branch, Sequence[Hit]]', k: 'int') -> 'Sequence[Hit]'}
 tesserix_adk.rag.RerankScore :: class RerankScore(AdkModel)
 tesserix_adk.rag.Reranker :: class Reranker(Protocol) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
@@ -1235,10 +1237,12 @@ tesserix_adk.rag.RetrievalScope :: class RetrievalScope(AdkModel)
 tesserix_adk.rag.Retriever :: class Retriever(Protocol) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
 tesserix_adk.rag.SearchIndex :: class SearchIndex(Protocol) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'}
 tesserix_adk.rag.SentenceWindow :: class SentenceWindow(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
+tesserix_adk.rag.SignalKind :: class SignalKind(StrEnum)
 tesserix_adk.rag.SourceLocator :: class SourceLocator(AdkModel)
 tesserix_adk.rag.Span :: class Span(AdkModel)
 tesserix_adk.rag.Structural :: class Structural(_Splitter) {chunk(self, document: 'Document') -> 'Sequence[Chunk]'}
 tesserix_adk.rag.TokenCount :: TokenCount: TypeAliasType
+tesserix_adk.rag.UntrustedText :: class UntrustedText(AdkModel) {fenced(self) -> 'str'}
 tesserix_adk.rag.Vector :: Vector: TypeAliasType
 tesserix_adk.rag.VectorSource :: class VectorSource(Protocol) {vectors_for(self, texts: 'Sequence[str]') -> 'BatchVectors'}
 tesserix_adk.rag.WeightedSum :: class WeightedSum(object) {fuse(self, ranked: 'Mapping[Branch, Sequence[Hit]]', k: 'int') -> 'Sequence[Hit]'}
@@ -1286,6 +1290,13 @@ tesserix_adk.rag.embedding.normalised :: def normalised(text: 'str') -> 'str'
 tesserix_adk.rag.embedding_key :: def embedding_key(model: 'EmbeddingModel', text: 'str', *, tenant: 'str') -> 'str'
 tesserix_adk.rag.excerpt :: def excerpt(citation: 'Citation', document: 'Document') -> 'str'
 tesserix_adk.rag.normalised :: def normalised(text: 'str') -> 'str'
+tesserix_adk.rag.quarantine :: def quarantine(result: 'RetrievalResult', *, instructions: 'str' = '', source: 'str' = 'retrieved') -> 'Quarantined'
+tesserix_adk.rag.quarantine.InjectionSignal :: class InjectionSignal(AdkModel)
+tesserix_adk.rag.quarantine.Quarantined :: class Quarantined(AdkModel) {attributes(self) -> 'dict[str, str]'; for_layer(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
+tesserix_adk.rag.quarantine.SignalKind :: class SignalKind(StrEnum)
+tesserix_adk.rag.quarantine.UntrustedText :: class UntrustedText(AdkModel) {fenced(self) -> 'str'}
+tesserix_adk.rag.quarantine.quarantine :: def quarantine(result: 'RetrievalResult', *, instructions: 'str' = '', source: 'str' = 'retrieved') -> 'Quarantined'
+tesserix_adk.rag.quarantine.screen :: def screen(text: 'str', *, instructions: 'str' = '') -> 'tuple[InjectionSignal, ...]'
 tesserix_adk.rag.reranking.CrossEncoder :: class CrossEncoder(Protocol) {score(self, pairs: 'Sequence[tuple[str, str]]') -> 'Sequence[float]'}
 tesserix_adk.rag.reranking.CrossEncoderReranker :: class CrossEncoderReranker(object) {rerank(self, query: 'str', hits: 'Sequence[Hit]', *, top_n: 'int') -> 'Reranking'}
 tesserix_adk.rag.reranking.DEGRADED :: DEGRADED: str
@@ -1308,6 +1319,7 @@ tesserix_adk.rag.retrieval.RetrievalScope :: class RetrievalScope(AdkModel)
 tesserix_adk.rag.retrieval.Retriever :: class Retriever(Protocol) {retrieve(self, query: 'str', *, scope: 'RetrievalScope', filters: 'Mapping[str, Sequence[str]] | None' = None, k: 'int' = 10) -> 'RetrievalResult'}
 tesserix_adk.rag.retrieval.SearchIndex :: class SearchIndex(Protocol) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'}
 tesserix_adk.rag.retrieval.WeightedSum :: class WeightedSum(object) {fuse(self, ranked: 'Mapping[Branch, Sequence[Hit]]', k: 'int') -> 'Sequence[Hit]'}
+tesserix_adk.rag.screen :: def screen(text: 'str', *, instructions: 'str' = '') -> 'tuple[InjectionSignal, ...]'
 tesserix_adk.rag.tokens_via :: def tokens_via(provider: 'ModelProvider') -> 'TokenCount'
 tesserix_adk.runtime.AgentPlanner :: class AgentPlanner(object) {plan(self, task: 'str', *, feedback: 'str' = '') -> 'Plan'}
 tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; resume(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; resume_with_decision(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', token: 'str', granted: 'bool', decided_by: 'str', reason: 'str' = '', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None, allow_model_drift: 'bool' = False) -> 'Run[OutputT]'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'RunStream[OutputT]'; stream_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'tuple[ProgressEvent, ...]'}
@@ -1612,6 +1624,7 @@ tesserix_adk.testing.MemoryStoreConformance :: class MemoryStoreConformance(ABC)
 tesserix_adk.testing.MetricPoint :: class MetricPoint(object)
 tesserix_adk.testing.ModelProviderConformance :: class ModelProviderConformance(ABC) {make_provider(self) -> 'ModelProvider'; test_a_longer_prompt_does_not_count_for_less(self) -> 'None'; test_it_answers_with_a_response(self) -> 'None'; test_it_counts_tokens_without_going_negative(self) -> 'None'; test_it_declares_what_it_can_do(self) -> 'None'; test_it_is_named(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_streaming_it_never_declared_is_refused(self) -> 'None'; test_the_declaration_does_not_change_between_reads(self) -> 'None'}
 tesserix_adk.testing.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
+tesserix_adk.testing.POISONED_CORPUS :: POISONED_CORPUS: tuple
 tesserix_adk.testing.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.RecordedError :: class RecordedError(AdkModel) {raised(self) -> 'ProviderError'}
 tesserix_adk.testing.RecordedEvent :: class RecordedEvent(object)
@@ -1699,6 +1712,7 @@ tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkE
 tesserix_adk.testing.redacted :: def redacted(text: 'str') -> 'str'
 tesserix_adk.testing.retrieval.FakeIndex :: class FakeIndex(object) {add(self, *passages: 'Indexed') -> 'None'; search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'}
 tesserix_adk.testing.retrieval.Indexed :: class Indexed(object)
+tesserix_adk.testing.retrieval.POISONED_CORPUS :: POISONED_CORPUS: tuple
 tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int

@@ -44,7 +44,7 @@ from tesserix_adk.testing.http_cassette import (
 )
 from tesserix_adk.testing.injection import INJECTION_FIXTURES, InjectionFixture
 from tesserix_adk.testing.memory import InMemoryMemoryStore
-from tesserix_adk.testing.retrieval import FakeIndex, Indexed
+from tesserix_adk.testing.retrieval import POISONED_CORPUS, FakeIndex, Indexed
 
 if TYPE_CHECKING:
     from tesserix_adk.testing.conformance import (
@@ -68,6 +68,7 @@ __all__ = [
     "CAPABLE",
     "HTTP_CASSETTE_FORMAT",
     "INJECTION_FIXTURES",
+    "POISONED_CORPUS",
     "BudgetExceededError",
     "BudgetPolicyConformance",
     "Cassette",
