@@ -1331,6 +1331,25 @@ class ToolTimedOutError(AdkError):
         )
 
 
+class MemoryAdmissionError(AdkError):
+    """Raised when a fact was not allowed to become a durable memory.
+
+    Refused at the write, because a poisoned fact removed a week later has already
+    influenced every run in between wearing the costume of something the system knows.
+
+    Args:
+        origin: Who or what produced it, per `memory.Origin`.
+        source: The tool, document or person behind it.
+        reason: Which rule refused it, in the words the audit record carries.
+    """
+
+    def __init__(self, *args: object, origin: str = "", source: str = "", reason: str = "") -> None:
+        self.origin = origin
+        self.source = source
+        self.reason = reason
+        super().__init__(*args, details={"origin": origin, "source": source, "reason": reason})
+
+
 class MemoryScopeError(AdkError):
     """Raised when a record is filed somewhere it does not say it belongs.
 

@@ -96,6 +96,7 @@ code lands here as the kit is built.
 | Memory — the four kinds, scope in every signature, capabilities checked at bind time, adapter guarantees | [`docs/memory.md`](docs/memory.md) |
 | Changing beliefs — supersession, bitemporal reads, contradictions, decay | [`docs/beliefs.md`](docs/beliefs.md) |
 | Redaction and erasure — masking on write, derived artefacts, two-phase erasure, receipts | [`docs/erasure.md`](docs/erasure.md) |
+| Memory admission — what may persist, provenance on every fact, re-judged on the way back in | [`docs/memory-admission.md`](docs/memory-admission.md) |
 | Memory adapters — Redis, PostgreSQL and pgvector, settings, retries, paging | [`docs/memory-adapters.md`](docs/memory-adapters.md) |
 | Graph memory — relations over a temporal graph, metered extraction, tenant ceilings, queued writes | [`docs/graph-memory.md`](docs/graph-memory.md) |
 | Sandboxed code execution — what the code cannot reach, ceilings, artifacts, stronger backends | [`docs/sandbox.md`](docs/sandbox.md) |

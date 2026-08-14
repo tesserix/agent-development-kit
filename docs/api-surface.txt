@@ -353,6 +353,7 @@ tesserix_adk.core.MASK :: MASK: str
 tesserix_adk.core.MAX_HEADER_BYTES :: MAX_HEADER_BYTES: int
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
 tesserix_adk.core.MediaIntakeError :: class MediaIntakeError(AdkError)
+tesserix_adk.core.MemoryAdmissionError :: class MemoryAdmissionError(AdkError)
 tesserix_adk.core.MemoryConflictError :: class MemoryConflictError(AdkError)
 tesserix_adk.core.MemoryContradictionError :: class MemoryContradictionError(AdkError)
 tesserix_adk.core.MemoryCorruptionError :: class MemoryCorruptionError(AdkError)
@@ -911,6 +912,8 @@ tesserix_adk.guardrails.GuardStage :: class GuardStage(StrEnum)
 tesserix_adk.guardrails.GuardVerdict :: class GuardVerdict(StrEnum)
 tesserix_adk.guardrails.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
 tesserix_adk.guardrails.base.Guard :: class Guard(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
+tesserix_adk.memory.Admission :: class Admission(AdkModel)
+tesserix_adk.memory.AdmissionPolicy :: class AdmissionPolicy(AdkModel) {decide(self, record: 'MemoryRecord', provenance: 'Provenance', *, at: 'float | None' = None) -> 'Admission'}
 tesserix_adk.memory.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
 tesserix_adk.memory.Belief :: class Belief(AdkModel)
 tesserix_adk.memory.CompactionOutcome :: class CompactionOutcome(AdkModel)
@@ -928,7 +931,9 @@ tesserix_adk.memory.DerivedIndex :: class DerivedIndex(Protocol) {purge(self, ar
 tesserix_adk.memory.DropOldest :: class DropOldest(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
 tesserix_adk.memory.ErasureReceipt :: class ErasureReceipt(AdkModel)
 tesserix_adk.memory.HalfLife :: class HalfLife(object) {weigh(self, record: 'MemoryRecord', *, now: 'float') -> 'float'}
+tesserix_adk.memory.INSTRUCTION_SIGNATURES :: INSTRUCTION_SIGNATURES: tuple
 tesserix_adk.memory.MemoryCapabilities :: class MemoryCapabilities(object)
+tesserix_adk.memory.MemoryGuard :: class MemoryGuard(Protocol) {check_input(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.memory.MemoryHit :: class MemoryHit(AdkModel)
 tesserix_adk.memory.MemoryKind :: class MemoryKind(StrEnum)
 tesserix_adk.memory.MemoryNeeds :: class MemoryNeeds(object)
@@ -937,8 +942,11 @@ tesserix_adk.memory.MemoryRecord :: class MemoryRecord(AdkModel)
 tesserix_adk.memory.MemoryRedactor :: class MemoryRedactor(Protocol) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.MemoryScope :: class MemoryScope(AdkModel)
 tesserix_adk.memory.MemoryStore :: class MemoryStore(Protocol) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'Sequence[Derivation]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'Sequence[MemoryRecord]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
+tesserix_adk.memory.Origin :: class Origin(StrEnum)
 tesserix_adk.memory.PatternRedactor :: class PatternRedactor(object) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.PinAndFold :: class PinAndFold(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.Provenance :: class Provenance(AdkModel)
+tesserix_adk.memory.Recall :: class Recall(AdkModel)
 tesserix_adk.memory.Resolution :: class Resolution(StrEnum)
 tesserix_adk.memory.SectionOutcome :: class SectionOutcome(AdkModel)
 tesserix_adk.memory.SectionPlan :: class SectionPlan(AdkModel)
@@ -946,6 +954,16 @@ tesserix_adk.memory.SummariseSpan :: class SummariseSpan(object) {compact(self, 
 tesserix_adk.memory.SupersedeMatching :: class SupersedeMatching(object) {resolve(self, existing: 'MemoryRecord', incoming: 'MemoryRecord') -> 'Resolution'}
 tesserix_adk.memory.Supersession :: class Supersession(AdkModel)
 tesserix_adk.memory.TokenCounter :: TokenCounter: TypeAliasType
+tesserix_adk.memory.Verdict :: class Verdict(StrEnum)
+tesserix_adk.memory.WriteGate :: class WriteGate(object) {admit(self, record: 'MemoryRecord', provenance: 'Provenance', *, tenant: 'str', user: 'str | None' = None) -> 'MemoryRecord'; recall(self, records: 'Iterable[MemoryRecord]', *, guard: 'MemoryGuard | None' = None) -> 'Recall'}
+tesserix_adk.memory.admission.Admission :: class Admission(AdkModel)
+tesserix_adk.memory.admission.AdmissionPolicy :: class AdmissionPolicy(AdkModel) {decide(self, record: 'MemoryRecord', provenance: 'Provenance', *, at: 'float | None' = None) -> 'Admission'}
+tesserix_adk.memory.admission.INSTRUCTION_SIGNATURES :: INSTRUCTION_SIGNATURES: tuple
+tesserix_adk.memory.admission.MemoryGuard :: class MemoryGuard(Protocol) {check_input(self, content: 'str') -> 'GuardResult'}
+tesserix_adk.memory.admission.Recall :: class Recall(AdkModel)
+tesserix_adk.memory.admission.Verdict :: class Verdict(StrEnum)
+tesserix_adk.memory.admission.WriteGate :: class WriteGate(object) {admit(self, record: 'MemoryRecord', provenance: 'Provenance', *, tenant: 'str', user: 'str | None' = None) -> 'MemoryRecord'; recall(self, records: 'Iterable[MemoryRecord]', *, guard: 'MemoryGuard | None' = None) -> 'Recall'}
+tesserix_adk.memory.admission.instruction_shaped :: def instruction_shaped(value: 'JsonValue') -> 'str'
 tesserix_adk.memory.beliefs.Belief :: class Belief(AdkModel)
 tesserix_adk.memory.beliefs.ConfidenceFloor :: class ConfidenceFloor(object) {weigh(self, record: 'MemoryRecord', *, now: 'float') -> 'float'}
 tesserix_adk.memory.beliefs.Contradiction :: class Contradiction(AdkModel)
@@ -977,8 +995,11 @@ tesserix_adk.memory.erasure.DerivedIndex :: class DerivedIndex(Protocol) {purge(
 tesserix_adk.memory.erasure.ErasureReceipt :: class ErasureReceipt(AdkModel)
 tesserix_adk.memory.erasure.MemoryRedactor :: class MemoryRedactor(Protocol) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.erasure.PatternRedactor :: class PatternRedactor(object) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
+tesserix_adk.memory.instruction_shaped :: def instruction_shaped(value: 'JsonValue') -> 'str'
 tesserix_adk.memory.pinned :: def pinned(message: 'Message') -> 'Message'
 tesserix_adk.memory.protocol.MemoryStore :: class MemoryStore(Protocol) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'Sequence[Derivation]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'Sequence[MemoryRecord]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
+tesserix_adk.memory.provenance.Origin :: class Origin(StrEnum)
+tesserix_adk.memory.provenance.Provenance :: class Provenance(AdkModel)
 tesserix_adk.memory.records.MemoryHit :: class MemoryHit(AdkModel)
 tesserix_adk.memory.records.MemoryKind :: class MemoryKind(StrEnum)
 tesserix_adk.memory.records.MemoryQuery :: class MemoryQuery(AdkModel)

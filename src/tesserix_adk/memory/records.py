@@ -12,6 +12,9 @@ from enum import StrEnum
 from pydantic import Field, JsonValue
 
 from tesserix_adk.core.models import AdkModel
+from tesserix_adk.memory.provenance import (  # noqa: TC001 — pydantic needs it at runtime
+    Provenance,
+)
 from tesserix_adk.memory.scope import MemoryScope  # noqa: TC001 — pydantic needs it at runtime
 
 __all__ = [
@@ -70,6 +73,8 @@ class MemoryRecord(AdkModel):
         citations: The citation ids this was derived from, where it came out of retrieved
             content. A summary of a document that loses the document is a claim about the
             corpus that the corpus cannot be asked about.
+        provenance: Which write produced it and under what policy. `None` means nothing
+            was recorded, which `memory.admission` treats as unproven rather than as fine.
     """
 
     id: str
@@ -89,6 +94,7 @@ class MemoryRecord(AdkModel):
     embedding: tuple[float, ...] | None = None
     redacted: tuple[str, ...] = ()
     citations: tuple[str, ...] = ()
+    provenance: Provenance | None = None
 
     @property
     def about(self) -> str:

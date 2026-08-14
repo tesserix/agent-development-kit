@@ -1,5 +1,15 @@
 """Run state, working context, episodic and semantic stores."""
 
+from tesserix_adk.memory.admission import (
+    INSTRUCTION_SIGNATURES,
+    Admission,
+    AdmissionPolicy,
+    MemoryGuard,
+    Recall,
+    Verdict,
+    WriteGate,
+    instruction_shaped,
+)
 from tesserix_adk.memory.beliefs import (
     Belief,
     ConfidenceFloor,
@@ -38,11 +48,15 @@ from tesserix_adk.memory.erasure import (
     PatternRedactor,
 )
 from tesserix_adk.memory.protocol import MemoryStore
+from tesserix_adk.memory.provenance import Origin, Provenance
 from tesserix_adk.memory.records import MemoryHit, MemoryKind, MemoryQuery, MemoryRecord
 from tesserix_adk.memory.scope import MemoryScope
 
 __all__ = [
     "DEFAULT_REDACTOR",
+    "INSTRUCTION_SIGNATURES",
+    "Admission",
+    "AdmissionPolicy",
     "AssembledContext",
     "Belief",
     "CompactionOutcome",
@@ -60,6 +74,7 @@ __all__ = [
     "ErasureReceipt",
     "HalfLife",
     "MemoryCapabilities",
+    "MemoryGuard",
     "MemoryHit",
     "MemoryKind",
     "MemoryNeeds",
@@ -68,8 +83,11 @@ __all__ = [
     "MemoryRedactor",
     "MemoryScope",
     "MemoryStore",
+    "Origin",
     "PatternRedactor",
     "PinAndFold",
+    "Provenance",
+    "Recall",
     "Resolution",
     "SectionOutcome",
     "SectionPlan",
@@ -77,6 +95,9 @@ __all__ = [
     "SupersedeMatching",
     "Supersession",
     "TokenCounter",
+    "Verdict",
+    "WriteGate",
+    "instruction_shaped",
     "pinned",
     "require_memory",
 ]
