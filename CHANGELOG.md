@@ -8,6 +8,51 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.6.0
+
+### Added
+
+- **tesserix_adk.rag.reranking**: `tesserix_adk.rag` now reranks behind a `Reranker` protocol. `RerankingRetriever` is a
+`Retriever` wrapping a `Retriever`: it asks the inner one for `candidates`, has the
+reranker score them, and returns the best `top_n`. Both counts are checked at construction,
+so the fan-out cannot be unbounded, and a reranker declared unavailable raises
+`CapabilityError` there rather than degrading on every call.
+
+Every hit keeps its fusion `score` beside its new `rerank_score`, and ties break on chunk
+id so a replayed retrieval gives the same ranking. A candidate the reranker did not score
+keeps its fused position behind the ones that were scored, and a score for a chunk nobody
+retrieved is ignored.
+
+The reranker call is recorded against the `BudgetPolicy` as one model call. An exhausted
+budget, a timeout or a failing reranker returns the fused order with `reranked=False` and
+traces `adk.rerank.degraded` with the reason, rather than failing the retrieval.
+
+Three rerankers ship: `NoReranking` for measuring the stage's own overhead,
+`CrossEncoderReranker` over the one-method `CrossEncoder` protocol, and `ModelReranker`,
+which sends passages as JSON data under an instruction that says they are never
+instructions to follow, and reads no scores at all from a reply of the wrong shape.
+
+### Public API surface
+
+- Added: `tesserix_adk.rag.CrossEncoder`
+- Added: `tesserix_adk.rag.CrossEncoderReranker`
+- Added: `tesserix_adk.rag.DEGRADED`
+- Added: `tesserix_adk.rag.ModelReranker`
+- Added: `tesserix_adk.rag.NoReranking`
+- Added: `tesserix_adk.rag.RerankScore`
+- Added: `tesserix_adk.rag.Reranker`
+- Added: `tesserix_adk.rag.Reranking`
+- Added: `tesserix_adk.rag.RerankingRetriever`
+- Added: `tesserix_adk.rag.reranking.CrossEncoder`
+- Added: `tesserix_adk.rag.reranking.CrossEncoderReranker`
+- Added: `tesserix_adk.rag.reranking.DEGRADED`
+- Added: `tesserix_adk.rag.reranking.ModelReranker`
+- Added: `tesserix_adk.rag.reranking.NoReranking`
+- Added: `tesserix_adk.rag.reranking.RerankScore`
+- Added: `tesserix_adk.rag.reranking.Reranker`
+- Added: `tesserix_adk.rag.reranking.Reranking`
+- Added: `tesserix_adk.rag.reranking.RerankingRetriever`
+
 ## 0.5.0
 
 ### Added
