@@ -218,8 +218,10 @@ class TestMeasuring:
         steady = await measure(scenario(Spiky(), rounds=1), timer=Ticks())
         warming = await measure(scenario(Spiky(4), rounds=1), timer=Ticks())
 
+        # Both peaks sit around a kilobyte, where a relative tolerance is interpreter
+        # noise; a billed warm-up would show 50_000 objects, orders of magnitude above.
         assert warming.values[Metric.PEAK_BYTES] == pytest.approx(
-            steady.values[Metric.PEAK_BYTES], rel=0.5
+            steady.values[Metric.PEAK_BYTES], rel=0.5, abs=4096
         )
 
     async def test_garbage_nobody_has_swept_yet_is_not_billed_as_live(self) -> None:
