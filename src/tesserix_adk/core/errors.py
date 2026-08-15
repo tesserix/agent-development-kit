@@ -24,6 +24,7 @@ __all__ = [
     "AttributionError",
     "AuditUnavailableError",
     "AuthenticationError",
+    "AuthorisationError",
     "AutonomyRefusedError",
     "BudgetExceededError",
     "BudgetUnavailableError",
@@ -1779,6 +1780,37 @@ class MemoryConflictError(AdkError):
                 "actual_version": str(actual_version),
             },
         )
+
+
+class AuthorisationError(AdkError):
+    """Raised when work needs authority the run's effective scopes do not carry.
+
+    Raised at the point of use and before the call goes out, so a refusal is a decision
+    this process took rather than a 403 read back from a downstream service — by which
+    point the request has already been made with somebody's credentials.
+
+    Args:
+        scope: The scope that was missing, where one specific scope was. A run refused at
+            construction has none yet, so this is empty there.
+        agent: Whose effective identity refused it.
+        subject: Who the run acts for, so an operator can find the grant to widen.
+        where: What was about to happen — the tool, the store, the peer.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        scope: str = "",
+        agent: str = "",
+        subject: str = "",
+        where: str = "",
+    ) -> None:
+        self.scope = scope
+        self.agent = agent
+        self.subject = subject
+        self.where = where
+        stated = {"scope": scope, "agent": agent, "subject": subject, "where": where}
+        super().__init__(*args, details={key: value for key, value in stated.items() if value})
 
 
 class MissingTenantContextError(AdkError):

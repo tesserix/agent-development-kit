@@ -248,6 +248,7 @@ tesserix_adk.core.AdkError :: class AdkError(Exception)
 tesserix_adk.core.AdkModel :: class AdkModel(BaseModel)
 tesserix_adk.core.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
+tesserix_adk.core.AgentIdentity :: class AgentIdentity(object) {check(self, required: 'Iterable[str]', *, where: 'str' = '') -> 'None'; check_live(self, now: 'float', *, where: 'str' = '') -> 'None'; missing(self, required: 'Iterable[str]') -> 'tuple[str, ...]'; narrowed(self, *, agent: 'str', declared: 'Iterable[str]') -> 'Self'; permits(self, scope: 'str') -> 'bool'; unused(self, used: 'Iterable[str]') -> 'tuple[str, ...]'}
 tesserix_adk.core.AggregationError :: class AggregationError(AdkError)
 tesserix_adk.core.Applied :: class Applied(AdkModel)
 tesserix_adk.core.ApprovalBindingError :: class ApprovalBindingError(AdkError)
@@ -268,7 +269,9 @@ tesserix_adk.core.AuditDecision :: class AuditDecision(StrEnum)
 tesserix_adk.core.AuditEvent :: class AuditEvent(AdkModel)
 tesserix_adk.core.AuditSink :: class AuditSink(Protocol) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'}
 tesserix_adk.core.AuditUnavailableError :: class AuditUnavailableError(AdkError)
+tesserix_adk.core.AuthMethod :: class AuthMethod(StrEnum)
 tesserix_adk.core.AuthenticationError :: class AuthenticationError(ProviderError)
+tesserix_adk.core.AuthorisationError :: class AuthorisationError(AdkError)
 tesserix_adk.core.AutonomyDecision :: class AutonomyDecision(AdkModel)
 tesserix_adk.core.AutonomyGrant :: class AutonomyGrant(AdkModel) {covers(self, *, tenant: 'str', user: 'str | None', now: 'float') -> 'bool'}
 tesserix_adk.core.AutonomyLadder :: class AutonomyLadder(object) {amount_in(self, tool: 'str', arguments: 'Mapping[str, Any]') -> 'Decimal | None'; classify(self, tool: 'str') -> 'str | None'; decide(self, request: 'ActionRequest') -> 'AutonomyDecision'; validate_grants(self) -> 'None'}
@@ -469,6 +472,7 @@ tesserix_adk.core.PolicyReport :: class PolicyReport(AdkModel)
 tesserix_adk.core.PolicyViolation :: class PolicyViolation(AdkModel)
 tesserix_adk.core.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.PrefixDriftError :: class PrefixDriftError(AdkError)
+tesserix_adk.core.Principal :: class Principal(AdkModel) {delegating(self, *, until: 'float', scopes: 'Iterable[str] | None' = None) -> 'Self'; expired(self, now: 'float') -> 'bool'}
 tesserix_adk.core.PromptDefinition :: class PromptDefinition(AdkModel) {fits(self, window_tokens: 'int', *, share: 'float' = 0.5) -> 'bool'; instruct(self, agent: 'Agent[OutputT]') -> 'Agent[OutputT]'}
 tesserix_adk.core.PromptNotFoundError :: class PromptNotFoundError(ConfigurationError)
 tesserix_adk.core.PromptRef :: class PromptRef(AdkModel) {attributes(self) -> 'dict[str, str]'}
@@ -532,6 +536,7 @@ tesserix_adk.core.SchemaDialect :: class SchemaDialect(Protocol) {adapt(self, sc
 tesserix_adk.core.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.ScopeEscalationError :: class ScopeEscalationError(AdkError)
+tesserix_adk.core.ScopeSet :: class ScopeSet(object) {missing(self, required: 'Iterable[str]') -> 'tuple[str, ...]'; narrowed_to(self, other: 'ScopeSet') -> 'ScopeSet'; permits(self, scope: 'str') -> 'bool'}
 tesserix_adk.core.ScopedLimits :: class ScopedLimits(AdkModel)
 tesserix_adk.core.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.core.SecretRef :: class SecretRef(AdkModel) {resolve(self, secrets: 'SecretProvider') -> 'str'}
@@ -727,6 +732,7 @@ tesserix_adk.core.cost.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.cost.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.cost.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
 tesserix_adk.core.current_policy :: def current_policy(*, where: 'str' = 'current_policy') -> 'TenantPolicy'
+tesserix_adk.core.current_principal :: def current_principal(*, where: 'str' = 'current_principal') -> 'Principal'
 tesserix_adk.core.current_tenant :: def current_tenant(*, where: 'str' = 'current_tenant') -> 'TenantContext'
 tesserix_adk.core.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
 tesserix_adk.core.definition.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
@@ -756,6 +762,7 @@ tesserix_adk.core.errors.ApprovalTokenError :: class ApprovalTokenError(AdkError
 tesserix_adk.core.errors.AttributionError :: class AttributionError(AdkError)
 tesserix_adk.core.errors.AuditUnavailableError :: class AuditUnavailableError(AdkError)
 tesserix_adk.core.errors.AuthenticationError :: class AuthenticationError(ProviderError)
+tesserix_adk.core.errors.AuthorisationError :: class AuthorisationError(AdkError)
 tesserix_adk.core.errors.AutonomyRefusedError :: class AutonomyRefusedError(AdkError)
 tesserix_adk.core.errors.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.core.errors.BudgetUnavailableError :: class BudgetUnavailableError(AdkError)
@@ -899,6 +906,13 @@ tesserix_adk.core.idempotency.IdempotencyPolicy :: class IdempotencyPolicy(objec
 tesserix_adk.core.idempotency.IdempotencyStore :: class IdempotencyStore(Protocol) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.core.idempotency.idempotency_key :: def idempotency_key(*, tenant: 'str', run_id: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key_arguments: 'tuple[str, ...]' = ()) -> 'str | None'
 tesserix_adk.core.idempotency_key :: def idempotency_key(*, tenant: 'str', run_id: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key_arguments: 'tuple[str, ...]' = ()) -> 'str | None'
+tesserix_adk.core.identity.AgentIdentity :: class AgentIdentity(object) {check(self, required: 'Iterable[str]', *, where: 'str' = '') -> 'None'; check_live(self, now: 'float', *, where: 'str' = '') -> 'None'; missing(self, required: 'Iterable[str]') -> 'tuple[str, ...]'; narrowed(self, *, agent: 'str', declared: 'Iterable[str]') -> 'Self'; permits(self, scope: 'str') -> 'bool'; unused(self, used: 'Iterable[str]') -> 'tuple[str, ...]'}
+tesserix_adk.core.identity.AuthMethod :: class AuthMethod(StrEnum)
+tesserix_adk.core.identity.Principal :: class Principal(AdkModel) {delegating(self, *, until: 'float', scopes: 'Iterable[str] | None' = None) -> 'Self'; expired(self, now: 'float') -> 'bool'}
+tesserix_adk.core.identity.ScopeSet :: class ScopeSet(object) {missing(self, required: 'Iterable[str]') -> 'tuple[str, ...]'; narrowed_to(self, other: 'ScopeSet') -> 'ScopeSet'; permits(self, scope: 'str') -> 'bool'}
+tesserix_adk.core.identity.current_principal :: def current_principal(*, where: 'str' = 'current_principal') -> 'Principal'
+tesserix_adk.core.identity.principal_here :: def principal_here() -> 'Principal | None'
+tesserix_adk.core.identity.principal_scope :: def principal_scope(principal: 'Principal') -> 'Iterator[Principal]'
 tesserix_adk.core.in_payload :: def in_payload(context: 'TenantContext', payload: 'Mapping[str, str]') -> 'dict[str, str]'
 tesserix_adk.core.injection.InjectionSignal :: class InjectionSignal(AdkModel)
 tesserix_adk.core.injection.SignalKind :: class SignalKind(StrEnum)
@@ -959,6 +973,8 @@ tesserix_adk.core.primitives.TextPart :: class TextPart(AdkModel)
 tesserix_adk.core.primitives.ToolCall :: class ToolCall(AdkModel)
 tesserix_adk.core.primitives.Usage :: class Usage(AdkModel)
 tesserix_adk.core.primitives.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
+tesserix_adk.core.principal_here :: def principal_here() -> 'Principal | None'
+tesserix_adk.core.principal_scope :: def principal_scope(principal: 'Principal') -> 'Iterator[Principal]'
 tesserix_adk.core.prompt_digest :: def prompt_digest(body: 'str') -> 'str'
 tesserix_adk.core.prompt_lint.LintFinding :: class LintFinding(AdkModel)
 tesserix_adk.core.prompt_lint.LintReport :: class LintReport(AdkModel) {summary(self) -> 'str'}

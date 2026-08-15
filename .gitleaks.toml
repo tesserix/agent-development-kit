@@ -1,0 +1,12 @@
+title = "tesserix-adk"
+
+[extend]
+useDefault = true
+
+# Test-key-shaped strings are the corpus a redaction test needs: a PII case with nothing
+# credential-shaped in it tests nothing. `sk-test-` is the marker for synthetic ones, and
+# `assert_synthetic` refuses anything live-looking from reaching the corpus at all.
+[allowlist]
+description = "synthetic credentials in the guard corpus and its generated surface snapshot"
+regexTarget = "match"
+regexes = ['''sk-test-[A-Za-z0-9]+''']

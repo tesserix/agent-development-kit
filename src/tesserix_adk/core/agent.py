@@ -73,6 +73,12 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
             kit cannot know whether its side effect landed. Must be a subset of `tools`.
         approval_required_tools: Which of those tools may not be dispatched without a
             human decision. Must be a subset of `tools`.
+        scopes: The authority this agent needs, as scope names. What it actually holds is
+            this intersected with what the caller holds, resolved once at run start. An
+            agent that declares none holds none and is enforced exactly as before.
+        tool_scopes: Which of `scopes` each tool needs. A tool whose scopes the caller
+            does not hold is not declared to the model and is refused at dispatch, so the
+            escalation cannot be attempted rather than being caught downstream.
         output_type: The type the answer must validate against. A Python type, so it is
             excluded from serialisation rather than rendered as a string that cannot be
             read back. Exactly one of this and `free_text` is declared.
@@ -120,6 +126,8 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
     tools: tuple[str, ...] = ()
     idempotent_tools: tuple[str, ...] = ()
     approval_required_tools: tuple[str, ...] = ()
+    scopes: tuple[str, ...] = ()
+    tool_scopes: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     output_type: type[OutputT] | None = Field(default=None, exclude=True)
     free_text: bool = False
     budget: BudgetLimits | None = None
@@ -157,6 +165,24 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
             raise ValueError(
                 f"approval required but not on the allowlist: {', '.join(stray)}. A gate "
                 f"in front of a tool the agent cannot call gates nothing"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _scopes_are_required_of_declared_tools(self) -> Self:
+        stray = sorted(set(self.tool_scopes) - set(self.tools))
+        if stray:
+            raise ValueError(
+                f"scopes required of tools not on the allowlist: {', '.join(stray)}. "
+                f"A requirement on a tool the agent cannot call requires nothing"
+            )
+        undeclared = sorted(
+            {scope for needed in self.tool_scopes.values() for scope in needed} - set(self.scopes)
+        )
+        if undeclared:
+            raise ValueError(
+                f"tool needs a scope this agent does not declare: {', '.join(undeclared)}. "
+                f"An undeclared scope is never granted, so the tool could never be called"
             )
         return self
 

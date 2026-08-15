@@ -31,6 +31,7 @@ from pydantic import BaseModel
 from tesserix_adk.core import (
     AdkError,
     AgentDefinition,
+    AgentIdentity,
     ApprovalBindingError,
     ApprovalDecision,
     ApprovalDenial,
@@ -115,6 +116,7 @@ from tesserix_adk.core import (
     ToolTimedOutError,
     TrustBoundaryError,
     Usage,
+    current_principal,
     deduplicate,
     fallback_eligible,
     idempotency_key,
@@ -283,6 +285,8 @@ class _Bounds:
     concurrency: ConcurrencyConfig
     provider: ModelProvider
     budget: BudgetPolicy
+    identity: AgentIdentity | None = None
+    """What the run may do, intersected once at construction and frozen for the run."""
     approvals: ApprovalLedger = field(default_factory=ApprovalLedger)
     granted: dict[str, ApprovalRecord] = field(default_factory=dict)
     keys: dict[str, str] = field(default_factory=dict)
@@ -812,7 +816,7 @@ class AgentRunner:
                 asked,
                 history=history,
                 retrieved=memory,
-                tools=self._declarations_for(agent),
+                tools=self._declarations_for(agent, bounds),
                 output=contract,
             )
             run = run.model_copy(update={"prompt_version": prompt.version}).record_event(
@@ -1093,7 +1097,7 @@ class AgentRunner:
                     model=run.model,
                     chain=FallbackChain(),
                     contract=contract,
-                    tools=self._declarations_for(agent),
+                    tools=self._declarations_for(agent, bounds),
                     messages=messages,
                     start=checkpoint.iterations + 1,
                 )
@@ -1448,6 +1452,7 @@ class AgentRunner:
             concurrency=self._concurrency.narrowed_to(agent.concurrency),
             provider=provider,
             budget=budget or self._budget_for(agent),
+            identity=self._identity_for(agent),
         )
 
     def _budget_for(self, agent: Agent[Any]) -> BudgetPolicy:
@@ -1595,13 +1600,48 @@ class AgentRunner:
         tenant = policy.limits.tools if policy is not None else None
         return ToolAllowlist.resolve(agent.tools, tenant=tenant, agent=agent.name)
 
-    def _declarations_for(self, agent: Agent[Any]) -> tuple[ToolDeclaration, ...]:
-        """Only the allowlist is declared: a tool never named cannot be called for."""
+    def _identity_for(self, agent: Agent[Any]) -> AgentIdentity | None:
+        """The authority this run holds, resolved once for the whole run.
+
+        None where the agent declares no scopes, which is every agent written before this
+        existed: it holds no authority, so there is nothing to intersect and nothing to
+        refuse. An agent that does declare scopes and finds no caller fails closed here,
+        because the alternative is running on the process identity.
+        """
+        if not agent.scopes:
+            return None
+        return AgentIdentity.resolve(
+            agent=agent.name,
+            declared=agent.scopes,
+            principal=current_principal(where=f"a run of {agent.name!r}"),
+            now=self._clock.now(),
+        )
+
+    def _within_authority(self, agent: Agent[Any], bounds: _Bounds, name: str) -> tuple[str, ...]:
+        """Which scopes a tool needs that this run does not hold, empty where it holds them."""
+        needed = agent.tool_scopes.get(name, ())
+        identity = bounds.identity
+        # A tool can only require what the agent declares, so needing something and holding
+        # no identity is a state `Agent` refuses to be constructed in.
+        if not needed or identity is None:
+            return ()
+        return identity.missing(needed)
+
+    def _declarations_for(self, agent: Agent[Any], bounds: _Bounds) -> tuple[ToolDeclaration, ...]:
+        """Only the allowlist is declared: a tool never named cannot be called for.
+
+        A tool whose scopes the caller does not hold is not declared either. Telling a
+        model about a tool it will be refused spends a turn to arrive at the same refusal.
+        """
         if self._tools is None or not agent.tools:
             return ()
         allowlist = self._allowlist_for(agent)
         declared: Iterable[ToolDeclaration] = self._tools.declarations()
-        return tuple(tool for tool in declared if allowlist.permits(tool.name))
+        return tuple(
+            tool
+            for tool in declared
+            if allowlist.permits(tool.name) and not self._within_authority(agent, bounds, tool.name)
+        )
 
     def _event(
         self,
@@ -2117,6 +2157,7 @@ class AgentRunner:
                     RunState.FAILED,
                     f"model called {call.name!r}, which is not on the agent's allowlist",
                 )
+            self._refuse_what_this_run_has_no_authority_for(run, agent, call, bounds)
             self._refuse_what_a_flagged_result_may_have_asked_for(run, agent, call)
             try:
                 run = await self._cleared_to_dispatch(run, agent, call, bounds)
@@ -2190,7 +2231,7 @@ class AgentRunner:
         """
         serial = frozenset(
             declaration.name
-            for declaration in self._declarations_for(agent)
+            for declaration in self._declarations_for(agent, bounds)
             if not declaration.parallel_safe
         )
         turn = Turn(bounds.concurrency)
@@ -2307,6 +2348,33 @@ class AgentRunner:
         """What the boundary needs to know about the tool, for buses that can say."""
         resolve = getattr(self._tools, "resolve", None)
         return _Unannotated(name) if resolve is None else cast("ReturningTool", resolve(name))
+
+    def _refuse_what_this_run_has_no_authority_for(
+        self, run: Run[Any], agent: Agent[Any], call: ToolCall, bounds: _Bounds
+    ) -> None:
+        """Stop a call needing authority the caller never granted, before it goes out.
+
+        The refusal names the scope, so an operator widens the grant they own rather than
+        reading a downstream 403 that names nothing. A caller whose session lapsed
+        mid-run is refused here too: the run does not outlive the authority it started on.
+
+        Raises:
+            _Terminal: If the call needs a scope this run does not hold.
+        """
+        if bounds.identity is not None:
+            bounds.identity.check_live(self._clock.now(), where=call.name)
+        absent = self._within_authority(agent, bounds, call.name)
+        if not absent:
+            return
+        detail = f"{call.name} needs {absent[0]}, which this run does not hold"
+        self._emit(
+            ToolCallFailed(call_id=call.id, tool=call.name, error="ToolRefused", detail=detail)
+        )
+        raise _Terminal(
+            run.record_event(self._event(RunEventKind.TOOL_REFUSED, name=call.name)),
+            RunState.FAILED,
+            detail,
+        )
 
     def _refuse_what_a_flagged_result_may_have_asked_for(
         self, run: Run[Any], agent: Agent[Any], call: ToolCall
