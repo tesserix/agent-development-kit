@@ -8,6 +8,74 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.36.0
+
+### Added
+
+- **tesserix_adk.a2a, tesserix_adk.a2a.delegation, tesserix_adk.core.credentials**: Delegation to peer agents: the caller's principal, not the caller's service identity.
+
+An agent that authenticates to its peer as itself hands that peer its own access and loses
+every trace of whose work it is. A peer with broader reach then becomes the way to do what
+the caller could not. So `PeerDelegator.delegate` mints a credential for the peer's
+audience and sends claims alongside it: the original subject and tenant, the run, and the
+chain the work came through.
+
+Narrowing happens on both sides. The caller cuts the delegation to what the call needs
+intersected with what it holds and with what the peer's `AgentCard` declares; the peer's
+`PeerVerifier.accept` cuts it again to what that card declares. A caller that sends more
+than it should — a bug, an old build, a peer that is not this kit — therefore still cannot
+widen anything on arrival. A caller holding `itinerary:read` invoking a peer that declares
+`itinerary:read` and `payments:write` produces a peer whose effective scopes are
+`itinerary:read`, and whose payment tool is refused at dispatch.
+
+`accept` returns an identity or raises, with no third outcome: a delegation for another
+audience, from an issuer the card does not accept, already lapsed, or missing a scope the
+card requires is an `AuthorisationError` before any model call. There is no fallback to
+the peer's own service identity.
+
+`DelegationChain` is bounded at `MAX_CHAIN_DEPTH` hops, and a hop through an agent the
+work has already passed through is refused as a cycle where it would be created rather
+than when it runs out of depth. Both keep what deep composition costs to carry on every
+request bounded.
+
+Claims carry identifiers only — agent names, versions, scope names — and `meta()` with
+`DelegationClaims.from_meta()` is the documented wire contract, so a peer outside this kit
+can verify and honour a delegation. Metadata that is absent, incomplete or malformed is
+refused rather than half-read. No token material appears in the metadata or in the span
+attribution.
+
+`CallCredential` and `CredentialSource` now live in `tesserix_adk.core.credentials`, since
+the integration packages sit beside `tesserix_adk.tools` in the layering rather than under
+it. `tesserix_adk.mcp.auth` re-exports the same objects, so nothing moved for a consumer.
+
+A peer's output stays untrusted input however well the peer authenticated, and the kit
+signs nothing: see the limitations in [`docs/peer-delegation.md`](../docs/peer-delegation.md).
+
+### Public API surface
+
+- Added: `tesserix_adk.a2a.AgentCard`
+- Added: `tesserix_adk.a2a.DEFAULT_TTL_SECONDS`
+- Added: `tesserix_adk.a2a.DelegationChain`
+- Added: `tesserix_adk.a2a.DelegationClaims`
+- Added: `tesserix_adk.a2a.DelegationHop`
+- Added: `tesserix_adk.a2a.MAX_CHAIN_DEPTH`
+- Added: `tesserix_adk.a2a.PeerDelegation`
+- Added: `tesserix_adk.a2a.PeerDelegator`
+- Added: `tesserix_adk.a2a.PeerVerifier`
+- Added: `tesserix_adk.a2a.delegation.AgentCard`
+- Added: `tesserix_adk.a2a.delegation.DEFAULT_TTL_SECONDS`
+- Added: `tesserix_adk.a2a.delegation.DelegationChain`
+- Added: `tesserix_adk.a2a.delegation.DelegationClaims`
+- Added: `tesserix_adk.a2a.delegation.DelegationHop`
+- Added: `tesserix_adk.a2a.delegation.MAX_CHAIN_DEPTH`
+- Added: `tesserix_adk.a2a.delegation.PeerDelegation`
+- Added: `tesserix_adk.a2a.delegation.PeerDelegator`
+- Added: `tesserix_adk.a2a.delegation.PeerVerifier`
+- Added: `tesserix_adk.core.CallCredential`
+- Added: `tesserix_adk.core.CredentialSource`
+- Added: `tesserix_adk.core.credentials.CallCredential`
+- Added: `tesserix_adk.core.credentials.CredentialSource`
+
 ## 0.35.0
 
 ### Added
