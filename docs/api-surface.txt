@@ -246,6 +246,7 @@ tesserix_adk.core.AdkModel :: class AdkModel(BaseModel)
 tesserix_adk.core.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
 tesserix_adk.core.AggregationError :: class AggregationError(AdkError)
+tesserix_adk.core.Applied :: class Applied(AdkModel)
 tesserix_adk.core.ApprovalBindingError :: class ApprovalBindingError(AdkError)
 tesserix_adk.core.ApprovalDecision :: class ApprovalDecision(AdkModel)
 tesserix_adk.core.ApprovalDeliveryError :: class ApprovalDeliveryError(AdkError)
@@ -302,6 +303,10 @@ tesserix_adk.core.ClaimTicket :: class ClaimTicket(object) {rendered(self) -> 's
 tesserix_adk.core.ClaimUnavailableError :: class ClaimUnavailableError(AdkError)
 tesserix_adk.core.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.core.CommitmentLedger :: class CommitmentLedger(Protocol) {committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'}
+tesserix_adk.core.CompensatedFailure :: class CompensatedFailure(AdkModel)
+tesserix_adk.core.Compensating :: class Compensating(Protocol) {compensate(self, action: 'Applied') -> 'str'}
+tesserix_adk.core.CompensationIncomplete :: class CompensationIncomplete(AdkModel)
+tesserix_adk.core.CompensationLedger :: class CompensationLedger(Protocol) {forget(self, *, tenant: 'str') -> 'int'; mark(self, reversal: 'Reversal') -> 'None'; outstanding(self, run_id: 'str', *, tenant: 'str', branch: 'str | None' = None) -> 'Sequence[Applied]'; record(self, action: 'Applied') -> 'None'}
 tesserix_adk.core.ConcurrencyConfig :: class ConcurrencyConfig(AdkModel) {narrowed_to(self, other: 'ConcurrencyConfig | None') -> 'ConcurrencyConfig'}
 tesserix_adk.core.ConfigError :: class ConfigError(ConfigurationError)
 tesserix_adk.core.ConfigProblem :: class ConfigProblem(object)
@@ -381,6 +386,7 @@ tesserix_adk.core.IndeterminateToolCallError :: class IndeterminateToolCallError
 tesserix_adk.core.InexactAmountError :: class InexactAmountError(AdkError)
 tesserix_adk.core.InlineRefs :: class InlineRefs(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.InvalidRequestError :: class InvalidRequestError(ProviderError)
+tesserix_adk.core.IrreversibleActionError :: class IrreversibleActionError(AdkError)
 tesserix_adk.core.JSON_SCHEMA :: JSON_SCHEMA: JsonSchema
 tesserix_adk.core.JsonSchema :: class JsonSchema(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
 tesserix_adk.core.KeyValueStore :: class KeyValueStore(Protocol) {delete(self, key: 'str') -> 'None'; get(self, key: 'str') -> 'Any'; put(self, key: 'str', value: 'Any') -> 'None'}
@@ -467,6 +473,8 @@ tesserix_adk.core.ResumePlan :: class ResumePlan(AdkModel)
 tesserix_adk.core.Resumption :: class Resumption(AdkModel)
 tesserix_adk.core.RetrievalDegradedError :: class RetrievalDegradedError(AdkError)
 tesserix_adk.core.RetryConfig :: class RetryConfig(AdkModel)
+tesserix_adk.core.Reversal :: class Reversal(AdkModel)
+tesserix_adk.core.ReversalOutcome :: class ReversalOutcome(StrEnum)
 tesserix_adk.core.Revocation :: class Revocation(AdkModel) {covers(self, grant: 'AutonomyGrant') -> 'bool'}
 tesserix_adk.core.Role :: Role = typing.Literal['system', 'user', 'assistant', 'tool']
 tesserix_adk.core.RoutingDecision :: class RoutingDecision(AdkModel) {explain(self) -> 'str'}
@@ -574,6 +582,7 @@ tesserix_adk.core.WorkersBusyError :: class WorkersBusyError(AdkError)
 tesserix_adk.core.WriteQueueFullError :: class WriteQueueFullError(AdkError)
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
+tesserix_adk.core.arguments_digest :: def arguments_digest(arguments: 'Mapping[str, JsonValue]') -> 'str'
 tesserix_adk.core.arriving :: def arriving(headers: 'Mapping[str, str]', *, authenticated: 'str | None' = None) -> 'Iterator[TenantContext]'
 tesserix_adk.core.audit.AuditDecision :: class AuditDecision(StrEnum)
 tesserix_adk.core.audit.AuditEvent :: class AuditEvent(AdkModel)
@@ -635,6 +644,14 @@ tesserix_adk.core.claim_check.ClaimTicket :: class ClaimTicket(object) {rendered
 tesserix_adk.core.claim_check.HANDLE_PREFIX :: HANDLE_PREFIX: str
 tesserix_adk.core.claim_check.claim_handle :: def claim_handle(*, tenant: 'str', run_id: 'str', content: 'str') -> 'str'
 tesserix_adk.core.claim_handle :: def claim_handle(*, tenant: 'str', run_id: 'str', content: 'str') -> 'str'
+tesserix_adk.core.compensation.Applied :: class Applied(AdkModel)
+tesserix_adk.core.compensation.CompensatedFailure :: class CompensatedFailure(AdkModel)
+tesserix_adk.core.compensation.Compensating :: class Compensating(Protocol) {compensate(self, action: 'Applied') -> 'str'}
+tesserix_adk.core.compensation.CompensationIncomplete :: class CompensationIncomplete(AdkModel)
+tesserix_adk.core.compensation.CompensationLedger :: class CompensationLedger(Protocol) {forget(self, *, tenant: 'str') -> 'int'; mark(self, reversal: 'Reversal') -> 'None'; outstanding(self, run_id: 'str', *, tenant: 'str', branch: 'str | None' = None) -> 'Sequence[Applied]'; record(self, action: 'Applied') -> 'None'}
+tesserix_adk.core.compensation.Reversal :: class Reversal(AdkModel)
+tesserix_adk.core.compensation.ReversalOutcome :: class ReversalOutcome(StrEnum)
+tesserix_adk.core.compensation.arguments_digest :: def arguments_digest(arguments: 'Mapping[str, JsonValue]') -> 'str'
 tesserix_adk.core.config.AdkConfig :: class AdkConfig(AdkModel)
 tesserix_adk.core.config.ConfigError :: class ConfigError(ConfigurationError)
 tesserix_adk.core.config.ConfigProblem :: class ConfigProblem(object)
@@ -728,6 +745,7 @@ tesserix_adk.core.errors.IncompatiblePromptVersionError :: class IncompatiblePro
 tesserix_adk.core.errors.IndeterminateToolCallError :: class IndeterminateToolCallError(AdkError)
 tesserix_adk.core.errors.InexactAmountError :: class InexactAmountError(AdkError)
 tesserix_adk.core.errors.InvalidRequestError :: class InvalidRequestError(ProviderError)
+tesserix_adk.core.errors.IrreversibleActionError :: class IrreversibleActionError(AdkError)
 tesserix_adk.core.errors.LeaseLostError :: class LeaseLostError(AdkError)
 tesserix_adk.core.errors.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
@@ -1590,6 +1608,7 @@ tesserix_adk.runtime.Checkpointer :: class Checkpointer(object) {forget(self, ru
 tesserix_adk.runtime.ClaimCheck :: class ClaimCheck(object) {stored(self, result: 'ToolResult', *, tenant: 'str', run_id: 'str') -> 'ClaimTicket | None'}
 tesserix_adk.runtime.Compaction :: class Compaction(AdkModel)
 tesserix_adk.runtime.CompactionEvent :: class CompactionEvent(AdkModel) {attributes(self) -> 'dict[str, str]'}
+tesserix_adk.runtime.Compensator :: class Compensator(object) {unwind(self, run_id: 'str', *, tenant: 'str', cause: 'str', branch: 'str | None' = None) -> 'CompensatedFailure | CompensationIncomplete'}
 tesserix_adk.runtime.Confidence :: class Confidence(StrEnum)
 tesserix_adk.runtime.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.CostEstimate :: class CostEstimate(AdkModel) {as_limits(self, *, headroom: 'Decimal' = Decimal('1')) -> 'BudgetLimits'; with_children(self, *children: 'CostEstimate') -> 'CostEstimate'}
@@ -1618,6 +1637,7 @@ tesserix_adk.runtime.LoopMonitor :: class LoopMonitor(object) {watching(self, wh
 tesserix_adk.runtime.MemoryAuditSink :: class MemoryAuditSink(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'}
 tesserix_adk.runtime.MemoryCheckpointStore :: class MemoryCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
 tesserix_adk.runtime.MemoryClaimCheckStore :: class MemoryClaimCheckStore(object) {fetch(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'; forget(self, *, tenant: 'str', run_id: 'str' = '') -> 'int'; put(self, handle: 'str', content: 'str', *, tenant: 'str', run_id: 'str', ttl_seconds: 'float') -> 'None'}
+tesserix_adk.runtime.MemoryCompensationLedger :: class MemoryCompensationLedger(object) {forget(self, *, tenant: 'str') -> 'int'; mark(self, reversal: 'Reversal') -> 'None'; outstanding(self, run_id: 'str', *, tenant: 'str', branch: 'str | None' = None) -> 'Sequence[Applied]'; record(self, action: 'Applied') -> 'None'}
 tesserix_adk.runtime.MemoryIdempotencyStore :: class MemoryIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.runtime.MemoryLeaseStore :: class MemoryLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
 tesserix_adk.runtime.MemoryStateStore :: class MemoryStateStore(object) {delete_run(self, key: 'StateKey') -> 'None'; delete_session(self, key: 'StateKey', *, cascade: 'bool' = False) -> 'None'; get_run(self, key: 'StateKey') -> 'RunRecord | None'; get_session(self, key: 'StateKey') -> 'SessionRecord | None'; list_runs(self, query: 'StateQuery') -> 'StatePage'; patch_run(self, key: 'StateKey', delta: 'StateDelta') -> 'RunRecord'; put_run(self, record: 'RunRecord') -> 'RunRecord'; put_session(self, record: 'SessionRecord') -> 'SessionRecord'}
@@ -1734,6 +1754,8 @@ tesserix_adk.runtime.compaction.Summariser :: class Summariser(Protocol)
 tesserix_adk.runtime.compaction.citations_of :: def citations_of(message: 'Message') -> 'tuple[str, ...]'
 tesserix_adk.runtime.compaction.cited :: def cited(message: 'Message', citations: 'Sequence[str]') -> 'Message'
 tesserix_adk.runtime.compaction.compact_conversation :: def compact_conversation(history: 'Sequence[Message]', *, summarise: 'Summariser', threshold_tokens: 'int', keep_recent: 'int' = 4, tokenizer: 'Tokenizer | None' = None, run_id: 'str' = '') -> 'Compaction'
+tesserix_adk.runtime.compensation.Compensator :: class Compensator(object) {unwind(self, run_id: 'str', *, tenant: 'str', cause: 'str', branch: 'str | None' = None) -> 'CompensatedFailure | CompensationIncomplete'}
+tesserix_adk.runtime.compensation.MemoryCompensationLedger :: class MemoryCompensationLedger(object) {forget(self, *, tenant: 'str') -> 'int'; mark(self, reversal: 'Reversal') -> 'None'; outstanding(self, run_id: 'str', *, tenant: 'str', branch: 'str | None' = None) -> 'Sequence[Applied]'; record(self, action: 'Applied') -> 'None'}
 tesserix_adk.runtime.context.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.context.Segment :: class Segment(AdkModel)
 tesserix_adk.runtime.current_ambient :: def current_ambient() -> 'Ambient | None'
@@ -2082,6 +2104,8 @@ tesserix_adk.workflows.Activities :: class Activities(Protocol) {model_call(self
 tesserix_adk.workflows.ActivityContext :: class ActivityContext(AdkModel)
 tesserix_adk.workflows.AgentWorkflow :: class AgentWorkflow(object) {run(self, state: 'WorkflowState', *, context: 'ActivityContext') -> 'WorkflowState'}
 tesserix_adk.workflows.Cancellation :: class Cancellation(Protocol) {raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
+tesserix_adk.workflows.CompensatingActivity :: class CompensatingActivity(object) {compensate(self, action: 'Applied') -> 'str'}
+tesserix_adk.workflows.Compensations :: class Compensations(object) {irreversible(self, tool: 'str') -> 'bool'; of(self, tool: 'str') -> 'CompensatingActivity | None'}
 tesserix_adk.workflows.Continuation :: class Continuation(AdkModel)
 tesserix_adk.workflows.ContinuationPolicy :: class ContinuationPolicy(AdkModel) {due(self, journal: 'Journal', *, history_bytes: 'int' = 0) -> 'bool'}
 tesserix_adk.workflows.DEFAULT_CONTINUATION :: DEFAULT_CONTINUATION: ContinuationPolicy
@@ -2097,12 +2121,18 @@ tesserix_adk.workflows.ReplayFinding :: class ReplayFinding(AdkModel)
 tesserix_adk.workflows.ReplayReport :: class ReplayReport(AdkModel) {summary(self) -> 'str'}
 tesserix_adk.workflows.ReplayRule :: class ReplayRule(AdkModel)
 tesserix_adk.workflows.STREAMING_UNSUPPORTED :: STREAMING_UNSUPPORTED: str
+tesserix_adk.workflows.Saga :: class Saga(object) {apply(self, tool: 'str', *, key: 'str', call: 'Callable[[], Awaitable[str]]', arguments: 'Mapping[str, JsonValue] | None' = None, branch: 'str' = '', approved: 'bool' = False) -> 'str'; unwind(self, cause: 'str', *, branch: 'str | None' = None) -> 'CompensatedFailure | CompensationIncomplete'}
 tesserix_adk.workflows.ToolCallInput :: class ToolCallInput(AdkModel)
 tesserix_adk.workflows.ToolCallResult :: class ToolCallResult(AdkModel)
 tesserix_adk.workflows.WORKFLOW_MARKER :: WORKFLOW_MARKER: str
 tesserix_adk.workflows.WorkflowClock :: class WorkflowClock(AdkModel) {advanced(self, seconds: 'float') -> 'WorkflowClock'; now(self) -> 'float'}
 tesserix_adk.workflows.WorkflowState :: class WorkflowState(AdkModel)
 tesserix_adk.workflows.assert_replays :: def assert_replays(history: 'RecordedHistory', commands: 'Sequence[str]') -> 'None'
+tesserix_adk.workflows.compensating_activity :: def compensating_activity(forward: 'str', *, irreversible: 'bool' = False) -> 'Callable[[Callable[[Applied], Awaitable[str]]], CompensatingActivity]'
+tesserix_adk.workflows.compensation.CompensatingActivity :: class CompensatingActivity(object) {compensate(self, action: 'Applied') -> 'str'}
+tesserix_adk.workflows.compensation.Compensations :: class Compensations(object) {irreversible(self, tool: 'str') -> 'bool'; of(self, tool: 'str') -> 'CompensatingActivity | None'}
+tesserix_adk.workflows.compensation.Saga :: class Saga(object) {apply(self, tool: 'str', *, key: 'str', call: 'Callable[[], Awaitable[str]]', arguments: 'Mapping[str, JsonValue] | None' = None, branch: 'str' = '', approved: 'bool' = False) -> 'str'; unwind(self, cause: 'str', *, branch: 'str | None' = None) -> 'CompensatedFailure | CompensationIncomplete'}
+tesserix_adk.workflows.compensation.compensating_activity :: def compensating_activity(forward: 'str', *, irreversible: 'bool' = False) -> 'Callable[[Callable[[Applied], Awaitable[str]]], CompensatingActivity]'
 tesserix_adk.workflows.continuation.Continuation :: class Continuation(AdkModel)
 tesserix_adk.workflows.continuation.ContinuationPolicy :: class ContinuationPolicy(AdkModel) {due(self, journal: 'Journal', *, history_bytes: 'int' = 0) -> 'bool'}
 tesserix_adk.workflows.continuation.DEFAULT_CONTINUATION :: DEFAULT_CONTINUATION: ContinuationPolicy

@@ -44,6 +44,7 @@ from tesserix_adk.runtime.compaction import (
     cited,
     compact_conversation,
 )
+from tesserix_adk.runtime.compensation import Compensator, MemoryCompensationLedger
 from tesserix_adk.runtime.context import ContextWindow, Segment
 from tesserix_adk.runtime.delegation import (
     Delegation,
@@ -189,6 +190,7 @@ __all__ = [
     "ClaimCheck",
     "Compaction",
     "CompactionEvent",
+    "Compensator",
     "Confidence",
     "ContextWindow",
     "CostEstimate",
@@ -216,6 +218,7 @@ __all__ = [
     "MemoryAuditSink",
     "MemoryCheckpointStore",
     "MemoryClaimCheckStore",
+    "MemoryCompensationLedger",
     "MemoryIdempotencyStore",
     "MemoryLeaseStore",
     "MemoryStateStore",

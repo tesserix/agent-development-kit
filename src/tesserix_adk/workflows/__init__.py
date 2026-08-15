@@ -1,5 +1,11 @@
 """Durable orchestration and long-running composition."""
 
+from tesserix_adk.workflows.compensation import (
+    CompensatingActivity,
+    Compensations,
+    Saga,
+    compensating_activity,
+)
 from tesserix_adk.workflows.continuation import (
     DEFAULT_CONTINUATION,
     Continuation,
@@ -48,6 +54,8 @@ __all__ = [
     "ActivityContext",
     "AgentWorkflow",
     "Cancellation",
+    "CompensatingActivity",
+    "Compensations",
     "Continuation",
     "ContinuationPolicy",
     "DeterministicIds",
@@ -59,11 +67,13 @@ __all__ = [
     "ReplayFinding",
     "ReplayReport",
     "ReplayRule",
+    "Saga",
     "ToolCallInput",
     "ToolCallResult",
     "WorkflowClock",
     "WorkflowState",
     "assert_replays",
+    "compensating_activity",
     "continued",
     "guard",
     "guard_source",

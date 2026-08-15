@@ -64,6 +64,7 @@ __all__ = [
     "IndeterminateToolCallError",
     "InexactAmountError",
     "InvalidRequestError",
+    "IrreversibleActionError",
     "LeaseLostError",
     "LoopLimitError",
     "MaxIterationsError",
@@ -2814,4 +2815,36 @@ class HistoryUnavailableError(AdkError):
     @property
     def retryable(self) -> bool:
         """No. An evicted transcript does not come back."""
+        return False
+
+
+class IrreversibleActionError(AdkError):
+    """Raised when an action nothing can take back is about to run inside an unwindable scope.
+
+    A scope that promises to put everything back cannot keep that promise around an action
+    the world will not return. The refusal happens before the body runs, so the money has
+    not moved yet: sequence the action last and gate it on an approval or a matching
+    autonomy grant instead of relying on a reversal that does not exist.
+
+    Args:
+        run_id: The run that was refused.
+        tool: What was about to be called.
+        idempotency_key: The key it would have run under, so the refusal is traceable to
+            the call a person is looking at.
+    """
+
+    def __init__(
+        self, *args: object, run_id: str = "", tool: str = "", idempotency_key: str = ""
+    ) -> None:
+        self.tool = tool
+        self.idempotency_key = idempotency_key
+        super().__init__(
+            *args,
+            run_id=run_id,
+            details={"run_id": run_id, "tool": tool, "idempotency_key": idempotency_key},
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """No. Retrying is the second payment."""
         return False
