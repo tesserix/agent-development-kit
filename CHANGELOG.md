@@ -8,6 +8,46 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.40.0
+
+### Added
+
+- **added**: `tesserix_adk.core.instrumentation` gives a run a trace of its own without any per-agent
+wiring. `Instrumentation.run` opens the root span and `Instrumentation.step` opens a child
+for each model call, tool call, retrieval, memory operation or guardrail, finding its
+parent through a context variable so nothing has to be threaded through. Spans are
+recorded in memory and exported once the run finishes, so a collector outage cannot reach
+into the run: export failures land on `Instrumentation.loss` instead of being raised, a
+sampled-away run drops whole rather than leaving orphan children, and a run that failed is
+kept however the sampler decided at the start. `SpanLimits` bounds a recursive fan-out and
+puts the dropped count on the root, cancellation closes open spans as cancelled rather
+than failed, and a replayed run id is exported once.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.Instrumentation`
+- Added: `tesserix_adk.core.Recording`
+- Added: `tesserix_adk.core.RunSpan`
+- Added: `tesserix_adk.core.SPAN_NAMES`
+- Added: `tesserix_adk.core.Sampling`
+- Added: `tesserix_adk.core.Span`
+- Added: `tesserix_adk.core.SpanKind`
+- Added: `tesserix_adk.core.SpanLimits`
+- Added: `tesserix_adk.core.SpanStatus`
+- Added: `tesserix_adk.core.TelemetryLoss`
+- Added: `tesserix_adk.core.Trace`
+- Added: `tesserix_adk.core.instrumentation.Instrumentation`
+- Added: `tesserix_adk.core.instrumentation.Recording`
+- Added: `tesserix_adk.core.instrumentation.RunSpan`
+- Added: `tesserix_adk.core.instrumentation.SPAN_NAMES`
+- Added: `tesserix_adk.core.instrumentation.Sampling`
+- Added: `tesserix_adk.core.instrumentation.Span`
+- Added: `tesserix_adk.core.instrumentation.SpanKind`
+- Added: `tesserix_adk.core.instrumentation.SpanLimits`
+- Added: `tesserix_adk.core.instrumentation.SpanStatus`
+- Added: `tesserix_adk.core.instrumentation.TelemetryLoss`
+- Added: `tesserix_adk.core.instrumentation.Trace`
+
 ## 0.39.0
 
 ### Added
