@@ -120,6 +120,7 @@ code lands here as the kit is built.
 | Tenancy — context-carried tenant identity, refusal on absence, declared crossings | [`docs/tenancy.md`](docs/tenancy.md) |
 | Tenant propagation — one wire contract across queues, peers and workflows | [`docs/tenant-propagation.md`](docs/tenant-propagation.md) |
 | Per-tenant configuration — entitlements as data, resolved once, failing closed | [`docs/tenant-config.md`](docs/tenant-config.md) |
+| Secrets — config holds a reference, the value is fetched at the point of use, cached with a ttl and never logged | [`docs/secrets.md`](docs/secrets.md) |
 | Chunking — token-sized pieces, strategies per collection, spans a citation can quote | [`docs/chunking.md`](docs/chunking.md) |
 | Embedding — batching, a content-addressed cache per tenant, and no substituted vectors | [`docs/embedding.md`](docs/embedding.md) |
 | Retrieval — both branches, fused by rank, with the tenant predicate inside the query | [`docs/retrieval.md`](docs/retrieval.md) |

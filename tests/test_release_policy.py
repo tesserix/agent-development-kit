@@ -105,6 +105,8 @@ def test_collecting_reads_the_decorators_not_a_hand_written_list() -> None:
     assert deprecations_tool.collect() == deprecations_tool.collect()
 
 
+RUN = "run(self) -> 'None'"
+STOP = "stop(self) -> 'None'"
 BASE = {"tesserix_adk.core.Runner": "class Runner(object)"}
 
 
@@ -155,9 +157,41 @@ def test_a_removal_earlier_than_promised_is_blocked() -> None:
 
 def test_a_changed_signature_counts_as_breaking() -> None:
     """An unchanged name with different behaviour is the breakage consumers miss."""
+    base = {"tesserix_adk.core.Runner": "class Runner(object) {run(self) -> 'None'}"}
     changed = {"tesserix_adk.core.Runner": "class Runner(object) {run(self, budget) -> 'None'}"}
-    problems = _check(BASE, changed, "0.3.0")
+    problems = _check(base, changed, "0.3.0")
     assert "tesserix_adk.core.Runner" in problems[0]
+
+
+def test_a_class_that_only_gained_a_method_is_an_addition_not_a_breakage() -> None:
+    """Nothing a consumer already calls moved, so there is nothing to deprecate."""
+    grown = {"tesserix_adk.core.Runner": f"class Runner(object) {{{RUN}; {STOP}}}"}
+    assert _check(BASE, grown, "0.2.0") == []
+    assert "minor" in _check(BASE, grown, "0.1.1")[0]
+
+
+def test_a_protocol_that_gained_a_member_is_still_breaking() -> None:
+    """Every consumer implementation stops conforming, however additive the diff looks."""
+    base = {"tesserix_adk.core.Store": f"class Store(Protocol) {{{RUN}}}"}
+    grown = {"tesserix_adk.core.Store": f"class Store(Protocol) {{{RUN}; {STOP}}}"}
+    assert "no deprecation" in _check(base, grown, "0.2.0")[0]
+
+
+def test_a_class_that_lost_a_method_is_still_breaking() -> None:
+    base = {"tesserix_adk.core.Runner": f"class Runner(object) {{{RUN}; {STOP}}}"}
+    problems = _check(base, BASE, "0.2.0")
+    assert "no deprecation" in problems[0]
+
+
+def test_a_class_that_changed_its_base_is_still_breaking() -> None:
+    rebased = {"tesserix_adk.core.Runner": "class Runner(Engine) {run(self) -> 'None'}"}
+    assert "no deprecation" in _check(BASE, rebased, "0.2.0")[0]
+
+
+def test_a_function_whose_signature_changed_is_still_breaking() -> None:
+    base = {"tesserix_adk.core.run": "def run(agent) -> 'None'"}
+    current = {"tesserix_adk.core.run": "def run(agent, budget) -> 'None'"}
+    assert "no deprecation" in _check(base, current, "0.2.0")[0]
 
 
 def test_a_removal_in_a_patch_release_is_blocked() -> None:

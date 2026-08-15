@@ -38,6 +38,7 @@ from pydantic import Field, model_validator
 from tesserix_adk.core.budget import BudgetLimits, BudgetScope, ScopedLimits
 from tesserix_adk.core.errors import (
     ConfigurationError,
+    SecretResolutionError,
     TenantLimitError,
     TenantUnconfiguredError,
     ToolNotPermittedError,
@@ -85,7 +86,12 @@ class SecretRef(AdkModel):
     `SecretProvider` in force where the run happens supplies the value.
 
     Args:
-        name: What to ask the secret provider for.
+        name: What to ask the secret provider for. A `{tenant}` placeholder is filled by
+            `for_tenant`, so one line of configuration serves every tenant.
+        version: Which version to read, where the backend has versions. Absent means the
+            backend's own notion of current, which is what rotation updates.
+        tenant: Which tenant this reference was bound to by `for_tenant`. A reference
+            already bound to one tenant cannot be rebound to another.
 
     Example:
         >>> SecretRef(name="ACME_PROVIDER_KEY").name
@@ -93,6 +99,42 @@ class SecretRef(AdkModel):
     """
 
     name: str = Field(min_length=1)
+    version: str | None = None
+    tenant: str | None = None
+
+    def describe(self) -> str:
+        """The reference as one string for a log line or a refusal. Never a value.
+
+        Example:
+            >>> SecretRef(name="openai-key").describe()
+            'openai-key@latest'
+        """
+        return f"{self.name}@{self.version or 'latest'}"
+
+    def for_tenant(self, tenant: str) -> Self:
+        """The same reference bound to one tenant, filling a `{tenant}` placeholder.
+
+        Args:
+            tenant: Whose secret to read.
+
+        Returns:
+            A new reference. Nothing is mutated.
+
+        Raises:
+            SecretResolutionError: Where this reference is already bound to another
+                tenant. A templated reference that can be rebound is one tenant's
+                configuration reading another tenant's secret.
+
+        Example:
+            >>> SecretRef(name="{tenant}-openai-key").for_tenant("acme").name
+            'acme-openai-key'
+        """
+        if self.tenant is not None and self.tenant != tenant:
+            raise SecretResolutionError(
+                f"{self.describe()} is bound to {self.tenant!r} and cannot be read for {tenant!r}",
+                ref=self.describe(),
+            )
+        return self.model_copy(update={"name": self.name.format(tenant=tenant), "tenant": tenant})
 
     def resolve(self, secrets: SecretProvider) -> str:
         """The value behind this name.

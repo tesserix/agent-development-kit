@@ -68,6 +68,28 @@ def _breaking_release(old: tuple[int, ...], new: tuple[int, ...]) -> bool:
     return new[0] > old[0] and new[1:] == (0, 0)
 
 
+def _members(signature: str) -> tuple[str, tuple[str, ...]] | None:
+    """A class signature split into its header and its members, or None if it is not one."""
+    if not signature.startswith("class "):
+        return None
+    if not signature.endswith("}"):
+        return signature, ()
+    header, _, body = signature[:-1].partition(" {")
+    return header, tuple(part for part in body.split("; ") if part)
+
+
+def _only_grew(before: str, after: str) -> bool:
+    """Whether a class only gained members, which consumers cannot be broken by.
+
+    A protocol is the exception: a member added there stops every consumer implementation
+    conforming, so it is breaking however additive the diff looks. See docs/versioning.md.
+    """
+    was, now = _members(before), _members(after)
+    if was is None or now is None or was[0] != now[0] or "(Protocol" in was[0]:
+        return False
+    return set(was[1]) <= set(now[1])
+
+
 def check(
     *,
     baseline: Mapping[str, str],
@@ -78,8 +100,10 @@ def check(
 ) -> list[str]:
     """Return every reason this release may not ship, in the order a releaser fixes them."""
     removed = sorted(set(baseline) - set(current))
-    reshaped = sorted(k for k in set(baseline) & set(current) if baseline[k] != current[k])
-    added = sorted(set(current) - set(baseline))
+    changed = sorted(k for k in set(baseline) & set(current) if baseline[k] != current[k])
+    reshaped = [k for k in changed if not _only_grew(baseline[k], current[k])]
+    grew = [k for k in changed if _only_grew(baseline[k], current[k])]
+    added = sorted(set(current) - set(baseline)) + grew
     breaking = removed + reshaped
 
     old, new = _parts(baseline_version), _parts(version)

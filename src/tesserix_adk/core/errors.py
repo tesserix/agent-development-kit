@@ -108,6 +108,7 @@ __all__ = [
     "SchemaGenerationError",
     "SchemaViolationError",
     "ScopeEscalationError",
+    "SecretResolutionError",
     "StateConflictError",
     "StateInUseError",
     "StateNotFoundError",
@@ -2462,6 +2463,27 @@ class ScopeEscalationError(AdkError):
         super().__init__(
             *args, details={"requested": ", ".join(requested), "path": " -> ".join(path)}
         )
+
+
+class SecretResolutionError(AdkError):
+    """Raised when a credential could not be fetched for the reference that names it.
+
+    Raised rather than returning nothing, because a caller that cannot tell "no such
+    secret" from "the backend is unreachable" carries on unauthenticated, and an
+    unauthenticated call is a failure somebody has to find in a dashboard rather than in a
+    stack trace. The message names the reference; it never carries the value, since the
+    reason a fetch failed is frequently logged and the value never should be.
+
+    Args:
+        ref: Which reference could not be resolved, as `name@version`.
+        backend: What was asked, where one specific backend refused.
+    """
+
+    def __init__(self, *args: object, ref: str = "", backend: str = "") -> None:
+        self.ref = ref
+        self.backend = backend
+        stated = {"ref": ref, "backend": backend}
+        super().__init__(*args, details={key: value for key, value in stated.items() if value})
 
 
 class CeilingExceededError(AdkError):

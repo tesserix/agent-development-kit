@@ -289,6 +289,7 @@ tesserix_adk.core.BudgetScope :: class BudgetScope(StrEnum)
 tesserix_adk.core.BudgetUnavailableError :: class BudgetUnavailableError(AdkError)
 tesserix_adk.core.CHEAP :: CHEAP: TaskClass
 tesserix_adk.core.CHECKPOINT_FORMAT :: CHECKPOINT_FORMAT: int
+tesserix_adk.core.CachingSecrets :: class CachingSecrets(object) {invalidate(self, ref: 'SecretRef') -> 'None'; invalidate_all(self) -> 'None'; resolve(self, ref: 'SecretRef') -> 'SecretStr'}
 tesserix_adk.core.CachingTenantConfig :: class CachingTenantConfig(object) {config_for(self, tenant: 'str') -> 'TenantConfig'; invalidate(self, tenant: 'str') -> 'None'}
 tesserix_adk.core.CancelledError :: class CancelledError(AdkError)
 tesserix_adk.core.Capability :: class Capability(StrEnum)
@@ -297,6 +298,7 @@ tesserix_adk.core.CapabilitySet :: CapabilitySet = typing.Annotated[frozenset[te
 tesserix_adk.core.Ceiling :: class Ceiling(AdkModel)
 tesserix_adk.core.CeilingExceededError :: class CeilingExceededError(AdkError)
 tesserix_adk.core.CeilingLedger :: class CeilingLedger(Protocol) {commit(self, idempotency_key: 'str') -> 'Hold | None'; committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'; release(self, idempotency_key: 'str') -> 'None'; reserve(self, *, tenant: 'str', action_class: 'str', ceiling: 'Ceiling', amount: 'Decimal', idempotency_key: 'str') -> 'Hold'}
+tesserix_adk.core.ChainedSecrets :: class ChainedSecrets(object) {resolve(self, ref: 'SecretRef') -> 'SecretStr'}
 tesserix_adk.core.Checkpoint :: class Checkpoint(AdkModel) {resumable_by(self, format_version: 'int' = 1) -> 'bool'}
 tesserix_adk.core.CheckpointBoundary :: class CheckpointBoundary(StrEnum)
 tesserix_adk.core.CheckpointFormatError :: class CheckpointFormatError(AdkError)
@@ -352,6 +354,7 @@ tesserix_adk.core.DispatchNode :: class DispatchNode(Generic)
 tesserix_adk.core.DispatchResult :: class DispatchResult(Generic) {value(self, name: 'str') -> 'T'}
 tesserix_adk.core.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
+tesserix_adk.core.EnvironmentSecrets :: class EnvironmentSecrets(object) {resolve(self, ref: 'SecretRef') -> 'SecretStr'; variable_for(self, ref: 'SecretRef') -> 'str'}
 tesserix_adk.core.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
 tesserix_adk.core.EvalIncompleteError :: class EvalIncompleteError(AdkError)
 tesserix_adk.core.EventLoopStalledError :: class EventLoopStalledError(AdkError)
@@ -482,6 +485,7 @@ tesserix_adk.core.PromptTemplate :: class PromptTemplate(AdkModel) {render(self,
 tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.Provenance :: class Provenance(object)
 tesserix_adk.core.ProvenanceLostError :: class ProvenanceLostError(AdkError)
+tesserix_adk.core.ProvidedSecrets :: class ProvidedSecrets(object) {resolve(self, ref: 'SecretRef') -> 'SecretStr'}
 tesserix_adk.core.ProviderConfig :: class ProviderConfig(AdkModel)
 tesserix_adk.core.ProviderError :: class ProviderError(AdkError)
 tesserix_adk.core.ProviderTimeoutError :: class ProviderTimeoutError(ProviderError)
@@ -539,7 +543,9 @@ tesserix_adk.core.ScopeEscalationError :: class ScopeEscalationError(AdkError)
 tesserix_adk.core.ScopeSet :: class ScopeSet(object) {missing(self, required: 'Iterable[str]') -> 'tuple[str, ...]'; narrowed_to(self, other: 'ScopeSet') -> 'ScopeSet'; permits(self, scope: 'str') -> 'bool'}
 tesserix_adk.core.ScopedLimits :: class ScopedLimits(AdkModel)
 tesserix_adk.core.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
-tesserix_adk.core.SecretRef :: class SecretRef(AdkModel) {resolve(self, secrets: 'SecretProvider') -> 'str'}
+tesserix_adk.core.SecretRef :: class SecretRef(AdkModel) {describe(self) -> 'str'; for_tenant(self, tenant: 'str') -> 'Self'; resolve(self, secrets: 'SecretProvider') -> 'str'}
+tesserix_adk.core.SecretResolutionError :: class SecretResolutionError(AdkError)
+tesserix_adk.core.SecretResolver :: class SecretResolver(Protocol) {resolve(self, ref: 'SecretRef') -> 'SecretStr'}
 tesserix_adk.core.Sensitive :: class Sensitive(object)
 tesserix_adk.core.SessionRecord :: class SessionRecord(AdkModel)
 tesserix_adk.core.Severity :: Severity = typing.Literal['error', 'warning']
@@ -847,6 +853,7 @@ tesserix_adk.core.errors.SandboxTimeoutError :: class SandboxTimeoutError(Sandbo
 tesserix_adk.core.errors.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.ScopeEscalationError :: class ScopeEscalationError(AdkError)
+tesserix_adk.core.errors.SecretResolutionError :: class SecretResolutionError(AdkError)
 tesserix_adk.core.errors.StateConflictError :: class StateConflictError(AdkError)
 tesserix_adk.core.errors.StateInUseError :: class StateInUseError(AdkError)
 tesserix_adk.core.errors.StateNotFoundError :: class StateNotFoundError(AdkError)
@@ -931,6 +938,7 @@ tesserix_adk.core.ledger.WindowSpend :: class WindowSpend(AdkModel) {remaining(s
 tesserix_adk.core.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
 tesserix_adk.core.lint_directory :: def lint_directory(directory: 'Path', *, suffixes: 'tuple[str, ...]' = ('.toml', '.txt', '.md', '.prompt')) -> 'LintReport'
 tesserix_adk.core.lint_prompt :: def lint_prompt(text: 'str', *, source: 'str' = '') -> 'tuple[LintFinding, ...]'
+tesserix_adk.core.literal_credentials :: def literal_credentials(config: 'AdkModel') -> 'tuple[str, ...]'
 tesserix_adk.core.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.looks_sensitive :: def looks_sensitive(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'bool'
 tesserix_adk.core.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
@@ -1073,6 +1081,12 @@ tesserix_adk.core.schema_hash :: def schema_hash(schema: 'Mapping[str, Any]') ->
 tesserix_adk.core.screen :: def screen(text: 'str', *, instructions: 'str' = '') -> 'tuple[InjectionSignal, ...]'
 tesserix_adk.core.scrub :: def scrub(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'str'
 tesserix_adk.core.sealed :: def sealed(content: 'str', *, source: 'ContentSource') -> 'str'
+tesserix_adk.core.secrets.CachingSecrets :: class CachingSecrets(object) {invalidate(self, ref: 'SecretRef') -> 'None'; invalidate_all(self) -> 'None'; resolve(self, ref: 'SecretRef') -> 'SecretStr'}
+tesserix_adk.core.secrets.ChainedSecrets :: class ChainedSecrets(object) {resolve(self, ref: 'SecretRef') -> 'SecretStr'}
+tesserix_adk.core.secrets.EnvironmentSecrets :: class EnvironmentSecrets(object) {resolve(self, ref: 'SecretRef') -> 'SecretStr'; variable_for(self, ref: 'SecretRef') -> 'str'}
+tesserix_adk.core.secrets.ProvidedSecrets :: class ProvidedSecrets(object) {resolve(self, ref: 'SecretRef') -> 'SecretStr'}
+tesserix_adk.core.secrets.SecretResolver :: class SecretResolver(Protocol) {resolve(self, ref: 'SecretRef') -> 'SecretStr'}
+tesserix_adk.core.secrets.literal_credentials :: def literal_credentials(config: 'AdkModel') -> 'tuple[str, ...]'
 tesserix_adk.core.state.RunRecord :: class RunRecord(AdkModel) {scrubbed(self) -> 'Self'}
 tesserix_adk.core.state.SessionRecord :: class SessionRecord(AdkModel)
 tesserix_adk.core.state.StateDelta :: class StateDelta(AdkModel) {applied_to(self, record: 'RunRecord') -> 'RunRecord'}
@@ -1104,7 +1118,7 @@ tesserix_adk.core.tenancy.tenant_here :: def tenant_here() -> 'TenantContext | N
 tesserix_adk.core.tenancy.tenant_scope :: def tenant_scope(what: 'TenantContext | str', *, user: 'str | None' = None, crossing: 'str | None' = None) -> 'Iterator[TenantContext]'
 tesserix_adk.core.tenant_config.CachingTenantConfig :: class CachingTenantConfig(object) {config_for(self, tenant: 'str') -> 'TenantConfig'; invalidate(self, tenant: 'str') -> 'None'}
 tesserix_adk.core.tenant_config.FileTenantConfig :: class FileTenantConfig(object) {config_for(self, tenant: 'str') -> 'TenantConfig'}
-tesserix_adk.core.tenant_config.SecretRef :: class SecretRef(AdkModel) {resolve(self, secrets: 'SecretProvider') -> 'str'}
+tesserix_adk.core.tenant_config.SecretRef :: class SecretRef(AdkModel) {describe(self) -> 'str'; for_tenant(self, tenant: 'str') -> 'Self'; resolve(self, secrets: 'SecretProvider') -> 'str'}
 tesserix_adk.core.tenant_config.TenantConfig :: class TenantConfig(AdkModel)
 tesserix_adk.core.tenant_config.TenantConfigProvider :: class TenantConfigProvider(Protocol) {config_for(self, tenant: 'str') -> 'TenantConfig'}
 tesserix_adk.core.tenant_config.TenantLimits :: class TenantLimits(AdkModel)

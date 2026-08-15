@@ -19,8 +19,11 @@ Breaking is about what a working consumer has to change, not about how the diff 
 - Changing a configuration key's name, meaning, or default
 
 Not breaking: adding a name, adding an optional keyword argument with a
-behaviour-preserving default, widening what is accepted, adding a configuration key, and
-anything under `tesserix_adk.experimental`, which carries no promise at all.
+behaviour-preserving default, widening what is accepted, adding a configuration key, adding
+a method or field to a class whose existing members are untouched, and anything under
+`tesserix_adk.experimental`, which carries no promise at all. A protocol is the exception
+on that second-to-last one: a member added there is breaking, because every consumer
+implementation stops conforming.
 
 A behavioural change with an unchanged signature is still breaking. It is worse than a
 signature change, because the consumer's type checker will not find it.
