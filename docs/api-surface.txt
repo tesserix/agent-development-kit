@@ -1072,6 +1072,7 @@ tesserix_adk.models.ClientPool :: class ClientPool(object) {aclose(self) -> 'Non
 tesserix_adk.models.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
 tesserix_adk.models.Credential :: class Credential(object) {value(self) -> 'str'}
 tesserix_adk.models.Device :: class Device(StrEnum)
+tesserix_adk.models.Effort :: class Effort(StrEnum)
 tesserix_adk.models.EmbeddingLimits :: class EmbeddingLimits(object)
 tesserix_adk.models.EmbeddingMetrics :: class EmbeddingMetrics(object)
 tesserix_adk.models.EmbeddingProvider :: class EmbeddingProvider(Protocol) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
@@ -1100,17 +1101,21 @@ tesserix_adk.models.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.models.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.models.SemanticConfig :: class SemanticConfig(object)
 tesserix_adk.models.SemanticIndex :: class SemanticIndex(Protocol) {add(self, digest: 'str', vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'None'; nearest(self, vector: 'Vector', *, tenant: 'str', embedding_model: 'str') -> 'tuple[str, float] | None'; purge(self, **by: 'str | None') -> 'int'}
+tesserix_adk.models.Shaped :: class Shaped(AdkModel) {attributes(self) -> 'dict[str, str]'}
+tesserix_adk.models.Shaping :: class Shaping(AdkModel) {shape(self, request: 'ModelRequest', *, effort: 'Effort | None' = None, final: 'bool' = False) -> 'Shaped'; steer(self, request: 'ModelRequest') -> 'ModelRequest'}
 tesserix_adk.models.StopReason :: class StopReason(StrEnum)
 tesserix_adk.models.StreamAccumulator :: class StreamAccumulator(object) {feed(self, event: 'StreamEvent') -> 'None'; finish(self, stop_reason: 'StopReason') -> 'ModelResponse'}
 tesserix_adk.models.StreamEnd :: class StreamEnd(StreamEvent)
 tesserix_adk.models.StreamEvent :: class StreamEvent(AdkModel)
 tesserix_adk.models.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
+tesserix_adk.models.TOOL_ERROR :: TOOL_ERROR: str
 tesserix_adk.models.TextDelta :: class TextDelta(StreamEvent)
 tesserix_adk.models.Throughput :: class Throughput(AdkModel)
 tesserix_adk.models.Tokenizing :: class Tokenizing(Protocol) {encode(self, texts: 'Sequence[str]', *, max_tokens: 'int') -> 'Encoded'}
 tesserix_adk.models.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
 tesserix_adk.models.ToolCallDelta :: class ToolCallDelta(StreamEvent)
 tesserix_adk.models.ToolDeclaration :: class ToolDeclaration(AdkModel)
+tesserix_adk.models.TurnKind :: class TurnKind(StrEnum)
 tesserix_adk.models.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.models.Vector :: Vector: TypeAliasType
 tesserix_adk.models.cache.CacheEntry :: class CacheEntry(object) {expired(self, now: 'float') -> 'bool'}
@@ -1133,6 +1138,7 @@ tesserix_adk.models.catalogue.Pricing :: class Pricing(AdkModel)
 tesserix_adk.models.catalogue.known_models :: def known_models(provider: 'str | None' = None) -> 'tuple[ModelCard, ...]'
 tesserix_adk.models.catalogue.model_card :: def model_card(ref: 'str | ModelRef') -> 'ModelCard'
 tesserix_adk.models.catalogue.priced :: def priced(usage: 'Usage', card: 'ModelCard') -> 'Usage'
+tesserix_adk.models.classify :: def classify(messages: 'Sequence[Message]') -> 'TurnKind'
 tesserix_adk.models.credentials.Credential :: class Credential(object) {value(self) -> 'str'}
 tesserix_adk.models.credentials.EnvironmentSecrets :: class EnvironmentSecrets(object) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.models.embeddings.BatchConfig :: class BatchConfig(object)
@@ -1141,6 +1147,7 @@ tesserix_adk.models.embeddings.EmbeddingLimits :: class EmbeddingLimits(object)
 tesserix_adk.models.embeddings.EmbeddingMetrics :: class EmbeddingMetrics(object)
 tesserix_adk.models.embeddings.EmbeddingProvider :: class EmbeddingProvider(Protocol) {embed(self, texts: 'Sequence[str]', *, model: 'str') -> 'Sequence[Vector]'; limits(self, model: 'str') -> 'EmbeddingLimits'}
 tesserix_adk.models.embeddings.Vector :: Vector: TypeAliasType
+tesserix_adk.models.errored :: def errored(message: 'Message') -> 'Message'
 tesserix_adk.models.gguf.DEFAULT_KV_BYTES_PER_TOKEN :: DEFAULT_KV_BYTES_PER_TOKEN: int
 tesserix_adk.models.gguf.DEFAULT_QUANTIZATION :: DEFAULT_QUANTIZATION: Quantization
 tesserix_adk.models.gguf.GgufModel :: class GgufModel(AdkModel) {at(self, quantization: 'Quantization') -> 'GgufModel'; footprint(self, *, context_tokens: 'int') -> 'MemoryEstimate'}
@@ -1181,6 +1188,7 @@ tesserix_adk.models.pricing.cost_of :: def cost_of(usage: 'Usage', ref: 'str | M
 tesserix_adk.models.pricing.kit_prices :: def kit_prices() -> 'PriceList'
 tesserix_adk.models.pricing.price_list :: def price_list(path: 'str | Path | None' = None) -> 'PriceList'
 tesserix_adk.models.pricing.pricing_at :: def pricing_at(at: 'date', *, prices: 'PriceList | None' = None, batch: 'bool' = False) -> 'Pricer'
+tesserix_adk.models.provider_effort :: def provider_effort(effort: 'Effort', *, provider: 'str') -> 'dict[str, str]'
 tesserix_adk.models.providers.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.CompatibilityPreset :: class CompatibilityPreset(object)
 tesserix_adk.models.providers.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
@@ -1212,6 +1220,14 @@ tesserix_adk.models.routing.RoutingTable :: class RoutingTable(AdkModel) {matchi
 tesserix_adk.models.routing.TABLE_VERSION :: TABLE_VERSION: int
 tesserix_adk.models.routing.TableRouter :: class TableRouter(object) {reloaded(self, table: 'RoutingTable') -> 'TableRouter'; resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
 tesserix_adk.models.routing.routing_table :: def routing_table(path: 'Path | str | None' = None, *, env: 'Mapping[str, str] | None' = None) -> 'RoutingTable'
+tesserix_adk.models.shaping.Effort :: class Effort(StrEnum)
+tesserix_adk.models.shaping.Shaped :: class Shaped(AdkModel) {attributes(self) -> 'dict[str, str]'}
+tesserix_adk.models.shaping.Shaping :: class Shaping(AdkModel) {shape(self, request: 'ModelRequest', *, effort: 'Effort | None' = None, final: 'bool' = False) -> 'Shaped'; steer(self, request: 'ModelRequest') -> 'ModelRequest'}
+tesserix_adk.models.shaping.TOOL_ERROR :: TOOL_ERROR: str
+tesserix_adk.models.shaping.TurnKind :: class TurnKind(StrEnum)
+tesserix_adk.models.shaping.classify :: def classify(messages: 'Sequence[Message]') -> 'TurnKind'
+tesserix_adk.models.shaping.errored :: def errored(message: 'Message') -> 'Message'
+tesserix_adk.models.shaping.provider_effort :: def provider_effort(effort: 'Effort', *, provider: 'str') -> 'dict[str, str]'
 tesserix_adk.models.verify_artefact :: def verify_artefact(model: 'OnnxModel', *, directory: 'Path') -> 'Path'
 tesserix_adk.observability.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
 tesserix_adk.observability.Attribution :: class Attribution(AdkModel)

@@ -68,10 +68,21 @@ from tesserix_adk.models.onnx import (
     verify_artefact,
 )
 from tesserix_adk.models.pool import ClientKey, ClientPool, PoolConfig, PoolMetrics
+from tesserix_adk.models.shaping import (
+    TOOL_ERROR,
+    Effort,
+    Shaped,
+    Shaping,
+    TurnKind,
+    classify,
+    errored,
+    provider_effort,
+)
 
 __all__ = [
     "CATALOGUE_VERSION",
     "ONNX_MODELS",
+    "TOOL_ERROR",
     "BatchConfig",
     "BatchingEmbedder",
     "CacheEntry",
@@ -90,6 +101,7 @@ __all__ = [
     "ContextWindowExceededError",
     "Credential",
     "Device",
+    "Effort",
     "EmbeddingLimits",
     "EmbeddingMetrics",
     "EmbeddingProvider",
@@ -117,6 +129,8 @@ __all__ = [
     "SecretProvider",
     "SemanticConfig",
     "SemanticIndex",
+    "Shaped",
+    "Shaping",
     "StopReason",
     "StreamAccumulator",
     "StreamEnd",
@@ -128,13 +142,17 @@ __all__ = [
     "ToolArgumentValidationError",
     "ToolCallDelta",
     "ToolDeclaration",
+    "TurnKind",
     "UsageDelta",
     "Vector",
+    "classify",
+    "errored",
     "known_models",
     "load_session",
     "model_card",
     "not_cacheable",
     "onnx_model",
     "priced",
+    "provider_effort",
     "verify_artefact",
 ]

@@ -110,6 +110,7 @@ code lands here as the kit is built.
 | CPU inference — llama.cpp, GGUF quantization, fitting a model, tuning | [`docs/cpu-inference.md`](docs/cpu-inference.md) |
 | Resilience — the error taxonomy, redaction, phase timeouts, rate limiting | [`docs/resilience.md`](docs/resilience.md) |
 | Routing — task classes, the routing table, precedence, entitlements | [`docs/routing.md`](docs/routing.md) |
+| Output shaping — effort clamped on resumption turns, terseness steered by suffix only | [`docs/output-shaping.md`](docs/output-shaping.md) |
 | Trust boundaries — fail-closed fallback, recorded rationale | [`docs/trust-boundary.md`](docs/trust-boundary.md) |
 | Fallback — the chain, eligible failures, side-effect safety, attribution | [`docs/fallback.md`](docs/fallback.md) |
 | Usage and cost — normalised counts, decimal money, dated prices, confidence | [`docs/cost.md`](docs/cost.md) |
