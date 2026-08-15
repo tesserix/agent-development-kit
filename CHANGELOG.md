@@ -8,6 +8,77 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.31.0
+
+### Added
+
+- **tesserix_adk.testing.guardrails, tesserix_adk.testing.conformance**: "Guards enabled" is not a safety property, and a weakened detector regex is invisible until
+an incident. Guards can now be measured, offline, with no model and no network.
+
+`measure` runs a guard over `GUARD_CORPUS` and returns recall, a false positive rate and a
+p95 evaluation time together, because a guard that blocks everything has perfect recall.
+A guard is judged only on the families it declares, so a detector of identifiers is not
+scored down for letting an injection payload past.
+
+`GuardThresholds` is declared per guard rather than kit-wide: a deliberately permissive
+internal guard and a customer-facing one cannot share a bar. `GuardMetrics.failures` names
+the cases that regressed rather than returning a number, and reports a run that measured
+nothing as a failure — an empty corpus otherwise produces a recall of 1.0, which is exactly
+the shape of a passing gate.
+
+The corpus is versioned by `CORPUS_VERSION` so an easier corpus cannot masquerade as an
+improved guard, and it is synthetic: `assert_synthetic` refuses a case carrying a
+live-looking credential, an email outside the reserved example domains, or a card-shaped
+number that passes Luhn. `sampled` draws a subset seeded by the commit, so a large corpus
+stays affordable in CI without turning a real regression into a flake.
+
+`RecordedGuard` replays recorded verdicts for a guard that would otherwise call a hosted
+classifier; content nobody recorded blocks rather than being guessed at. `assert_blocks`,
+`assert_redacts`, `assert_allows`, `assert_fails_closed` and `assert_pipeline_order` cover
+the single-case checks, and `GuardrailConformance` gives a third-party guard the protocol
+cases, the corpus run against its own declared bar, and the obligation that a refusal
+carries a matchable code and never quotes the payload it refused.
+
+The bars for the kit's own three guards are measured, not asserted, and live in
+`tests/test_guard_harness.py` as a ratchet.
+
+See [`docs/guard-testing.md`](../docs/guard-testing.md).
+
+### Public API surface
+
+- Added: `tesserix_adk.testing.CORPUS_VERSION`
+- Added: `tesserix_adk.testing.GUARD_CORPUS`
+- Added: `tesserix_adk.testing.GuardCase`
+- Added: `tesserix_adk.testing.GuardFamily`
+- Added: `tesserix_adk.testing.GuardMetrics`
+- Added: `tesserix_adk.testing.GuardThresholds`
+- Added: `tesserix_adk.testing.GuardrailConformance`
+- Added: `tesserix_adk.testing.RecordedGuard`
+- Added: `tesserix_adk.testing.assert_allows`
+- Added: `tesserix_adk.testing.assert_blocks`
+- Added: `tesserix_adk.testing.assert_fails_closed`
+- Added: `tesserix_adk.testing.assert_pipeline_order`
+- Added: `tesserix_adk.testing.assert_redacts`
+- Added: `tesserix_adk.testing.assert_synthetic`
+- Added: `tesserix_adk.testing.conformance.GuardrailConformance`
+- Added: `tesserix_adk.testing.guardrails.CORPUS_VERSION`
+- Added: `tesserix_adk.testing.guardrails.GUARD_CORPUS`
+- Added: `tesserix_adk.testing.guardrails.GuardCase`
+- Added: `tesserix_adk.testing.guardrails.GuardFamily`
+- Added: `tesserix_adk.testing.guardrails.GuardMetrics`
+- Added: `tesserix_adk.testing.guardrails.GuardThresholds`
+- Added: `tesserix_adk.testing.guardrails.RecordedGuard`
+- Added: `tesserix_adk.testing.guardrails.assert_allows`
+- Added: `tesserix_adk.testing.guardrails.assert_blocks`
+- Added: `tesserix_adk.testing.guardrails.assert_fails_closed`
+- Added: `tesserix_adk.testing.guardrails.assert_pipeline_order`
+- Added: `tesserix_adk.testing.guardrails.assert_redacts`
+- Added: `tesserix_adk.testing.guardrails.assert_synthetic`
+- Added: `tesserix_adk.testing.guardrails.measure`
+- Added: `tesserix_adk.testing.guardrails.sampled`
+- Added: `tesserix_adk.testing.measure`
+- Added: `tesserix_adk.testing.sampled`
+
 ## 0.30.0
 
 ### Added
