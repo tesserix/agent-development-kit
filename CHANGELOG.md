@@ -8,6 +8,58 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.17.0
+
+### Added
+
+- **tesserix_adk.core.prompts**: `tesserix_adk.core` now treats prompts as versioned artifacts. Prompts living as inline
+f-strings across product repositories cost twice: nobody can say which text produced a given
+run, so a behaviour regression cannot be traced to the edit that caused it, and the same system
+prompt gets copied into a second product where it quietly diverges.
+
+`PromptDefinition` is one published version — a name, an immutable version, a content digest,
+the variables it declares, and the metadata a reviewer needs. `PromptRegistry` is the protocol
+prompts are read through, and `FilePromptRegistry` reads one TOML file per prompt name from the
+consuming project's own repository. A database-backed or remote registry is an additive
+implementation of the same protocol.
+
+Aliases like `current` are resolved when the prompt is read and never recorded, because a run
+that recorded a moving label says nothing a month later; a prompt already resolved keeps its
+version when the alias is repointed under it. `prompt.instruct(agent)` sets the instructions and
+records a `PromptRef` on the agent, which the runtime carries onto the run and `spend_of` puts
+on every model-call span and cost row as `adk.prompt` and `adk.prompt_digest`. No project wires
+anything, and the body is never exported — prompt text goes to the provider, not to a telemetry
+backend somebody can search.
+
+Nothing is guessed at. A name, version or alias that does not exist raises `PromptNotFoundError`
+listing the versions that do, never an empty prompt or a nearest match. `PromptRejectedError`
+covers a prompt that exists but may not be served: an unreadable file, an empty body, text
+shaped like a credential, or a published version edited in place — a version is immutable, and
+the digest is what makes an in-place edit detectable rather than silent. Development can pass
+`sealed=False` deliberately.
+
+Tenant overrides live at `tenants/<tenant>/<name>.toml`, with the tenant and the name validated
+as plain path components rather than joined onto a directory, so neither can be used to read
+another tenant's prompts. `PromptDefinition.fits` flags a body that would dominate the target
+model's declared window.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.FilePromptRegistry`
+- Added: `tesserix_adk.core.PromptDefinition`
+- Added: `tesserix_adk.core.PromptNotFoundError`
+- Added: `tesserix_adk.core.PromptRef`
+- Added: `tesserix_adk.core.PromptRegistry`
+- Added: `tesserix_adk.core.PromptRejectedError`
+- Added: `tesserix_adk.core.errors.PromptNotFoundError`
+- Added: `tesserix_adk.core.errors.PromptRejectedError`
+- Added: `tesserix_adk.core.prompt_digest`
+- Added: `tesserix_adk.core.prompts.FilePromptRegistry`
+- Added: `tesserix_adk.core.prompts.PromptDefinition`
+- Added: `tesserix_adk.core.prompts.PromptRef`
+- Added: `tesserix_adk.core.prompts.PromptRegistry`
+- Added: `tesserix_adk.core.prompts.prompt_digest`
+
 ## 0.16.0
 
 ### Added
