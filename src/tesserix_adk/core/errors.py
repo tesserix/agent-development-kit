@@ -2359,7 +2359,8 @@ class AttributionError(AdkError):
     Args:
         reason: What was wrong. `"empty"`, `"no_root"`, `"two_roots"`, `"duplicate"` and
             `"orphan"` are trees that cannot be read as one run; `"no_tenant"` is an export
-            refused because the spend would be unattributable once it had left.
+            refused because the spend would be unattributable once it had left;
+            `"convention"` is a span whose attributes do not meet the telemetry convention.
     """
 
     def __init__(
