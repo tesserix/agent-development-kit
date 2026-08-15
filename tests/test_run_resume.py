@@ -294,7 +294,10 @@ class TestWhatIsWrittenDown:
                         call=ToolCall(
                             id="c0",
                             name="charge_card",
-                            arguments={"token": "Bearer abc123def456", "amount": 4_100},
+                            arguments={
+                                "token": "Bearer abc123def456",  # gitleaks:allow
+                                "amount": 4_100,
+                            },
                         ),
                     ),
                 )
@@ -307,7 +310,13 @@ class TestWhatIsWrittenDown:
     def test_a_credential_in_an_assistant_tool_call_is_masked_too(self) -> None:
         message = Message(
             role="assistant",
-            tool_calls=(ToolCall(id="c0", name="pay", arguments={"key": "sk-live-0123456789"}),),
+            tool_calls=(
+                ToolCall(
+                    id="c0",
+                    name="pay",
+                    arguments={"key": "sk-live-0123456789"},  # gitleaks:allow
+                ),
+            ),
         )
 
         masked = scrubbed(frontier(messages=(message,)))

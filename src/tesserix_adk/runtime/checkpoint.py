@@ -261,8 +261,9 @@ def scrubbed(checkpoint: Checkpoint, extra_patterns: Sequence[str] = ()) -> Chec
 
     Example:
         >>> from tesserix_adk.core import Checkpoint
+        >>> leaked = "sk-live-0123456789"  # gitleaks:allow
         >>> point = Checkpoint(
-        ...     run_id="r1", tenant="acme", agent_name="a", prompt_version="sk-live-0123456789"
+        ...     run_id="r1", tenant="acme", agent_name="a", prompt_version=leaked
         ... )
         >>> scrubbed(point).prompt_version
         '[redacted]'
