@@ -8,6 +8,63 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.23.0
+
+### Added
+
+- **tesserix_adk.workflows.replay, tesserix_adk.workflows.deterministic**: Code that cannot replay is now refused before a worker runs it. `guard` reads modules that
+declare `__adk_workflow__ = True` and reports a model provider called on the workflow path, an
+id from `uuid4` or `random`, a wall-clock read, and network I/O — naming the file, the line,
+the call and where the call belongs instead. A consumer's own helper that does one of those is
+caught along with every caller of it, because two frames away is still the same replay.
+Nothing else is scanned: activity modules and ordinary in-process runtime code are allowed
+everything the guard refuses, since a guard that fires on code it does not govern is a guard
+consumers turn off. `make replay-check` is the CI step, and `guard_source` reads a single
+module for a hook or an editor.
+
+The replacements the findings point at ship with it. `WorkflowClock` takes its instants from
+the run's own state, `DeterministicIds` derives ids from the run id and the call's position so
+an idempotency key survives a replay, `stable` reads a registry in an order a deploy cannot
+change, and `Patches` gates a change in agent logic so runs already in flight keep the path
+they recorded.
+
+`assert_replays` drives the current code against a `RecordedHistory` and raises the new
+`NonDeterminismError` at the first index where they differ, naming both sides. A replay that
+stops short, or asks for one command more than the history holds, has diverged too. The kit's
+own histories are committed as plain JSON and replay through scripted activities, so the check
+needs no worker, no broker and no network.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.NonDeterminismError`
+- Added: `tesserix_adk.core.errors.NonDeterminismError`
+- Added: `tesserix_adk.workflows.DeterministicIds`
+- Added: `tesserix_adk.workflows.Patches`
+- Added: `tesserix_adk.workflows.RULES`
+- Added: `tesserix_adk.workflows.RecordedHistory`
+- Added: `tesserix_adk.workflows.ReplayFinding`
+- Added: `tesserix_adk.workflows.ReplayReport`
+- Added: `tesserix_adk.workflows.ReplayRule`
+- Added: `tesserix_adk.workflows.WORKFLOW_MARKER`
+- Added: `tesserix_adk.workflows.WorkflowClock`
+- Added: `tesserix_adk.workflows.assert_replays`
+- Added: `tesserix_adk.workflows.deterministic.DeterministicIds`
+- Added: `tesserix_adk.workflows.deterministic.Patches`
+- Added: `tesserix_adk.workflows.deterministic.WorkflowClock`
+- Added: `tesserix_adk.workflows.deterministic.stable`
+- Added: `tesserix_adk.workflows.guard`
+- Added: `tesserix_adk.workflows.guard_source`
+- Added: `tesserix_adk.workflows.replay.RULES`
+- Added: `tesserix_adk.workflows.replay.RecordedHistory`
+- Added: `tesserix_adk.workflows.replay.ReplayFinding`
+- Added: `tesserix_adk.workflows.replay.ReplayReport`
+- Added: `tesserix_adk.workflows.replay.ReplayRule`
+- Added: `tesserix_adk.workflows.replay.WORKFLOW_MARKER`
+- Added: `tesserix_adk.workflows.replay.assert_replays`
+- Added: `tesserix_adk.workflows.replay.guard`
+- Added: `tesserix_adk.workflows.replay.guard_source`
+- Added: `tesserix_adk.workflows.stable`
+
 ## 0.22.0
 
 ### Added
