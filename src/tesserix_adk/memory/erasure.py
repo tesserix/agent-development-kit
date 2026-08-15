@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from pydantic import Field
 
 from tesserix_adk.core.models import AdkModel
+from tesserix_adk.core.pii import redact
 from tesserix_adk.core.redaction import scrub
 
 if TYPE_CHECKING:
@@ -28,6 +29,7 @@ __all__ = [
     "DerivedIndex",
     "ErasureReceipt",
     "MemoryRedactor",
+    "PIIRedactor",
     "PatternRedactor",
 ]
 
@@ -129,6 +131,46 @@ class PatternRedactor:
             if masked != value:
                 found.append(path or "value")
             return masked
+        if isinstance(value, dict):
+            return {key: self._walk(held, _under(path, key), found) for key, held in value.items()}
+        if isinstance(value, list):
+            return [
+                self._walk(held, _under(path, str(index)), found)
+                for index, held in enumerate(value)
+            ]
+        return value
+
+
+@dataclass(frozen=True, slots=True)
+class PIIRedactor:
+    """Stands a placeholder in for each identifier, at any depth inside the value.
+
+    `PatternRedactor` masks a secret so it cannot be read back. This one removes a personal
+    identifier while keeping what it was and who it was, so a recalled record still supports
+    "the same traveller as last week" without the store holding the number.
+
+    Args:
+        tenant: Whose data this is, which decides the pseudonym.
+        threshold: The confidence a match needs, so a booking reference shaped like a
+            passport number is not filed as one.
+        allow: Shapes this tenant has said are not identifiers.
+    """
+
+    tenant: str
+    threshold: float = 0.6
+    allow: tuple[str, ...] = ()
+
+    def redact(self, value: JsonValue) -> tuple[JsonValue, tuple[str, ...]]:
+        """Return the value with identifiers stood in for, and the paths that changed."""
+        found: list[str] = []
+        return self._walk(value, "", found), tuple(found)
+
+    def _walk(self, value: JsonValue, path: str, found: list[str]) -> JsonValue:
+        if isinstance(value, str):
+            applied = redact(value, tenant=self.tenant, threshold=self.threshold, allow=self.allow)
+            if applied.found:
+                found.append(path or "value")
+            return applied.text
         if isinstance(value, dict):
             return {key: self._walk(held, _under(path, key), found) for key, held in value.items()}
         if isinstance(value, list):

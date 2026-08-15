@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from tesserix_adk.core import MASK, SENSITIVE_SHAPES, AdkModel
+from tesserix_adk.core import MASK, SENSITIVE_SHAPES, AdkModel, redact
 from tesserix_adk.observability.attribution import ATTRIBUTE_PREFIX
 
 if TYPE_CHECKING:
@@ -47,14 +47,18 @@ class Redactor:
     Args:
         extra_patterns: Additional regular expressions a deployment knows about, such as a
             local case or account reference. Applied alongside the built-in shapes.
+        pii_tenant: Whose data this is. Where it is set, a matching value is replaced with
+            the same typed placeholder the memory path uses rather than a flat mask, so a
+            trace and a memory record can be joined on a subject neither of them holds.
 
     Example:
         >>> Redactor().scrub({"who": "ada@example.com"})[0]["who"]
         '[redacted]'
     """
 
-    def __init__(self, extra_patterns: Sequence[str] = ()) -> None:
+    def __init__(self, extra_patterns: Sequence[str] = (), *, pii_tenant: str = "") -> None:
         self._patterns = tuple(re.compile(p) for p in (*SENSITIVE_SHAPES, *extra_patterns))
+        self._tenant = pii_tenant
 
     def scrub(self, attributes: Mapping[str, str]) -> tuple[dict[str, str], Redaction]:
         """Return `attributes` with sensitive values masked, and what was masked.
@@ -71,9 +75,15 @@ class Redactor:
             if key.startswith(ATTRIBUTE_PREFIX) or not self._matches(value):
                 kept[key] = value
                 continue
-            kept[key] = MASK
+            kept[key] = self._stood_in_for(value)
             dropped.append(key)
         return kept, Redaction(dropped=tuple(sorted(dropped)))
+
+    def _stood_in_for(self, value: str) -> str:
+        """A typed placeholder where a tenant was named, and a flat mask otherwise."""
+        if not self._tenant:
+            return MASK
+        return redact(value, tenant=self._tenant).text
 
     def _matches(self, value: str) -> bool:
         return any(pattern.search(value) for pattern in self._patterns)

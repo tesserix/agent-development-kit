@@ -304,6 +304,7 @@ tesserix_adk.core.ClaimCheckPolicy :: class ClaimCheckPolicy(object)
 tesserix_adk.core.ClaimCheckStore :: class ClaimCheckStore(Protocol) {fetch(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'; forget(self, *, tenant: 'str', run_id: 'str' = '') -> 'int'; put(self, handle: 'str', content: 'str', *, tenant: 'str', run_id: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.core.ClaimTicket :: class ClaimTicket(object) {rendered(self) -> 'str'}
 tesserix_adk.core.ClaimUnavailableError :: class ClaimUnavailableError(AdkError)
+tesserix_adk.core.Classification :: class Classification(AdkModel) {breaches(self, thresholds: 'Thresholds') -> 'tuple[ContentCategory, ...]'}
 tesserix_adk.core.Clock :: class Clock(Protocol) {now(self) -> 'float'; sleep(self, seconds: 'float') -> 'None'}
 tesserix_adk.core.CommitmentLedger :: class CommitmentLedger(Protocol) {committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'}
 tesserix_adk.core.CompensatedFailure :: class CompensatedFailure(AdkModel)
@@ -316,8 +317,12 @@ tesserix_adk.core.ConfigProblem :: class ConfigProblem(object)
 tesserix_adk.core.ConfigResolution :: class ConfigResolution(object) {explain(self) -> 'str'}
 tesserix_adk.core.ConfigurationError :: class ConfigurationError(AdkError)
 tesserix_adk.core.Consumed :: class Consumed(AdkModel) {against(self, name: 'str') -> 'Decimal'}
+tesserix_adk.core.ContentBlockedError :: class ContentBlockedError(GuardrailViolationError)
+tesserix_adk.core.ContentCategory :: class ContentCategory(StrEnum)
+tesserix_adk.core.ContentClassifier :: class ContentClassifier(Protocol) {classify(self, text: 'str') -> 'Classification'}
 tesserix_adk.core.ContentFilteredError :: class ContentFilteredError(ProviderError)
 tesserix_adk.core.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.core.primitives.TextPart | tesserix_adk.core.primitives.BinaryPart, FieldInfo(annotation=NoneType, required=True, discriminator='kind')]
+tesserix_adk.core.ContentSeverity :: class ContentSeverity(IntEnum)
 tesserix_adk.core.ContentSource :: class ContentSource(AdkModel) {attributes(self) -> 'dict[str, str]'}
 tesserix_adk.core.ContextBudgetError :: class ContextBudgetError(AdkError)
 tesserix_adk.core.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
@@ -326,6 +331,7 @@ tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.Credit :: class Credit(AdkModel)
 tesserix_adk.core.DEFAULT_ACTIVITY_POLICIES :: DEFAULT_ACTIVITY_POLICIES: dict
+tesserix_adk.core.DEFAULT_DETECTORS :: DEFAULT_DETECTORS: tuple
 tesserix_adk.core.DEFAULT_LEASE :: DEFAULT_LEASE: LeasePolicy
 tesserix_adk.core.DEFAULT_SUSPENSION_SECONDS :: DEFAULT_SUSPENSION_SECONDS: float
 tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(AdkModel)
@@ -365,6 +371,7 @@ tesserix_adk.core.HANDLE_PREFIX :: HANDLE_PREFIX: str
 tesserix_adk.core.HEADER :: HEADER: str
 tesserix_adk.core.HandoffContractError :: class HandoffContractError(AdkError)
 tesserix_adk.core.Heartbeat :: class Heartbeat(AdkModel)
+tesserix_adk.core.HeuristicClassifier :: class HeuristicClassifier(object) {classify(self, text: 'str') -> 'Classification'}
 tesserix_adk.core.HistoryUnavailableError :: class HistoryUnavailableError(AdkError)
 tesserix_adk.core.Hold :: class Hold(AdkModel) {live(self, at: 'float') -> 'bool'}
 tesserix_adk.core.HoldState :: class HoldState(StrEnum)
@@ -441,8 +448,12 @@ tesserix_adk.core.NonDeterminismError :: class NonDeterminismError(AdkError)
 tesserix_adk.core.Origin :: class Origin(StrEnum)
 tesserix_adk.core.Owner :: class Owner(AdkModel)
 tesserix_adk.core.PAYLOAD_KEY :: PAYLOAD_KEY: str
+tesserix_adk.core.PIIDetector :: class PIIDetector(Protocol) {detect(self, text: 'str') -> 'tuple[PIIMatch, ...]'}
+tesserix_adk.core.PIIKind :: class PIIKind(StrEnum)
+tesserix_adk.core.PIIMatch :: class PIIMatch(AdkModel)
 tesserix_adk.core.PROMPT_SUFFIXES :: PROMPT_SUFFIXES: tuple
 tesserix_adk.core.PartialErasureError :: class PartialErasureError(AdkError)
+tesserix_adk.core.PatternDetector :: class PatternDetector(object) {detect(self, text: 'str') -> 'tuple[PIIMatch, ...]'}
 tesserix_adk.core.PayloadTooLargeError :: class PayloadTooLargeError(AdkError)
 tesserix_adk.core.PendingCall :: class PendingCall(AdkModel)
 tesserix_adk.core.PendingDecision :: class PendingDecision(AdkModel)
@@ -471,6 +482,7 @@ tesserix_adk.core.RULES :: RULES: tuple
 tesserix_adk.core.RateLimitError :: class RateLimitError(ProviderError)
 tesserix_adk.core.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.core.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
+tesserix_adk.core.Redacted :: class Redacted(AdkModel)
 tesserix_adk.core.RedactionConfig :: class RedactionConfig(AdkModel)
 tesserix_adk.core.RejectedCandidate :: class RejectedCandidate(AdkModel)
 tesserix_adk.core.Rendered :: class Rendered(AdkModel) {attributes(self) -> 'dict[str, str]'}
@@ -553,6 +565,7 @@ tesserix_adk.core.TenantRefusal :: TenantRefusal: TypeAliasType
 tesserix_adk.core.TenantUnconfiguredError :: class TenantUnconfiguredError(ConfigurationError)
 tesserix_adk.core.TextDelta :: class TextDelta(StreamEvent)
 tesserix_adk.core.TextPart :: class TextPart(AdkModel)
+tesserix_adk.core.Thresholds :: class Thresholds(AdkModel) {bar_for(self, category: 'ContentCategory') -> 'ContentSeverity'}
 tesserix_adk.core.TokenAttempt :: class TokenAttempt(AdkModel)
 tesserix_adk.core.TokenRedeemer :: class TokenRedeemer(Protocol) {redeem(self, token: 'str', *, tenant: 'str', presented_by: 'str') -> 'SuspendedRun'}
 tesserix_adk.core.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
@@ -690,6 +703,12 @@ tesserix_adk.core.config.leaf_keys :: def leaf_keys(model: 'type[BaseModel]', pr
 tesserix_adk.core.config.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.config.resolve_config :: def resolve_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'ConfigResolution'
 tesserix_adk.core.config.secret_keys :: def secret_keys(model: 'type[BaseModel]') -> 'set[str]'
+tesserix_adk.core.content_policy.Classification :: class Classification(AdkModel) {breaches(self, thresholds: 'Thresholds') -> 'tuple[ContentCategory, ...]'}
+tesserix_adk.core.content_policy.ContentCategory :: class ContentCategory(StrEnum)
+tesserix_adk.core.content_policy.ContentClassifier :: class ContentClassifier(Protocol) {classify(self, text: 'str') -> 'Classification'}
+tesserix_adk.core.content_policy.ContentSeverity :: class ContentSeverity(IntEnum)
+tesserix_adk.core.content_policy.HeuristicClassifier :: class HeuristicClassifier(object) {classify(self, text: 'str') -> 'Classification'}
+tesserix_adk.core.content_policy.Thresholds :: class Thresholds(AdkModel) {bar_for(self, category: 'ContentCategory') -> 'ContentSeverity'}
 tesserix_adk.core.cost.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 6) -> 'Cost'}
 tesserix_adk.core.cost.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.cost.CountSource :: class CountSource(StrEnum)
@@ -898,6 +917,15 @@ tesserix_adk.core.models.validated :: def validated(model: 'type[Model]', payloa
 tesserix_adk.core.most_restrictive :: def most_restrictive(*scoped: 'ScopedLimits') -> 'ResolvedBudget'
 tesserix_adk.core.of_payload :: def of_payload(payload: 'Mapping[str, str]') -> 'TenantContext'
 tesserix_adk.core.parsed_from_strings :: def parsed_from_strings(annotation: 'type[Value] | Any', value: 'object') -> 'Value'
+tesserix_adk.core.pii.DEFAULT_DETECTORS :: DEFAULT_DETECTORS: tuple
+tesserix_adk.core.pii.PIIDetector :: class PIIDetector(Protocol) {detect(self, text: 'str') -> 'tuple[PIIMatch, ...]'}
+tesserix_adk.core.pii.PIIKind :: class PIIKind(StrEnum)
+tesserix_adk.core.pii.PIIMatch :: class PIIMatch(AdkModel)
+tesserix_adk.core.pii.PatternDetector :: class PatternDetector(object) {detect(self, text: 'str') -> 'tuple[PIIMatch, ...]'}
+tesserix_adk.core.pii.Redacted :: class Redacted(AdkModel)
+tesserix_adk.core.pii.placeholder :: def placeholder(kind: 'PIIKind', value: 'str', *, tenant: 'str') -> 'str'
+tesserix_adk.core.pii.redact :: def redact(text: 'str', *, tenant: 'str', detectors: 'Sequence[PIIDetector]' = (PatternDetector('card'), PatternDetector('email'), PatternDetector('iban'), PatternDetector('bearer_token'), PatternDetector('api_key'), PatternDetector('national_id'), PatternDetector('passport'), PatternDetector('phone')), threshold: 'float' = 0.6, allow: 'Iterable[str]' = ()) -> 'Redacted'
+tesserix_adk.core.placeholder :: def placeholder(kind: 'PIIKind', value: 'str', *, tenant: 'str') -> 'str'
 tesserix_adk.core.policy_here :: def policy_here() -> 'TenantPolicy | None'
 tesserix_adk.core.primitives.BinaryPart :: class BinaryPart(AdkModel)
 tesserix_adk.core.primitives.ContentPart :: ContentPart = typing.Annotated[tesserix_adk.core.primitives.TextPart | tesserix_adk.core.primitives.BinaryPart, FieldInfo(annotation=NoneType, required=True, discriminator='kind')]
@@ -960,6 +988,7 @@ tesserix_adk.core.queue.WorkItem :: class WorkItem(AdkModel) {lapsed_at(self, no
 tesserix_adk.core.queue.WorkPriority :: class WorkPriority(IntEnum)
 tesserix_adk.core.queue.WorkQueue :: class WorkQueue(Protocol) {adopt(self, *, worker: 'str') -> 'tuple[WorkItem, ...]'; claim(self, *, worker: 'str', queue: 'str' = 'default', lease_seconds: 'float | None' = None) -> 'WorkItem | None'; complete(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; dead_letters(self, *, tenant: 'str', limit: 'int' = 50) -> 'tuple[WorkItem, ...]'; enqueue(self, item: 'WorkItem') -> 'WorkItem'; fail(self, item_id: 'str', *, tenant: 'str', worker: 'str', error: 'str', retryable: 'bool' = True) -> 'WorkItem'; heartbeat(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; reap(self) -> 'tuple[WorkItem, ...]'; stats(self, *, queue: 'str' = 'default') -> 'QueueStats'}
 tesserix_adk.core.queue.WorkState :: class WorkState(StrEnum)
+tesserix_adk.core.redact :: def redact(text: 'str', *, tenant: 'str', detectors: 'Sequence[PIIDetector]' = (PatternDetector('card'), PatternDetector('email'), PatternDetector('iban'), PatternDetector('bearer_token'), PatternDetector('api_key'), PatternDetector('national_id'), PatternDetector('passport'), PatternDetector('phone')), threshold: 'float' = 0.6, allow: 'Iterable[str]' = ()) -> 'Redacted'
 tesserix_adk.core.redaction.MASK :: MASK: str
 tesserix_adk.core.redaction.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple
 tesserix_adk.core.redaction.looks_sensitive :: def looks_sensitive(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'bool'
@@ -1072,15 +1101,21 @@ tesserix_adk.evals.gate.Tolerance :: class Tolerance(AdkModel) {regression(self,
 tesserix_adk.evals.gate.Verdict :: Verdict = typing.Literal['pass', 'fail', 'repeat']
 tesserix_adk.evals.gate.gate :: def gate(baseline: 'Measured', candidate: 'Measured', *, policy: 'GatePolicy' = GatePolicy(tolerances=(Tolerance(metric='task_success', direction='higher_is_better', tolerance=0.01, noise=0.0), Tolerance(metric='schema_validity', direction='higher_is_better', tolerance=0.0, noise=0.0), Tolerance(metric='judge_score', direction='higher_is_better', tolerance=0.05, noise=0.02), Tolerance(metric='p95_latency_ms', direction='lower_is_better', tolerance=250.0, noise=0.0), Tolerance(metric='cost_per_run', direction='lower_is_better', tolerance=0.0005, noise=0.0)), repeats=3), bypass: 'Bypass | None' = None) -> 'GateReport'
 tesserix_adk.guardrails.Containment :: class Containment(AdkModel) {hold(self, proposed: 'Containment', *, source: 'ContentSource') -> 'None'}
+tesserix_adk.guardrails.ContentFilterGuard :: class ContentFilterGuard(Guard) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'; classify(self, content: 'str') -> 'Classification'; raise_for(self, content: 'str', *, stage: 'str' = 'input') -> 'None'}
 tesserix_adk.guardrails.Guard :: class Guard(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.guardrails.GuardResult :: class GuardResult(object)
 tesserix_adk.guardrails.GuardStage :: class GuardStage(StrEnum)
 tesserix_adk.guardrails.GuardVerdict :: class GuardVerdict(StrEnum)
 tesserix_adk.guardrails.GuardrailPipeline :: class GuardrailPipeline(object) {check_input(self, content: 'str') -> 'str'; check_output(self, content: 'str') -> 'str'; check_stream(self, chunks: 'AsyncIterator[str]') -> 'AsyncIterator[str]'}
 tesserix_adk.guardrails.InjectionGuard :: class InjectionGuard(Guard) {check_input(self, content: 'str') -> 'GuardResult'; inspect(self, content: 'str', *, source: 'ContentSource' = ContentSource(origin=<Origin.RETRIEVAL: 'retrieval'>, name='unnamed')) -> 'tuple[InjectionSignal, ...]'; raise_for(self, content: 'str', *, source: 'ContentSource') -> 'None'}
+tesserix_adk.guardrails.PIIGuard :: class PIIGuard(Guard) {apply(self, content: 'str') -> 'Redacted'; check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.guardrails.base.Guard :: class Guard(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
+tesserix_adk.guardrails.content_filter.ContentFilterGuard :: class ContentFilterGuard(Guard) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'; classify(self, content: 'str') -> 'Classification'; raise_for(self, content: 'str', *, stage: 'str' = 'input') -> 'None'}
+tesserix_adk.guardrails.content_filter.refusal_of :: def refusal_of(categories: 'tuple[str, ...]', *, severity: 'str' = 'high', classifier: 'str' = 'provider', stage: 'str' = 'output') -> 'ContentBlockedError'
 tesserix_adk.guardrails.injection.Containment :: class Containment(AdkModel) {hold(self, proposed: 'Containment', *, source: 'ContentSource') -> 'None'}
 tesserix_adk.guardrails.injection.InjectionGuard :: class InjectionGuard(Guard) {check_input(self, content: 'str') -> 'GuardResult'; inspect(self, content: 'str', *, source: 'ContentSource' = ContentSource(origin=<Origin.RETRIEVAL: 'retrieval'>, name='unnamed')) -> 'tuple[InjectionSignal, ...]'; raise_for(self, content: 'str', *, source: 'ContentSource') -> 'None'}
+tesserix_adk.guardrails.pii.PIIGuard :: class PIIGuard(Guard) {apply(self, content: 'str') -> 'Redacted'; check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
+tesserix_adk.guardrails.refusal_of :: def refusal_of(categories: 'tuple[str, ...]', *, severity: 'str' = 'high', classifier: 'str' = 'provider', stage: 'str' = 'output') -> 'ContentBlockedError'
 tesserix_adk.memory.Admission :: class Admission(AdkModel)
 tesserix_adk.memory.AdmissionPolicy :: class AdmissionPolicy(AdkModel) {decide(self, record: 'MemoryRecord', provenance: 'Provenance', *, at: 'float | None' = None) -> 'Admission'}
 tesserix_adk.memory.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
@@ -1197,6 +1232,7 @@ tesserix_adk.memory.erasure.Derivation :: class Derivation(AdkModel)
 tesserix_adk.memory.erasure.DerivedIndex :: class DerivedIndex(Protocol) {purge(self, artefact_ids: 'tuple[str, ...]') -> 'int'}
 tesserix_adk.memory.erasure.ErasureReceipt :: class ErasureReceipt(AdkModel)
 tesserix_adk.memory.erasure.MemoryRedactor :: class MemoryRedactor(Protocol) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
+tesserix_adk.memory.erasure.PIIRedactor :: class PIIRedactor(object) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.erasure.PatternRedactor :: class PatternRedactor(object) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.estimate_tokens :: def estimate_tokens(content: 'str') -> 'int'
 tesserix_adk.memory.instruction_shaped :: def instruction_shaped(value: 'JsonValue') -> 'str'

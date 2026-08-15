@@ -1088,6 +1088,56 @@ class InjectionSuspectedError(GuardrailViolationError):
         )
 
 
+class ContentBlockedError(GuardrailViolationError):
+    """Raised when content breaches this tenant's bar for one or more categories.
+
+    A provider's own safety refusal is normalised into this too, so a run that changes
+    provider does not change what a refusal looks like to the caller that handles it.
+
+    Args:
+        categories: The `ContentCategory` values that reached the bar, sorted.
+        severity: The worst severity seen, as its name.
+        classifier: Which classifier answered, so a change in behaviour has an owner.
+        stage: Where it was refused. An input block is refused before a model call is
+            spent; an output block never emits the payload.
+
+    Example:
+        >>> ContentBlockedError("refused", categories=("hate",)).categories
+        ('hate',)
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        categories: tuple[str, ...] = (),
+        severity: str = "",
+        classifier: str = "",
+        stage: str = "input",
+        guard: str = "content_filter",
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.categories = categories
+        self.severity = severity
+        self.classifier = classifier
+        super().__init__(
+            *args,
+            code="content_blocked",
+            stage=stage,
+            guard=guard,
+            detail=f"{len(categories)} category(ies) over the bar",
+            run_id=run_id,
+            tenant=tenant,
+        )
+        self.details.update(
+            {
+                "categories": ",".join(categories),
+                "severity": severity,
+                "classifier": classifier,
+            }
+        )
+
+
 class GuardrailEvaluationError(GuardrailError):
     """Raised when a guard could not reach a verdict, which is not consent.
 
