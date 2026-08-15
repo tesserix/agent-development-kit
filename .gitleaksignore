@@ -11,3 +11,4 @@ ba8d0abb3c56f3ada1d321f349c5ca05b8f406ad:src/tesserix_adk/testing/conformance.py
 ba8d0abb3c56f3ada1d321f349c5ca05b8f406ad:tests/test_state.py:generic-api-key:83
 9766217305ecb60291b15310ce75c8778d4f7ba4:tests/test_audit_trail.py:generic-api-key:274
 1ed696ccdd00f9c0a48bfacfd3ad8d8ceddeb0bb:tests/test_audit_trail.py:generic-api-key:275
+7f7686fab864eda974bd2fbd0ee27ab6d9746f5e:tests/test_run_resume.py:generic-api-key:310
