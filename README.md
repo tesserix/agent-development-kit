@@ -140,6 +140,7 @@ code lands here as the kit is built.
 | Prompt diff and rollback — what moved between two versions, and repointing an alias safely | [`docs/prompt-rollback.md`](docs/prompt-rollback.md) |
 | Prompt gate — per-metric regression thresholds, cost as a gate, promotion tied to a digest | [`docs/prompt-gate.md`](docs/prompt-gate.md) |
 | Durable runs — a run as a workflow, every call an activity, nothing paid for twice after a restart | [`docs/durable-runs.md`](docs/durable-runs.md) |
+| Replay safety — the calls a workflow cannot make, caught in CI rather than on a resumed run | [`docs/replay-safety.md`](docs/replay-safety.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | State — versioned writes, patches that commute, cursor paging, session lifetime | [`docs/state.md`](docs/state.md) |
 | Checkpointing — frontiers at unambiguous boundaries, resume, calls nobody can decide | [`docs/checkpointing.md`](docs/checkpointing.md) |

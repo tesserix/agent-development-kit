@@ -180,6 +180,20 @@ jobs:
       # Red on an undeclared ignore or public `Any`, and on a policy entry the code lost.
       - run: uv run python -m tools.typing_gate
 
+  replay-safety:
+    name: workflow code replays
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Red on a workflow call that cannot replay, and on a committed history that no longer does.
+      - run: uv run python -m tools.replay_check
+
   versioning-policy:
     name: versioning and deprecation policy
     runs-on: ubuntu-latest

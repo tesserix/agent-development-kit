@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import importlib.util
+from pathlib import Path
 
 import pytest
 
+from tesserix_adk import workflows
 from tesserix_adk.core import (
     CancelledError,
     ConfigurationError,
@@ -413,7 +414,9 @@ class TestTheContract:
     def test_the_activities_protocol_is_satisfied_by_a_plain_object(self) -> None:
         assert isinstance(Worker(), Activities)
 
-    def test_the_kit_imports_with_no_workflow_engine_installed(self) -> None:
-        assert importlib.util.find_spec("tesserix_adk.workflows") is not None
-        with pytest.raises(ModuleNotFoundError):
-            importlib.import_module("temporalio")
+    def test_the_kit_names_no_workflow_engine(self) -> None:
+        package = Path(workflows.__file__).parent
+
+        sources = [module.read_text(encoding="utf-8") for module in package.rglob("*.py")]
+
+        assert not [text for text in sources if "temporalio" in text]

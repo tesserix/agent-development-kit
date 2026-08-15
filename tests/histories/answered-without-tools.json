@@ -1,0 +1,7 @@
+{
+  "run_id": "run-answer-1",
+  "tenant": "acme",
+  "model": "claude-opus-5",
+  "responses": [{"content": "Kyoto in April."}],
+  "commands": ["model:0"]
+}

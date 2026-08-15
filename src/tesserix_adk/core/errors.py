@@ -78,6 +78,7 @@ __all__ = [
     "ModelArtifactError",
     "ModelResponseError",
     "NoEligibleModelError",
+    "NonDeterminismError",
     "PartialErasureError",
     "PayloadTooLargeError",
     "PlanValidationError",
@@ -2702,4 +2703,48 @@ class PayloadTooLargeError(AdkError):
     @property
     def retryable(self) -> bool:
         """No. The same payload is the same size on the next attempt."""
+        return False
+
+
+class NonDeterminismError(AdkError):
+    """Raised when replaying a recorded history against the current code diverges.
+
+    A workflow is re-executed from the start on every resume, so the code has to reach the
+    same decisions in the same order. When it does not, the run cannot continue: the
+    history says one thing happened and the code says another, and picking either is
+    inventing a run nobody executed. The resolution is a versioned patch, never accepting
+    the divergence.
+
+    Args:
+        run_id: Whose history diverged.
+        command: The index in the recorded command sequence where they parted.
+        expected: What the history recorded at that index.
+        actual: What the current code asked for instead.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        run_id: str = "",
+        command: int = 0,
+        expected: str = "",
+        actual: str = "",
+    ) -> None:
+        self.run_id = run_id
+        self.command = command
+        self.expected = expected
+        self.actual = actual
+        super().__init__(
+            *args,
+            details={
+                "run_id": run_id,
+                "command": str(command),
+                "expected": expected,
+                "actual": actual,
+            },
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """No. The same code diverges from the same history every time."""
         return False

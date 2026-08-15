@@ -1,5 +1,11 @@
 """Durable orchestration and long-running composition."""
 
+from tesserix_adk.workflows.deterministic import (
+    DeterministicIds,
+    Patches,
+    WorkflowClock,
+    stable,
+)
 from tesserix_adk.workflows.durable import (
     PAYLOAD_LIMIT_BYTES,
     STREAMING_UNSUPPORTED,
@@ -14,18 +20,42 @@ from tesserix_adk.workflows.durable import (
     ToolCallResult,
     WorkflowState,
 )
+from tesserix_adk.workflows.replay import (
+    RULES,
+    WORKFLOW_MARKER,
+    RecordedHistory,
+    ReplayFinding,
+    ReplayReport,
+    ReplayRule,
+    assert_replays,
+    guard,
+    guard_source,
+)
 
 __all__ = [
     "PAYLOAD_LIMIT_BYTES",
+    "RULES",
     "STREAMING_UNSUPPORTED",
+    "WORKFLOW_MARKER",
     "Activities",
     "ActivityContext",
     "AgentWorkflow",
     "Cancellation",
+    "DeterministicIds",
     "Journal",
     "ModelCallInput",
     "ModelCallResult",
+    "Patches",
+    "RecordedHistory",
+    "ReplayFinding",
+    "ReplayReport",
+    "ReplayRule",
     "ToolCallInput",
     "ToolCallResult",
+    "WorkflowClock",
     "WorkflowState",
+    "assert_replays",
+    "guard",
+    "guard_source",
+    "stable",
 ]

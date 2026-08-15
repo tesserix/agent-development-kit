@@ -390,6 +390,7 @@ tesserix_adk.core.NoEligibleModelError :: class NoEligibleModelError(Configurati
 tesserix_adk.core.NoOutput :: class NoOutput(AdkModel)
 tesserix_adk.core.NodeOutcome :: class NodeOutcome(StrEnum)
 tesserix_adk.core.NodeResult :: class NodeResult(Generic)
+tesserix_adk.core.NonDeterminismError :: class NonDeterminismError(AdkError)
 tesserix_adk.core.Owner :: class Owner(AdkModel)
 tesserix_adk.core.PAYLOAD_KEY :: PAYLOAD_KEY: str
 tesserix_adk.core.PROMPT_SUFFIXES :: PROMPT_SUFFIXES: tuple
@@ -707,6 +708,7 @@ tesserix_adk.core.errors.MissingTenantContextError :: class MissingTenantContext
 tesserix_adk.core.errors.ModelArtifactError :: class ModelArtifactError(ConfigurationError)
 tesserix_adk.core.errors.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.core.errors.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
+tesserix_adk.core.errors.NonDeterminismError :: class NonDeterminismError(AdkError)
 tesserix_adk.core.errors.PartialErasureError :: class PartialErasureError(AdkError)
 tesserix_adk.core.errors.PayloadTooLargeError :: class PayloadTooLargeError(AdkError)
 tesserix_adk.core.errors.PlanValidationError :: class PlanValidationError(AdkError)
@@ -2026,14 +2028,28 @@ tesserix_adk.workflows.Activities :: class Activities(Protocol) {model_call(self
 tesserix_adk.workflows.ActivityContext :: class ActivityContext(AdkModel)
 tesserix_adk.workflows.AgentWorkflow :: class AgentWorkflow(object) {run(self, state: 'WorkflowState', *, context: 'ActivityContext') -> 'WorkflowState'}
 tesserix_adk.workflows.Cancellation :: class Cancellation(Protocol) {raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
+tesserix_adk.workflows.DeterministicIds :: class DeterministicIds(AdkModel) {next(self, kind: 'str' = '') -> 'tuple[str, DeterministicIds]'}
 tesserix_adk.workflows.Journal :: class Journal(AdkModel) {with_model(self, step: 'str', result: 'ModelCallResult') -> 'Journal'; with_tool(self, step: 'str', result: 'ToolCallResult') -> 'Journal'}
 tesserix_adk.workflows.ModelCallInput :: class ModelCallInput(AdkModel)
 tesserix_adk.workflows.ModelCallResult :: class ModelCallResult(AdkModel)
 tesserix_adk.workflows.PAYLOAD_LIMIT_BYTES :: PAYLOAD_LIMIT_BYTES: int
+tesserix_adk.workflows.Patches :: class Patches(AdkModel) {applied(self, name: 'str') -> 'bool'; applying(self, name: 'str') -> 'Patches'}
+tesserix_adk.workflows.RULES :: RULES: tuple
+tesserix_adk.workflows.RecordedHistory :: class RecordedHistory(AdkModel)
+tesserix_adk.workflows.ReplayFinding :: class ReplayFinding(AdkModel)
+tesserix_adk.workflows.ReplayReport :: class ReplayReport(AdkModel) {summary(self) -> 'str'}
+tesserix_adk.workflows.ReplayRule :: class ReplayRule(AdkModel)
 tesserix_adk.workflows.STREAMING_UNSUPPORTED :: STREAMING_UNSUPPORTED: str
 tesserix_adk.workflows.ToolCallInput :: class ToolCallInput(AdkModel)
 tesserix_adk.workflows.ToolCallResult :: class ToolCallResult(AdkModel)
+tesserix_adk.workflows.WORKFLOW_MARKER :: WORKFLOW_MARKER: str
+tesserix_adk.workflows.WorkflowClock :: class WorkflowClock(AdkModel) {advanced(self, seconds: 'float') -> 'WorkflowClock'; now(self) -> 'float'}
 tesserix_adk.workflows.WorkflowState :: class WorkflowState(AdkModel)
+tesserix_adk.workflows.assert_replays :: def assert_replays(history: 'RecordedHistory', commands: 'Sequence[str]') -> 'None'
+tesserix_adk.workflows.deterministic.DeterministicIds :: class DeterministicIds(AdkModel) {next(self, kind: 'str' = '') -> 'tuple[str, DeterministicIds]'}
+tesserix_adk.workflows.deterministic.Patches :: class Patches(AdkModel) {applied(self, name: 'str') -> 'bool'; applying(self, name: 'str') -> 'Patches'}
+tesserix_adk.workflows.deterministic.WorkflowClock :: class WorkflowClock(AdkModel) {advanced(self, seconds: 'float') -> 'WorkflowClock'; now(self) -> 'float'}
+tesserix_adk.workflows.deterministic.stable :: def stable(registry: 'Mapping[str, ValueT]') -> 'tuple[tuple[str, ValueT], ...]'
 tesserix_adk.workflows.durable.Activities :: class Activities(Protocol) {model_call(self, request: 'ModelCallInput') -> 'ModelCallResult'; tool_call(self, request: 'ToolCallInput') -> 'ToolCallResult'}
 tesserix_adk.workflows.durable.ActivityContext :: class ActivityContext(AdkModel)
 tesserix_adk.workflows.durable.AgentWorkflow :: class AgentWorkflow(object) {run(self, state: 'WorkflowState', *, context: 'ActivityContext') -> 'WorkflowState'}
@@ -2046,3 +2062,15 @@ tesserix_adk.workflows.durable.STREAMING_UNSUPPORTED :: STREAMING_UNSUPPORTED: s
 tesserix_adk.workflows.durable.ToolCallInput :: class ToolCallInput(AdkModel)
 tesserix_adk.workflows.durable.ToolCallResult :: class ToolCallResult(AdkModel)
 tesserix_adk.workflows.durable.WorkflowState :: class WorkflowState(AdkModel)
+tesserix_adk.workflows.guard :: def guard(paths: 'Iterable[Path]') -> 'ReplayReport'
+tesserix_adk.workflows.guard_source :: def guard_source(text: 'str', *, source: 'str' = '') -> 'tuple[ReplayFinding, ...]'
+tesserix_adk.workflows.replay.RULES :: RULES: tuple
+tesserix_adk.workflows.replay.RecordedHistory :: class RecordedHistory(AdkModel)
+tesserix_adk.workflows.replay.ReplayFinding :: class ReplayFinding(AdkModel)
+tesserix_adk.workflows.replay.ReplayReport :: class ReplayReport(AdkModel) {summary(self) -> 'str'}
+tesserix_adk.workflows.replay.ReplayRule :: class ReplayRule(AdkModel)
+tesserix_adk.workflows.replay.WORKFLOW_MARKER :: WORKFLOW_MARKER: str
+tesserix_adk.workflows.replay.assert_replays :: def assert_replays(history: 'RecordedHistory', commands: 'Sequence[str]') -> 'None'
+tesserix_adk.workflows.replay.guard :: def guard(paths: 'Iterable[Path]') -> 'ReplayReport'
+tesserix_adk.workflows.replay.guard_source :: def guard_source(text: 'str', *, source: 'str' = '') -> 'tuple[ReplayFinding, ...]'
+tesserix_adk.workflows.stable :: def stable(registry: 'Mapping[str, ValueT]') -> 'tuple[tuple[str, ValueT], ...]'
