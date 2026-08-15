@@ -24,8 +24,12 @@ from tesserix_adk.core.errors import (
     IndeterminateToolCallError,
     ResumeConflictError,
 )
+from tesserix_adk.core.primitives import Message, TextPart, ToolCall
+from tesserix_adk.core.redaction import scrub
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from tesserix_adk.core.checkpoint import CheckpointStore, PendingCall
     from tesserix_adk.core.idempotency import IdempotencyStore
     from tesserix_adk.core.protocols import Clock
@@ -36,6 +40,7 @@ __all__ = [
     "claim_resume",
     "plan_resume",
     "refuse_if_undecidable",
+    "scrubbed",
 ]
 
 RESUME_TTL_SECONDS = 300.0
@@ -77,6 +82,10 @@ class Checkpointer:
         policy: When one is written, and how large it may be.
         clock: What stamps it. Absent, a checkpoint says nothing about when — which is
             fine, since nothing orders by it.
+        redact: Whether credential-shaped values are masked before the write. On by
+            default: a checkpoint is a durable copy of a conversation, and it is read again
+            by whoever debugs the resume.
+        extra_patterns: Shapes this deployment also treats as sensitive.
     """
 
     def __init__(
@@ -84,10 +93,15 @@ class Checkpointer:
         store: CheckpointStore,
         policy: CheckpointPolicy | None = None,
         clock: Clock | None = None,
+        *,
+        redact: bool = True,
+        extra_patterns: Sequence[str] = (),
     ) -> None:
         self._store = store
         self._policy = policy or CheckpointPolicy()
         self._clock = clock
+        self._redact = redact
+        self._extra_patterns = extra_patterns
         self.last_error: Exception | None = None
 
     @property
@@ -99,12 +113,14 @@ class Checkpointer:
         """Write `checkpoint` where the policy calls for it, and say whether it was.
 
         A payload over the cap is refused rather than truncated: half a frontier resumes
-        into a conversation that never happened, and nothing downstream could tell.
+        into a conversation that never happened, and nothing downstream could tell. The
+        payload is masked before it is sized, because what is written is what has to fit.
         """
         self.last_error = None
         if not self._policy.writes_at(checkpoint.boundary):
             return False
-        stamped = checkpoint.model_copy(update={"created_at": self._now()})
+        masked = scrubbed(checkpoint, self._extra_patterns) if self._redact else checkpoint
+        stamped = masked.model_copy(update={"created_at": self._now()})
         size = stamped.size_bytes
         if size > self._policy.max_bytes:
             self.last_error = CheckpointTooLargeError(
@@ -230,3 +246,63 @@ async def _resolved(
         return Resumption(call=pending.call, disposition=ToolDisposition.INDETERMINATE)
     await idempotency.abandon(pending.idempotency_key, tenant=tenant)
     return Resumption(call=pending.call, disposition=ToolDisposition.NEVER_RAN)
+
+
+def scrubbed(checkpoint: Checkpoint, extra_patterns: Sequence[str] = ()) -> Checkpoint:
+    """Return `checkpoint` with credential-shaped values masked, ready to persist.
+
+    A checkpoint outlives the run, gets backed up, and is read by whoever debugs the resume.
+    Masking here rather than at the store means every store inherits it, including the one a
+    consumer writes themselves.
+
+    Args:
+        checkpoint: What is about to be written.
+        extra_patterns: Shapes this deployment also treats as sensitive.
+
+    Example:
+        >>> from tesserix_adk.core import Checkpoint
+        >>> point = Checkpoint(
+        ...     run_id="r1", tenant="acme", agent_name="a", prompt_version="sk-live-0123456789"
+        ... )
+        >>> scrubbed(point).prompt_version
+        '[redacted]'
+    """
+    return checkpoint.model_copy(
+        update={
+            "messages": tuple(_message(one, extra_patterns) for one in checkpoint.messages),
+            "pending": tuple(
+                one.model_copy(update={"call": _call(one.call, extra_patterns)})
+                for one in checkpoint.pending
+            ),
+            "prompt_version": scrub(checkpoint.prompt_version, extra_patterns),
+        }
+    )
+
+
+def _message(message: Message, extra_patterns: Sequence[str]) -> Message:
+    """One turn, with its text and its tool calls masked."""
+    return message.model_copy(
+        update={
+            "content": [_part(part, extra_patterns) for part in message.content],
+            "tool_calls": tuple(_call(call, extra_patterns) for call in message.tool_calls),
+        }
+    )
+
+
+def _part(part: object, extra_patterns: Sequence[str]) -> object:
+    """One content part. Binary parts carry no text to mask."""
+    if isinstance(part, TextPart):
+        return part.model_copy(update={"text": scrub(part.text, extra_patterns)})
+    return part
+
+
+def _call(call: ToolCall, extra_patterns: Sequence[str]) -> ToolCall:
+    """One tool call, with its arguments masked."""
+    return call.model_copy(
+        update={
+            "arguments": {
+                name: scrub(value, extra_patterns) if isinstance(value, str) else value
+                for name, value in call.arguments.items()
+            }
+        }
+    )

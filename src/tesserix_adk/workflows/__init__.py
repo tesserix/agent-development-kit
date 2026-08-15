@@ -1,5 +1,11 @@
 """Durable orchestration and long-running composition."""
 
+from tesserix_adk.workflows.continuation import (
+    DEFAULT_CONTINUATION,
+    Continuation,
+    ContinuationPolicy,
+    continued,
+)
 from tesserix_adk.workflows.deterministic import (
     DeterministicIds,
     Patches,
@@ -33,6 +39,7 @@ from tesserix_adk.workflows.replay import (
 )
 
 __all__ = [
+    "DEFAULT_CONTINUATION",
     "PAYLOAD_LIMIT_BYTES",
     "RULES",
     "STREAMING_UNSUPPORTED",
@@ -41,6 +48,8 @@ __all__ = [
     "ActivityContext",
     "AgentWorkflow",
     "Cancellation",
+    "Continuation",
+    "ContinuationPolicy",
     "DeterministicIds",
     "Journal",
     "ModelCallInput",
@@ -55,6 +64,7 @@ __all__ = [
     "WorkflowClock",
     "WorkflowState",
     "assert_replays",
+    "continued",
     "guard",
     "guard_source",
     "stable",

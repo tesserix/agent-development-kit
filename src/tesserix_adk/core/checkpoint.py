@@ -109,6 +109,14 @@ class Checkpoint(AdkModel):
         agent_revision: The pinned definition revision, where the run had one.
         prompt_version: The prompt the messages were assembled from.
         created_at: Unix seconds it was written.
+        history_handle: Where the transcript lives when it is too large to carry inline. A
+            resume that cannot resolve it fails closed rather than continuing on what is left.
+        pending_approval: The approval request the run is waiting on, where it is waiting.
+            Carried across a continue-as-new, or the decision comes back to nobody.
+        grant_id: The autonomy grant the run is acting under, so a resumed run does not
+            silently act under a wider one.
+        scopes: What the run was authorised to do. A resume never widens them.
+        user: Who the run is for, kept because attribution has to survive the restart.
     """
 
     run_id: str = Field(min_length=1)
@@ -126,6 +134,11 @@ class Checkpoint(AdkModel):
     agent_revision: str | None = None
     prompt_version: str = ""
     created_at: float = 0.0
+    history_handle: str = ""
+    pending_approval: str = ""
+    grant_id: str = ""
+    scopes: tuple[str, ...] = ()
+    user: str = ""
 
     @property
     def size_bytes(self) -> int:

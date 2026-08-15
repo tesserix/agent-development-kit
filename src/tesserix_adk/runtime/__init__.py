@@ -31,6 +31,7 @@ from tesserix_adk.runtime.checkpoint import (
     claim_resume,
     plan_resume,
     refuse_if_undecidable,
+    scrubbed,
 )
 from tesserix_adk.runtime.claim_check import ClaimCheck, MemoryClaimCheckStore
 from tesserix_adk.runtime.compaction import (
@@ -78,6 +79,7 @@ from tesserix_adk.runtime.handoff import (
     Receiver,
 )
 from tesserix_adk.runtime.idempotency import MemoryIdempotencyStore
+from tesserix_adk.runtime.lease import Leaseholder, MemoryLeaseStore
 from tesserix_adk.runtime.loop import AgentRunner, ModelRequest, ModelResponse, SystemClock
 from tesserix_adk.runtime.parallel import (
     Aggregate,
@@ -146,6 +148,7 @@ from tesserix_adk.runtime.results import (
     ToolResult,
     ToolResultBoundary,
 )
+from tesserix_adk.runtime.resume import HistoryStore, ResumedRun, Resumer
 from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.spend import budgeted_stream
 from tesserix_adk.runtime.state import MemoryStateStore
@@ -203,15 +206,18 @@ __all__ = [
     "HandoffDesk",
     "HandoffQueue",
     "HandoffResult",
+    "HistoryStore",
     "InMemoryHistory",
     "InMemoryPlanStore",
     "InMemoryReports",
     "IterationStarted",
+    "Leaseholder",
     "LoopMonitor",
     "MemoryAuditSink",
     "MemoryCheckpointStore",
     "MemoryClaimCheckStore",
     "MemoryIdempotencyStore",
+    "MemoryLeaseStore",
     "MemoryStateStore",
     "MemorySuspensionStore",
     "MemoryWorkQueue",
@@ -238,6 +244,8 @@ __all__ = [
     "ReportLog",
     "ResultFinding",
     "ResultPolicy",
+    "ResumedRun",
+    "Resumer",
     "RetryPlan",
     "ReturningTool",
     "RevocationBroadcast",
@@ -296,6 +304,7 @@ __all__ = [
     "plan_resume",
     "refuse_if_undecidable",
     "refuse_unaffordable",
+    "scrubbed",
     "self_granted",
     "unwrap_fenced",
     "wrap_untrusted",

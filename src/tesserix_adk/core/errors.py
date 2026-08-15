@@ -55,6 +55,7 @@ __all__ = [
     "GuardrailEvaluationError",
     "GuardrailViolationError",
     "HandoffContractError",
+    "HistoryUnavailableError",
     "HookEvaluationError",
     "HookRefusedError",
     "HookRegistrationError",
@@ -97,6 +98,7 @@ __all__ = [
     "RepeatedCallError",
     "ResumeConflictError",
     "RetrievalDegradedError",
+    "RunLeaseError",
     "RunningLoopError",
     "SandboxError",
     "SandboxMemoryError",
@@ -2730,12 +2732,12 @@ class NonDeterminismError(AdkError):
         expected: str = "",
         actual: str = "",
     ) -> None:
-        self.run_id = run_id
         self.command = command
         self.expected = expected
         self.actual = actual
         super().__init__(
             *args,
+            run_id=run_id,
             details={
                 "run_id": run_id,
                 "command": str(command),
@@ -2747,4 +2749,69 @@ class NonDeterminismError(AdkError):
     @property
     def retryable(self) -> bool:
         """No. The same code diverges from the same history every time."""
+        return False
+
+
+class RunLeaseError(AdkError):
+    """Raised when a worker tries to advance a run it does not hold the lease on.
+
+    Two workers resuming one run is two runs spending one budget and dispatching each
+    outstanding call twice. The second one is refused here, before anything is dispatched,
+    and told who holds the run so an operator has somewhere to look.
+
+    Args:
+        run_id: The run in question.
+        holder: Who holds it now.
+        requested_by: Who was refused.
+        fence: The fence the holder has, which is what a stale writer is measured against.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        run_id: str = "",
+        holder: str = "",
+        requested_by: str = "",
+        fence: int = 0,
+    ) -> None:
+        self.holder = holder
+        self.requested_by = requested_by
+        self.fence = fence
+        super().__init__(
+            *args,
+            run_id=run_id,
+            details={
+                "run_id": run_id,
+                "holder": holder,
+                "requested_by": requested_by,
+                "fence": str(fence),
+            },
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """Yes, once the holder's lease expires. Retrying sooner is refused the same way."""
+        return True
+
+
+class HistoryUnavailableError(AdkError):
+    """Raised when a resume cannot get back the transcript its checkpoint points at.
+
+    A checkpoint carries a handle to the conversation, not the conversation. When the store
+    behind that handle has expired or evicted it, the run cannot be carried on: continuing
+    with what is left is continuing a conversation that never happened, and the model has no
+    way to tell.
+
+    Args:
+        run_id: The run that cannot be resumed.
+        handle: The handle nothing resolved.
+    """
+
+    def __init__(self, *args: object, run_id: str = "", handle: str = "") -> None:
+        self.handle = handle
+        super().__init__(*args, run_id=run_id, details={"run_id": run_id, "handle": handle})
+
+    @property
+    def retryable(self) -> bool:
+        """No. An evicted transcript does not come back."""
         return False

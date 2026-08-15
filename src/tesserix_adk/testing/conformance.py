@@ -36,12 +36,14 @@ from tesserix_adk.core.errors import (
     LeaseLostError,
     MemoryConflictError,
     MemoryScopeError,
+    RunLeaseError,
     StateConflictError,
     StateInUseError,
     StateNotFoundError,
     WorkItemNotFoundError,
 )
 from tesserix_adk.core.idempotency import IdempotencyStore
+from tesserix_adk.core.lease import LeaseStore, RunLease
 from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
 from tesserix_adk.core.primitives import Message, TextPart, ToolCall, Usage
 from tesserix_adk.core.propagation import HEADER, arriving, carried, restored
@@ -88,6 +90,7 @@ __all__ = [
     "ClockConformance",
     "IdempotencyStoreConformance",
     "KeyValueStoreConformance",
+    "LeaseStoreConformance",
     "MemoryStoreConformance",
     "ModelProviderConformance",
     "SearchIndexConformance",
@@ -997,6 +1000,108 @@ class CheckpointStoreConformance(ABC):
         await store.put(_checkpoint("r1", tenant="one"))
         await store.forget("r1", tenant="two")
         assert await store.latest("r1", tenant="one") is not None
+
+
+class LeaseStoreConformance(ABC):
+    """Behaviour every `LeaseStore` implementation must exhibit.
+
+    The guarantees are that one holder at a time may advance a run, that a lease nobody
+    released lapses on the store's clock rather than stranding the run, that every
+    acquisition raises the fence so a superseded holder is refused on the number, and that
+    a lease never spans a tenant.
+    """
+
+    @abstractmethod
+    def make_store(self) -> LeaseStore:
+        """Return a fresh store with no lease in it."""
+
+    @abstractmethod
+    async def advance(self, store: LeaseStore, seconds: float) -> None:
+        """Move the store's clock on, so a lease can lapse without a test sleeping."""
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_store(), LeaseStore)
+
+    async def test_a_run_nobody_has_taken_has_no_lease(self) -> None:
+        assert await self.make_store().held("r1", tenant="conformance") is None
+
+    async def test_the_first_worker_takes_the_run(self) -> None:
+        store = self.make_store()
+        lease = await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        assert lease.holder == "w1"
+        assert lease.fence >= 1
+
+    async def test_the_second_worker_is_refused_and_told_who_holds_it(self) -> None:
+        store = self.make_store()
+        await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        with pytest.raises(RunLeaseError) as refused:
+            await store.acquire("r1", tenant="conformance", holder="w2", ttl_seconds=60.0)
+        assert refused.value.holder == "w1"
+
+    async def test_a_lapsed_lease_is_takeable(self) -> None:
+        store = self.make_store()
+        await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        await self.advance(store, 61.0)
+        taken = await store.acquire("r1", tenant="conformance", holder="w2", ttl_seconds=60.0)
+        assert taken.holder == "w2"
+
+    async def test_taking_a_lapsed_lease_raises_the_fence(self) -> None:
+        store = self.make_store()
+        first = await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        await self.advance(store, 61.0)
+        second = await store.acquire("r1", tenant="conformance", holder="w2", ttl_seconds=60.0)
+        assert first.superseded_by(second)
+
+    async def test_a_superseded_holder_cannot_renew(self) -> None:
+        store = self.make_store()
+        first = await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        await self.advance(store, 61.0)
+        await store.acquire("r1", tenant="conformance", holder="w2", ttl_seconds=60.0)
+        with pytest.raises(RunLeaseError):
+            await store.renew(first, ttl_seconds=60.0)
+
+    async def test_renewing_keeps_the_fence_and_moves_the_expiry(self) -> None:
+        store = self.make_store()
+        held = await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        await self.advance(store, 30.0)
+        renewed = await store.renew(held, ttl_seconds=60.0)
+        assert renewed.fence == held.fence
+        assert renewed.expires_at > held.expires_at
+
+    async def test_renewing_a_lease_nobody_holds_is_refused(self) -> None:
+        store = self.make_store()
+        lease = RunLease(run_id="r1", tenant="conformance", holder="w1", expires_at=60.0)
+        with pytest.raises(RunLeaseError):
+            await store.renew(lease, ttl_seconds=60.0)
+
+    async def test_releasing_frees_the_run_immediately(self) -> None:
+        store = self.make_store()
+        held = await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        await store.release(held)
+        taken = await store.acquire("r1", tenant="conformance", holder="w2", ttl_seconds=60.0)
+        assert taken.holder == "w2"
+
+    async def test_releasing_a_lease_that_has_moved_on_leaves_the_new_one_alone(self) -> None:
+        store = self.make_store()
+        first = await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        await self.advance(store, 61.0)
+        await store.acquire("r1", tenant="conformance", holder="w2", ttl_seconds=60.0)
+        await store.release(first)
+        current = await store.held("r1", tenant="conformance")
+        assert current is not None
+        assert current.holder == "w2"
+
+    async def test_a_lease_never_spans_a_tenant(self) -> None:
+        store = self.make_store()
+        await store.acquire("r1", tenant="one", holder="w1", ttl_seconds=60.0)
+        other = await store.acquire("r1", tenant="two", holder="w2", ttl_seconds=60.0)
+        assert other.holder == "w2"
+
+    async def test_two_runs_do_not_block_each_other(self) -> None:
+        store = self.make_store()
+        await store.acquire("r1", tenant="conformance", holder="w1", ttl_seconds=60.0)
+        other = await store.acquire("r2", tenant="conformance", holder="w2", ttl_seconds=60.0)
+        assert other.holder == "w2"
 
 
 def _work(

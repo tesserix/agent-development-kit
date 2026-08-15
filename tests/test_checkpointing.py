@@ -440,6 +440,24 @@ class TestTheMemoryStoreConforms(CheckpointStoreConformance):
     def make_store(self) -> CheckpointStore:
         return MemoryCheckpointStore()
 
+    async def test_what_a_paused_run_is_waiting_on_survives_a_round_trip(self) -> None:
+        """A resume that lost the approval token either waits forever or acts unapproved."""
+        store = self.make_store()
+        waiting = a_checkpoint().model_copy(
+            update={
+                "history_handle": "h-1",
+                "pending_approval": "req-9",
+                "grant_id": "grant-2",
+                "scopes": ("booking:write",),
+                "user": "ada",
+            }
+        )
+        await store.put(waiting)
+
+        read = await store.latest("r1", tenant=TENANT)
+
+        assert read == waiting
+
 
 class TestARunThatChecksItselfIn:
     def a_runner(self, *responses: ModelResponse, **overrides: object) -> AgentRunner:

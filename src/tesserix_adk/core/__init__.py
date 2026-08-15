@@ -148,6 +148,7 @@ from tesserix_adk.core.errors import (
     GuardrailEvaluationError,
     GuardrailViolationError,
     HandoffContractError,
+    HistoryUnavailableError,
     HookEvaluationError,
     HookRefusedError,
     HookRegistrationError,
@@ -192,6 +193,7 @@ from tesserix_adk.core.errors import (
     RepeatedCallError,
     ResumeConflictError,
     RetrievalDegradedError,
+    RunLeaseError,
     RunningLoopError,
     SandboxError,
     SandboxMemoryError,
@@ -254,6 +256,7 @@ from tesserix_adk.core.idempotency import (
     IdempotencyStore,
     idempotency_key,
 )
+from tesserix_adk.core.lease import DEFAULT_LEASE, LeasePolicy, LeaseStore, RunLease
 from tesserix_adk.core.ledger import (
     SEPARATOR,
     LedgerKey,
@@ -434,6 +437,7 @@ from tesserix_adk.core.trust import TrustBoundary
 __all__ = [
     "CHEAP",
     "CHECKPOINT_FORMAT",
+    "DEFAULT_LEASE",
     "DEFAULT_SUSPENSION_SECONDS",
     "HANDLE_PREFIX",
     "HEADER",
@@ -563,6 +567,7 @@ __all__ = [
     "GuardrailPipeline",
     "GuardrailViolationError",
     "HandoffContractError",
+    "HistoryUnavailableError",
     "Hold",
     "HoldState",
     "Hook",
@@ -591,6 +596,8 @@ __all__ = [
     "JsonSchema",
     "KeyValueStore",
     "LeaseLostError",
+    "LeasePolicy",
+    "LeaseStore",
     "LedgerFailure",
     "LedgerKey",
     "LintFinding",
@@ -673,6 +680,8 @@ __all__ = [
     "RunEvent",
     "RunEventKind",
     "RunGrant",
+    "RunLease",
+    "RunLeaseError",
     "RunRecord",
     "RunState",
     "RunningLoopError",

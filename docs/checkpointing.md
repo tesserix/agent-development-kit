@@ -83,6 +83,104 @@ dispatched twice. A resume takes an at-most-once claim on the run through the sa
 idempotency machinery a tool call uses, and the second worker gets `ResumeConflictError`.
 The claim expires after five minutes, so one crashed worker does not strand the run forever.
 
+`Resumer` puts a `RunLease` in front of that, because a claim that only covers the moment of
+resuming does not cover the hour of work after it. The lease is taken **before the frontier is
+read**, so the worker that loses never sees the run at all:
+
+```python
+resumer = Resumer(checkpoints=checkpointer, leases=lease_store, history=transcripts)
+carried = await resumer.resume("run_1", tenant="acme", worker="worker-7")
+carried.lease.fence   # rises on every acquisition
+carried.plan.safe     # the same decision plan_resume makes
+```
+
+Three rules make it safe under clock skew:
+
+- **The store owns the clock.** A caller's idea of `now` is never used to decide expiry —
+  the Redis scripts call `TIME`, the SQL uses `extract(epoch FROM now())`. A worker whose
+  clock is an hour fast cannot take a lease that has not lapsed.
+- **Every acquisition raises the fence.** A superseded holder is refused on the number rather
+  than on the time, so a write from a worker that was paused past its TTL is rejected by
+  whatever it writes to. `RunLease.superseded_by` is the comparison.
+- **Renewal keeps the fence.** `Leaseholder` is an async context manager that renews inside
+  `LeasePolicy.renew_within` and releases on the way out, so a run that finishes hands the
+  lease back rather than leaving the next worker to wait out the TTL.
+
+`LeaseStoreConformance` carries all of that. `MemoryLeaseStore` is the in-process
+implementation the suite is first run against.
+
+## What a checkpoint must not contain
+
+A frontier is durable, and a run's conversation is the most likely place in the kit for an
+API key a user pasted or a bearer token a tool was handed. `Checkpointer` masks before it
+sizes, so the redaction happens once and every store inherits it — including one a consumer
+writes:
+
+```python
+Checkpointer(store, extra_patterns=(r"EMP-\d+",))   # on top of the built-in patterns
+Checkpointer(store, redact=False)                   # only where the store is already trusted
+```
+
+Binary parts are left alone: masking bytes produces a payload that is neither the original
+nor honestly empty.
+
+## Storing the transcript out of line
+
+`history_handle` is a pointer to the conversation rather than the conversation. A run that
+has been going for a day carries a transcript far past `max_bytes`, and a frontier that
+refuses to be written is a run that cannot be resumed. `HistoryStore.fetch` resolves the
+handle at resume time, and a handle that no longer resolves raises `HistoryUnavailableError`
+— the run stops rather than continuing against a conversation with a hole in it.
+
+## Durable stores
+
+`tesserix_adk.adapters` ships the two most deployments already run:
+
+| Store | Backed by | Notes |
+|---|---|---|
+| `RedisCheckpointStore` | one key per run | `max_value_bytes` refuses an oversized payload before the call |
+| `RedisLeaseStore` | Lua, server-clocked | `ACQUIRE` returns the holder to refuse with |
+| `PostgresCheckpointStore` | `adk_checkpoints` | `verify()` reads the schema version before use |
+| `PostgresLeaseStore` | `adk_run_leases` | one upsert decides acquisition; nothing races |
+
+The DDL is published as `EXPECTED_CHECKPOINT_SCHEMA` and applied by nobody here. Schema
+lifecycle belongs to whatever owns migrations; a kit that creates its own tables at import
+time is a kit that cannot be reviewed before it runs.
+
+## Starting the execution again without losing the run
+
+A workflow engine's history is finite. `ContinuationPolicy.due` says when an execution has
+run long enough to be worth starting again — `max_steps` on the journal, `max_history_bytes`
+on whatever the engine reports — and `continued` builds the `Continuation` that crosses over:
+
+```python
+if DEFAULT_CONTINUATION.due(state.journal, history_bytes=info.history_size):
+    carry = continued(state, tenant="acme", agent_name="booking")
+```
+
+The transcript crosses as a handle, the ledger and the iteration count cross as numbers, and
+the journal deliberately does not — its results are already folded into the state, and
+replaying them is the cost being cut. A `Continuation` that dropped the approval or grant the
+run was acting under cannot be constructed: that is a `ConfigurationError`, not a warning,
+because the new execution would otherwise carry on unapproved.
+
+## From a terminal
+
+The run waiting on an approval since Friday is usually resumed by an on-call engineer:
+
+```console
+$ adk inspect run_1 --tenant acme          # takes no lease
+run run_1  tenant acme  agent booking
+iteration 3  1200 in, 300 out  4100 micros
+waiting on approval req-9
+```
+
+`adk run --resume run_1 --tenant acme` prints the same summary — the same `describe`, so the
+two cannot drift — then takes the lease and reports the fence it holds. Its exit codes are
+what a script reads: `0` carried on, `1` nothing checkpointed under that id, `2` a command
+line it could not read, `3` another worker holds it, `4` it must not be carried on — an
+undecidable call, an evicted transcript, or a frontier this kit cannot read.
+
 ## What is not carried
 
 Spend. The ledger already survives the process, and a second copy of a number that only ever
