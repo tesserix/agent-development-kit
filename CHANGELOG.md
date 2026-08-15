@@ -8,6 +8,75 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.29.0
+
+### Added
+
+- **tesserix_adk.core.output_policy, tesserix_adk.guardrails.output**: An agent result is now either an instance of the declared type or a typed error. There is no
+third outcome: the kit does not hand on a partially parsed object, and it never fills a
+missing field with a default so that the answer validates.
+
+`SchemaGuard` types what came back, over the contract the model was asked against.
+`PolicyGuard` applies this tenant's rules once it has parsed, and the two are separate
+because they answer different questions — a schema says a quote has a total, and says
+nothing about whether the total is inside the band this tenant sells at.
+
+Rules are ordinary Python. `Bounded`, `OneOf`, `RequiresCitation` and `Invariant` cover the
+common shapes and a consumer's own rule plugs in beside them, but none of them may ask a
+model: a rule the model checks is a suggestion from the same thing that produced the answer.
+Comparison is deliberately provider-independent — decimal for numbers, NFC for text — so the
+same answer is judged the same way whoever served it and on every replay.
+
+A violation names the rule and the path and never the value. A refusal that quotes the
+out-of-band total has published the out-of-band total, which is the thing the rule existed
+to stop. `OutputValidationError` carries the rule identifiers, the failing paths and the
+attempt count, and keeps the raw payload on `.payload` for a debugger.
+
+`RequiresCitation` is the provenance rule: an assertion drawn from retrieved content that
+arrives with nothing behind it is rejected, because otherwise a run that retrieved and a run
+that guessed produce the same-shaped answer.
+
+Abstention is a first-class outcome. `SchemaGuard(contract, abstention=True)` accepts an
+`Abstention` as the answer, and policies are not applied to one — it quoted nothing. Where
+"I do not know" cannot be expressed, a model that does not know invents something that
+validates, which is the failure mode nothing downstream can detect.
+
+`validated` adds bounded, opt-in repair. Without a `reask` there is no repair at all, since
+a re-ask is a real model call against the run's budget and nobody asked for the spend. The
+`attempts` cap counts every answer including the first, so a validation loop cannot become
+unbounded; the correction is built only from what actually failed and supplies no value; and
+when the cap is spent the run fails closed carrying the last violation and its attempt count.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.Abstention`
+- Added: `tesserix_adk.core.Bounded`
+- Added: `tesserix_adk.core.Invariant`
+- Added: `tesserix_adk.core.OneOf`
+- Added: `tesserix_adk.core.OutputValidationError`
+- Added: `tesserix_adk.core.Policy`
+- Added: `tesserix_adk.core.PolicyReport`
+- Added: `tesserix_adk.core.PolicyViolation`
+- Added: `tesserix_adk.core.RequiresCitation`
+- Added: `tesserix_adk.core.evaluate`
+- Added: `tesserix_adk.core.output_policy.Abstention`
+- Added: `tesserix_adk.core.output_policy.Bounded`
+- Added: `tesserix_adk.core.output_policy.Invariant`
+- Added: `tesserix_adk.core.output_policy.OneOf`
+- Added: `tesserix_adk.core.output_policy.Policy`
+- Added: `tesserix_adk.core.output_policy.PolicyReport`
+- Added: `tesserix_adk.core.output_policy.PolicyViolation`
+- Added: `tesserix_adk.core.output_policy.RequiresCitation`
+- Added: `tesserix_adk.core.output_policy.evaluate`
+- Added: `tesserix_adk.core.output_policy.reach`
+- Added: `tesserix_adk.core.reach`
+- Added: `tesserix_adk.guardrails.PolicyGuard`
+- Added: `tesserix_adk.guardrails.SchemaGuard`
+- Added: `tesserix_adk.guardrails.output.PolicyGuard`
+- Added: `tesserix_adk.guardrails.output.SchemaGuard`
+- Added: `tesserix_adk.guardrails.output.validated`
+- Added: `tesserix_adk.guardrails.validated`
+
 ## 0.28.0
 
 ### Added
