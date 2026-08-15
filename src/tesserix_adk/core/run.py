@@ -24,6 +24,7 @@ from pydantic import Field
 from tesserix_adk.core.budget import ResolvedBudget  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.models import AdkModel, OutputT
 from tesserix_adk.core.primitives import Message, ToolCall, Usage
+from tesserix_adk.core.prompts import PromptRef  # noqa: TC001
 from tesserix_adk.core.tenancy import TenantContext
 
 __all__ = [
@@ -226,7 +227,10 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
             from one. A version can be edited in place; a revision is derived from the
             content, so it names the exact artifact that produced this run.
         model: The model actually used, not the one requested.
-        prompt_version: Which prompt produced this run, where prompts are versioned.
+        prompt_version: Which assembled prompt design produced this run.
+        prompt: Which registered prompt the agent's instructions came from, where they
+            came from one. Carried from the agent, so a behaviour change is attributable
+            to a prompt version without any project wiring it.
         task_class: What was asked for, where routing decided it. Spend groups by the kind
             of work as well as by the model, or a price change reads as a workload change.
         depth: How far down a chain of agents calling agents this run sits. Zero is a run
@@ -259,6 +263,7 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
     definition_revision: str | None = None
     model: str = Field(min_length=1)
     prompt_version: str | None = None
+    prompt: PromptRef | None = None
     task_class: str | None = None
     depth: int = Field(default=0, ge=0)
     path: tuple[str, ...] = ()

@@ -786,6 +786,7 @@ class AgentRunner:
             agent_version=agent.version,
             definition_revision=revision,
             model=model,
+            prompt=agent.prompt,
             depth=depth,
             path=path,
             grant=_granted(agent),
@@ -2428,6 +2429,7 @@ class AgentRunner:
             agent_version=started.agent.version,
             definition_revision=started.revision,
             model=started.agent.model or "",
+            prompt=started.agent.prompt,
             depth=started.depth,
             path=started.path,
         ).transition_to(RunState.RUNNING, at=self._clock.now())

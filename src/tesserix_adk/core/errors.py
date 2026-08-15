@@ -79,6 +79,8 @@ __all__ = [
     "PlanValidationError",
     "PoolExhaustedError",
     "PrefixDriftError",
+    "PromptNotFoundError",
+    "PromptRejectedError",
     "ProtocolConformanceError",
     "ProvenanceLostError",
     "ProviderError",
@@ -1870,6 +1872,38 @@ class PrefixDriftError(AdkError):
         self.layer = layer
         self.position = position
         super().__init__(*args, details={"layer": layer, "position": str(position)})
+
+
+class PromptNotFoundError(ConfigurationError):
+    """Raised when a prompt name, version or alias does not exist in the registry.
+
+    Never an empty prompt, a nearest match or a default: an agent that silently ran on
+    something other than the prompt it named is a behaviour change nobody can trace.
+
+    Args:
+        name: Which prompt was asked for.
+        available: The versions that do exist, so the fix is in the message.
+    """
+
+    def __init__(self, *args: object, name: str = "", available: tuple[str, ...] = ()) -> None:
+        self.name = name
+        self.available = available
+        super().__init__(*args, details={"prompt": name, "available": ", ".join(available)})
+
+
+class PromptRejectedError(ConfigurationError):
+    """Raised when a stored prompt exists but may not be served.
+
+    An unreadable file, an empty body, text shaped like a credential, or a published
+    version edited in place. Each of them fails at load rather than reaching a provider.
+
+    Args:
+        name: Which prompt was refused.
+    """
+
+    def __init__(self, *args: object, name: str = "") -> None:
+        self.name = name
+        super().__init__(*args, details={"prompt": name})
 
 
 class SandboxError(AdkError):

@@ -32,6 +32,7 @@ from tesserix_adk.core.config import (  # noqa: TC001
 
 # Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
 from tesserix_adk.core.models import AdkModel, OutputT
+from tesserix_adk.core.prompts import PromptRef  # noqa: TC001
 
 __all__ = ["Agent", "ToolFailurePolicy"]
 
@@ -56,6 +57,9 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
         version: Which revision of the declaration this is, so a behaviour change is
             attributable to it.
         instructions: The system instruction.
+        prompt: Which registered prompt the instructions came from, where they came from
+            one. Carried onto the run and every model-call span, so a behaviour change is
+            attributable to a prompt version rather than to a deployment date.
         model: The model to use. Mutually exclusive with `task_class`.
         task_class: The kind of work, for a router to resolve to a model. Naming the job
             rather than the model is what lets the routing decision live in one place.
@@ -109,6 +113,7 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
     name: str = Field(min_length=1)
     version: str = "1.0.0"
     instructions: str = Field(min_length=1)
+    prompt: PromptRef | None = None
     model: str | None = None
     task_class: str | None = None
     requires: CapabilitySet = frozenset()

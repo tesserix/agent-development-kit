@@ -302,6 +302,7 @@ tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, re
 tesserix_adk.core.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
 tesserix_adk.core.FallbackUnsafeError :: class FallbackUnsafeError(AdkError)
 tesserix_adk.core.FanOutLimitError :: class FanOutLimitError(LoopLimitError)
+tesserix_adk.core.FilePromptRegistry :: class FilePromptRegistry(object) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
 tesserix_adk.core.FileTenantConfig :: class FileTenantConfig(object) {config_for(self, tenant: 'str') -> 'TenantConfig'}
 tesserix_adk.core.GrantIssuer :: class GrantIssuer(Protocol) {issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
 tesserix_adk.core.GrantReader :: class GrantReader(Protocol) {grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'}
@@ -385,6 +386,11 @@ tesserix_adk.core.PendingDecision :: class PendingDecision(AdkModel)
 tesserix_adk.core.PlanValidationError :: class PlanValidationError(AdkError)
 tesserix_adk.core.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.PrefixDriftError :: class PrefixDriftError(AdkError)
+tesserix_adk.core.PromptDefinition :: class PromptDefinition(AdkModel) {fits(self, window_tokens: 'int', *, share: 'float' = 0.5) -> 'bool'; instruct(self, agent: 'Agent[OutputT]') -> 'Agent[OutputT]'}
+tesserix_adk.core.PromptNotFoundError :: class PromptNotFoundError(ConfigurationError)
+tesserix_adk.core.PromptRef :: class PromptRef(AdkModel) {attributes(self) -> 'dict[str, str]'}
+tesserix_adk.core.PromptRegistry :: class PromptRegistry(Protocol) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
+tesserix_adk.core.PromptRejectedError :: class PromptRejectedError(ConfigurationError)
 tesserix_adk.core.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.Provenance :: class Provenance(object)
 tesserix_adk.core.ProvenanceLostError :: class ProvenanceLostError(AdkError)
@@ -682,6 +688,8 @@ tesserix_adk.core.errors.PartialErasureError :: class PartialErasureError(AdkErr
 tesserix_adk.core.errors.PlanValidationError :: class PlanValidationError(AdkError)
 tesserix_adk.core.errors.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.errors.PrefixDriftError :: class PrefixDriftError(AdkError)
+tesserix_adk.core.errors.PromptNotFoundError :: class PromptNotFoundError(ConfigurationError)
+tesserix_adk.core.errors.PromptRejectedError :: class PromptRejectedError(ConfigurationError)
 tesserix_adk.core.errors.ProtocolConformanceError :: class ProtocolConformanceError(ConfigurationError)
 tesserix_adk.core.errors.ProvenanceLostError :: class ProvenanceLostError(AdkError)
 tesserix_adk.core.errors.ProviderError :: class ProviderError(AdkError)
@@ -790,6 +798,12 @@ tesserix_adk.core.primitives.TextPart :: class TextPart(AdkModel)
 tesserix_adk.core.primitives.ToolCall :: class ToolCall(AdkModel)
 tesserix_adk.core.primitives.Usage :: class Usage(AdkModel)
 tesserix_adk.core.primitives.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
+tesserix_adk.core.prompt_digest :: def prompt_digest(body: 'str') -> 'str'
+tesserix_adk.core.prompts.FilePromptRegistry :: class FilePromptRegistry(object) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
+tesserix_adk.core.prompts.PromptDefinition :: class PromptDefinition(AdkModel) {fits(self, window_tokens: 'int', *, share: 'float' = 0.5) -> 'bool'; instruct(self, agent: 'Agent[OutputT]') -> 'Agent[OutputT]'}
+tesserix_adk.core.prompts.PromptRef :: class PromptRef(AdkModel) {attributes(self) -> 'dict[str, str]'}
+tesserix_adk.core.prompts.PromptRegistry :: class PromptRegistry(Protocol) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
+tesserix_adk.core.prompts.prompt_digest :: def prompt_digest(body: 'str') -> 'str'
 tesserix_adk.core.propagation.HEADER :: HEADER: str
 tesserix_adk.core.propagation.MAX_HEADER_BYTES :: MAX_HEADER_BYTES: int
 tesserix_adk.core.propagation.PAYLOAD_KEY :: PAYLOAD_KEY: str

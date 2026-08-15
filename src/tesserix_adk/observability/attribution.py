@@ -71,7 +71,11 @@ class Attribution(AdkModel):
         definition: The `AgentDefinition` revision the run declared, where it ran from one.
             A version can be edited in place; a revision names the exact reviewed artifact.
         model: The model that actually answered, not the one first asked for.
-        prompt_version: Which prompt produced the call.
+        prompt_version: Which assembled prompt design produced the call.
+        prompt: Which registered prompt the agent ran on, as `name@version`, where it ran
+            on one. A behaviour or cost change groups by the prompt edit that caused it.
+        prompt_digest: The content address of that prompt's text, so an edit that reused a
+            version is visible in the bill rather than only in a diff nobody took.
         task_class: The kind of work routing was asked for.
         run_id: The run, for joining spend back to what happened.
     """
@@ -83,6 +87,8 @@ class Attribution(AdkModel):
     definition: str
     model: str
     prompt_version: str
+    prompt: str = UNKNOWN
+    prompt_digest: str = UNKNOWN
     task_class: str
     run_id: str
 
@@ -192,6 +198,8 @@ def _attribution(run: Run[Any], model: str) -> Attribution:
         definition=_named(run.definition_revision),
         model=_named(model),
         prompt_version=_named(run.prompt_version),
+        prompt=_named(run.prompt.label if run.prompt else None),
+        prompt_digest=_named(run.prompt.digest if run.prompt else None),
         task_class=_named(run.task_class),
         run_id=_named(run.id),
     )
