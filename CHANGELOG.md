@@ -8,6 +8,58 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.16.0
+
+### Added
+
+- **tesserix_adk.models.shaping**: `tesserix_adk.models` now shapes output as well as routing it. Output is billed at several
+times the input rate on reasoning-capable models, and a large share of what is generated is
+preamble, restated context and narration of work nobody asked to see — yet almost every
+gateway sends the same reasoning effort for every call in a run, including the turns that
+exist only to read a tool result back.
+
+`Shaping` clamps effort downward on tool-resumption turns and appends a terseness instruction
+to the end of the system prompt. Both levers are off until an agent turns them on, and both
+are conservative by construction. `shape` returns a decision and never modifies the request,
+so the cacheable prefix is exactly what the assembler produced; the effort it reports is never
+above what the caller asked for. A policy whose resumption effort exceeds its baseline raises
+`ConfigurationError` at construction — a policy that can increase spend or latency is rejected
+at configuration time rather than discovered on a bill.
+
+Four kinds of turn are left alone: a new question, an error recovery, the final turn that
+answers the user, and any call whose output schema requires completeness. Failures are where
+deliberation pays, so `errored` marks a failed tool result and `classify` reports the turn as
+a recovery rather than a resumption.
+
+`steer` appends the terseness instruction after everything already in the system prompt and
+never edits what is there, because a rewrite invalidates the cached prefix and gives back more
+than the shorter output saves. It is byte-stable and idempotent: enabling it costs exactly one
+prefix invalidation and none afterwards.
+
+`provider_effort` maps the one expression of effort onto each provider's own parameter and
+returns nothing for a provider that has none, and `Shaped.attributes` gives the model call
+record what was applied, what was asked for and why. Settings and outcomes only; no prompt
+content reaches the record.
+
+### Public API surface
+
+- Added: `tesserix_adk.models.Effort`
+- Added: `tesserix_adk.models.Shaped`
+- Added: `tesserix_adk.models.Shaping`
+- Added: `tesserix_adk.models.TOOL_ERROR`
+- Added: `tesserix_adk.models.TurnKind`
+- Added: `tesserix_adk.models.classify`
+- Added: `tesserix_adk.models.errored`
+- Added: `tesserix_adk.models.provider_effort`
+- Added: `tesserix_adk.models.shaping.Effort`
+- Added: `tesserix_adk.models.shaping.Shaped`
+- Added: `tesserix_adk.models.shaping.Shaping`
+- Added: `tesserix_adk.models.shaping.TOOL_ERROR`
+- Added: `tesserix_adk.models.shaping.TurnKind`
+- Added: `tesserix_adk.models.shaping.classify`
+- Added: `tesserix_adk.models.shaping.errored`
+- Added: `tesserix_adk.models.shaping.provider_effort`
+
 ## 0.15.0
 
 ### Added
