@@ -169,6 +169,7 @@ code lands here as the kit is built.
 | Calling a peer agent — the caller's principal on the wire, narrowed on both sides, a chain that cannot loop | [`docs/peer-delegation.md`](docs/peer-delegation.md) |
 | Credential refresh — one mint inside the skew window, authority re-derived rather than renewed, a revoked caller that halts | [`docs/credential-refresh.md`](docs/credential-refresh.md) |
 | Store isolation — the partition derived from context rather than passed, a mismatched row withheld, guarantees stated with their limits | [`docs/store-isolation.md`](docs/store-isolation.md) |
+| Proving isolation — two tenants seeded with confusable data, markers that survive summarising, surfaces nobody read counted as a failure | [`docs/isolation-suite.md`](docs/isolation-suite.md) |
 | Tool allowlists — agent, tenant and caller intersected once, enforced at dispatch, delegation that only narrows | [`docs/tool-allowlists.md`](docs/tool-allowlists.md) |
 | Testing a guard — an attack corpus with a benign control set, recall and false positives together, per-guard bars that ratchet | [`docs/guard-testing.md`](docs/guard-testing.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
