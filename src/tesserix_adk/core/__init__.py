@@ -199,6 +199,7 @@ from tesserix_adk.core.errors import (
     StateNotFoundError,
     StatePersistenceError,
     StreamInterruptedError,
+    TemplateError,
     TenantContextError,
     TenantCrossingError,
     TenantLimitError,
@@ -327,6 +328,12 @@ from tesserix_adk.core.redaction import (
     SENSITIVE_SHAPES,
     looks_sensitive,
     scrub,
+)
+from tesserix_adk.core.rendering import (
+    PromptTemplate,
+    Rendered,
+    Variable,
+    wrap_untrusted,
 )
 from tesserix_adk.core.routing import (
     CHEAP,
@@ -606,6 +613,7 @@ __all__ = [
     "PromptRef",
     "PromptRegistry",
     "PromptRejectedError",
+    "PromptTemplate",
     "ProtocolConformanceError",
     "Provenance",
     "ProvenanceLostError",
@@ -621,6 +629,7 @@ __all__ = [
     "RecursionLimitError",
     "RedactionConfig",
     "RejectedCandidate",
+    "Rendered",
     "RepairConfig",
     "RepeatedCallError",
     "Reservation",
@@ -675,6 +684,7 @@ __all__ = [
     "SuspensionStore",
     "TaskClass",
     "TelemetryConfig",
+    "TemplateError",
     "TenantConfig",
     "TenantConfigProvider",
     "TenantContext",
@@ -715,6 +725,7 @@ __all__ = [
     "UnlimitedBudget",
     "Usage",
     "UsageDelta",
+    "Variable",
     "Window",
     "WindowKind",
     "WindowSpend",
@@ -767,4 +778,5 @@ __all__ = [
     "validated",
     "verify_conformance",
     "weaker_source",
+    "wrap_untrusted",
 ]

@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -31,6 +30,7 @@ from pydantic import Field
 from tesserix_adk.core import Message, TextPart
 from tesserix_adk.core.models import AdkModel
 from tesserix_adk.core.provider import ToolDeclaration
+from tesserix_adk.core.rendering import wrap_untrusted
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -50,10 +50,6 @@ __all__ = [
 ]
 
 
-_BEGIN = "<untrusted-data"
-_END = "</untrusted-data>"
-_ESCAPED = {_BEGIN: "&lt;untrusted-data", _END: "&lt;/untrusted-data&gt;"}
-_SOURCE = re.compile(r"^[a-z0-9_-]+$")
 _VERSION_LENGTH = 12
 
 # Roughly four characters to a token across English prose and JSON alike. Wrong by up to a
@@ -108,30 +104,6 @@ def approximate_tokens(text: str) -> int:
         10
     """
     return len(text) // _CHARACTERS_PER_TOKEN
-
-
-def wrap_untrusted(content: str, *, source: str) -> str:
-    """Return `content` marked as data the model must not take instruction from.
-
-    Args:
-        content: The untrusted text.
-        source: Where it came from, e.g. `memory` or `tool_result`. "Untrusted" alone is
-            not actionable; naming the origin is.
-
-    Raises:
-        ValueError: If `source` is not lowercase alphanumeric with `_` or `-`, which
-            would let it break out of the marker.
-
-    Example:
-        >>> wrap_untrusted("3 rows", source="tool_result").splitlines()[0]
-        '<untrusted-data source="tool_result">'
-    """
-    if not _SOURCE.match(source):
-        raise ValueError(f"source must match {_SOURCE.pattern}, got {source!r}")
-    safe = content
-    for marker, escaped in _ESCAPED.items():
-        safe = safe.replace(marker, escaped)
-    return f'{_BEGIN} source="{source}">\n{safe}\n{_END}'
 
 
 class Prompt(AdkModel):

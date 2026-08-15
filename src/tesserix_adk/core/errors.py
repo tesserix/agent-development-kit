@@ -104,6 +104,7 @@ __all__ = [
     "StateNotFoundError",
     "StatePersistenceError",
     "StreamInterruptedError",
+    "TemplateError",
     "TenantContextError",
     "TenantCrossingError",
     "TenantLimitError",
@@ -1904,6 +1905,34 @@ class PromptRejectedError(ConfigurationError):
     def __init__(self, *args: object, name: str = "") -> None:
         self.name = name
         super().__init__(*args, details={"prompt": name})
+
+
+class TemplateError(ConfigurationError):
+    """Raised when a prompt template, or a value for one, may not be rendered.
+
+    Covers both halves: a body and its declarations disagreeing, and a value that is
+    missing, null, wrong-typed, undeclared, forging the untrusted envelope, or overrunning
+    the window. The message names the variable and never quotes the value.
+
+    Args:
+        template: Which template refused.
+        variable: Which slot refused, where one is at fault.
+        reason: What was wrong, as a code a caller can branch on.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        template: str = "",
+        variable: str = "",
+        reason: str = "",
+    ) -> None:
+        self.template = template
+        self.variable = variable
+        self.reason = reason
+        super().__init__(
+            *args, details={"template": template, "variable": variable, "reason": reason}
+        )
 
 
 class SandboxError(AdkError):
