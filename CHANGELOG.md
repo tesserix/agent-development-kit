@@ -8,6 +8,73 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.34.0
+
+### Added
+
+- **tesserix_adk.tools.credentials, tesserix_adk.core.errors**: A tool call now authenticates with a credential minted for one audience, one caller and
+one set of scopes, expiring in minutes.
+
+A static key shared by every agent and tenant is unbounded in scope, in time and in blame:
+it grants everything, forever, to whoever holds it, and the downstream audit log cannot say
+which run made any of its requests. `CredentialBroker.for_tool` mints instead — the scopes
+are what the tool needs intersected with what the run holds, and a tool asking for anything
+outside that is refused with `AuthorisationError` before the mint, so the request is never
+made.
+
+`ExchangedCredentials` mints through a `TokenExchange`, which is one method, so a
+deployment binds RFC 8693 token exchange, workload identity or an internal minting service
+without the kit taking an HTTP dependency. The lifetime that expires is the one actually
+granted, capped at `MAX_TTL_SECONDS`, and a credential is spent `EXPIRY_SKEW_SECONDS`
+early so a fast clock downstream does not reject one this process still considers live.
+
+`CachingCredentials` keys on tenant, subject, audience and scopes, so nothing is served
+across a tenant or a caller. A fan-out shares one mint rather than stampeding the endpoint,
+a retry after a partial failure reuses the credential the first attempt used — two mints
+for a non-idempotent downstream call is a duplicate side effect that looks legitimate from
+both sides — and a cancelled mint leaves nothing cached.
+
+Every credential carries the run id, agent and agent version as headers, so a downstream
+audit record ties to one run of one revision of one agent. Tokens are `SecretStr`
+throughout and revealed only in `headers()`.
+
+Failure has no fallback: an unreachable or refusing endpoint raises `CredentialError` and
+the tool call fails rather than retrying with something broader. Third parties that only
+accept long-lived keys are the documented exception — `StaticCredentials` resolves a
+per-audience, per-tenant `SecretRef`, refuses any audience with no documented key, and
+flags what it mints `long_lived` so the remaining exceptions can be counted.
+
+See [`docs/tool-credentials.md`](../docs/tool-credentials.md).
+
+### Public API surface
+
+- Added: `tesserix_adk.core.CredentialError`
+- Added: `tesserix_adk.core.errors.CredentialError`
+- Added: `tesserix_adk.tools.Attribution`
+- Added: `tesserix_adk.tools.CachingCredentials`
+- Added: `tesserix_adk.tools.Credential`
+- Added: `tesserix_adk.tools.CredentialBroker`
+- Added: `tesserix_adk.tools.CredentialProvider`
+- Added: `tesserix_adk.tools.CredentialRequest`
+- Added: `tesserix_adk.tools.DEFAULT_TTL_SECONDS`
+- Added: `tesserix_adk.tools.EXPIRY_SKEW_SECONDS`
+- Added: `tesserix_adk.tools.ExchangedCredentials`
+- Added: `tesserix_adk.tools.MAX_TTL_SECONDS`
+- Added: `tesserix_adk.tools.StaticCredentials`
+- Added: `tesserix_adk.tools.TokenExchange`
+- Added: `tesserix_adk.tools.credentials.Attribution`
+- Added: `tesserix_adk.tools.credentials.CachingCredentials`
+- Added: `tesserix_adk.tools.credentials.Credential`
+- Added: `tesserix_adk.tools.credentials.CredentialBroker`
+- Added: `tesserix_adk.tools.credentials.CredentialProvider`
+- Added: `tesserix_adk.tools.credentials.CredentialRequest`
+- Added: `tesserix_adk.tools.credentials.DEFAULT_TTL_SECONDS`
+- Added: `tesserix_adk.tools.credentials.EXPIRY_SKEW_SECONDS`
+- Added: `tesserix_adk.tools.credentials.ExchangedCredentials`
+- Added: `tesserix_adk.tools.credentials.MAX_TTL_SECONDS`
+- Added: `tesserix_adk.tools.credentials.StaticCredentials`
+- Added: `tesserix_adk.tools.credentials.TokenExchange`
+
 ## 0.33.0
 
 ### Added
