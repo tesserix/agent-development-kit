@@ -336,6 +336,7 @@ tesserix_adk.core.ContextWindowExceededError :: class ContextWindowExceededError
 tesserix_adk.core.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 6) -> 'Cost'}
 tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.CountSource :: class CountSource(StrEnum)
+tesserix_adk.core.CredentialError :: class CredentialError(AdkError)
 tesserix_adk.core.Credit :: class Credit(AdkModel)
 tesserix_adk.core.DEFAULT_ACTIVITY_POLICIES :: DEFAULT_ACTIVITY_POLICIES: dict
 tesserix_adk.core.DEFAULT_DETECTORS :: DEFAULT_DETECTORS: tuple
@@ -783,6 +784,7 @@ tesserix_adk.core.errors.ConfigurationError :: class ConfigurationError(AdkError
 tesserix_adk.core.errors.ContentFilteredError :: class ContentFilteredError(ProviderError)
 tesserix_adk.core.errors.ContextBudgetError :: class ContextBudgetError(AdkError)
 tesserix_adk.core.errors.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
+tesserix_adk.core.errors.CredentialError :: class CredentialError(AdkError)
 tesserix_adk.core.errors.DelegationError :: class DelegationError(AdkError)
 tesserix_adk.core.errors.DelegationLimitError :: class DelegationLimitError(LoopLimitError)
 tesserix_adk.core.errors.DependencyCycleError :: class DependencyCycleError(ConfigurationError)
@@ -2187,12 +2189,22 @@ tesserix_adk.testing.retrieval.POISONED_CORPUS :: POISONED_CORPUS: tuple
 tesserix_adk.testing.sampled :: def sampled(corpus: 'Sequence[GuardCase]', size: 'int', *, seed: 'str') -> 'tuple[GuardCase, ...]'
 tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
+tesserix_adk.tools.Attribution :: class Attribution(AdkModel) {headers(self) -> 'dict[str, str]'}
+tesserix_adk.tools.CachingCredentials :: class CachingCredentials(object) {invalidate_all(self) -> 'None'; issue(self, request: 'CredentialRequest') -> 'Credential'}
 tesserix_adk.tools.ContentExpander :: class ContentExpander(Protocol) {expand(self, handle: 'str', *, tenant: 'str', run_id: 'str', budget_tokens: 'int | None' = None, user: 'str | None' = None) -> 'Expanded'}
+tesserix_adk.tools.Credential :: class Credential(AdkModel) {expired(self, now: 'float', *, skew: 'float' = 30.0) -> 'bool'; headers(self) -> 'dict[str, str]'}
+tesserix_adk.tools.CredentialBroker :: class CredentialBroker(object) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = '1.0.0') -> 'Credential'}
+tesserix_adk.tools.CredentialProvider :: class CredentialProvider(Protocol) {issue(self, request: 'CredentialRequest') -> 'Credential'}
+tesserix_adk.tools.CredentialRequest :: class CredentialRequest(AdkModel) {cache_key(self) -> 'tuple[str, str, str, tuple[str, ...]]'}
 tesserix_adk.tools.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int
 tesserix_adk.tools.DEFAULT_INTAKE_CHARS :: DEFAULT_INTAKE_CHARS: int
 tesserix_adk.tools.DEFAULT_LIMITS :: DEFAULT_LIMITS: SandboxLimits
+tesserix_adk.tools.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
+tesserix_adk.tools.EXPIRY_SKEW_SECONDS :: EXPIRY_SKEW_SECONDS: float
+tesserix_adk.tools.ExchangedCredentials :: class ExchangedCredentials(object) {issue(self, request: 'CredentialRequest') -> 'Credential'}
 tesserix_adk.tools.Expanded :: class Expanded(Protocol)
 tesserix_adk.tools.LENIENT :: LENIENT: ArgumentPolicy
+tesserix_adk.tools.MAX_TTL_SECONDS :: MAX_TTL_SECONDS: float
 tesserix_adk.tools.OcrBackend :: class OcrBackend(Protocol) {pages(self, path: 'Path') -> 'AsyncIterator[OcrPage]'}
 tesserix_adk.tools.OcrPage :: class OcrPage(AdkModel)
 tesserix_adk.tools.Region :: class Region(AdkModel) {reference(self, page: 'int') -> 'str'}
@@ -2205,7 +2217,9 @@ tesserix_adk.tools.SandboxArtifact :: class SandboxArtifact(object)
 tesserix_adk.tools.SandboxLimits :: class SandboxLimits(object)
 tesserix_adk.tools.SandboxResult :: class SandboxResult(object)
 tesserix_adk.tools.Segment :: class Segment(AdkModel) {reference(self) -> 'str'}
+tesserix_adk.tools.StaticCredentials :: class StaticCredentials(object) {issue(self, request: 'CredentialRequest') -> 'Credential'}
 tesserix_adk.tools.SubprocessSandbox :: class SubprocessSandbox(object) {run(self, code: 'str', *, limits: 'SandboxLimits | None' = None, files: 'Mapping[str, str] | None' = None) -> 'SandboxResult'}
+tesserix_adk.tools.TokenExchange :: class TokenExchange(Protocol) {exchange(self, request: 'CredentialRequest') -> 'tuple[str, float]'}
 tesserix_adk.tools.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any] | str | bytes', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'; requires_approval(self, arguments: 'Mapping[str, Any] | str | bytes') -> 'bool'}
 tesserix_adk.tools.ToolArgumentValidator :: class ToolArgumentValidator(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'; validate(self, arguments: 'object') -> 'Any'}
 tesserix_adk.tools.ToolCallSpan :: class ToolCallSpan(object)
@@ -2221,6 +2235,18 @@ tesserix_adk.tools.claim_check.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int
 tesserix_adk.tools.claim_check.claim_check_tool :: def claim_check_tool(store: 'ClaimCheckStore', *, name: 'str' = 'fetch_result', max_chars: 'int' = 4096) -> 'Tool[..., str]'
 tesserix_adk.tools.claim_check_tool :: def claim_check_tool(store: 'ClaimCheckStore', *, name: 'str' = 'fetch_result', max_chars: 'int' = 4096) -> 'Tool[..., str]'
 tesserix_adk.tools.context.ToolContext :: class ToolContext(object) {raise_if_cancelled(self) -> 'None'}
+tesserix_adk.tools.credentials.Attribution :: class Attribution(AdkModel) {headers(self) -> 'dict[str, str]'}
+tesserix_adk.tools.credentials.CachingCredentials :: class CachingCredentials(object) {invalidate_all(self) -> 'None'; issue(self, request: 'CredentialRequest') -> 'Credential'}
+tesserix_adk.tools.credentials.Credential :: class Credential(AdkModel) {expired(self, now: 'float', *, skew: 'float' = 30.0) -> 'bool'; headers(self) -> 'dict[str, str]'}
+tesserix_adk.tools.credentials.CredentialBroker :: class CredentialBroker(object) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = '1.0.0') -> 'Credential'}
+tesserix_adk.tools.credentials.CredentialProvider :: class CredentialProvider(Protocol) {issue(self, request: 'CredentialRequest') -> 'Credential'}
+tesserix_adk.tools.credentials.CredentialRequest :: class CredentialRequest(AdkModel) {cache_key(self) -> 'tuple[str, str, str, tuple[str, ...]]'}
+tesserix_adk.tools.credentials.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
+tesserix_adk.tools.credentials.EXPIRY_SKEW_SECONDS :: EXPIRY_SKEW_SECONDS: float
+tesserix_adk.tools.credentials.ExchangedCredentials :: class ExchangedCredentials(object) {issue(self, request: 'CredentialRequest') -> 'Credential'}
+tesserix_adk.tools.credentials.MAX_TTL_SECONDS :: MAX_TTL_SECONDS: float
+tesserix_adk.tools.credentials.StaticCredentials :: class StaticCredentials(object) {issue(self, request: 'CredentialRequest') -> 'Credential'}
+tesserix_adk.tools.credentials.TokenExchange :: class TokenExchange(Protocol) {exchange(self, request: 'CredentialRequest') -> 'tuple[str, float]'}
 tesserix_adk.tools.decorator.Tool :: class Tool(Generic) {invoke(self, arguments: 'Mapping[str, Any] | str | bytes', context: 'ToolContext | None' = None, *, workers: 'WorkerPool | None' = None) -> 'R'; release(self) -> 'None'; requires_approval(self, arguments: 'Mapping[str, Any] | str | bytes') -> 'bool'}
 tesserix_adk.tools.decorator.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True, requires_approval: 'bool | ApprovalPredicate | ApprovalPolicy' = False, idempotency: 'Idempotency | str | IdempotencyPolicy | None' = None) -> 'Tool[Any, Any] | _Decorator'
 tesserix_adk.tools.errors.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}

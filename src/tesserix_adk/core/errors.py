@@ -39,6 +39,7 @@ __all__ = [
     "ContentFilteredError",
     "ContextBudgetError",
     "ContextWindowExceededError",
+    "CredentialError",
     "DelegationError",
     "DelegationLimitError",
     "DependencyCycleError",
@@ -2463,6 +2464,25 @@ class ScopeEscalationError(AdkError):
         super().__init__(
             *args, details={"requested": ", ".join(requested), "path": " -> ".join(path)}
         )
+
+
+class CredentialError(AdkError):
+    """Raised when a tool could not obtain the credential its call needs.
+
+    Raised rather than falling back to a broader or longer-lived credential: a tool that
+    quietly authenticates with a static shared key when its scoped mint failed has
+    defeated the point of scoping it. The run surfaces this instead.
+
+    Args:
+        audience: Which downstream the credential was for.
+        scopes: What was asked for and refused, where the endpoint said.
+    """
+
+    def __init__(self, *args: object, audience: str = "", scopes: tuple[str, ...] = ()) -> None:
+        self.audience = audience
+        self.scopes = scopes
+        stated = {"audience": audience, "scopes": ", ".join(scopes)}
+        super().__init__(*args, details={key: value for key, value in stated.items() if value})
 
 
 class SecretResolutionError(AdkError):

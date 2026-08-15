@@ -164,6 +164,7 @@ code lands here as the kit is built.
 | Output validation — the declared type or a typed error, rules decided in code, abstention as an answer, bounded repair | [`docs/output-validation.md`](docs/output-validation.md) |
 | PII and content policy — one set of detectors on every path, a placeholder that keeps the subject, one transcript at two tenants' bars | [`docs/pii-and-content-policy.md`](docs/pii-and-content-policy.md) |
 | Acting for a caller — declared scopes intersected with the caller's once, refused at dispatch, delegation that only narrows | [`docs/agent-identity.md`](docs/agent-identity.md) |
+| Tool credentials — scoped, short-lived, minted per audience and caller, carrying run attribution downstream | [`docs/tool-credentials.md`](docs/tool-credentials.md) |
 | Tool allowlists — agent, tenant and caller intersected once, enforced at dispatch, delegation that only narrows | [`docs/tool-allowlists.md`](docs/tool-allowlists.md) |
 | Testing a guard — an attack corpus with a benign control set, recall and false positives together, per-guard bars that ratchet | [`docs/guard-testing.md`](docs/guard-testing.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
