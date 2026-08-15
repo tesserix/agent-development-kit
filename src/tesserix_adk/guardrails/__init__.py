@@ -5,6 +5,7 @@ from tesserix_adk.core.guards import GuardrailPipeline, GuardResult, GuardStage,
 from tesserix_adk.guardrails.base import Guard
 from tesserix_adk.guardrails.content_filter import ContentFilterGuard, refusal_of
 from tesserix_adk.guardrails.injection import Containment, InjectionGuard
+from tesserix_adk.guardrails.output import PolicyGuard, SchemaGuard, validated
 from tesserix_adk.guardrails.pii import PIIGuard
 
 __all__ = [
@@ -17,5 +18,8 @@ __all__ = [
     "GuardrailPipeline",
     "InjectionGuard",
     "PIIGuard",
+    "PolicyGuard",
+    "SchemaGuard",
     "refusal_of",
+    "validated",
 ]

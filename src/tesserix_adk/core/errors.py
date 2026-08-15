@@ -1167,6 +1167,63 @@ class GuardrailEvaluationError(GuardrailError):
         )
 
 
+class OutputValidationError(GuardrailError):
+    """Raised when the answer does not satisfy its declared type or this tenant's rules.
+
+    The caller gets an error rather than a plausible-looking wrong answer. The kit never
+    fills a missing field with a default to make an answer validate, and never hands on a
+    partially parsed one.
+
+    Args:
+        model: The declared answer type.
+        policies: The rule identifiers that were violated, sorted. Empty for a schema
+            failure.
+        paths: Every field path that failed, sorted.
+        problems: Each of those paths with what was wrong with it, in the rule's terms and
+            never carrying the offending value.
+        payload: What arrived, kept for a debugger. Never logged and never in the message.
+        attempts: How many answers were asked for in total, including the first.
+
+    Example:
+        >>> OutputValidationError("rejected", policies=("total_within_band",)).policies
+        ('total_within_band',)
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        model: str = "",
+        policies: tuple[str, ...] = (),
+        paths: tuple[str, ...] = (),
+        problems: Mapping[str, str] | None = None,
+        payload: object = None,
+        attempts: int = 1,
+        guard: str = "output",
+        stage: str = "output",
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.model = model
+        self.policies = policies
+        self.paths = paths
+        self.problems: dict[str, str] = dict(problems or {})
+        self.payload = payload
+        self.attempts = attempts
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={
+                "guard": guard,
+                "stage": stage,
+                "model": model,
+                "policies": ",".join(policies),
+                "paths": ",".join(paths),
+                "attempts": str(attempts),
+            },
+        )
+
+
 class BudgetExceededError(AdkError):
     """Raised when a run would exceed its ceiling. Raised before the spend, not after.
 
