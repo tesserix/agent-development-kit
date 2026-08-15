@@ -348,6 +348,9 @@ tesserix_adk.core.KeyValueStore :: class KeyValueStore(Protocol) {delete(self, k
 tesserix_adk.core.LeaseLostError :: class LeaseLostError(AdkError)
 tesserix_adk.core.LedgerFailure :: class LedgerFailure(StrEnum)
 tesserix_adk.core.LedgerKey :: class LedgerKey(AdkModel) {at(self, now: 'float') -> 'str'}
+tesserix_adk.core.LintFinding :: class LintFinding(AdkModel)
+tesserix_adk.core.LintReport :: class LintReport(AdkModel) {summary(self) -> 'str'}
+tesserix_adk.core.LintRule :: class LintRule(AdkModel)
 tesserix_adk.core.LoopConfig :: class LoopConfig(AdkModel) {narrowed_to(self, other: 'LoopConfig | None') -> 'LoopConfig'}
 tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.MASK :: MASK: str
@@ -380,6 +383,7 @@ tesserix_adk.core.NodeOutcome :: class NodeOutcome(StrEnum)
 tesserix_adk.core.NodeResult :: class NodeResult(Generic)
 tesserix_adk.core.Owner :: class Owner(AdkModel)
 tesserix_adk.core.PAYLOAD_KEY :: PAYLOAD_KEY: str
+tesserix_adk.core.PROMPT_SUFFIXES :: PROMPT_SUFFIXES: tuple
 tesserix_adk.core.PartialErasureError :: class PartialErasureError(AdkError)
 tesserix_adk.core.PendingCall :: class PendingCall(AdkModel)
 tesserix_adk.core.PendingDecision :: class PendingDecision(AdkModel)
@@ -404,6 +408,7 @@ tesserix_adk.core.QueueStats :: class QueueStats(AdkModel)
 tesserix_adk.core.QueueUnavailableError :: class QueueUnavailableError(AdkError)
 tesserix_adk.core.REASONING :: REASONING: TaskClass
 tesserix_adk.core.RESERVED_ACTION_CLASS :: RESERVED_ACTION_CLASS: str
+tesserix_adk.core.RULES :: RULES: tuple
 tesserix_adk.core.RateLimitError :: class RateLimitError(ProviderError)
 tesserix_adk.core.ReasoningDelta :: class ReasoningDelta(StreamEvent)
 tesserix_adk.core.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
@@ -447,6 +452,7 @@ tesserix_adk.core.SecretProvider :: class SecretProvider(Protocol) {secret(self,
 tesserix_adk.core.SecretRef :: class SecretRef(AdkModel) {resolve(self, secrets: 'SecretProvider') -> 'str'}
 tesserix_adk.core.Sensitive :: class Sensitive(object)
 tesserix_adk.core.SessionRecord :: class SessionRecord(AdkModel)
+tesserix_adk.core.Severity :: Severity = typing.Literal['error', 'warning']
 tesserix_adk.core.SpendLedger :: class SpendLedger(Protocol) {forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = Ellipsis) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.core.StateConflictError :: class StateConflictError(AdkError)
 tesserix_adk.core.StateDelta :: class StateDelta(AdkModel) {applied_to(self, record: 'RunRecord') -> 'RunRecord'}
@@ -780,6 +786,8 @@ tesserix_adk.core.ledger.Window :: class Window(AdkModel) {bucket(self, now: 'fl
 tesserix_adk.core.ledger.WindowKind :: class WindowKind(StrEnum)
 tesserix_adk.core.ledger.WindowSpend :: class WindowSpend(AdkModel) {remaining(self, ceiling: 'Decimal') -> 'Decimal'}
 tesserix_adk.core.legal_transitions :: def legal_transitions(state: 'RunState') -> 'frozenset[RunState]'
+tesserix_adk.core.lint_directory :: def lint_directory(directory: 'Path', *, suffixes: 'tuple[str, ...]' = ('.toml', '.txt', '.md', '.prompt')) -> 'LintReport'
+tesserix_adk.core.lint_prompt :: def lint_prompt(text: 'str', *, source: 'str' = '') -> 'tuple[LintFinding, ...]'
 tesserix_adk.core.load_config :: def load_config(overrides: 'dict[str, Any] | None' = None, *, env: 'dict[str, str] | None' = None, path: 'Path | str | None' = None, start: 'Path | str | None' = '.') -> 'AdkConfig'
 tesserix_adk.core.looks_sensitive :: def looks_sensitive(value: 'str', extra_patterns: 'Sequence[str]' = ()) -> 'bool'
 tesserix_adk.core.members_of :: def members_of(protocol: 'type') -> 'tuple[str, ...]'
@@ -804,6 +812,14 @@ tesserix_adk.core.primitives.ToolCall :: class ToolCall(AdkModel)
 tesserix_adk.core.primitives.Usage :: class Usage(AdkModel)
 tesserix_adk.core.primitives.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
 tesserix_adk.core.prompt_digest :: def prompt_digest(body: 'str') -> 'str'
+tesserix_adk.core.prompt_lint.LintFinding :: class LintFinding(AdkModel)
+tesserix_adk.core.prompt_lint.LintReport :: class LintReport(AdkModel) {summary(self) -> 'str'}
+tesserix_adk.core.prompt_lint.LintRule :: class LintRule(AdkModel)
+tesserix_adk.core.prompt_lint.PROMPT_SUFFIXES :: PROMPT_SUFFIXES: tuple
+tesserix_adk.core.prompt_lint.RULES :: RULES: tuple
+tesserix_adk.core.prompt_lint.Severity :: Severity = typing.Literal['error', 'warning']
+tesserix_adk.core.prompt_lint.lint_directory :: def lint_directory(directory: 'Path', *, suffixes: 'tuple[str, ...]' = ('.toml', '.txt', '.md', '.prompt')) -> 'LintReport'
+tesserix_adk.core.prompt_lint.lint_prompt :: def lint_prompt(text: 'str', *, source: 'str' = '') -> 'tuple[LintFinding, ...]'
 tesserix_adk.core.prompts.FilePromptRegistry :: class FilePromptRegistry(object) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
 tesserix_adk.core.prompts.PromptDefinition :: class PromptDefinition(AdkModel) {fits(self, window_tokens: 'int', *, share: 'float' = 0.5) -> 'bool'; instruct(self, agent: 'Agent[OutputT]') -> 'Agent[OutputT]'}
 tesserix_adk.core.prompts.PromptRef :: class PromptRef(AdkModel) {attributes(self) -> 'dict[str, str]'}

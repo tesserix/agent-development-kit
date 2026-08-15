@@ -136,6 +136,7 @@ code lands here as the kit is built.
 | The agent definition — owner, evaluation suite, revision, pinning | [`docs/agent-definition.md`](docs/agent-definition.md) |
 | Prompt registry — versioned prompt text, aliases resolved to versions, attribution on every span | [`docs/prompt-registry.md`](docs/prompt-registry.md) |
 | Prompt templates — declared typed variables, no empty substitutions, retrieved text kept as data | [`docs/prompt-templates.md`](docs/prompt-templates.md) |
+| Prompt lint — the rules that belong in code, suppression with a recorded reason, running it in CI | [`docs/prompt-lint.md`](docs/prompt-lint.md) |
 | The run loop — assembly, dispatch, terminal states, cancellation | [`docs/run-loop.md`](docs/run-loop.md) |
 | State — versioned writes, patches that commute, cursor paging, session lifetime | [`docs/state.md`](docs/state.md) |
 | Checkpointing — frontiers at unambiguous boundaries, resume, calls nobody can decide | [`docs/checkpointing.md`](docs/checkpointing.md) |
