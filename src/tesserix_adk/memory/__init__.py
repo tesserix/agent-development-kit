@@ -62,6 +62,15 @@ from tesserix_adk.memory.erasure import (
     MemoryRedactor,
     PatternRedactor,
 )
+from tesserix_adk.memory.prefix import (
+    COMPRESSED,
+    POSITION_METRIC,
+    RESETS_METRIC,
+    SECTION,
+    FrozenPrefix,
+    PrefixBoundary,
+    compressed,
+)
 from tesserix_adk.memory.protocol import MemoryStore
 from tesserix_adk.memory.provenance import Origin, Provenance
 from tesserix_adk.memory.records import MemoryHit, MemoryKind, MemoryQuery, MemoryRecord
@@ -69,10 +78,14 @@ from tesserix_adk.memory.reversible import EXPAND_TOOL, Expansion, ReversibleRou
 from tesserix_adk.memory.scope import MemoryScope
 
 __all__ = [
+    "COMPRESSED",
     "DEFAULT_COMPRESSORS",
     "DEFAULT_REDACTOR",
     "EXPAND_TOOL",
     "INSTRUCTION_SIGNATURES",
+    "POSITION_METRIC",
+    "RESETS_METRIC",
+    "SECTION",
     "Admission",
     "AdmissionPolicy",
     "AssembledContext",
@@ -96,6 +109,7 @@ __all__ = [
     "DropOldest",
     "ErasureReceipt",
     "Expansion",
+    "FrozenPrefix",
     "HalfLife",
     "MemoryCapabilities",
     "MemoryGuard",
@@ -111,6 +125,7 @@ __all__ = [
     "PassThrough",
     "PatternRedactor",
     "PinAndFold",
+    "PrefixBoundary",
     "ProseCompressor",
     "Provenance",
     "Recall",
@@ -128,6 +143,7 @@ __all__ = [
     "Verdict",
     "WriteGate",
     "classify",
+    "compressed",
     "estimate_tokens",
     "instruction_shaped",
     "pinned",

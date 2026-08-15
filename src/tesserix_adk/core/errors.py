@@ -78,6 +78,7 @@ __all__ = [
     "PartialErasureError",
     "PlanValidationError",
     "PoolExhaustedError",
+    "PrefixDriftError",
     "ProtocolConformanceError",
     "ProvenanceLostError",
     "ProviderError",
@@ -1850,6 +1851,25 @@ class ClaimUnavailableError(AdkError):
         self.tenant = tenant
         self.run_id = run_id
         super().__init__(*args, details={"handle": handle, "run_id": run_id})
+
+
+class PrefixDriftError(AdkError):
+    """Raised when the frozen part of a prompt is not what was frozen.
+
+    Something rewrote cached bytes, and the next call pays a full prefill for a prompt that
+    was supposed to be free. The failure is loud on purpose: a doubling of prefill latency
+    that nobody notices for a week is worse than a build that stops today.
+
+    Args:
+        layer: Which part of the prompt moved, so the report names a thing rather than an
+            index — the instructions, the tool declarations, the retrieved documents.
+        position: Where in the frozen region it moved.
+    """
+
+    def __init__(self, *args: object, layer: str = "", position: int = 0) -> None:
+        self.layer = layer
+        self.position = position
+        super().__init__(*args, details={"layer": layer, "position": str(position)})
 
 
 class SandboxError(AdkError):
