@@ -79,6 +79,7 @@ __all__ = [
     "ModelResponseError",
     "NoEligibleModelError",
     "PartialErasureError",
+    "PayloadTooLargeError",
     "PlanValidationError",
     "PoolExhaustedError",
     "PrefixDriftError",
@@ -2663,4 +2664,42 @@ class IncomparableEvalError(AdkError):
     @property
     def retryable(self) -> bool:
         """No. Re-measuring the baseline is a decision, not a retry."""
+        return False
+
+
+class PayloadTooLargeError(AdkError):
+    """Raised when an activity input or result is larger than the transport will carry.
+
+    Truncating it is worse than refusing: a retrieval result cut in half is still a
+    plausible-looking answer, and the run continues on evidence nobody chose. The fix is
+    to pass a handle to the store rather than the content, which is a decision for the
+    caller and not for the kit.
+
+    Args:
+        payload: Which side was too large, `input` or `result`.
+        step: The workflow step it belonged to.
+        size: How many bytes it serialised to.
+        limit: What the transport carries.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        payload: str = "result",
+        step: str = "",
+        size: int = 0,
+        limit: int = 0,
+    ) -> None:
+        self.payload = payload
+        self.step = step
+        self.size = size
+        self.limit = limit
+        super().__init__(
+            *args,
+            details={"payload": payload, "step": step, "size": str(size), "limit": str(limit)},
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """No. The same payload is the same size on the next attempt."""
         return False

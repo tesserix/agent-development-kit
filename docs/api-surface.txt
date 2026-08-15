@@ -394,6 +394,7 @@ tesserix_adk.core.Owner :: class Owner(AdkModel)
 tesserix_adk.core.PAYLOAD_KEY :: PAYLOAD_KEY: str
 tesserix_adk.core.PROMPT_SUFFIXES :: PROMPT_SUFFIXES: tuple
 tesserix_adk.core.PartialErasureError :: class PartialErasureError(AdkError)
+tesserix_adk.core.PayloadTooLargeError :: class PayloadTooLargeError(AdkError)
 tesserix_adk.core.PendingCall :: class PendingCall(AdkModel)
 tesserix_adk.core.PendingDecision :: class PendingDecision(AdkModel)
 tesserix_adk.core.PlanValidationError :: class PlanValidationError(AdkError)
@@ -707,6 +708,7 @@ tesserix_adk.core.errors.ModelArtifactError :: class ModelArtifactError(Configur
 tesserix_adk.core.errors.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.core.errors.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.errors.PartialErasureError :: class PartialErasureError(AdkError)
+tesserix_adk.core.errors.PayloadTooLargeError :: class PayloadTooLargeError(AdkError)
 tesserix_adk.core.errors.PlanValidationError :: class PlanValidationError(AdkError)
 tesserix_adk.core.errors.PoolExhaustedError :: class PoolExhaustedError(ProviderError)
 tesserix_adk.core.errors.PrefixDriftError :: class PrefixDriftError(AdkError)
@@ -2020,3 +2022,27 @@ tesserix_adk.tools.validation.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.validation.LENIENT :: LENIENT: ArgumentPolicy
 tesserix_adk.tools.validation.STRICT :: STRICT: ArgumentPolicy
 tesserix_adk.tools.validation.ToolArgumentValidator :: class ToolArgumentValidator(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'; validate(self, arguments: 'object') -> 'Any'}
+tesserix_adk.workflows.Activities :: class Activities(Protocol) {model_call(self, request: 'ModelCallInput') -> 'ModelCallResult'; tool_call(self, request: 'ToolCallInput') -> 'ToolCallResult'}
+tesserix_adk.workflows.ActivityContext :: class ActivityContext(AdkModel)
+tesserix_adk.workflows.AgentWorkflow :: class AgentWorkflow(object) {run(self, state: 'WorkflowState', *, context: 'ActivityContext') -> 'WorkflowState'}
+tesserix_adk.workflows.Cancellation :: class Cancellation(Protocol) {raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
+tesserix_adk.workflows.Journal :: class Journal(AdkModel) {with_model(self, step: 'str', result: 'ModelCallResult') -> 'Journal'; with_tool(self, step: 'str', result: 'ToolCallResult') -> 'Journal'}
+tesserix_adk.workflows.ModelCallInput :: class ModelCallInput(AdkModel)
+tesserix_adk.workflows.ModelCallResult :: class ModelCallResult(AdkModel)
+tesserix_adk.workflows.PAYLOAD_LIMIT_BYTES :: PAYLOAD_LIMIT_BYTES: int
+tesserix_adk.workflows.STREAMING_UNSUPPORTED :: STREAMING_UNSUPPORTED: str
+tesserix_adk.workflows.ToolCallInput :: class ToolCallInput(AdkModel)
+tesserix_adk.workflows.ToolCallResult :: class ToolCallResult(AdkModel)
+tesserix_adk.workflows.WorkflowState :: class WorkflowState(AdkModel)
+tesserix_adk.workflows.durable.Activities :: class Activities(Protocol) {model_call(self, request: 'ModelCallInput') -> 'ModelCallResult'; tool_call(self, request: 'ToolCallInput') -> 'ToolCallResult'}
+tesserix_adk.workflows.durable.ActivityContext :: class ActivityContext(AdkModel)
+tesserix_adk.workflows.durable.AgentWorkflow :: class AgentWorkflow(object) {run(self, state: 'WorkflowState', *, context: 'ActivityContext') -> 'WorkflowState'}
+tesserix_adk.workflows.durable.Cancellation :: class Cancellation(Protocol) {raise_if_cancelled(self) -> 'None'; wait(self) -> 'str'}
+tesserix_adk.workflows.durable.Journal :: class Journal(AdkModel) {with_model(self, step: 'str', result: 'ModelCallResult') -> 'Journal'; with_tool(self, step: 'str', result: 'ToolCallResult') -> 'Journal'}
+tesserix_adk.workflows.durable.ModelCallInput :: class ModelCallInput(AdkModel)
+tesserix_adk.workflows.durable.ModelCallResult :: class ModelCallResult(AdkModel)
+tesserix_adk.workflows.durable.PAYLOAD_LIMIT_BYTES :: PAYLOAD_LIMIT_BYTES: int
+tesserix_adk.workflows.durable.STREAMING_UNSUPPORTED :: STREAMING_UNSUPPORTED: str
+tesserix_adk.workflows.durable.ToolCallInput :: class ToolCallInput(AdkModel)
+tesserix_adk.workflows.durable.ToolCallResult :: class ToolCallResult(AdkModel)
+tesserix_adk.workflows.durable.WorkflowState :: class WorkflowState(AdkModel)
