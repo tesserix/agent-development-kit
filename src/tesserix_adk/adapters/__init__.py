@@ -68,6 +68,15 @@ from tesserix_adk.adapters.idempotency import (
     PostgresIdempotencyStore,
     RedisIdempotencyStore,
 )
+from tesserix_adk.adapters.isolation import (
+    ADAPTER_GUARANTEES,
+    ErasureSweep,
+    IsolationGuarantee,
+    Isolator,
+    Partition,
+    PartitionMechanism,
+    partitioned,
+)
 from tesserix_adk.adapters.ledger import (
     DEFAULT_LEASE_SECONDS,
     CoalescingLedger,
@@ -132,6 +141,7 @@ from tesserix_adk.adapters.transport import (
 )
 
 __all__ = [
+    "ADAPTER_GUARANTEES",
     "AUDIT_SCHEMA_VERSION",
     "BACKENDS",
     "CEILING_SCHEMA_VERSION",
@@ -175,6 +185,7 @@ __all__ = [
     "CoalescingLedger",
     "ConsoleApprovals",
     "EntityExtractor",
+    "ErasureSweep",
     "ExtractedEdge",
     "ExtractedNode",
     "ExtractedSubgraph",
@@ -189,12 +200,16 @@ __all__ = [
     "HttpPoster",
     "InMemoryLedger",
     "InspectableRedis",
+    "IsolationGuarantee",
+    "Isolator",
     "JetStreamAudit",
     "JetStreamPublisher",
     "MemoryPage",
     "MemoryStoreSettings",
     "MessagePublisher",
     "NatsApprovals",
+    "Partition",
+    "PartitionMechanism",
     "PayloadElided",
     "PgvectorIndex",
     "PgvectorMemoryStore",
@@ -235,6 +250,7 @@ __all__ = [
     "WebSocketLike",
     "WebhookApprovals",
     "open_graphiti",
+    "partitioned",
     "sse_events",
     "wire_payload",
 ]

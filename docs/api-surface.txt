@@ -17,6 +17,7 @@ tesserix_adk.a2a.delegation.MAX_CHAIN_DEPTH :: MAX_CHAIN_DEPTH: int
 tesserix_adk.a2a.delegation.PeerDelegation :: class PeerDelegation(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
 tesserix_adk.a2a.delegation.PeerDelegator :: class PeerDelegator(object) {delegate(self, *, identity: 'AgentIdentity', peer: 'AgentCard', needs: 'Iterable[str]', run_id: 'str', chain: 'DelegationChain | None' = None, agent_version: 'str' = '1.0.0') -> 'PeerDelegation'}
 tesserix_adk.a2a.delegation.PeerVerifier :: class PeerVerifier(object) {accept(self, claims: 'DelegationClaims') -> 'AgentIdentity'}
+tesserix_adk.adapters.ADAPTER_GUARANTEES :: ADAPTER_GUARANTEES: dict
 tesserix_adk.adapters.AUDIT_SCHEMA_VERSION :: AUDIT_SCHEMA_VERSION: int
 tesserix_adk.adapters.ApprovalInbox :: class ApprovalInbox(object) {decide(self, decision: 'ApprovalDecision', *, tenant: 'str') -> 'None'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'; wait_for(self, record_id: 'str') -> 'None'}
 tesserix_adk.adapters.AuditTables :: class AuditTables(object)
@@ -56,6 +57,7 @@ tesserix_adk.adapters.EXPECTED_GRANT_SCHEMA :: EXPECTED_GRANT_SCHEMA: str
 tesserix_adk.adapters.EXPECTED_SCHEMA :: EXPECTED_SCHEMA: str
 tesserix_adk.adapters.EXTRACTION_INSTRUCTION :: EXTRACTION_INSTRUCTION: str
 tesserix_adk.adapters.EntityExtractor :: class EntityExtractor(object) {extract(self, scope: 'MemoryScope', record: 'MemoryRecord', *, budget: 'BudgetPolicy') -> 'tuple[ExtractedSubgraph, ExtractionCharge]'}
+tesserix_adk.adapters.ErasureSweep :: class ErasureSweep(AdkModel)
 tesserix_adk.adapters.ExtractedEdge :: class ExtractedEdge(AdkModel)
 tesserix_adk.adapters.ExtractedNode :: class ExtractedNode(AdkModel)
 tesserix_adk.adapters.ExtractedSubgraph :: class ExtractedSubgraph(AdkModel)
@@ -72,12 +74,16 @@ tesserix_adk.adapters.HttpPoster :: class HttpPoster(Protocol) {post(self, url: 
 tesserix_adk.adapters.IN_FLIGHT :: IN_FLIGHT: str
 tesserix_adk.adapters.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.InspectableRedis :: class InspectableRedis(Protocol) {config_get(self, pattern: 'str') -> 'Mapping[str, str]'; eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
+tesserix_adk.adapters.IsolationGuarantee :: class IsolationGuarantee(AdkModel) {statement(self) -> 'str'}
+tesserix_adk.adapters.Isolator :: class Isolator(Generic) {read(self, operation: 'Callable[[], Awaitable[Sequence[RecordT]]]') -> 'Sequence[RecordT]'}
 tesserix_adk.adapters.JetStreamAudit :: class JetStreamAudit(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'}
 tesserix_adk.adapters.JetStreamPublisher :: class JetStreamPublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
 tesserix_adk.adapters.MemoryPage :: class MemoryPage(AdkModel)
 tesserix_adk.adapters.MemoryStoreSettings :: class MemoryStoreSettings(AdkModel)
 tesserix_adk.adapters.MessagePublisher :: class MessagePublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
 tesserix_adk.adapters.NatsApprovals :: class NatsApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'None'}
+tesserix_adk.adapters.Partition :: class Partition(object) {key(self, namespace: 'str', *parts: 'str') -> 'str'; only(self, items: 'Sequence[ItemT]', *, tenant_of: 'Callable[[ItemT], str]', where: 'str') -> 'Sequence[ItemT]'; pattern(self, namespace: 'str') -> 'str'; predicate(self, *, column: 'str' = 'tenant', position: 'int' = 1) -> 'tuple[str, str]'; verify(self, found: 'str', *, where: 'str') -> 'None'}
+tesserix_adk.adapters.PartitionMechanism :: class PartitionMechanism(StrEnum)
 tesserix_adk.adapters.PayloadElided :: class PayloadElided(ProgressEvent)
 tesserix_adk.adapters.PgvectorIndex :: class PgvectorIndex(object) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'; verify(self) -> 'None'}
 tesserix_adk.adapters.PgvectorMemoryStore :: class PgvectorMemoryStore(object) {erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; verify(self) -> 'None'}
@@ -174,6 +180,13 @@ tesserix_adk.adapters.graph.open_graphiti :: def open_graphiti(settings: 'GraphS
 tesserix_adk.adapters.idempotency.IN_FLIGHT :: IN_FLIGHT: str
 tesserix_adk.adapters.idempotency.PostgresIdempotencyStore :: class PostgresIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; ensure_schema(self) -> 'None'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.adapters.idempotency.RedisIdempotencyStore :: class RedisIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
+tesserix_adk.adapters.isolation.ADAPTER_GUARANTEES :: ADAPTER_GUARANTEES: dict
+tesserix_adk.adapters.isolation.ErasureSweep :: class ErasureSweep(AdkModel)
+tesserix_adk.adapters.isolation.IsolationGuarantee :: class IsolationGuarantee(AdkModel) {statement(self) -> 'str'}
+tesserix_adk.adapters.isolation.Isolator :: class Isolator(Generic) {read(self, operation: 'Callable[[], Awaitable[Sequence[RecordT]]]') -> 'Sequence[RecordT]'}
+tesserix_adk.adapters.isolation.Partition :: class Partition(object) {key(self, namespace: 'str', *parts: 'str') -> 'str'; only(self, items: 'Sequence[ItemT]', *, tenant_of: 'Callable[[ItemT], str]', where: 'str') -> 'Sequence[ItemT]'; pattern(self, namespace: 'str') -> 'str'; predicate(self, *, column: 'str' = 'tenant', position: 'int' = 1) -> 'tuple[str, str]'; verify(self, found: 'str', *, where: 'str') -> 'None'}
+tesserix_adk.adapters.isolation.PartitionMechanism :: class PartitionMechanism(StrEnum)
+tesserix_adk.adapters.isolation.partitioned :: def partitioned(items: 'Iterable[ItemT]', *, tenant_of: 'Callable[[ItemT], str]') -> 'dict[str, list[ItemT]]'
 tesserix_adk.adapters.ledger.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.ledger.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
 tesserix_adk.adapters.ledger.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
@@ -192,6 +205,7 @@ tesserix_adk.adapters.memory.PostgresMemoryStore :: class PostgresMemoryStore(ob
 tesserix_adk.adapters.memory.RedisMemoryStore :: class RedisMemoryStore(object) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; recall(self, scope: 'MemoryScope', keys: 'Sequence[str]') -> 'tuple[MemoryRecord, ...]'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.adapters.memory.RoutedMemoryStore :: class RoutedMemoryStore(object) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'tuple[Derivation, ...]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'tuple[MemoryRecord, ...]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.adapters.open_graphiti :: def open_graphiti(settings: 'GraphSettings', *, factory: 'Callable[[str, str], GraphitiClient] | None' = None) -> 'GraphitiEngine'
+tesserix_adk.adapters.partitioned :: def partitioned(items: 'Iterable[ItemT]', *, tenant_of: 'Callable[[ItemT], str]') -> 'dict[str, list[ItemT]]'
 tesserix_adk.adapters.pgvector.CHUNK_SCHEMA_VERSION :: CHUNK_SCHEMA_VERSION: int
 tesserix_adk.adapters.pgvector.ChunkTables :: class ChunkTables(object)
 tesserix_adk.adapters.pgvector.DEFAULT_CHUNK_TABLES :: DEFAULT_CHUNK_TABLES: ChunkTables
@@ -605,6 +619,7 @@ tesserix_adk.core.TenantConfigProvider :: class TenantConfigProvider(Protocol) {
 tesserix_adk.core.TenantContext :: class TenantContext(AdkModel) {acting_as(self, user: 'str') -> 'Self'}
 tesserix_adk.core.TenantContextError :: class TenantContextError(AdkError)
 tesserix_adk.core.TenantCrossingError :: class TenantCrossingError(AdkError)
+tesserix_adk.core.TenantIsolationError :: class TenantIsolationError(AdkError)
 tesserix_adk.core.TenantLedger :: class TenantLedger(Protocol) {consume(self, tenant: 'str', window: 'str', spent: 'Consumed') -> 'Consumed'; total(self, tenant: 'str', window: 'str') -> 'Consumed'}
 tesserix_adk.core.TenantLimitError :: class TenantLimitError(AdkError)
 tesserix_adk.core.TenantLimits :: class TenantLimits(AdkModel)
@@ -898,6 +913,7 @@ tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(
 tesserix_adk.core.errors.TemplateError :: class TemplateError(ConfigurationError)
 tesserix_adk.core.errors.TenantContextError :: class TenantContextError(AdkError)
 tesserix_adk.core.errors.TenantCrossingError :: class TenantCrossingError(AdkError)
+tesserix_adk.core.errors.TenantIsolationError :: class TenantIsolationError(AdkError)
 tesserix_adk.core.errors.TenantLimitError :: class TenantLimitError(AdkError)
 tesserix_adk.core.errors.TenantRefusal :: TenantRefusal: TypeAliasType
 tesserix_adk.core.errors.TenantUnconfiguredError :: class TenantUnconfiguredError(ConfigurationError)

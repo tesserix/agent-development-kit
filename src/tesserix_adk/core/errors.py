@@ -123,6 +123,7 @@ __all__ = [
     "TemplateError",
     "TenantContextError",
     "TenantCrossingError",
+    "TenantIsolationError",
     "TenantLimitError",
     "TenantRefusal",
     "TenantUnconfiguredError",
@@ -1876,6 +1877,31 @@ class TenantContextError(AdkError):
     ) -> None:
         self.reason: TenantRefusal = reason
         super().__init__(*args, tenant=tenant, details={"reason": reason})
+
+
+class TenantIsolationError(AdkError):
+    """Raised when stored data does not belong to the tenant the work is bound to.
+
+    Withheld and signalled, never quietly filtered away: a record under the wrong tenant
+    is a botched backfill or a bypassed adapter, and a read that drops it silently leaves
+    the corruption in place for the next read to leak.
+
+    Args:
+        tenant: The tenant the work is bound to.
+        found: The tenant the record claims, where it named one at all.
+        where: Which adapter and operation refused.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        tenant: str | None = None,
+        found: str = "",
+        where: str = "",
+    ) -> None:
+        self.found = found
+        self.where = where
+        super().__init__(*args, tenant=tenant, details={"found": found, "where": where})
 
 
 class UnknownTenantError(ConfigurationError):
