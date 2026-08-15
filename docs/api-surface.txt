@@ -192,8 +192,10 @@ tesserix_adk.adapters.transport.WebSocketBridge :: class WebSocketBridge(Generic
 tesserix_adk.adapters.transport.WebSocketLike :: class WebSocketLike(Protocol) {close(self, code: 'int' = 1000) -> 'None'; receive_text(self) -> 'str'; send_text(self, data: 'str') -> 'None'}
 tesserix_adk.adapters.transport.sse_events :: def sse_events(events: 'AsyncIterator[ProgressEvent]', *, heartbeat_seconds: 'float' = 15.0, retry_milliseconds: 'int' = 3000, payload_limit_bytes: 'int' = 65536) -> 'AsyncGenerator[str]'
 tesserix_adk.adapters.wire_payload :: def wire_payload(event: 'ProgressEvent', *, limit: 'int' = 65536) -> 'ProgressEvent'
+tesserix_adk.cli.Aliases :: class Aliases(Protocol) {aliases(self, name: 'str', *, tenant: 'str' = '') -> 'Mapping[str, str]'; evaluated(self, name: 'str', version: 'str', *, tenant: 'str' = '') -> 'str'; repoint(self, name: 'str', *, alias: 'str', to: 'str', expected: 'str', by: 'str', reason: 'str', tenant: 'str' = '') -> 'None'}
 tesserix_adk.cli.Answering :: Answering: TypeAliasType
 tesserix_adk.cli.Lookup :: Lookup: TypeAliasType
+tesserix_adk.cli.Prompts :: class Prompts(Protocol) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
 tesserix_adk.cli.Waiting :: class Waiting(Protocol) {pending(self, *, tenant: 'str') -> 'tuple[SuspendedRun, ...]'}
 tesserix_adk.cli.approvals.Answering :: Answering: TypeAliasType
 tesserix_adk.cli.approvals.Waiting :: class Waiting(Protocol) {pending(self, *, tenant: 'str') -> 'tuple[SuspendedRun, ...]'}
@@ -202,6 +204,10 @@ tesserix_adk.cli.approvals_main :: def approvals_main(argv: 'Sequence[str]', *, 
 tesserix_adk.cli.inspect.Lookup :: Lookup: TypeAliasType
 tesserix_adk.cli.inspect.main :: def main(argv: 'Sequence[str]', *, lookup: 'Lookup', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.inspect_main :: def inspect_main(argv: 'Sequence[str]', *, lookup: 'Lookup', out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.prompts.Aliases :: class Aliases(Protocol) {aliases(self, name: 'str', *, tenant: 'str' = '') -> 'Mapping[str, str]'; evaluated(self, name: 'str', version: 'str', *, tenant: 'str' = '') -> 'str'; repoint(self, name: 'str', *, alias: 'str', to: 'str', expected: 'str', by: 'str', reason: 'str', tenant: 'str' = '') -> 'None'}
+tesserix_adk.cli.prompts.Prompts :: class Prompts(Protocol) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
+tesserix_adk.cli.prompts.main :: def main(argv: 'Sequence[str]', *, prompts: 'Prompts', aliases: 'Aliases', out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.prompts_main :: def prompts_main(argv: 'Sequence[str]', *, prompts: 'Prompts', aliases: 'Aliases', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.core.ActionClass :: class ActionClass(AdkModel)
 tesserix_adk.core.ActionRegistry :: class ActionRegistry(object) {named(self, action_class: 'str') -> 'ActionClass | None'; of(self, tool: 'str') -> 'ActionClass | None'}
 tesserix_adk.core.ActionRequest :: class ActionRequest(AdkModel)
@@ -337,6 +343,7 @@ tesserix_adk.core.IdempotencyStore :: class IdempotencyStore(Protocol) {abandon(
 tesserix_adk.core.InFlightPolicy :: class InFlightPolicy(StrEnum)
 tesserix_adk.core.InMemoryCeilingLedger :: class InMemoryCeilingLedger(object) {commit(self, idempotency_key: 'str') -> 'Hold | None'; committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'; credit(self, *, tenant: 'str', action_class: 'str', currency: 'str', amount: 'Decimal', authorised_by: 'str', reason: 'str' = '') -> 'Credit'; credits(self) -> 'Sequence[Credit]'; reap(self) -> 'int'; release(self, idempotency_key: 'str') -> 'None'; reserve(self, *, tenant: 'str', action_class: 'str', ceiling: 'Ceiling', amount: 'Decimal', idempotency_key: 'str') -> 'Hold'}
 tesserix_adk.core.InMemoryGrants :: class InMemoryGrants(object) {all_grants(self) -> 'Sequence[AutonomyGrant]'; grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
+tesserix_adk.core.IncompatiblePromptVersionError :: class IncompatiblePromptVersionError(ConfigurationError)
 tesserix_adk.core.IndeterminateOutcomeError :: class IndeterminateOutcomeError(AdkError)
 tesserix_adk.core.IndeterminateToolCallError :: class IndeterminateToolCallError(AdkError)
 tesserix_adk.core.InexactAmountError :: class InexactAmountError(AdkError)
@@ -676,6 +683,7 @@ tesserix_adk.core.errors.HandoffContractError :: class HandoffContractError(AdkE
 tesserix_adk.core.errors.HookEvaluationError :: class HookEvaluationError(AdkError)
 tesserix_adk.core.errors.HookRefusedError :: class HookRefusedError(AdkError)
 tesserix_adk.core.errors.HookRegistrationError :: class HookRegistrationError(ConfigurationError)
+tesserix_adk.core.errors.IncompatiblePromptVersionError :: class IncompatiblePromptVersionError(ConfigurationError)
 tesserix_adk.core.errors.IndeterminateToolCallError :: class IndeterminateToolCallError(AdkError)
 tesserix_adk.core.errors.InexactAmountError :: class InexactAmountError(AdkError)
 tesserix_adk.core.errors.InvalidRequestError :: class InvalidRequestError(ProviderError)

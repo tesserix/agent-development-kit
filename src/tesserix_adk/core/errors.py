@@ -57,6 +57,7 @@ __all__ = [
     "HookEvaluationError",
     "HookRefusedError",
     "HookRegistrationError",
+    "IncompatiblePromptVersionError",
     "IndeterminateToolCallError",
     "InexactAmountError",
     "InvalidRequestError",
@@ -1905,6 +1906,34 @@ class PromptRejectedError(ConfigurationError):
     def __init__(self, *args: object, name: str = "") -> None:
         self.name = name
         super().__init__(*args, details={"prompt": name})
+
+
+class IncompatiblePromptVersionError(ConfigurationError):
+    """Raised when an alias may not be moved to a version the call sites cannot render.
+
+    A rollback target that drops a variable current call sites still supply would start
+    runs that cannot render, so nothing is repointed and the variables are named.
+
+    Args:
+        name: Which prompt.
+        version: The version that was refused as a target.
+        variables: What it does not declare and the current version does.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        name: str = "",
+        version: str = "",
+        variables: tuple[str, ...] = (),
+    ) -> None:
+        self.name = name
+        self.version = version
+        self.variables = variables
+        super().__init__(
+            *args,
+            details={"prompt": name, "version": version, "variables": ",".join(variables)},
+        )
 
 
 class TemplateError(ConfigurationError):
