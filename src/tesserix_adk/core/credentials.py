@@ -16,7 +16,12 @@ if TYPE_CHECKING:
 
     from tesserix_adk.core.identity import AgentIdentity
 
-__all__ = ["CallCredential", "CredentialSource"]
+__all__ = [
+    "CallCredential",
+    "CredentialSource",
+    "ExpiringCredential",
+    "ExpiringCredentialSource",
+]
 
 
 @runtime_checkable
@@ -48,4 +53,32 @@ class CredentialSource(Protocol):
         run_id: str,
         agent_version: str = ...,
     ) -> CallCredential:
+        """Mint one credential for one caller, one audience and one set of scopes."""
+
+
+@runtime_checkable
+class ExpiringCredential(CallCredential, Protocol):
+    """A credential that says when it stops working, so a run can replace it in time."""
+
+    @property
+    def expires_at(self) -> float:
+        """When the credential stops being accepted, on the run's clock."""
+
+    def expired(self, now: float, *, skew: float = ...) -> bool:
+        """Whether the credential is past expiry, or close enough to count as past it."""
+
+
+@runtime_checkable
+class ExpiringCredentialSource(Protocol):
+    """A mint whose credentials carry an expiry."""
+
+    async def for_tool(
+        self,
+        *,
+        identity: AgentIdentity,
+        audience: str,
+        needs: Iterable[str],
+        run_id: str,
+        agent_version: str = ...,
+    ) -> ExpiringCredential:
         """Mint one credential for one caller, one audience and one set of scopes."""

@@ -117,7 +117,12 @@ from tesserix_adk.core.content_policy import (
     Thresholds,
 )
 from tesserix_adk.core.cost import Cost, CostConfidence, CountSource, weaker_source
-from tesserix_adk.core.credentials import CallCredential, CredentialSource
+from tesserix_adk.core.credentials import (
+    CallCredential,
+    CredentialSource,
+    ExpiringCredential,
+    ExpiringCredentialSource,
+)
 from tesserix_adk.core.definition import AgentDefinition, Owner
 from tesserix_adk.core.deprecation import (
     AdkDeprecationWarning,
@@ -145,6 +150,7 @@ from tesserix_adk.core.errors import (
     AuditUnavailableError,
     AuthenticationError,
     AuthorisationError,
+    AuthorityRevokedError,
     AutonomyRefusedError,
     BudgetExceededError,
     BudgetUnavailableError,
@@ -161,6 +167,7 @@ from tesserix_adk.core.errors import (
     ContextBudgetError,
     ContextWindowExceededError,
     CredentialError,
+    CredentialExpiredError,
     DelegationError,
     DelegationLimitError,
     DependencyCycleError,
@@ -580,6 +587,7 @@ __all__ = [
     "AuthMethod",
     "AuthenticationError",
     "AuthorisationError",
+    "AuthorityRevokedError",
     "AutonomyDecision",
     "AutonomyGrant",
     "AutonomyLadder",
@@ -644,6 +652,7 @@ __all__ = [
     "CostConfidence",
     "CountSource",
     "CredentialError",
+    "CredentialExpiredError",
     "CredentialSource",
     "Credit",
     "DeadlineConfig",
@@ -663,6 +672,8 @@ __all__ = [
     "EstimateUnavailableError",
     "EvalIncompleteError",
     "EventLoopStalledError",
+    "ExpiringCredential",
+    "ExpiringCredentialSource",
     "ExtractionError",
     "FallbackChain",
     "FallbackExhaustedError",

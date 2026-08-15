@@ -47,6 +47,12 @@ from tesserix_adk.runtime.compaction import (
 )
 from tesserix_adk.runtime.compensation import Compensator, MemoryCompensationLedger
 from tesserix_adk.runtime.context import ContextWindow, Segment
+from tesserix_adk.runtime.credentials import (
+    DEFAULT_SKEW_SECONDS,
+    Reauthoriser,
+    RefreshPolicy,
+    RunCredentials,
+)
 from tesserix_adk.runtime.delegation import (
     Delegation,
     DelegationLimits,
@@ -166,6 +172,7 @@ __all__ = [
     "CITATIONS",
     "COMPACTED",
     "DEFAULT_APPROVAL_WAIT_SECONDS",
+    "DEFAULT_SKEW_SECONDS",
     "PROMPT_LAYERS",
     "TIMEOUT_IDENTITY",
     "ActivityAttempts",
@@ -246,8 +253,10 @@ __all__ = [
     "Provisional",
     "Quorum",
     "RateLimiter",
+    "Reauthoriser",
     "Receiver",
     "Reduce",
+    "RefreshPolicy",
     "ReportLog",
     "ResultFinding",
     "ResultPolicy",
@@ -260,6 +269,7 @@ __all__ = [
     "Roster",
     "RunCancelled",
     "RunCompleted",
+    "RunCredentials",
     "RunFailed",
     "RunFingerprint",
     "RunHistory",

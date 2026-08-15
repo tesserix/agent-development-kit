@@ -290,6 +290,7 @@ tesserix_adk.core.AuditUnavailableError :: class AuditUnavailableError(AdkError)
 tesserix_adk.core.AuthMethod :: class AuthMethod(StrEnum)
 tesserix_adk.core.AuthenticationError :: class AuthenticationError(ProviderError)
 tesserix_adk.core.AuthorisationError :: class AuthorisationError(AdkError)
+tesserix_adk.core.AuthorityRevokedError :: class AuthorityRevokedError(AuthorisationError)
 tesserix_adk.core.AutonomyDecision :: class AutonomyDecision(AdkModel)
 tesserix_adk.core.AutonomyGrant :: class AutonomyGrant(AdkModel) {covers(self, *, tenant: 'str', user: 'str | None', now: 'float') -> 'bool'}
 tesserix_adk.core.AutonomyLadder :: class AutonomyLadder(object) {amount_in(self, tool: 'str', arguments: 'Mapping[str, Any]') -> 'Decimal | None'; classify(self, tool: 'str') -> 'str | None'; decide(self, request: 'ActionRequest') -> 'AutonomyDecision'; validate_grants(self) -> 'None'}
@@ -356,6 +357,7 @@ tesserix_adk.core.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 
 tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.CredentialError :: class CredentialError(AdkError)
+tesserix_adk.core.CredentialExpiredError :: class CredentialExpiredError(CredentialError)
 tesserix_adk.core.CredentialSource :: class CredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'CallCredential'}
 tesserix_adk.core.Credit :: class Credit(AdkModel)
 tesserix_adk.core.DEFAULT_ACTIVITY_POLICIES :: DEFAULT_ACTIVITY_POLICIES: dict
@@ -379,6 +381,8 @@ tesserix_adk.core.EnvironmentSecrets :: class EnvironmentSecrets(object) {resolv
 tesserix_adk.core.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
 tesserix_adk.core.EvalIncompleteError :: class EvalIncompleteError(AdkError)
 tesserix_adk.core.EventLoopStalledError :: class EventLoopStalledError(AdkError)
+tesserix_adk.core.ExpiringCredential :: class ExpiringCredential(CallCredential, Protocol) {expired(self, now: 'float', *, skew: 'float' = Ellipsis) -> 'bool'}
+tesserix_adk.core.ExpiringCredentialSource :: class ExpiringCredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'ExpiringCredential'}
 tesserix_adk.core.ExtractionError :: class ExtractionError(AdkError)
 tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'; refuse_the_excluded(self) -> 'None'}
 tesserix_adk.core.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
@@ -762,6 +766,8 @@ tesserix_adk.core.cost.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.cost.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
 tesserix_adk.core.credentials.CallCredential :: class CallCredential(Protocol) {headers(self) -> 'dict[str, str]'}
 tesserix_adk.core.credentials.CredentialSource :: class CredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'CallCredential'}
+tesserix_adk.core.credentials.ExpiringCredential :: class ExpiringCredential(CallCredential, Protocol) {expired(self, now: 'float', *, skew: 'float' = Ellipsis) -> 'bool'}
+tesserix_adk.core.credentials.ExpiringCredentialSource :: class ExpiringCredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'ExpiringCredential'}
 tesserix_adk.core.current_policy :: def current_policy(*, where: 'str' = 'current_policy') -> 'TenantPolicy'
 tesserix_adk.core.current_principal :: def current_principal(*, where: 'str' = 'current_principal') -> 'Principal'
 tesserix_adk.core.current_tenant :: def current_tenant(*, where: 'str' = 'current_tenant') -> 'TenantContext'
@@ -794,6 +800,7 @@ tesserix_adk.core.errors.AttributionError :: class AttributionError(AdkError)
 tesserix_adk.core.errors.AuditUnavailableError :: class AuditUnavailableError(AdkError)
 tesserix_adk.core.errors.AuthenticationError :: class AuthenticationError(ProviderError)
 tesserix_adk.core.errors.AuthorisationError :: class AuthorisationError(AdkError)
+tesserix_adk.core.errors.AuthorityRevokedError :: class AuthorityRevokedError(AuthorisationError)
 tesserix_adk.core.errors.AutonomyRefusedError :: class AutonomyRefusedError(AdkError)
 tesserix_adk.core.errors.BudgetExceededError :: class BudgetExceededError(AdkError)
 tesserix_adk.core.errors.BudgetUnavailableError :: class BudgetUnavailableError(AdkError)
@@ -809,6 +816,7 @@ tesserix_adk.core.errors.ContentFilteredError :: class ContentFilteredError(Prov
 tesserix_adk.core.errors.ContextBudgetError :: class ContextBudgetError(AdkError)
 tesserix_adk.core.errors.ContextWindowExceededError :: class ContextWindowExceededError(CapabilityError)
 tesserix_adk.core.errors.CredentialError :: class CredentialError(AdkError)
+tesserix_adk.core.errors.CredentialExpiredError :: class CredentialExpiredError(CredentialError)
 tesserix_adk.core.errors.DelegationError :: class DelegationError(AdkError)
 tesserix_adk.core.errors.DelegationLimitError :: class DelegationLimitError(LoopLimitError)
 tesserix_adk.core.errors.DependencyCycleError :: class DependencyCycleError(ConfigurationError)
@@ -1797,6 +1805,7 @@ tesserix_adk.runtime.Confidence :: class Confidence(StrEnum)
 tesserix_adk.runtime.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.CostEstimate :: class CostEstimate(AdkModel) {as_limits(self, *, headroom: 'Decimal' = Decimal('1')) -> 'BudgetLimits'; with_children(self, *children: 'CostEstimate') -> 'CostEstimate'}
 tesserix_adk.runtime.DEFAULT_APPROVAL_WAIT_SECONDS :: DEFAULT_APPROVAL_WAIT_SECONDS: float
+tesserix_adk.runtime.DEFAULT_SKEW_SECONDS :: DEFAULT_SKEW_SECONDS: float
 tesserix_adk.runtime.Deadline :: class Deadline(object) {expired(self, now: 'float') -> 'bool'; narrowed_to(self, other: 'Deadline | None') -> 'Deadline'; remaining(self, now: 'float') -> 'float'}
 tesserix_adk.runtime.DeferringGate :: class DeferringGate(object) {pending(self, *, tenant: 'str') -> 'tuple[SuspendedRun, ...]'; redeem(self, token: 'str', *, tenant: 'str', presented_by: 'str') -> 'SuspendedRun'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
 tesserix_adk.runtime.Delegation :: class Delegation(object) {to(self, agent: 'str', *, tools: 'Collection[str] | None' = None, mutations: 'Collection[str] | None' = None, limits: 'DelegationLimits | None' = None) -> 'Delegation'}
@@ -1847,8 +1856,10 @@ tesserix_adk.runtime.PromptLayer :: class PromptLayer(StrEnum)
 tesserix_adk.runtime.Provisional :: class Provisional(Generic) {snapshot(self) -> 'dict[str, object] | None'}
 tesserix_adk.runtime.Quorum :: class Quorum(Aggregation) {chosen(self, results: 'Sequence[BranchResult]') -> 'tuple[tuple[BranchResult, ...], str]'; value(self, chosen: 'Sequence[BranchResult]') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.RateLimiter :: class RateLimiter(object) {acquire(self, tokens: 'int' = 0) -> 'None'}
+tesserix_adk.runtime.Reauthoriser :: class Reauthoriser(Protocol) {reauthorise(self, identity: 'AgentIdentity', /) -> 'AgentIdentity'}
 tesserix_adk.runtime.Receiver :: class Receiver(object)
 tesserix_adk.runtime.Reduce :: class Reduce(Aggregation, Generic) {chosen(self, results: 'Sequence[BranchResult]') -> 'tuple[tuple[BranchResult, ...], str]'; value(self, chosen: 'Sequence[BranchResult]') -> 'ValueT'}
+tesserix_adk.runtime.RefreshPolicy :: class RefreshPolicy(AdkModel)
 tesserix_adk.runtime.ReportLog :: class ReportLog(Protocol) {outstanding(self, *, tenant: 'str', action_class: 'str') -> 'bool'; owed(self, *, tenant: 'str', action_class: 'str', run_id: 'str') -> 'None'}
 tesserix_adk.runtime.ResultFinding :: class ResultFinding(object)
 tesserix_adk.runtime.ResultPolicy :: class ResultPolicy(object)
@@ -1861,6 +1872,7 @@ tesserix_adk.runtime.RevocationWatch :: class RevocationWatch(object) {confirm(s
 tesserix_adk.runtime.Roster :: class Roster(object) {matching(self, needs: 'Collection[str]') -> 'Specialist | None'}
 tesserix_adk.runtime.RunCancelled :: class RunCancelled(ProgressEvent)
 tesserix_adk.runtime.RunCompleted :: class RunCompleted(ProgressEvent)
+tesserix_adk.runtime.RunCredentials :: class RunCredentials(object) {call(self, operation: 'Callable[[ExpiringCredential, str], Awaitable[T]]', *, audience: 'str', needs: 'Iterable[str]', run_id: 'str', idempotency_key: 'str | None' = None) -> 'T'; for_call(self, *, audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = '1.0.0') -> 'ExpiringCredential'; invalidate(self, audience: 'str') -> 'None'; suspend(self) -> 'None'}
 tesserix_adk.runtime.RunFailed :: class RunFailed(ProgressEvent)
 tesserix_adk.runtime.RunFingerprint :: class RunFingerprint(AdkModel) {diff(self, other: 'RunFingerprint') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.RunHistory :: class RunHistory(Protocol) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'}
@@ -1946,6 +1958,10 @@ tesserix_adk.runtime.compensation.Compensator :: class Compensator(object) {unwi
 tesserix_adk.runtime.compensation.MemoryCompensationLedger :: class MemoryCompensationLedger(object) {forget(self, *, tenant: 'str') -> 'int'; mark(self, reversal: 'Reversal') -> 'None'; outstanding(self, run_id: 'str', *, tenant: 'str', branch: 'str | None' = None) -> 'Sequence[Applied]'; record(self, action: 'Applied') -> 'None'}
 tesserix_adk.runtime.context.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.context.Segment :: class Segment(AdkModel)
+tesserix_adk.runtime.credentials.DEFAULT_SKEW_SECONDS :: DEFAULT_SKEW_SECONDS: float
+tesserix_adk.runtime.credentials.Reauthoriser :: class Reauthoriser(Protocol) {reauthorise(self, identity: 'AgentIdentity', /) -> 'AgentIdentity'}
+tesserix_adk.runtime.credentials.RefreshPolicy :: class RefreshPolicy(AdkModel)
+tesserix_adk.runtime.credentials.RunCredentials :: class RunCredentials(object) {call(self, operation: 'Callable[[ExpiringCredential, str], Awaitable[T]]', *, audience: 'str', needs: 'Iterable[str]', run_id: 'str', idempotency_key: 'str | None' = None) -> 'T'; for_call(self, *, audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = '1.0.0') -> 'ExpiringCredential'; invalidate(self, audience: 'str') -> 'None'; suspend(self) -> 'None'}
 tesserix_adk.runtime.current_ambient :: def current_ambient() -> 'Ambient | None'
 tesserix_adk.runtime.decode_progress :: def decode_progress(payload: 'Mapping[str, object]') -> 'ProgressEvent | None'
 tesserix_adk.runtime.delegation.Delegation :: class Delegation(object) {to(self, agent: 'str', *, tools: 'Collection[str] | None' = None, mutations: 'Collection[str] | None' = None, limits: 'DelegationLimits | None' = None) -> 'Delegation'}

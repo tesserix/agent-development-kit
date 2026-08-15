@@ -26,6 +26,7 @@ __all__ = [
     "AuditUnavailableError",
     "AuthenticationError",
     "AuthorisationError",
+    "AuthorityRevokedError",
     "AutonomyRefusedError",
     "BudgetExceededError",
     "BudgetUnavailableError",
@@ -41,6 +42,7 @@ __all__ = [
     "ContextBudgetError",
     "ContextWindowExceededError",
     "CredentialError",
+    "CredentialExpiredError",
     "DelegationError",
     "DelegationLimitError",
     "DependencyCycleError",
@@ -2486,6 +2488,44 @@ class CredentialError(AdkError):
         self.scopes = scopes
         stated = {"audience": audience, "scopes": ", ".join(scopes)}
         super().__init__(*args, details={key: value for key, value in stated.items() if value})
+
+
+class CredentialExpiredError(CredentialError):
+    """Raised when the credential a call needs has lapsed and could not be replaced.
+
+    Distinct from a revocation: this is a transient failure of the mint, and the same
+    call is worth making again once it answers.
+
+    Args:
+        outcome: `"not_started"` where the call never went out, `"unknown"` where a
+            non-idempotent call was already in flight. An unknown outcome is not
+            retryable, because "it failed" and "it landed and the answer was lost" are
+            the same shape from here and only one of them is safe to repeat.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        audience: str = "",
+        scopes: tuple[str, ...] = (),
+        outcome: Literal["not_started", "unknown"] = "not_started",
+    ) -> None:
+        self.outcome = outcome
+        super().__init__(*args, audience=audience, scopes=scopes)
+        self.details.update({"outcome": outcome})
+
+    @property
+    def retryable(self) -> bool:
+        """Whether the same call may be made again once a credential can be minted."""
+        return self.outcome == "not_started"
+
+
+class AuthorityRevokedError(AuthorisationError):
+    """Raised when the authority a run was acting on is gone rather than merely stale.
+
+    A run that hits this stops. Refreshing would ask the same question again, and
+    carrying on with the credential already held is exactly what the revocation was for.
+    """
 
 
 class McpAuthReason(StrEnum):
