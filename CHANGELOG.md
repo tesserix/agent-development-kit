@@ -8,6 +8,55 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.15.0
+
+### Added
+
+- **tesserix_adk.memory.prefix**: `tesserix_adk.memory` now draws the line compression may not cross. Compression and prefix
+caching pull in opposite directions and the conflict is silent: recompressing the whole
+context each turn produces slightly different bytes each time, the provider's cached prefix
+is invalidated, and the next call pays a full prefill. On CPU inference that trade is
+catastrophic — the compression saves perhaps a third of the tokens and the cache miss costs
+tens of seconds of prefill on all of them.
+
+`FrozenPrefix` holds one context's boundary. `advance` freezes what a completed turn sent,
+monotonically and idempotently, so two concurrent turns cannot move it twice. `live` and
+`compressible` answer what may be touched: content that arrived since the boundary and is
+not already marked by `compressed`, because content is compressed once on arrival and then
+becomes frozen history itself.
+
+`verify` is what makes the rule enforceable. It fails with `PrefixDriftError` naming the
+layer that moved and where, so a rewritten system prompt or a reordered retrieval block
+stops a build rather than reaching production as a doubling of prefill latency nobody
+attributes to anything for a week.
+
+Giving the prefix up is a recorded event, not a quiet one: `reset` takes the reason —
+an eviction, a redeployed instruction block — and counts it, because each reset is a full
+prefill somebody paid for. `PrefixBoundary.attributes` reports the position and the reset
+count as span or metric attributes, worth watching beside the cache hit ratio they exist to
+protect. Positions and counts only; no prompt content reaches a metric.
+
+The boundary is per context and holds nothing global, so a position never crosses a tenant.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.PrefixDriftError`
+- Added: `tesserix_adk.core.errors.PrefixDriftError`
+- Added: `tesserix_adk.memory.COMPRESSED`
+- Added: `tesserix_adk.memory.FrozenPrefix`
+- Added: `tesserix_adk.memory.POSITION_METRIC`
+- Added: `tesserix_adk.memory.PrefixBoundary`
+- Added: `tesserix_adk.memory.RESETS_METRIC`
+- Added: `tesserix_adk.memory.SECTION`
+- Added: `tesserix_adk.memory.compressed`
+- Added: `tesserix_adk.memory.prefix.COMPRESSED`
+- Added: `tesserix_adk.memory.prefix.FrozenPrefix`
+- Added: `tesserix_adk.memory.prefix.POSITION_METRIC`
+- Added: `tesserix_adk.memory.prefix.PrefixBoundary`
+- Added: `tesserix_adk.memory.prefix.RESETS_METRIC`
+- Added: `tesserix_adk.memory.prefix.SECTION`
+- Added: `tesserix_adk.memory.prefix.compressed`
+
 ## 0.14.0
 
 ### Added
