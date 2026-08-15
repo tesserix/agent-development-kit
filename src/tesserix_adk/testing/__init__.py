@@ -35,6 +35,23 @@ from tesserix_adk.testing.fakes import (
     ToolExecutionError,
     estimate_tokens,
 )
+from tesserix_adk.testing.guardrails import (
+    CORPUS_VERSION,
+    GUARD_CORPUS,
+    GuardCase,
+    GuardFamily,
+    GuardMetrics,
+    GuardThresholds,
+    RecordedGuard,
+    assert_allows,
+    assert_blocks,
+    assert_fails_closed,
+    assert_pipeline_order,
+    assert_redacts,
+    assert_synthetic,
+    measure,
+    sampled,
+)
 from tesserix_adk.testing.http_cassette import (
     HTTP_CASSETTE_FORMAT,
     HttpCassette,
@@ -51,6 +68,7 @@ if TYPE_CHECKING:
         BudgetPolicyConformance,
         CheckpointStoreConformance,
         ClockConformance,
+        GuardrailConformance,
         IdempotencyStoreConformance,
         KeyValueStoreConformance,
         LeaseStoreConformance,
@@ -67,6 +85,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CAPABLE",
+    "CORPUS_VERSION",
+    "GUARD_CORPUS",
     "HTTP_CASSETTE_FORMAT",
     "INJECTION_FIXTURES",
     "POISONED_CORPUS",
@@ -88,6 +108,11 @@ __all__ = [
     "FakeTenantLedger",
     "FakeToolRegistry",
     "FakeTracer",
+    "GuardCase",
+    "GuardFamily",
+    "GuardMetrics",
+    "GuardThresholds",
+    "GuardrailConformance",
     "HttpCassette",
     "HttpExchange",
     "HttpReplay",
@@ -105,6 +130,7 @@ __all__ = [
     "QuarantineError",
     "RecordedError",
     "RecordedEvent",
+    "RecordedGuard",
     "RecordingProvider",
     "ReplayingProvider",
     "ScriptedProvider",
@@ -118,9 +144,17 @@ __all__ = [
     "ToolExecutionError",
     "TracerConformance",
     "WorkQueueConformance",
+    "assert_allows",
+    "assert_blocks",
+    "assert_fails_closed",
+    "assert_pipeline_order",
+    "assert_redacts",
     "assert_same_run",
+    "assert_synthetic",
     "estimate_tokens",
+    "measure",
     "redacted",
+    "sampled",
 ]
 
 # These modules import pytest at module scope, and pytest is a test-time dependency nobody

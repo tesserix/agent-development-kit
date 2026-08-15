@@ -42,6 +42,7 @@ from tesserix_adk.core.errors import (
     StateNotFoundError,
     WorkItemNotFoundError,
 )
+from tesserix_adk.core.guards import GuardResult, GuardStage, GuardVerdict
 from tesserix_adk.core.idempotency import IdempotencyStore
 from tesserix_adk.core.lease import LeaseStore, RunLease
 from tesserix_adk.core.ledger import LedgerKey, SpendLedger, Window, WindowKind
@@ -50,6 +51,7 @@ from tesserix_adk.core.propagation import HEADER, arriving, carried, restored
 from tesserix_adk.core.protocols import (
     BudgetPolicy,
     Clock,
+    Guardrail,
     KeyValueStore,
     ModelProvider,
     Tracer,
@@ -76,10 +78,17 @@ from tesserix_adk.memory import (
     MemoryStore,
 )
 from tesserix_adk.rag.retrieval import Branch, IndexQuery, SearchIndex
+from tesserix_adk.testing.guardrails import (
+    GUARD_CORPUS,
+    GuardCase,
+    GuardFamily,
+    GuardThresholds,
+    measure,
+)
 from tesserix_adk.testing.retrieval import Indexed
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Collection, Mapping, Sequence
 
     from pydantic import JsonValue
 
@@ -88,6 +97,7 @@ __all__ = [
     "BudgetPolicyConformance",
     "CheckpointStoreConformance",
     "ClockConformance",
+    "GuardrailConformance",
     "IdempotencyStoreConformance",
     "KeyValueStoreConformance",
     "LeaseStoreConformance",
@@ -1408,3 +1418,66 @@ class SearchIndexConformance(ABC):
             vector=wanted.vector,
             predicates=dict(predicates or {}),
         )
+
+
+class GuardrailConformance(ABC):
+    """Behaviour every `Guardrail` implementation must exhibit.
+
+    A third-party guard subclasses this, supplies the guard and the families it claims,
+    and inherits the protocol, fail-closed and corpus cases. Thresholds are declared per
+    guard rather than shared: a deliberately permissive internal guard held to a
+    customer-facing bar means either the bar or the guard is wrong.
+    """
+
+    @abstractmethod
+    def make_guard(self) -> Guardrail:
+        """Return a fresh guard under test."""
+
+    @abstractmethod
+    def families(self) -> Collection[GuardFamily]:
+        """Which corpus families this guard claims to cover."""
+
+    def thresholds(self) -> GuardThresholds:
+        """What it must achieve. Override to state this guard's own bar."""
+        return GuardThresholds()
+
+    def test_satisfies_the_protocol(self) -> None:
+        verify_conformance(self.make_guard(), Guardrail)
+
+    def test_it_has_a_stable_name_a_verdict_can_be_attributed_to(self) -> None:
+        assert self.make_guard().name
+
+    async def test_both_stages_answer_rather_than_one_being_absent(self) -> None:
+        guard = self.make_guard()
+        assert isinstance(await guard.check_input("hello"), GuardResult)
+        assert isinstance(await guard.check_output("hello"), GuardResult)
+
+    async def test_a_refusal_says_why_without_quoting_what_it_refused(self) -> None:
+        """A refusal that echoes the payload has published the payload."""
+        guard = self.make_guard()
+        for case in GUARD_CORPUS:
+            if case.family not in set(self.families()):
+                continue
+            result = await _guard_answer(guard, case)
+            if result.verdict is GuardVerdict.ALLOW:
+                continue
+            assert result.code, f"{case.name}: a refusal needs a code a caller can match on"
+            assert case.content not in result.detail, f"{case.name}: the detail quotes the payload"
+
+    async def test_it_meets_the_thresholds_it_declared(self) -> None:
+        metrics = await measure(self.make_guard(), families=self.families())
+        assert not metrics.failures(self.thresholds())
+
+    async def test_the_run_measured_the_whole_corpus_rather_than_part_of_it(self) -> None:
+        """A gate that passes on a partial corpus is a gate that passes on nothing."""
+        metrics = await measure(self.make_guard(), families=self.families())
+        assert metrics.control == len(
+            [case for case in GUARD_CORPUS if case.family is GuardFamily.BENIGN]
+        )
+
+
+async def _guard_answer(guard: Guardrail, case: GuardCase) -> GuardResult:
+    """One guard's verdict on one case, on the stage the case arrives at."""
+    if case.stage is GuardStage.INPUT:
+        return await guard.check_input(case.content)
+    return await guard.check_output(case.content)
