@@ -8,6 +8,62 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.33.0
+
+### Added
+
+- **tesserix_adk.core.secrets, tesserix_adk.core.tenant_config, tesserix_adk.core.errors**: Configuration holds a reference to a credential; only the call site holds the value.
+
+A key read into a config field is a key in every rendering of that config — the log line,
+the span attribute, the error payload, the `repr` in a traceback frame. None of those were
+written by anyone intending to leak it, which is why it keeps happening. So `SecretRef`
+names the secret and a `SecretResolver` fetches it at the point of use, returning a
+`SecretStr` that redacts itself everywhere and is revealed on the one line that needs it.
+
+`SecretRef` gains a `version`, a `describe()` safe to log, and `for_tenant`, which fills a
+`{tenant}` placeholder so one line of configuration serves every tenant. A reference
+already bound to one tenant cannot be rebound to another, because a re-templatable
+reference is one tenant's configuration reading another tenant's secret. Cache entries are
+keyed by tenant as well as by reference.
+
+`EnvironmentSecrets` is the local development path, `ProvidedSecrets` reads the kit's
+existing synchronous `SecretProvider`, and `ChainedSecrets` tries resolvers in precedence
+order so a laptop's stale key cannot shadow what a deployment injects. `CachingSecrets`
+adds a ttl: concurrent callers asking for the same reference share one fetch, different
+references still resolve in parallel, `invalidate` and `invalidate_all` pick up a rotation
+without a restart, and nothing is served past its ttl — serving a revoked credential to
+stay up is a revocation that revoked nothing.
+
+Resolution fails with `SecretResolutionError` rather than returning nothing: a caller that
+cannot tell "no such secret" from "the backend is unreachable" carries on unauthenticated.
+The refusal names the reference and never the value, so it is safe to log.
+
+`literal_credentials` names config fields whose names look like credentials and whose
+values are plain strings, for a deployment that wants to refuse to boot on one. `SecretStr`
+and `SecretRef` both pass.
+
+The kit ships no cloud secret-manager client — the protocol is one method, so that binding
+lives where the vendor choice already lives. See [`docs/secrets.md`](../docs/secrets.md).
+
+### Public API surface
+
+- Added: `tesserix_adk.core.CachingSecrets`
+- Added: `tesserix_adk.core.ChainedSecrets`
+- Added: `tesserix_adk.core.EnvironmentSecrets`
+- Added: `tesserix_adk.core.ProvidedSecrets`
+- Added: `tesserix_adk.core.SecretResolutionError`
+- Added: `tesserix_adk.core.SecretResolver`
+- Added: `tesserix_adk.core.errors.SecretResolutionError`
+- Added: `tesserix_adk.core.literal_credentials`
+- Added: `tesserix_adk.core.secrets.CachingSecrets`
+- Added: `tesserix_adk.core.secrets.ChainedSecrets`
+- Added: `tesserix_adk.core.secrets.EnvironmentSecrets`
+- Added: `tesserix_adk.core.secrets.ProvidedSecrets`
+- Added: `tesserix_adk.core.secrets.SecretResolver`
+- Added: `tesserix_adk.core.secrets.literal_credentials`
+- Changed: `tesserix_adk.core.SecretRef`
+- Changed: `tesserix_adk.core.tenant_config.SecretRef`
+
 ## 0.32.0
 
 ### Added
