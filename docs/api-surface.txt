@@ -916,14 +916,20 @@ tesserix_adk.memory.Admission :: class Admission(AdkModel)
 tesserix_adk.memory.AdmissionPolicy :: class AdmissionPolicy(AdkModel) {decide(self, record: 'MemoryRecord', provenance: 'Provenance', *, at: 'float | None' = None) -> 'Admission'}
 tesserix_adk.memory.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
 tesserix_adk.memory.Belief :: class Belief(AdkModel)
+tesserix_adk.memory.CodeCompressor :: class CodeCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
 tesserix_adk.memory.CompactionOutcome :: class CompactionOutcome(AdkModel)
 tesserix_adk.memory.CompactionStrategy :: class CompactionStrategy(Protocol) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'Callable[[Sequence[Message]], int]') -> 'CompactionOutcome'}
+tesserix_adk.memory.Compressed :: class Compressed(AdkModel)
+tesserix_adk.memory.Compressor :: class Compressor(Protocol) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
 tesserix_adk.memory.ConfidenceFloor :: class ConfidenceFloor(object) {weigh(self, record: 'MemoryRecord', *, now: 'float') -> 'float'}
+tesserix_adk.memory.ContentKind :: class ContentKind(StrEnum)
+tesserix_adk.memory.ContentRouter :: class ContentRouter(object) {admit(self, content: 'str', *, budget_tokens: 'int', untrusted: 'bool' = False) -> 'Compressed'}
 tesserix_adk.memory.ContextAssembler :: class ContextAssembler(object) {assemble(self, sections: 'Mapping[str, Sequence[Message]]') -> 'AssembledContext'}
 tesserix_adk.memory.ContextEntry :: class ContextEntry(AdkModel)
 tesserix_adk.memory.ContextPlan :: class ContextPlan(AdkModel)
 tesserix_adk.memory.Contradiction :: class Contradiction(AdkModel)
 tesserix_adk.memory.ContradictionPolicy :: class ContradictionPolicy(Protocol) {resolve(self, existing: 'MemoryRecord', incoming: 'MemoryRecord') -> 'Resolution'}
+tesserix_adk.memory.DEFAULT_COMPRESSORS :: DEFAULT_COMPRESSORS: dict
 tesserix_adk.memory.DEFAULT_REDACTOR :: DEFAULT_REDACTOR: PatternRedactor
 tesserix_adk.memory.DecayPolicy :: class DecayPolicy(Protocol) {weigh(self, record: 'MemoryRecord', *, now: 'float') -> 'float'}
 tesserix_adk.memory.Derivation :: class Derivation(AdkModel)
@@ -943,16 +949,21 @@ tesserix_adk.memory.MemoryRedactor :: class MemoryRedactor(Protocol) {redact(sel
 tesserix_adk.memory.MemoryScope :: class MemoryScope(AdkModel)
 tesserix_adk.memory.MemoryStore :: class MemoryStore(Protocol) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'Sequence[Derivation]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'Sequence[MemoryRecord]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.memory.Origin :: class Origin(StrEnum)
+tesserix_adk.memory.PassThrough :: class PassThrough(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
 tesserix_adk.memory.PatternRedactor :: class PatternRedactor(object) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.PinAndFold :: class PinAndFold(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.ProseCompressor :: class ProseCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
 tesserix_adk.memory.Provenance :: class Provenance(AdkModel)
 tesserix_adk.memory.Recall :: class Recall(AdkModel)
 tesserix_adk.memory.Resolution :: class Resolution(StrEnum)
 tesserix_adk.memory.SectionOutcome :: class SectionOutcome(AdkModel)
 tesserix_adk.memory.SectionPlan :: class SectionPlan(AdkModel)
+tesserix_adk.memory.SizeCounter :: SizeCounter: TypeAliasType
+tesserix_adk.memory.StructuredCompressor :: class StructuredCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
 tesserix_adk.memory.SummariseSpan :: class SummariseSpan(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
 tesserix_adk.memory.SupersedeMatching :: class SupersedeMatching(object) {resolve(self, existing: 'MemoryRecord', incoming: 'MemoryRecord') -> 'Resolution'}
 tesserix_adk.memory.Supersession :: class Supersession(AdkModel)
+tesserix_adk.memory.TabularCompressor :: class TabularCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
 tesserix_adk.memory.TokenCounter :: TokenCounter: TypeAliasType
 tesserix_adk.memory.Verdict :: class Verdict(StrEnum)
 tesserix_adk.memory.WriteGate :: class WriteGate(object) {admit(self, record: 'MemoryRecord', provenance: 'Provenance', *, tenant: 'str', user: 'str | None' = None) -> 'MemoryRecord'; recall(self, records: 'Iterable[MemoryRecord]', *, guard: 'MemoryGuard | None' = None) -> 'Recall'}
@@ -976,6 +987,7 @@ tesserix_adk.memory.beliefs.Supersession :: class Supersession(AdkModel)
 tesserix_adk.memory.capabilities.MemoryCapabilities :: class MemoryCapabilities(object)
 tesserix_adk.memory.capabilities.MemoryNeeds :: class MemoryNeeds(object)
 tesserix_adk.memory.capabilities.require_memory :: def require_memory(store: 'object', needs: 'MemoryNeeds') -> 'None'
+tesserix_adk.memory.classify :: def classify(content: 'str') -> 'ContentKind'
 tesserix_adk.memory.compaction.CompactionOutcome :: class CompactionOutcome(AdkModel)
 tesserix_adk.memory.compaction.CompactionStrategy :: class CompactionStrategy(Protocol) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'Callable[[Sequence[Message]], int]') -> 'CompactionOutcome'}
 tesserix_adk.memory.compaction.ContextEntry :: class ContextEntry(AdkModel)
@@ -984,6 +996,18 @@ tesserix_adk.memory.compaction.PinAndFold :: class PinAndFold(object) {compact(s
 tesserix_adk.memory.compaction.SummariseSpan :: class SummariseSpan(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
 tesserix_adk.memory.compaction.TokenCounter :: TokenCounter: TypeAliasType
 tesserix_adk.memory.compaction.pinned :: def pinned(message: 'Message') -> 'Message'
+tesserix_adk.memory.compression.CodeCompressor :: class CodeCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
+tesserix_adk.memory.compression.Compressed :: class Compressed(AdkModel)
+tesserix_adk.memory.compression.Compressor :: class Compressor(Protocol) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
+tesserix_adk.memory.compression.ContentKind :: class ContentKind(StrEnum)
+tesserix_adk.memory.compression.ContentRouter :: class ContentRouter(object) {admit(self, content: 'str', *, budget_tokens: 'int', untrusted: 'bool' = False) -> 'Compressed'}
+tesserix_adk.memory.compression.PassThrough :: class PassThrough(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
+tesserix_adk.memory.compression.ProseCompressor :: class ProseCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
+tesserix_adk.memory.compression.SizeCounter :: SizeCounter: TypeAliasType
+tesserix_adk.memory.compression.StructuredCompressor :: class StructuredCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
+tesserix_adk.memory.compression.TabularCompressor :: class TabularCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
+tesserix_adk.memory.compression.classify :: def classify(content: 'str') -> 'ContentKind'
+tesserix_adk.memory.compression.estimate_tokens :: def estimate_tokens(content: 'str') -> 'int'
 tesserix_adk.memory.context.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
 tesserix_adk.memory.context.ContextAssembler :: class ContextAssembler(object) {assemble(self, sections: 'Mapping[str, Sequence[Message]]') -> 'AssembledContext'}
 tesserix_adk.memory.context.ContextPlan :: class ContextPlan(AdkModel)
@@ -995,6 +1019,7 @@ tesserix_adk.memory.erasure.DerivedIndex :: class DerivedIndex(Protocol) {purge(
 tesserix_adk.memory.erasure.ErasureReceipt :: class ErasureReceipt(AdkModel)
 tesserix_adk.memory.erasure.MemoryRedactor :: class MemoryRedactor(Protocol) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.erasure.PatternRedactor :: class PatternRedactor(object) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
+tesserix_adk.memory.estimate_tokens :: def estimate_tokens(content: 'str') -> 'int'
 tesserix_adk.memory.instruction_shaped :: def instruction_shaped(value: 'JsonValue') -> 'str'
 tesserix_adk.memory.pinned :: def pinned(message: 'Message') -> 'Message'
 tesserix_adk.memory.protocol.MemoryStore :: class MemoryStore(Protocol) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'Sequence[Derivation]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'Sequence[MemoryRecord]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
