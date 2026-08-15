@@ -8,6 +8,45 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.20.0
+
+### Added
+
+- **tesserix_adk.cli.prompts**: `adk prompt` answers the two questions a behaviour regression starts with: what changed in
+the prompt, and how to put it back. Both are otherwise a code diff across repositories with
+no view of the rendered result, followed by an emergency deploy — the wrong tools for
+versioned data whose earlier versions already exist.
+
+`diff` shows body, declared variables, metadata and digest between two versions, with a
+headline saying whether the digest moved and whether the change was whitespace only, since
+that is most of the triage. `--values fixture.json` diffs what the model would actually
+receive rather than the raw template, and says so where a version cannot render the fixture
+at all. Long diffs are truncated with a count unless `--full`. `list` and `show` say what
+exists, with digests, aliases, owner and the last recorded eval result.
+
+`rollback --to <version> --by <who>` repoints an alias at an earlier immutable version and
+hands the store `expected` — where the alias pointed when the checks ran — so a store that
+compares before writing turns two operators rolling back at once into one winner and one
+refusal. It fails closed on a target the current call sites cannot render, raising
+`IncompatiblePromptVersionError` naming the dropped variables and repointing nothing, and on
+a target with no recorded eval result unless `--force` carries a `--reason` that is recorded.
+
+`--json` on every command prints one object, so an incident runbook and a CI step read what a
+person reads. Exit codes are `0` done, `1` refused, `2` unreadable command line. Where a
+project keeps prompts and aliases stays the deployment's business: it supplies both, and the
+kit supplies the diffing, the safety checks and the exit codes.
+
+### Public API surface
+
+- Added: `tesserix_adk.cli.Aliases`
+- Added: `tesserix_adk.cli.Prompts`
+- Added: `tesserix_adk.cli.prompts.Aliases`
+- Added: `tesserix_adk.cli.prompts.Prompts`
+- Added: `tesserix_adk.cli.prompts.main`
+- Added: `tesserix_adk.cli.prompts_main`
+- Added: `tesserix_adk.core.IncompatiblePromptVersionError`
+- Added: `tesserix_adk.core.errors.IncompatiblePromptVersionError`
+
 ## 0.19.0
 
 ### Added
