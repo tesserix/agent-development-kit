@@ -159,6 +159,7 @@ code lands here as the kit is built.
 | Dispatch — declared dependencies, derived schedule, cycles refused at construction, contained failure | [`docs/dispatch.md`](docs/dispatch.md) |
 | Escalation ladder — the measured bar for each step from one agent to many, roles that are not services, reasons that need no measurement | [`docs/escalation-ladder.md`](docs/escalation-ladder.md) |
 | Guardrails — declared order, redaction that carries, failing closed on a guard that cannot answer | [`docs/guardrails.md`](docs/guardrails.md) |
+| Prompt injection — trust that follows the origin, an envelope the payload cannot close, the three things untrusted content may never change | [`docs/prompt-injection.md`](docs/prompt-injection.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
 | Tool concurrency — bounded fan-out, per-tool and per-tenant lanes, per-call failure | [`docs/tool-concurrency.md`](docs/tool-concurrency.md) |
 | Connection pooling — client reuse across runs, credential rotation, bounded exhaustion | [`docs/connection-pooling.md`](docs/connection-pooling.md) |

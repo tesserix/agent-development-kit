@@ -1038,6 +1038,56 @@ class GuardrailViolationError(GuardrailError):
         )
 
 
+class InjectionSuspectedError(GuardrailViolationError):
+    """Raised when content the run did not write is shaped like an instruction to it.
+
+    Args:
+        source: Which document, tool, server or peer agent it came from — the thing a
+            person would go and look at. "Untrusted" alone is not actionable.
+        origin: What kind of source that was, as an `Origin` value.
+        codes: The `SignalKind` values that matched, so a caller branches on which pattern
+            rather than on a sentence that will be reworded.
+        span: The matched fragment. Recorded as its length and never as its text: an error
+            that carries the payload puts it in every log that catches it.
+
+    Example:
+        >>> InjectionSuspectedError("x", source="d", origin="retrieval", codes=("override",)).codes
+        ('override',)
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        source: str = "",
+        origin: str = "",
+        codes: tuple[str, ...] = (),
+        span: str = "",
+        guard: str = "injection",
+        run_id: str | None = None,
+        tenant: str | None = None,
+    ) -> None:
+        self.source = source
+        self.origin = origin
+        self.codes = codes
+        super().__init__(
+            *args,
+            code="injection_suspected",
+            stage="input",
+            guard=guard,
+            detail=f"{len(codes)} signal(s) in {origin or 'untrusted'} content",
+            run_id=run_id,
+            tenant=tenant,
+        )
+        self.details.update(
+            {
+                "source": source,
+                "origin": origin,
+                "codes": ",".join(codes),
+                "span_length": str(len(span)),
+            }
+        )
+
+
 class GuardrailEvaluationError(GuardrailError):
     """Raised when a guard could not reach a verdict, which is not consent.
 

@@ -13,7 +13,7 @@ decisions behind these types are in `docs/primitives.md`.
 from __future__ import annotations
 
 import base64
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import (
     Field,
@@ -24,6 +24,10 @@ from pydantic import (
 
 from tesserix_adk.core.cost import Cost, CountSource, weaker_source
 from tesserix_adk.core.models import AdkModel, Sensitive
+from tesserix_adk.core.provenance import TrustLevel, weakest
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 __all__ = [
     "BinaryPart",
@@ -37,6 +41,14 @@ __all__ = [
 ]
 
 Role = Literal["system", "user", "assistant", "tool"]
+
+# A turn's trust follows the role that produced it, and nothing the turn says about itself.
+_TRUST_BY_ROLE: Mapping[Role, TrustLevel] = {
+    "system": TrustLevel.SYSTEM,
+    "user": TrustLevel.CALLER,
+    "assistant": TrustLevel.CALLER,
+    "tool": TrustLevel.UNTRUSTED,
+}
 
 
 class TextPart(AdkModel):
@@ -221,6 +233,10 @@ class Message(AdkModel):
             vendor wants the call beside the result that answers it, and a history of
             results alone is one no vendor accepts and no reader can follow.
         tool_call_id: The `ToolCall.id` this result belongs to.
+        trust: How far the turn may act. Stamped from the role at construction. It may be
+            set lower — an assistant summary of a retrieved page is still that page — but
+            never higher: a tool result relabelled as a system turn is the injection,
+            written in Python.
         metadata: Consumer-owned annotations. The kit reads nothing from it.
     """
 
@@ -228,7 +244,20 @@ class Message(AdkModel):
     content: list[ContentPart] = Field(default_factory=list)
     tool_calls: tuple[ToolCall, ...] = ()
     tool_call_id: str | None = None
+    trust: TrustLevel | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _the_role_decides_the_trust(self) -> Message:
+        stamped = _TRUST_BY_ROLE[self.role]
+        if self.trust is None:
+            object.__setattr__(self, "trust", stamped)
+        elif weakest(self.trust, stamped) is not self.trust:
+            raise ValueError(
+                f"a {self.role} message is at most {stamped.value} content; it cannot carry "
+                f"trust={self.trust.value}"
+            )
+        return self
 
     @model_validator(mode="after")
     def _a_message_says_something(self) -> Message:

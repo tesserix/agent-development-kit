@@ -175,6 +175,7 @@ from tesserix_adk.core.errors import (
     IndeterminateOutcomeError,
     IndeterminateToolCallError,
     InexactAmountError,
+    InjectionSuspectedError,
     InvalidRequestError,
     IrreversibleActionError,
     LeaseLostError,
@@ -275,6 +276,7 @@ from tesserix_adk.core.idempotency import (
     IdempotencyStore,
     idempotency_key,
 )
+from tesserix_adk.core.injection import InjectionSignal, SignalKind, screen
 from tesserix_adk.core.lease import DEFAULT_LEASE, LeasePolicy, LeaseStore, RunLease
 from tesserix_adk.core.ledger import (
     SEPARATOR,
@@ -345,6 +347,14 @@ from tesserix_adk.core.protocols import (
     Tracer,
     members_of,
     verify_conformance,
+)
+from tesserix_adk.core.provenance import (
+    TRUST_BY_ORIGIN,
+    ContentSource,
+    Origin,
+    TrustLevel,
+    sealed,
+    weakest,
 )
 from tesserix_adk.core.provider import (
     ModelRequest,
@@ -475,6 +485,7 @@ __all__ = [
     "SEPARATOR",
     "SMART",
     "STRICT_SUBSET",
+    "TRUST_BY_ORIGIN",
     "VERSION",
     "ActionClass",
     "ActionRegistry",
@@ -556,6 +567,7 @@ __all__ = [
     "Consumed",
     "ContentFilteredError",
     "ContentPart",
+    "ContentSource",
     "ContextBudgetError",
     "ContextWindowExceededError",
     "Cost",
@@ -621,6 +633,8 @@ __all__ = [
     "IndeterminateOutcomeError",
     "IndeterminateToolCallError",
     "InexactAmountError",
+    "InjectionSignal",
+    "InjectionSuspectedError",
     "InlineRefs",
     "InvalidRequestError",
     "IrreversibleActionError",
@@ -663,6 +677,7 @@ __all__ = [
     "NodeOutcome",
     "NodeResult",
     "NonDeterminismError",
+    "Origin",
     "Owner",
     "PartialErasureError",
     "PayloadTooLargeError",
@@ -731,6 +746,7 @@ __all__ = [
     "Sensitive",
     "SessionRecord",
     "Severity",
+    "SignalKind",
     "SpendLedger",
     "StateConflictError",
     "StateDelta",
@@ -787,6 +803,7 @@ __all__ = [
     "Tracer",
     "TrustBoundary",
     "TrustBoundaryError",
+    "TrustLevel",
     "UncitedClaimError",
     "UngroundedCitationError",
     "UnknownTenantError",
@@ -841,7 +858,9 @@ __all__ = [
     "restored",
     "schema_for",
     "schema_hash",
+    "screen",
     "scrub",
+    "sealed",
     "telemetry_dump",
     "tenant_here",
     "tenant_policy",
@@ -849,5 +868,6 @@ __all__ = [
     "validated",
     "verify_conformance",
     "weaker_source",
+    "weakest",
     "wrap_untrusted",
 ]
