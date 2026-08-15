@@ -75,7 +75,15 @@ RULES = (
         code="ADK-W002",
         summary="an id comes from randomness rather than from the run",
         remedy="use DeterministicIds, or take the id from an activity result",
-        calls=("uuid.uuid4", "uuid4", "random.random", "random.choice", "random.randint"),
+        calls=(
+            "uuid.uuid4",
+            "uuid4",
+            "random.random",
+            "random.choice",
+            "random.randint",
+            "random.uniform",
+            "random.gauss",
+        ),
     ),
     ReplayRule(
         code="ADK-W003",

@@ -239,6 +239,8 @@ tesserix_adk.cli.resume_main :: def resume_main(argv: 'Sequence[str]', *, resume
 tesserix_adk.core.ActionClass :: class ActionClass(AdkModel)
 tesserix_adk.core.ActionRegistry :: class ActionRegistry(object) {named(self, action_class: 'str') -> 'ActionClass | None'; of(self, tool: 'str') -> 'ActionClass | None'}
 tesserix_adk.core.ActionRequest :: class ActionRequest(AdkModel)
+tesserix_adk.core.ActivityClass :: class ActivityClass(StrEnum)
+tesserix_adk.core.ActivityPolicy :: class ActivityPolicy(AdkModel) {attempts_for(self, idempotency: 'IdempotencyPolicy | None', *, keyed: 'bool' = False) -> 'int'; backoff(self, seconds: 'float', *, elapsed: 'float') -> 'Backoff'; retryable(self, failure: 'BaseException') -> 'bool'}
 tesserix_adk.core.AdkConfig :: class AdkConfig(AdkModel)
 tesserix_adk.core.AdkDeprecationWarning :: class AdkDeprecationWarning(DeprecationWarning)
 tesserix_adk.core.AdkError :: class AdkError(Exception)
@@ -272,6 +274,7 @@ tesserix_adk.core.AutonomyLadder :: class AutonomyLadder(object) {amount_in(self
 tesserix_adk.core.AutonomyLevel :: class AutonomyLevel(StrEnum)
 tesserix_adk.core.AutonomyOutcome :: class AutonomyOutcome(StrEnum)
 tesserix_adk.core.AutonomyRefusedError :: class AutonomyRefusedError(AdkError)
+tesserix_adk.core.Backoff :: class Backoff(AdkModel)
 tesserix_adk.core.BinaryPart :: class BinaryPart(AdkModel)
 tesserix_adk.core.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
 tesserix_adk.core.BudgetExceededError :: class BudgetExceededError(AdkError)
@@ -321,6 +324,7 @@ tesserix_adk.core.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 
 tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.Credit :: class Credit(AdkModel)
+tesserix_adk.core.DEFAULT_ACTIVITY_POLICIES :: DEFAULT_ACTIVITY_POLICIES: dict
 tesserix_adk.core.DEFAULT_LEASE :: DEFAULT_LEASE: LeasePolicy
 tesserix_adk.core.DEFAULT_SUSPENSION_SECONDS :: DEFAULT_SUSPENSION_SECONDS: float
 tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(AdkModel)
@@ -359,6 +363,7 @@ tesserix_adk.core.GuardrailViolationError :: class GuardrailViolationError(Guard
 tesserix_adk.core.HANDLE_PREFIX :: HANDLE_PREFIX: str
 tesserix_adk.core.HEADER :: HEADER: str
 tesserix_adk.core.HandoffContractError :: class HandoffContractError(AdkError)
+tesserix_adk.core.Heartbeat :: class Heartbeat(AdkModel)
 tesserix_adk.core.HistoryUnavailableError :: class HistoryUnavailableError(AdkError)
 tesserix_adk.core.Hold :: class Hold(AdkModel) {live(self, at: 'float') -> 'bool'}
 tesserix_adk.core.HoldState :: class HoldState(StrEnum)
@@ -424,6 +429,7 @@ tesserix_adk.core.ModelResponse :: class ModelResponse(AdkModel)
 tesserix_adk.core.ModelResponseError :: class ModelResponseError(AdkError)
 tesserix_adk.core.ModelRouter :: class ModelRouter(Protocol) {resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
 tesserix_adk.core.ModelSpec :: class ModelSpec(AdkModel) {with_capabilities(self, **overrides: 'object') -> 'Self'}
+tesserix_adk.core.NEVER_RETRYABLE :: NEVER_RETRYABLE: tuple
 tesserix_adk.core.NoEligibleModelError :: class NoEligibleModelError(ConfigurationError)
 tesserix_adk.core.NoOutput :: class NoOutput(AdkModel)
 tesserix_adk.core.NodeOutcome :: class NodeOutcome(StrEnum)
@@ -580,6 +586,12 @@ tesserix_adk.core.WorkQueue :: class WorkQueue(Protocol) {adopt(self, *, worker:
 tesserix_adk.core.WorkState :: class WorkState(StrEnum)
 tesserix_adk.core.WorkersBusyError :: class WorkersBusyError(AdkError)
 tesserix_adk.core.WriteQueueFullError :: class WriteQueueFullError(AdkError)
+tesserix_adk.core.activities.ActivityClass :: class ActivityClass(StrEnum)
+tesserix_adk.core.activities.ActivityPolicy :: class ActivityPolicy(AdkModel) {attempts_for(self, idempotency: 'IdempotencyPolicy | None', *, keyed: 'bool' = False) -> 'int'; backoff(self, seconds: 'float', *, elapsed: 'float') -> 'Backoff'; retryable(self, failure: 'BaseException') -> 'bool'}
+tesserix_adk.core.activities.Backoff :: class Backoff(AdkModel)
+tesserix_adk.core.activities.DEFAULT_ACTIVITY_POLICIES :: DEFAULT_ACTIVITY_POLICIES: dict
+tesserix_adk.core.activities.Heartbeat :: class Heartbeat(AdkModel)
+tesserix_adk.core.activities.NEVER_RETRYABLE :: NEVER_RETRYABLE: tuple
 tesserix_adk.core.agent.Agent :: class Agent(AdkModel, Generic)
 tesserix_adk.core.agent.ToolFailurePolicy :: class ToolFailurePolicy(StrEnum)
 tesserix_adk.core.arguments_digest :: def arguments_digest(arguments: 'Mapping[str, JsonValue]') -> 'str'
@@ -1583,6 +1595,7 @@ tesserix_adk.rag.retrieval.SearchIndex :: class SearchIndex(Protocol) {search(se
 tesserix_adk.rag.retrieval.WeightedSum :: class WeightedSum(object) {fuse(self, ranked: 'Mapping[Branch, Sequence[Hit]]', k: 'int') -> 'Sequence[Hit]'}
 tesserix_adk.rag.screen :: def screen(text: 'str', *, instructions: 'str' = '') -> 'tuple[InjectionSignal, ...]'
 tesserix_adk.rag.tokens_via :: def tokens_via(provider: 'ModelProvider') -> 'TokenCount'
+tesserix_adk.runtime.ActivityAttempts :: class ActivityAttempts(object) {run(self, call: 'Callable[[int], Awaitable[T]]', *, repeatable: 'bool' = True, idempotency_key: 'str' = '', charge: 'ActivityClass | None' = None) -> 'T'}
 tesserix_adk.runtime.AgentPlanner :: class AgentPlanner(object) {plan(self, task: 'str', *, feedback: 'str' = '') -> 'Plan'}
 tesserix_adk.runtime.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; resume(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; resume_with_decision(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', token: 'str', granted: 'bool', decided_by: 'str', reason: 'str' = '', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None, allow_model_drift: 'bool' = False) -> 'Run[OutputT]'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'RunStream[OutputT]'; stream_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'tuple[ProgressEvent, ...]'}
 tesserix_adk.runtime.Aggregate :: class Aggregate(Generic)
@@ -1594,6 +1607,7 @@ tesserix_adk.runtime.ApprovalDeferred :: class ApprovalDeferred(Exception)
 tesserix_adk.runtime.ApprovalLedger :: class ApprovalLedger(object) {bind(self, record: 'ApprovalRecord') -> 'None'; spend(self, record: 'ApprovalRecord', arguments: 'Mapping[str, Any]') -> 'None'; void(self) -> 'None'}
 tesserix_adk.runtime.ApprovalRequired :: class ApprovalRequired(ProgressEvent)
 tesserix_adk.runtime.Assumptions :: class Assumptions(AdkModel)
+tesserix_adk.runtime.AttemptBudget :: class AttemptBudget(object) {take(self) -> 'bool'}
 tesserix_adk.runtime.AuditTrail :: class AuditTrail(object) {record(self, decided: 'AutonomyDecision | None', decision: 'AuditDecision', *, run_id: 'str', tenant: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key: 'str | None' = None, user: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '', approver: 'str | None' = None, amount: 'Decimal | None' = None, reason: 'str' = '') -> 'AuditEvent'}
 tesserix_adk.runtime.AutonomyGate :: class AutonomyGate(object) {decide(self, *, tool: 'str', tenant: 'str', arguments: 'Mapping[str, Any]', run_id: 'str', user: 'str | None' = None, key: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '') -> 'AutonomyDecision'; record(self, decided: 'AutonomyDecision | None', decision: 'AuditDecision', *, run_id: 'str', tenant: 'str', tool: 'str', arguments: 'Mapping[str, Any]', key: 'str | None' = None, user: 'str | None' = None, agent: 'str' = '', agent_version: 'str' = '', approver: 'str | None' = None, reason: 'str' = '') -> 'None'; settle(self, key: 'str', *, happened: 'bool') -> 'None'; withdrawn(self, decided: 'AutonomyDecision') -> 'Revocation | None'}
 tesserix_adk.runtime.Backpressure :: class Backpressure(object)
@@ -1627,6 +1641,7 @@ tesserix_adk.runtime.HandoffContract :: class HandoffContract(object) {validated
 tesserix_adk.runtime.HandoffDesk :: class HandoffDesk(object) {hand_off(self, to: 'str', *, reason: 'str', state: 'Mapping[str, Any] | BaseModel', task: 'str', history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), after: 'Run[Any] | None' = None) -> 'HandoffResult'}
 tesserix_adk.runtime.HandoffQueue :: class HandoffQueue(Protocol) {receive(self, handoff: 'Handoff') -> 'None'}
 tesserix_adk.runtime.HandoffResult :: class HandoffResult(object)
+tesserix_adk.runtime.Heartbeater :: class Heartbeater(object) {chunk(self, tokens: 'int' = 1) -> 'None'}
 tesserix_adk.runtime.HistoryStore :: class HistoryStore(Protocol) {fetch(self, handle: 'str', *, tenant: 'str') -> 'Sequence[Message] | None'}
 tesserix_adk.runtime.InMemoryHistory :: class InMemoryHistory(object) {observed(self, agent_name: 'str', version: 'str') -> 'Observed | None'; record(self, run: 'Run[OutputT]') -> 'None'}
 tesserix_adk.runtime.InMemoryPlanStore :: class InMemoryPlanStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'PlanRecord | None'; put(self, record: 'PlanRecord') -> 'None'}
@@ -1705,6 +1720,9 @@ tesserix_adk.runtime.TransportGate :: class TransportGate(object) {abandon(self,
 tesserix_adk.runtime.UsageUpdated :: class UsageUpdated(ProgressEvent)
 tesserix_adk.runtime.WorkerPool :: class WorkerPool(object) {call(self, what: 'str', body: 'Callable[[], T]') -> 'T'; close(self) -> 'None'}
 tesserix_adk.runtime.Workers :: class Workers(object)
+tesserix_adk.runtime.activities.ActivityAttempts :: class ActivityAttempts(object) {run(self, call: 'Callable[[int], Awaitable[T]]', *, repeatable: 'bool' = True, idempotency_key: 'str' = '', charge: 'ActivityClass | None' = None) -> 'T'}
+tesserix_adk.runtime.activities.AttemptBudget :: class AttemptBudget(object) {take(self) -> 'bool'}
+tesserix_adk.runtime.activities.Heartbeater :: class Heartbeater(object) {chunk(self, tokens: 'int' = 1) -> 'None'}
 tesserix_adk.runtime.affordable :: def affordable(estimate: 'CostEstimate', limits: 'BudgetLimits') -> 'BudgetDecision'
 tesserix_adk.runtime.approval_for :: def approval_for(estimate: 'CostEstimate', agent: 'Agent[OutputT]', *, run_id: 'str', tenant: 'str', requested_at: 'float' = 0.0) -> 'ApprovalRecord'
 tesserix_adk.runtime.approvals.ApprovalLedger :: class ApprovalLedger(object) {bind(self, record: 'ApprovalRecord') -> 'None'; spend(self, record: 'ApprovalRecord', arguments: 'Mapping[str, Any]') -> 'None'; void(self) -> 'None'}
@@ -2127,7 +2145,9 @@ tesserix_adk.workflows.ToolCallResult :: class ToolCallResult(AdkModel)
 tesserix_adk.workflows.WORKFLOW_MARKER :: WORKFLOW_MARKER: str
 tesserix_adk.workflows.WorkflowClock :: class WorkflowClock(AdkModel) {advanced(self, seconds: 'float') -> 'WorkflowClock'; now(self) -> 'float'}
 tesserix_adk.workflows.WorkflowState :: class WorkflowState(AdkModel)
+tesserix_adk.workflows.activity_policy_for :: def activity_policy_for(activity_class: 'ActivityClass', *, timeout: 'float | None' = None, base: 'ActivityPolicy | None' = None) -> 'ActivityPolicy'
 tesserix_adk.workflows.assert_replays :: def assert_replays(history: 'RecordedHistory', commands: 'Sequence[str]') -> 'None'
+tesserix_adk.workflows.attempts_for_tool :: def attempts_for_tool(tool: 'Tool[Any, Any]', *, keyed: 'bool' = False, base: 'ActivityPolicy | None' = None) -> 'int'
 tesserix_adk.workflows.compensating_activity :: def compensating_activity(forward: 'str', *, irreversible: 'bool' = False) -> 'Callable[[Callable[[Applied], Awaitable[str]]], CompensatingActivity]'
 tesserix_adk.workflows.compensation.CompensatingActivity :: class CompensatingActivity(object) {compensate(self, action: 'Applied') -> 'str'}
 tesserix_adk.workflows.compensation.Compensations :: class Compensations(object) {irreversible(self, tool: 'str') -> 'bool'; of(self, tool: 'str') -> 'CompensatingActivity | None'}
@@ -2156,6 +2176,10 @@ tesserix_adk.workflows.durable.ToolCallResult :: class ToolCallResult(AdkModel)
 tesserix_adk.workflows.durable.WorkflowState :: class WorkflowState(AdkModel)
 tesserix_adk.workflows.guard :: def guard(paths: 'Iterable[Path]') -> 'ReplayReport'
 tesserix_adk.workflows.guard_source :: def guard_source(text: 'str', *, source: 'str' = '') -> 'tuple[ReplayFinding, ...]'
+tesserix_adk.workflows.policies.activity_policy_for :: def activity_policy_for(activity_class: 'ActivityClass', *, timeout: 'float | None' = None, base: 'ActivityPolicy | None' = None) -> 'ActivityPolicy'
+tesserix_adk.workflows.policies.attempts_for_tool :: def attempts_for_tool(tool: 'Tool[Any, Any]', *, keyed: 'bool' = False, base: 'ActivityPolicy | None' = None) -> 'int'
+tesserix_adk.workflows.policies.policy_for_tool :: def policy_for_tool(tool: 'Tool[Any, Any]', *, base: 'ActivityPolicy | None' = None) -> 'ActivityPolicy'
+tesserix_adk.workflows.policy_for_tool :: def policy_for_tool(tool: 'Tool[Any, Any]', *, base: 'ActivityPolicy | None' = None) -> 'ActivityPolicy'
 tesserix_adk.workflows.replay.RULES :: RULES: tuple
 tesserix_adk.workflows.replay.RecordedHistory :: class RecordedHistory(AdkModel)
 tesserix_adk.workflows.replay.ReplayFinding :: class ReplayFinding(AdkModel)

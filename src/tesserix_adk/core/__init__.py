@@ -1,5 +1,13 @@
 """Frozen primitives, protocols and error types. The vocabulary every other layer speaks."""
 
+from tesserix_adk.core.activities import (
+    DEFAULT_ACTIVITY_POLICIES,
+    NEVER_RETRYABLE,
+    ActivityClass,
+    ActivityPolicy,
+    Backoff,
+    Heartbeat,
+)
 from tesserix_adk.core.agent import Agent, ToolFailurePolicy
 from tesserix_adk.core.audit import (
     AuditDecision,
@@ -448,6 +456,7 @@ from tesserix_adk.core.trust import TrustBoundary
 __all__ = [
     "CHEAP",
     "CHECKPOINT_FORMAT",
+    "DEFAULT_ACTIVITY_POLICIES",
     "DEFAULT_LEASE",
     "DEFAULT_SUSPENSION_SECONDS",
     "HANDLE_PREFIX",
@@ -456,6 +465,7 @@ __all__ = [
     "JSON_SCHEMA",
     "MASK",
     "MAX_HEADER_BYTES",
+    "NEVER_RETRYABLE",
     "PAYLOAD_KEY",
     "PROMPT_SUFFIXES",
     "REASONING",
@@ -469,6 +479,8 @@ __all__ = [
     "ActionClass",
     "ActionRegistry",
     "ActionRequest",
+    "ActivityClass",
+    "ActivityPolicy",
     "AdkConfig",
     "AdkDeprecationWarning",
     "AdkError",
@@ -502,6 +514,7 @@ __all__ = [
     "AutonomyLevel",
     "AutonomyOutcome",
     "AutonomyRefusedError",
+    "Backoff",
     "BinaryPart",
     "BudgetDecision",
     "BudgetExceededError",
@@ -583,6 +596,7 @@ __all__ = [
     "GuardrailPipeline",
     "GuardrailViolationError",
     "HandoffContractError",
+    "Heartbeat",
     "HistoryUnavailableError",
     "Hold",
     "HoldState",

@@ -32,6 +32,11 @@ from tesserix_adk.workflows.durable import (
     ToolCallResult,
     WorkflowState,
 )
+from tesserix_adk.workflows.policies import (
+    activity_policy_for,
+    attempts_for_tool,
+    policy_for_tool,
+)
 from tesserix_adk.workflows.replay import (
     RULES,
     WORKFLOW_MARKER,
@@ -72,10 +77,13 @@ __all__ = [
     "ToolCallResult",
     "WorkflowClock",
     "WorkflowState",
+    "activity_policy_for",
     "assert_replays",
+    "attempts_for_tool",
     "compensating_activity",
     "continued",
     "guard",
     "guard_source",
+    "policy_for_tool",
     "stable",
 ]

@@ -146,6 +146,7 @@ code lands here as the kit is built.
 | Checkpointing — frontiers at unambiguous boundaries, resume, calls nobody can decide | [`docs/checkpointing.md`](docs/checkpointing.md) |
 | Resuming a run — one worker at a time behind a fenced lease, durable stores, continue-as-new, `adk run --resume` | [`docs/checkpointing.md`](docs/checkpointing.md#one-worker-at-a-time) |
 | Compensation — pairing a reversal with the work it undoes, unwinding a failed run, what can never come back | [`docs/compensation.md`](docs/compensation.md) |
+| Activity policies — retries and heartbeats per activity class, what is never retried, jitter inside the activity | [`docs/activity-policies.md`](docs/activity-policies.md) |
 | Suspension — stopping for a multi-day decision holding nothing, single-use tokens, what re-checks on resume | [`docs/suspension.md`](docs/suspension.md) |
 | Work queues — leases, reaper, capped attempts, dead letter, per-tenant fairness | [`docs/work-queue.md`](docs/work-queue.md) |
 | State and queue adapters — Redis and PostgreSQL backings, `SKIP LOCKED` claims, one transaction for state and work | [`docs/state-adapters.md`](docs/state-adapters.md) |

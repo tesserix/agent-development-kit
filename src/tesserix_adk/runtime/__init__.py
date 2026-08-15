@@ -1,5 +1,6 @@
 """Run loop, caps, cancellation, timeout, checkpointing, streaming."""
 
+from tesserix_adk.runtime.activities import ActivityAttempts, AttemptBudget, Heartbeater
 from tesserix_adk.runtime.approvals import (
     DEFAULT_APPROVAL_WAIT_SECONDS,
     TIMEOUT_IDENTITY,
@@ -167,6 +168,7 @@ __all__ = [
     "DEFAULT_APPROVAL_WAIT_SECONDS",
     "PROMPT_LAYERS",
     "TIMEOUT_IDENTITY",
+    "ActivityAttempts",
     "AgentPlanner",
     "AgentRunner",
     "Aggregate",
@@ -178,6 +180,7 @@ __all__ = [
     "ApprovalLedger",
     "ApprovalRequired",
     "Assumptions",
+    "AttemptBudget",
     "AuditTrail",
     "AutonomyGate",
     "Backpressure",
@@ -208,6 +211,7 @@ __all__ = [
     "HandoffDesk",
     "HandoffQueue",
     "HandoffResult",
+    "Heartbeater",
     "HistoryStore",
     "InMemoryHistory",
     "InMemoryPlanStore",

@@ -463,3 +463,24 @@ the `Any` lives.
 """
 owner = "@sam123ben"
 review_by = 2027-08-13
+
+[[any]]
+symbol = "tesserix_adk.workflows.policies.policy_for_tool"
+kind = "json"
+reason = """
+Takes `Tool[Any, Any]`: the policy is derived from what the tool declared about its timeout
+and about repeating it, which says nothing about the argument and result types the tool's
+generic parameters carry. Callers hold tools of every shape.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-15
+
+[[any]]
+symbol = "tesserix_adk.workflows.policies.attempts_for_tool"
+kind = "json"
+reason = """
+Takes `Tool[Any, Any]` for the same reason as `policy_for_tool`: how many attempts a tool
+gets follows from its idempotency declaration, not from what it takes or returns.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-15
