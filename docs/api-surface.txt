@@ -340,6 +340,7 @@ tesserix_adk.core.DeadlineConfig :: class DeadlineConfig(AdkModel)
 tesserix_adk.core.DeclaresEmulation :: class DeclaresEmulation(Protocol)
 tesserix_adk.core.DelegationError :: class DelegationError(AdkError)
 tesserix_adk.core.DelegationLimitError :: class DelegationLimitError(LoopLimitError)
+tesserix_adk.core.DenyReason :: class DenyReason(StrEnum)
 tesserix_adk.core.DependencyCycleError :: class DependencyCycleError(ConfigurationError)
 tesserix_adk.core.Deprecation :: class Deprecation(object)
 tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkError)
@@ -577,9 +578,11 @@ tesserix_adk.core.TextPart :: class TextPart(AdkModel)
 tesserix_adk.core.Thresholds :: class Thresholds(AdkModel) {bar_for(self, category: 'ContentCategory') -> 'ContentSeverity'}
 tesserix_adk.core.TokenAttempt :: class TokenAttempt(AdkModel)
 tesserix_adk.core.TokenRedeemer :: class TokenRedeemer(Protocol) {redeem(self, token: 'str', *, tenant: 'str', presented_by: 'str') -> 'SuspendedRun'}
+tesserix_adk.core.ToolAllowlist :: class ToolAllowlist(object) {check(self, name: 'str') -> 'None'; decide(self, name: 'str') -> 'ToolDecision'; narrowed(self, declared: 'Iterable[str]', *, agent: 'str' = '') -> 'Self'; permits(self, name: 'str') -> 'bool'}
 tesserix_adk.core.ToolArgumentValidationError :: class ToolArgumentValidationError(SchemaViolationError) {feedback(self) -> 'str'}
 tesserix_adk.core.ToolCall :: class ToolCall(AdkModel)
 tesserix_adk.core.ToolCallDelta :: class ToolCallDelta(StreamEvent)
+tesserix_adk.core.ToolDecision :: class ToolDecision(AdkModel)
 tesserix_adk.core.ToolDeclaration :: class ToolDeclaration(AdkModel)
 tesserix_adk.core.ToolDefinitionError :: class ToolDefinitionError(ConfigurationError)
 tesserix_adk.core.ToolDisposition :: class ToolDisposition(StrEnum)
@@ -658,6 +661,7 @@ tesserix_adk.core.budget.ScopedLimits :: class ScopedLimits(AdkModel)
 tesserix_adk.core.budget.TenantLedger :: class TenantLedger(Protocol) {consume(self, tenant: 'str', window: 'str', spent: 'Consumed') -> 'Consumed'; total(self, tenant: 'str', window: 'str') -> 'Consumed'}
 tesserix_adk.core.budget.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'; sliced(self, limits: 'BudgetLimits') -> 'UnlimitedBudget'}
 tesserix_adk.core.budget.most_restrictive :: def most_restrictive(*scoped: 'ScopedLimits') -> 'ResolvedBudget'
+tesserix_adk.core.canonical :: def canonical(name: 'str') -> 'str'
 tesserix_adk.core.capabilities.Capability :: class Capability(StrEnum)
 tesserix_adk.core.capabilities.CapabilitySet :: CapabilitySet = typing.Annotated[frozenset[tesserix_adk.core.capabilities.Capability], BeforeValidator(func=<class 'frozenset'>, json_schema_input_type=PydanticUndefined)]
 tesserix_adk.core.capabilities.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
@@ -1096,6 +1100,10 @@ tesserix_adk.core.tenant_config.tenant_policy :: def tenant_policy(policy: 'Tena
 tesserix_adk.core.tenant_here :: def tenant_here() -> 'TenantContext | None'
 tesserix_adk.core.tenant_policy :: def tenant_policy(policy: 'TenantPolicy') -> 'Iterator[TenantPolicy]'
 tesserix_adk.core.tenant_scope :: def tenant_scope(what: 'TenantContext | str', *, user: 'str | None' = None, crossing: 'str | None' = None) -> 'Iterator[TenantContext]'
+tesserix_adk.core.tool_access.DenyReason :: class DenyReason(StrEnum)
+tesserix_adk.core.tool_access.ToolAllowlist :: class ToolAllowlist(object) {check(self, name: 'str') -> 'None'; decide(self, name: 'str') -> 'ToolDecision'; narrowed(self, declared: 'Iterable[str]', *, agent: 'str' = '') -> 'Self'; permits(self, name: 'str') -> 'bool'}
+tesserix_adk.core.tool_access.ToolDecision :: class ToolDecision(AdkModel)
+tesserix_adk.core.tool_access.canonical :: def canonical(name: 'str') -> 'str'
 tesserix_adk.core.trust.AXES :: AXES: tuple
 tesserix_adk.core.trust.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
@@ -1132,6 +1140,8 @@ tesserix_adk.guardrails.InjectionGuard :: class InjectionGuard(Guard) {check_inp
 tesserix_adk.guardrails.PIIGuard :: class PIIGuard(Guard) {apply(self, content: 'str') -> 'Redacted'; check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.guardrails.PolicyGuard :: class PolicyGuard(Guard) {check(self, result: 'BaseModel') -> 'PolicyReport'; correction(self, report: 'PolicyReport') -> 'str'; raise_for(self, result: 'BaseModel', *, attempts: 'int' = 1) -> 'None'}
 tesserix_adk.guardrails.SchemaGuard :: class SchemaGuard(Guard) {check_output(self, content: 'str') -> 'GuardResult'; parse(self, content: 'str') -> 'BaseModel'}
+tesserix_adk.guardrails.ToolAllowlistGuard :: class ToolAllowlistGuard(object) {check(self, name: 'str') -> 'None'; decide(self, name: 'str') -> 'ToolDecision'; delegating(self, declared: 'Iterable[str]', *, agent: 'str' = '') -> 'Self'; permitted(self, names: 'Iterable[str]') -> 'tuple[str, ...]'}
+tesserix_adk.guardrails.allowlist.ToolAllowlistGuard :: class ToolAllowlistGuard(object) {check(self, name: 'str') -> 'None'; decide(self, name: 'str') -> 'ToolDecision'; delegating(self, declared: 'Iterable[str]', *, agent: 'str' = '') -> 'Self'; permitted(self, names: 'Iterable[str]') -> 'tuple[str, ...]'}
 tesserix_adk.guardrails.base.Guard :: class Guard(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.guardrails.content_filter.ContentFilterGuard :: class ContentFilterGuard(Guard) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'; classify(self, content: 'str') -> 'Classification'; raise_for(self, content: 'str', *, stage: 'str' = 'input') -> 'None'}
 tesserix_adk.guardrails.content_filter.refusal_of :: def refusal_of(categories: 'tuple[str, ...]', *, severity: 'str' = 'high', classifier: 'str' = 'provider', stage: 'str' = 'output') -> 'ContentBlockedError'

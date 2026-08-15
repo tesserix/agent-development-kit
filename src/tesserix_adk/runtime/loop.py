@@ -55,6 +55,7 @@ from tesserix_adk.core import (
     CountSource,
     DeadlineConfig,
     DeclaresEmulation,
+    DenyReason,
     FallbackChain,
     FallbackExhaustedError,
     FallbackUnsafeError,
@@ -102,6 +103,7 @@ from tesserix_adk.core import (
     TaskClass,
     TextPart,
     TokenRedeemer,
+    ToolAllowlist,
     ToolArgumentValidationError,
     ToolCall,
     ToolError,
@@ -1583,12 +1585,23 @@ class AgentRunner:
             )
         return _Terminal(run, RunState.CANCELLED, abort.reason)
 
+    def _allowlist_for(self, agent: Agent[Any]) -> ToolAllowlist:
+        """What this run may actually call, narrowed by the tenant bound for it.
+
+        Resolved per dispatch from the policy in force, so a tenant whose plan excludes a
+        tool the agent declares does not reach it by way of the agent's own declaration.
+        """
+        policy = policy_here()
+        tenant = policy.limits.tools if policy is not None else None
+        return ToolAllowlist.resolve(agent.tools, tenant=tenant, agent=agent.name)
+
     def _declarations_for(self, agent: Agent[Any]) -> tuple[ToolDeclaration, ...]:
         """Only the allowlist is declared: a tool never named cannot be called for."""
         if self._tools is None or not agent.tools:
             return ()
+        allowlist = self._allowlist_for(agent)
         declared: Iterable[ToolDeclaration] = self._tools.declarations()
-        return tuple(tool for tool in declared if tool.name in agent.tools)
+        return tuple(tool for tool in declared if allowlist.permits(tool.name))
 
     def _event(
         self,
@@ -2085,14 +2098,18 @@ class AgentRunner:
             )
         )
         refused: dict[str, ToolRefusal] = {}
+        allowlist = self._allowlist_for(agent)
         for call in calls:
-            if call.name not in agent.tools:
+            permission = allowlist.decide(call.name)
+            if not permission.permitted:
+                cut = permission.reason
+                blamed = "" if cut is DenyReason.NOT_DECLARED else f" ({cut})"
                 self._emit(
                     ToolCallFailed(
                         call_id=call.id,
                         tool=call.name,
                         error="ToolRefused",
-                        detail="not on the agent's allowlist",
+                        detail="not on the agent's allowlist" + blamed,
                     )
                 )
                 raise _Terminal(

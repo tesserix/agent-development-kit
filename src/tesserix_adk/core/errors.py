@@ -957,17 +957,27 @@ class ToolNotPermittedError(AdkError):
         tool: What was asked for.
         agent: Whose allowlist refused it.
         permitted: What that agent may call, which is what the model can be told.
+        reason: Which layer refused, where more than one had a say. An operator fixes the
+            setting they own rather than the one below it.
     """
 
-    def __init__(self, tool: str, *, agent: str = "", permitted: Sequence[str] = ()) -> None:
+    def __init__(
+        self,
+        tool: str,
+        *,
+        agent: str = "",
+        permitted: Sequence[str] = (),
+        reason: str = "",
+    ) -> None:
         self.tool = tool
         self.agent = agent
         self.permitted = tuple(permitted)
+        self.reason = reason
         whose = f"{agent}'s" if agent else "this agent's"
         super().__init__(
             f"{tool!r} is not in {whose} allowlist, so it was not called"
             + (f". It may call {', '.join(self.permitted)}" if self.permitted else ""),
-            details={"tool": tool, "agent": agent},
+            details={"tool": tool, "agent": agent} | ({"reason": reason} if reason else {}),
         )
 
 

@@ -493,6 +493,7 @@ from tesserix_adk.core.tenant_config import (
     resolve_tenant_policy,
     tenant_policy,
 )
+from tesserix_adk.core.tool_access import DenyReason, ToolAllowlist, ToolDecision, canonical
 from tesserix_adk.core.trust import TrustBoundary
 
 __all__ = [
@@ -618,6 +619,7 @@ __all__ = [
     "DeclaresEmulation",
     "DelegationError",
     "DelegationLimitError",
+    "DenyReason",
     "DependencyCycleError",
     "Deprecation",
     "DeprecationPolicyError",
@@ -838,9 +840,11 @@ __all__ = [
     "Thresholds",
     "TokenAttempt",
     "TokenRedeemer",
+    "ToolAllowlist",
     "ToolArgumentValidationError",
     "ToolCall",
     "ToolCallDelta",
+    "ToolDecision",
     "ToolDeclaration",
     "ToolDefinitionError",
     "ToolDisposition",
@@ -878,6 +882,7 @@ __all__ = [
     "arguments_digest",
     "arriving",
     "bound",
+    "canonical",
     "carried",
     "claim_handle",
     "current_policy",
