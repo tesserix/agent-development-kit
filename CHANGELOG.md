@@ -8,6 +8,51 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.39.0
+
+### Added
+
+- **added**: `tesserix_adk.testing.isolation` proves a run leaks nothing across tenants rather than
+assuming it. `IsolationScenario.confusable()` seeds two tenants with deliberately
+similar data — shared document titles, colliding profile keys, an identical cache input
+— each carrying a sentinel that survives summarising and tokenising. `assert_no_leak`
+scans every surface a leak could show on and fails naming the surface, the marker and
+its owner; a surface neither inspected nor declared `absent` is a failure too, because a
+suite reporting green over data nobody read is worse than no suite. `interleaved` drives
+both tenants a step at a time in a fixed order, so a context-bleed defect fails every
+run instead of occasionally.
+
+### Public API surface
+
+- Added: `tesserix_adk.testing.CONFUSABLE_FIXTURES`
+- Added: `tesserix_adk.testing.DEFAULT_TENANTS`
+- Added: `tesserix_adk.testing.IsolationScenario`
+- Added: `tesserix_adk.testing.Leak`
+- Added: `tesserix_adk.testing.LeakReport`
+- Added: `tesserix_adk.testing.Observed`
+- Added: `tesserix_adk.testing.SENTINEL_KINDS`
+- Added: `tesserix_adk.testing.SeededDocument`
+- Added: `tesserix_adk.testing.Step`
+- Added: `tesserix_adk.testing.Surface`
+- Added: `tesserix_adk.testing.TenantFixture`
+- Added: `tesserix_adk.testing.assert_no_leak`
+- Added: `tesserix_adk.testing.interleaved`
+- Added: `tesserix_adk.testing.isolation.CONFUSABLE_FIXTURES`
+- Added: `tesserix_adk.testing.isolation.DEFAULT_TENANTS`
+- Added: `tesserix_adk.testing.isolation.IsolationScenario`
+- Added: `tesserix_adk.testing.isolation.Leak`
+- Added: `tesserix_adk.testing.isolation.LeakReport`
+- Added: `tesserix_adk.testing.isolation.Observed`
+- Added: `tesserix_adk.testing.isolation.SENTINEL_KINDS`
+- Added: `tesserix_adk.testing.isolation.SeededDocument`
+- Added: `tesserix_adk.testing.isolation.Step`
+- Added: `tesserix_adk.testing.isolation.Surface`
+- Added: `tesserix_adk.testing.isolation.TenantFixture`
+- Added: `tesserix_adk.testing.isolation.assert_no_leak`
+- Added: `tesserix_adk.testing.isolation.interleaved`
+- Added: `tesserix_adk.testing.isolation.sentinel_for`
+- Added: `tesserix_adk.testing.sentinel_for`
+
 ## 0.38.0
 
 ### Added
