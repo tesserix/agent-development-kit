@@ -1,4 +1,22 @@
 tesserix_adk.__version__ :: __version__: str
+tesserix_adk.a2a.AgentCard :: class AgentCard(AdkModel)
+tesserix_adk.a2a.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
+tesserix_adk.a2a.DelegationChain :: class DelegationChain(AdkModel) {describe(self) -> 'str'; encoded(self) -> 'str'; extended(self, hop: 'DelegationHop') -> 'Self'}
+tesserix_adk.a2a.DelegationClaims :: class DelegationClaims(AdkModel) {attributes(self) -> 'dict[str, str]'; expired(self, now: 'float') -> 'bool'; meta(self) -> 'dict[str, str]'}
+tesserix_adk.a2a.DelegationHop :: class DelegationHop(AdkModel) {describe(self) -> 'str'}
+tesserix_adk.a2a.MAX_CHAIN_DEPTH :: MAX_CHAIN_DEPTH: int
+tesserix_adk.a2a.PeerDelegation :: class PeerDelegation(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
+tesserix_adk.a2a.PeerDelegator :: class PeerDelegator(object) {delegate(self, *, identity: 'AgentIdentity', peer: 'AgentCard', needs: 'Iterable[str]', run_id: 'str', chain: 'DelegationChain | None' = None, agent_version: 'str' = '1.0.0') -> 'PeerDelegation'}
+tesserix_adk.a2a.PeerVerifier :: class PeerVerifier(object) {accept(self, claims: 'DelegationClaims') -> 'AgentIdentity'}
+tesserix_adk.a2a.delegation.AgentCard :: class AgentCard(AdkModel)
+tesserix_adk.a2a.delegation.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
+tesserix_adk.a2a.delegation.DelegationChain :: class DelegationChain(AdkModel) {describe(self) -> 'str'; encoded(self) -> 'str'; extended(self, hop: 'DelegationHop') -> 'Self'}
+tesserix_adk.a2a.delegation.DelegationClaims :: class DelegationClaims(AdkModel) {attributes(self) -> 'dict[str, str]'; expired(self, now: 'float') -> 'bool'; meta(self) -> 'dict[str, str]'}
+tesserix_adk.a2a.delegation.DelegationHop :: class DelegationHop(AdkModel) {describe(self) -> 'str'}
+tesserix_adk.a2a.delegation.MAX_CHAIN_DEPTH :: MAX_CHAIN_DEPTH: int
+tesserix_adk.a2a.delegation.PeerDelegation :: class PeerDelegation(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
+tesserix_adk.a2a.delegation.PeerDelegator :: class PeerDelegator(object) {delegate(self, *, identity: 'AgentIdentity', peer: 'AgentCard', needs: 'Iterable[str]', run_id: 'str', chain: 'DelegationChain | None' = None, agent_version: 'str' = '1.0.0') -> 'PeerDelegation'}
+tesserix_adk.a2a.delegation.PeerVerifier :: class PeerVerifier(object) {accept(self, claims: 'DelegationClaims') -> 'AgentIdentity'}
 tesserix_adk.adapters.AUDIT_SCHEMA_VERSION :: AUDIT_SCHEMA_VERSION: int
 tesserix_adk.adapters.ApprovalInbox :: class ApprovalInbox(object) {decide(self, decision: 'ApprovalDecision', *, tenant: 'str') -> 'None'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'; wait_for(self, record_id: 'str') -> 'None'}
 tesserix_adk.adapters.AuditTables :: class AuditTables(object)
@@ -291,6 +309,7 @@ tesserix_adk.core.CHEAP :: CHEAP: TaskClass
 tesserix_adk.core.CHECKPOINT_FORMAT :: CHECKPOINT_FORMAT: int
 tesserix_adk.core.CachingSecrets :: class CachingSecrets(object) {invalidate(self, ref: 'SecretRef') -> 'None'; invalidate_all(self) -> 'None'; resolve(self, ref: 'SecretRef') -> 'SecretStr'}
 tesserix_adk.core.CachingTenantConfig :: class CachingTenantConfig(object) {config_for(self, tenant: 'str') -> 'TenantConfig'; invalidate(self, tenant: 'str') -> 'None'}
+tesserix_adk.core.CallCredential :: class CallCredential(Protocol) {headers(self) -> 'dict[str, str]'}
 tesserix_adk.core.CancelledError :: class CancelledError(AdkError)
 tesserix_adk.core.Capability :: class Capability(StrEnum)
 tesserix_adk.core.CapabilityError :: class CapabilityError(AdkError)
@@ -337,6 +356,7 @@ tesserix_adk.core.Cost :: class Cost(AdkModel) {quantised(self, places: 'int' = 
 tesserix_adk.core.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.CredentialError :: class CredentialError(AdkError)
+tesserix_adk.core.CredentialSource :: class CredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'CallCredential'}
 tesserix_adk.core.Credit :: class Credit(AdkModel)
 tesserix_adk.core.DEFAULT_ACTIVITY_POLICIES :: DEFAULT_ACTIVITY_POLICIES: dict
 tesserix_adk.core.DEFAULT_DETECTORS :: DEFAULT_DETECTORS: tuple
@@ -740,6 +760,8 @@ tesserix_adk.core.cost.Cost :: class Cost(AdkModel) {quantised(self, places: 'in
 tesserix_adk.core.cost.CostConfidence :: class CostConfidence(StrEnum)
 tesserix_adk.core.cost.CountSource :: class CountSource(StrEnum)
 tesserix_adk.core.cost.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
+tesserix_adk.core.credentials.CallCredential :: class CallCredential(Protocol) {headers(self) -> 'dict[str, str]'}
+tesserix_adk.core.credentials.CredentialSource :: class CredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'CallCredential'}
 tesserix_adk.core.current_policy :: def current_policy(*, where: 'str' = 'current_policy') -> 'TenantPolicy'
 tesserix_adk.core.current_principal :: def current_principal(*, where: 'str' = 'current_principal') -> 'Principal'
 tesserix_adk.core.current_tenant :: def current_tenant(*, where: 'str' = 'current_tenant') -> 'TenantContext'

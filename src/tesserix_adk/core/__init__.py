@@ -117,6 +117,7 @@ from tesserix_adk.core.content_policy import (
     Thresholds,
 )
 from tesserix_adk.core.cost import Cost, CostConfidence, CountSource, weaker_source
+from tesserix_adk.core.credentials import CallCredential, CredentialSource
 from tesserix_adk.core.definition import AgentDefinition, Owner
 from tesserix_adk.core.deprecation import (
     AdkDeprecationWarning,
@@ -596,6 +597,7 @@ __all__ = [
     "BudgetUnavailableError",
     "CachingSecrets",
     "CachingTenantConfig",
+    "CallCredential",
     "CancelledError",
     "Capability",
     "CapabilityError",
@@ -642,6 +644,7 @@ __all__ = [
     "CostConfidence",
     "CountSource",
     "CredentialError",
+    "CredentialSource",
     "Credit",
     "DeadlineConfig",
     "DeclaresEmulation",

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping  # noqa: TC003 — pydantic needs the runtime types
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from pydantic import Field, field_validator
 
@@ -17,13 +16,12 @@ from tesserix_adk.core import (
     AdkModel,
     AgentIdentity,
     AuthorisationError,
+    CallCredential,
+    CredentialSource,
     McpAuthError,
     McpAuthReason,
     ScopeSet,
 )
-
-if TYPE_CHECKING:
-    from pydantic import SecretStr
 
 __all__ = [
     "META_PREFIX",
@@ -38,38 +36,6 @@ __all__ = [
 
 META_PREFIX = "tesserix/adk"
 """The `_meta` namespace the kit's request metadata travels under."""
-
-
-@runtime_checkable
-class CallCredential(Protocol):
-    """The part of a minted credential this package uses."""
-
-    @property
-    def token(self) -> SecretStr:
-        """The secret itself, which only `headers` may render."""
-
-    @property
-    def scopes(self) -> frozenset[str]:
-        """What was granted, which may be less than was asked for."""
-
-    def headers(self) -> dict[str, str]:
-        """The request headers carrying the credential and its attribution."""
-
-
-@runtime_checkable
-class CredentialSource(Protocol):
-    """Whatever mints per-call credentials — `tesserix_adk.tools.CredentialBroker` does."""
-
-    async def for_tool(
-        self,
-        *,
-        identity: AgentIdentity,
-        audience: str,
-        needs: Iterable[str],
-        run_id: str,
-        agent_version: str = ...,
-    ) -> CallCredential:
-        """Mint one credential for one caller, one audience and one set of scopes."""
 
 
 class McpServerAuth(AdkModel):
