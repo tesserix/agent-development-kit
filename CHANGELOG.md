@@ -8,6 +8,47 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.18.0
+
+### Added
+
+- **tesserix_adk.core.rendering**: `tesserix_adk.core` now renders prompts from declared, typed variables. String formatting
+fails open: a missing key becomes an empty string, so the model answers with a hole in its
+instructions that nothing in the transcript points at, and retrieved text interpolated into a
+system message arrives through the same channel as the operator's own wording.
+
+`PromptTemplate` declares a `Variable` per slot. The body and the declarations must agree
+exactly in both directions, so a rename that missed one side fails at construction rather
+than in production. At render time `TemplateError` covers a value that is missing,
+undeclared, `None` or not the declared kind, each with a `reason` a caller can branch on and
+no quoting of the value. `None` is never a value; an optional variable renders a default it
+had to declare, which is what leaves the empty substitution nowhere to come from. Rendering
+is byte-deterministic, and booleans render as `true`/`false` rather than `str(True)`.
+
+A variable marked `untrusted` is wrapped in the same `<untrusted-data>` envelope tool results
+use, under a preamble saying the blocks are data, with the closing delimiter escaped so a
+value cannot close its own block early. A trusted value carrying that marker is refused, and
+a template whose role is `system` may not declare an untrusted variable at all.
+
+`Rendered.text` is what the provider receives, `Rendered.masked` is the same text with
+sensitive values hidden for a log, and `Rendered.attributes()` carries a name, a digest and
+two counts — never a value. Passing `window_tokens` refuses a render that would overrun the
+model's window before the call is made. `wrap_untrusted` moves to `tesserix_adk.core` and is
+still exported from `tesserix_adk.runtime`, so both layers share one envelope.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.PromptTemplate`
+- Added: `tesserix_adk.core.Rendered`
+- Added: `tesserix_adk.core.TemplateError`
+- Added: `tesserix_adk.core.Variable`
+- Added: `tesserix_adk.core.errors.TemplateError`
+- Added: `tesserix_adk.core.rendering.PromptTemplate`
+- Added: `tesserix_adk.core.rendering.Rendered`
+- Added: `tesserix_adk.core.rendering.Variable`
+- Added: `tesserix_adk.core.rendering.wrap_untrusted`
+- Added: `tesserix_adk.core.wrap_untrusted`
+
 ## 0.17.0
 
 ### Added
