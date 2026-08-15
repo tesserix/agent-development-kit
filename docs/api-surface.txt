@@ -429,6 +429,8 @@ tesserix_adk.core.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.MASK :: MASK: str
 tesserix_adk.core.MAX_HEADER_BYTES :: MAX_HEADER_BYTES: int
 tesserix_adk.core.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
+tesserix_adk.core.McpAuthError :: class McpAuthError(CredentialError)
+tesserix_adk.core.McpAuthReason :: class McpAuthReason(StrEnum)
 tesserix_adk.core.MediaIntakeError :: class MediaIntakeError(AdkError)
 tesserix_adk.core.MemoryAdmissionError :: class MemoryAdmissionError(AdkError)
 tesserix_adk.core.MemoryConflictError :: class MemoryConflictError(AdkError)
@@ -815,6 +817,8 @@ tesserix_adk.core.errors.IrreversibleActionError :: class IrreversibleActionErro
 tesserix_adk.core.errors.LeaseLostError :: class LeaseLostError(AdkError)
 tesserix_adk.core.errors.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
+tesserix_adk.core.errors.McpAuthError :: class McpAuthError(CredentialError)
+tesserix_adk.core.errors.McpAuthReason :: class McpAuthReason(StrEnum)
 tesserix_adk.core.errors.MediaIntakeError :: class MediaIntakeError(AdkError)
 tesserix_adk.core.errors.MemoryConflictError :: class MemoryConflictError(AdkError)
 tesserix_adk.core.errors.MemoryContradictionError :: class MemoryContradictionError(AdkError)
@@ -1185,6 +1189,22 @@ tesserix_adk.guardrails.output.validated :: def validated(content: 'str', *, sch
 tesserix_adk.guardrails.pii.PIIGuard :: class PIIGuard(Guard) {apply(self, content: 'str') -> 'Redacted'; check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.guardrails.refusal_of :: def refusal_of(categories: 'tuple[str, ...]', *, severity: 'str' = 'high', classifier: 'str' = 'provider', stage: 'str' = 'output') -> 'ContentBlockedError'
 tesserix_adk.guardrails.validated :: def validated(content: 'str', *, schema: 'SchemaGuard', policy: 'PolicyGuard | None' = None, reask: 'Reask | None' = None, attempts: 'int' = 1) -> 'BaseModel'
+tesserix_adk.mcp.AuthorisedCall :: class AuthorisedCall(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
+tesserix_adk.mcp.CallCredential :: class CallCredential(Protocol) {headers(self) -> 'dict[str, str]'}
+tesserix_adk.mcp.CredentialSource :: class CredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'CallCredential'}
+tesserix_adk.mcp.META_PREFIX :: META_PREFIX: str
+tesserix_adk.mcp.McpAuthorizer :: class McpAuthorizer(object) {authorise(self, *, server: 'str', identity: 'AgentIdentity', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = '1.0.0', strict: 'bool' = False) -> 'AuthorisedCall'; declared(self, server: 'str') -> 'McpServerAuth'; narrowed_for(self, *, server: 'str', identity: 'AgentIdentity', requested: 'Iterable[str]') -> 'frozenset[str]'}
+tesserix_adk.mcp.McpServerAuth :: class McpServerAuth(AdkModel)
+tesserix_adk.mcp.ServerSessions :: class ServerSessions(object) {lease(self, *, server: 'str', identity: 'AgentIdentity') -> 'SessionLease'}
+tesserix_adk.mcp.SessionLease :: class SessionLease(object) {check(self, identity: 'AgentIdentity') -> 'None'}
+tesserix_adk.mcp.auth.AuthorisedCall :: class AuthorisedCall(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
+tesserix_adk.mcp.auth.CallCredential :: class CallCredential(Protocol) {headers(self) -> 'dict[str, str]'}
+tesserix_adk.mcp.auth.CredentialSource :: class CredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'CallCredential'}
+tesserix_adk.mcp.auth.META_PREFIX :: META_PREFIX: str
+tesserix_adk.mcp.auth.McpAuthorizer :: class McpAuthorizer(object) {authorise(self, *, server: 'str', identity: 'AgentIdentity', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = '1.0.0', strict: 'bool' = False) -> 'AuthorisedCall'; declared(self, server: 'str') -> 'McpServerAuth'; narrowed_for(self, *, server: 'str', identity: 'AgentIdentity', requested: 'Iterable[str]') -> 'frozenset[str]'}
+tesserix_adk.mcp.auth.McpServerAuth :: class McpServerAuth(AdkModel)
+tesserix_adk.mcp.auth.ServerSessions :: class ServerSessions(object) {lease(self, *, server: 'str', identity: 'AgentIdentity') -> 'SessionLease'}
+tesserix_adk.mcp.auth.SessionLease :: class SessionLease(object) {check(self, identity: 'AgentIdentity') -> 'None'}
 tesserix_adk.memory.Admission :: class Admission(AdkModel)
 tesserix_adk.memory.AdmissionPolicy :: class AdmissionPolicy(AdkModel) {decide(self, record: 'MemoryRecord', provenance: 'Provenance', *, at: 'float | None' = None) -> 'Admission'}
 tesserix_adk.memory.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}

@@ -7,7 +7,8 @@ kit's failures without catching `Exception` and swallowing its own bugs alongsid
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Self
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -70,6 +71,8 @@ __all__ = [
     "LeaseLostError",
     "LoopLimitError",
     "MaxIterationsError",
+    "McpAuthError",
+    "McpAuthReason",
     "MediaIntakeError",
     "MemoryConflictError",
     "MemoryContradictionError",
@@ -2483,6 +2486,73 @@ class CredentialError(AdkError):
         self.scopes = scopes
         stated = {"audience": audience, "scopes": ", ".join(scopes)}
         super().__init__(*args, details={key: value for key, value in stated.items() if value})
+
+
+class McpAuthReason(StrEnum):
+    """Why an MCP server refused a call, kept apart because the three need different fixes."""
+
+    UNAUTHENTICATED = "unauthenticated"
+    INSUFFICIENT_SCOPE = "insufficient_scope"
+    EXPIRED = "expired"
+
+
+class McpAuthError(CredentialError):
+    """Raised when an MCP server refused the credential a call presented.
+
+    Separate from `AuthorisationError`, which is the kit refusing before the call: this is
+    the far side refusing, and only one of the two is fixed by re-minting.
+
+    Args:
+        reason: Which refusal it was, so a caller can retry an expiry and only an expiry.
+        server: Which configured server refused.
+        scopes: What the call presented or needed, where the server said.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        reason: McpAuthReason = McpAuthReason.UNAUTHENTICATED,
+        server: str = "",
+        scopes: tuple[str, ...] = (),
+    ) -> None:
+        self.reason = reason
+        self.server = server
+        super().__init__(*args, audience=server, scopes=scopes)
+        self.details.update({"reason": str(reason), "server": server})
+
+    @classmethod
+    def from_status(
+        cls, status: int, *, server: str, scopes: tuple[str, ...] = (), description: str = ""
+    ) -> Self:
+        """The typed refusal for an HTTP status and the server's own description.
+
+        Args:
+            status: What the server answered with.
+            server: Which configured server it was.
+            scopes: What the call needed.
+            description: The server's `error_description`, which is the only place an
+                expiry is distinguishable from a credential that was never valid.
+
+        Returns:
+            The error, unraised, for the caller to raise where the call site is in scope.
+
+        Example:
+            >>> McpAuthError.from_status(403, server="bookings").reason
+            <McpAuthReason.INSUFFICIENT_SCOPE: 'insufficient_scope'>
+        """
+        if "expired" in description.lower():
+            reason = McpAuthReason.EXPIRED
+        elif status == 403:
+            reason = McpAuthReason.INSUFFICIENT_SCOPE
+        else:
+            reason = McpAuthReason.UNAUTHENTICATED
+        needed = f" needing {', '.join(scopes)}" if scopes else ""
+        return cls(
+            f"{server or 'the mcp server'} refused the call{needed}: {reason}",
+            reason=reason,
+            server=server,
+            scopes=scopes,
+        )
 
 
 class SecretResolutionError(AdkError):
