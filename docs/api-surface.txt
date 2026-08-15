@@ -302,6 +302,7 @@ tesserix_adk.core.DispatchResult :: class DispatchResult(Generic) {value(self, n
 tesserix_adk.core.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
 tesserix_adk.core.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
+tesserix_adk.core.EvalIncompleteError :: class EvalIncompleteError(AdkError)
 tesserix_adk.core.EventLoopStalledError :: class EventLoopStalledError(AdkError)
 tesserix_adk.core.ExtractionError :: class ExtractionError(AdkError)
 tesserix_adk.core.FallbackChain :: class FallbackChain(AdkModel) {after(self, ref: 'str', *, failed: 'Collection[str]' = ()) -> 'str | None'; refuse_the_excluded(self) -> 'None'}
@@ -343,6 +344,7 @@ tesserix_adk.core.IdempotencyStore :: class IdempotencyStore(Protocol) {abandon(
 tesserix_adk.core.InFlightPolicy :: class InFlightPolicy(StrEnum)
 tesserix_adk.core.InMemoryCeilingLedger :: class InMemoryCeilingLedger(object) {commit(self, idempotency_key: 'str') -> 'Hold | None'; committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'; credit(self, *, tenant: 'str', action_class: 'str', currency: 'str', amount: 'Decimal', authorised_by: 'str', reason: 'str' = '') -> 'Credit'; credits(self) -> 'Sequence[Credit]'; reap(self) -> 'int'; release(self, idempotency_key: 'str') -> 'None'; reserve(self, *, tenant: 'str', action_class: 'str', ceiling: 'Ceiling', amount: 'Decimal', idempotency_key: 'str') -> 'Hold'}
 tesserix_adk.core.InMemoryGrants :: class InMemoryGrants(object) {all_grants(self) -> 'Sequence[AutonomyGrant]'; grants_for(self, *, tenant: 'str', action_class: 'str') -> 'Sequence[AutonomyGrant]'; issue(self, grant: 'AutonomyGrant') -> 'AutonomyGrant'; revoke(self, revocation: 'Revocation') -> 'Revocation'}
+tesserix_adk.core.IncomparableEvalError :: class IncomparableEvalError(AdkError)
 tesserix_adk.core.IncompatiblePromptVersionError :: class IncompatiblePromptVersionError(ConfigurationError)
 tesserix_adk.core.IndeterminateOutcomeError :: class IndeterminateOutcomeError(AdkError)
 tesserix_adk.core.IndeterminateToolCallError :: class IndeterminateToolCallError(AdkError)
@@ -670,6 +672,7 @@ tesserix_adk.core.errors.DependencyCycleError :: class DependencyCycleError(Conf
 tesserix_adk.core.errors.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.errors.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
 tesserix_adk.core.errors.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
+tesserix_adk.core.errors.EvalIncompleteError :: class EvalIncompleteError(AdkError)
 tesserix_adk.core.errors.EventLoopStalledError :: class EventLoopStalledError(AdkError)
 tesserix_adk.core.errors.ExtractionError :: class ExtractionError(AdkError)
 tesserix_adk.core.errors.FallbackExhaustedError :: class FallbackExhaustedError(ProviderError)
@@ -683,6 +686,7 @@ tesserix_adk.core.errors.HandoffContractError :: class HandoffContractError(AdkE
 tesserix_adk.core.errors.HookEvaluationError :: class HookEvaluationError(AdkError)
 tesserix_adk.core.errors.HookRefusedError :: class HookRefusedError(AdkError)
 tesserix_adk.core.errors.HookRegistrationError :: class HookRegistrationError(ConfigurationError)
+tesserix_adk.core.errors.IncomparableEvalError :: class IncomparableEvalError(AdkError)
 tesserix_adk.core.errors.IncompatiblePromptVersionError :: class IncompatiblePromptVersionError(ConfigurationError)
 tesserix_adk.core.errors.IndeterminateToolCallError :: class IndeterminateToolCallError(AdkError)
 tesserix_adk.core.errors.InexactAmountError :: class InexactAmountError(AdkError)
@@ -956,6 +960,24 @@ tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'obj
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
 tesserix_adk.core.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
+tesserix_adk.evals.Bypass :: class Bypass(AdkModel)
+tesserix_adk.evals.DEFAULT_POLICY :: DEFAULT_POLICY: GatePolicy
+tesserix_adk.evals.GatePolicy :: class GatePolicy(AdkModel)
+tesserix_adk.evals.GateReport :: class GateReport(AdkModel) {attributes(self) -> 'dict[str, str]'; permits(self, digest: 'str') -> 'bool'; summary(self) -> 'str'}
+tesserix_adk.evals.Measured :: class Measured(AdkModel)
+tesserix_adk.evals.MetricMove :: class MetricMove(AdkModel)
+tesserix_adk.evals.Tolerance :: class Tolerance(AdkModel) {regression(self, before: 'float', after: 'float') -> 'float'}
+tesserix_adk.evals.Verdict :: Verdict = typing.Literal['pass', 'fail', 'repeat']
+tesserix_adk.evals.gate :: def gate(baseline: 'Measured', candidate: 'Measured', *, policy: 'GatePolicy' = GatePolicy(tolerances=(Tolerance(metric='task_success', direction='higher_is_better', tolerance=0.01, noise=0.0), Tolerance(metric='schema_validity', direction='higher_is_better', tolerance=0.0, noise=0.0), Tolerance(metric='judge_score', direction='higher_is_better', tolerance=0.05, noise=0.02), Tolerance(metric='p95_latency_ms', direction='lower_is_better', tolerance=250.0, noise=0.0), Tolerance(metric='cost_per_run', direction='lower_is_better', tolerance=0.0005, noise=0.0)), repeats=3), bypass: 'Bypass | None' = None) -> 'GateReport'
+tesserix_adk.evals.gate.Bypass :: class Bypass(AdkModel)
+tesserix_adk.evals.gate.DEFAULT_POLICY :: DEFAULT_POLICY: GatePolicy
+tesserix_adk.evals.gate.GatePolicy :: class GatePolicy(AdkModel)
+tesserix_adk.evals.gate.GateReport :: class GateReport(AdkModel) {attributes(self) -> 'dict[str, str]'; permits(self, digest: 'str') -> 'bool'; summary(self) -> 'str'}
+tesserix_adk.evals.gate.Measured :: class Measured(AdkModel)
+tesserix_adk.evals.gate.MetricMove :: class MetricMove(AdkModel)
+tesserix_adk.evals.gate.Tolerance :: class Tolerance(AdkModel) {regression(self, before: 'float', after: 'float') -> 'float'}
+tesserix_adk.evals.gate.Verdict :: Verdict = typing.Literal['pass', 'fail', 'repeat']
+tesserix_adk.evals.gate.gate :: def gate(baseline: 'Measured', candidate: 'Measured', *, policy: 'GatePolicy' = GatePolicy(tolerances=(Tolerance(metric='task_success', direction='higher_is_better', tolerance=0.01, noise=0.0), Tolerance(metric='schema_validity', direction='higher_is_better', tolerance=0.0, noise=0.0), Tolerance(metric='judge_score', direction='higher_is_better', tolerance=0.05, noise=0.02), Tolerance(metric='p95_latency_ms', direction='lower_is_better', tolerance=250.0, noise=0.0), Tolerance(metric='cost_per_run', direction='lower_is_better', tolerance=0.0005, noise=0.0)), repeats=3), bypass: 'Bypass | None' = None) -> 'GateReport'
 tesserix_adk.guardrails.Guard :: class Guard(object) {check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.guardrails.GuardResult :: class GuardResult(object)
 tesserix_adk.guardrails.GuardStage :: class GuardStage(StrEnum)

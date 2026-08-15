@@ -44,6 +44,7 @@ __all__ = [
     "EmbeddingDimensionError",
     "EmbeddingUnavailableError",
     "EstimateUnavailableError",
+    "EvalIncompleteError",
     "EventLoopStalledError",
     "ExtractionError",
     "FallbackExhaustedError",
@@ -57,6 +58,7 @@ __all__ = [
     "HookEvaluationError",
     "HookRefusedError",
     "HookRegistrationError",
+    "IncomparableEvalError",
     "IncompatiblePromptVersionError",
     "IndeterminateToolCallError",
     "InexactAmountError",
@@ -2610,3 +2612,55 @@ class QueueUnavailableError(AdkError):
     def retryable(self) -> bool:
         """Yes. A store that is unreachable now may be reachable shortly."""
         return True
+
+
+class EvalIncompleteError(AdkError):
+    """Raised when a quality gate was asked to judge a partly scored dataset.
+
+    A gate that scores what it can and passes on the rest is not a gate: the examples it
+    skipped are exactly where a new prompt breaks. Failing closed here costs a rerun;
+    guessing costs the regression the suite exists to catch.
+
+    Args:
+        prompt: The prompt whose run fell short.
+        version: The concrete version measured.
+        coverage: The share of the dataset actually scored, between `0.0` and `1.0`.
+    """
+
+    def __init__(
+        self, *args: object, prompt: str = "", version: str = "", coverage: float = 0.0
+    ) -> None:
+        self.prompt = prompt
+        self.version = version
+        self.coverage = coverage
+        super().__init__(
+            *args,
+            details={"prompt": prompt, "version": version, "coverage": f"{coverage:g}"},
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """Yes. Scoring the rest of the dataset makes the same comparison answerable."""
+        return True
+
+
+class IncomparableEvalError(AdkError):
+    """Raised when two eval runs cannot be compared to each other.
+
+    A judge that changed between the runs, or a prompt that changed the variables the
+    dataset supplies, moves the numbers on its own. The difference measured is then not
+    the difference the change made, and reporting it as a pass is worse than reporting
+    nothing.
+
+    Args:
+        reason: `judge` where the scorer moved, `variables` where the prompt's inputs did.
+    """
+
+    def __init__(self, *args: object, reason: str = "judge") -> None:
+        self.reason = reason
+        super().__init__(*args, details={"reason": reason})
+
+    @property
+    def retryable(self) -> bool:
+        """No. Re-measuring the baseline is a decision, not a retry."""
+        return False
