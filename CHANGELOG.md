@@ -8,6 +8,76 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.25.0
+
+### Added
+
+- **tesserix_adk.core.compensation, tesserix_adk.core.errors, tesserix_adk.runtime.compensation, tesserix_adk.workflows.compensation**: Work an agent already applied can now be taken back when a later step fails. There is no
+transaction to roll back across a hotel API and a payment provider, so the kit writes down
+what was applied and calls the reversal paired with it.
+
+`@compensating_activity("book_hotel")` declares the reversal next to the forward tool it
+undoes, and `Compensations` refuses two reversals claiming one tool — which of them ran
+would otherwise depend on registration order. Inside a `Saga` scope, every step is recorded
+in the `CompensationLedger` **before** it is attempted, so a crash between the write and the
+result leaves an action whose outcome is unknown rather than no record at all. When the
+scope fails, the applied work comes back off newest first and the original error still
+reaches the caller — compensating is not handling.
+
+The unwind consults no model. `Compensator` walks the ledger, retries one reversal up to
+`attempts` times, and never stops at the first refusal: a supplier being down is not a
+reason to leave the other three bookings standing. The whole walk runs under
+`asyncio.shield`, because half a rollback is work nobody is left holding a list of.
+
+An action whose result never came back is queried through the `IdempotencyStore` before
+anything is reversed, and where nothing can say, it is left `UNKNOWN` and outstanding rather
+than guessed at in either direction. A tool declared `irreversible=True` is refused with
+`IrreversibleActionError` before it runs unless something approved it, and is never
+auto-compensated afterwards.
+
+The run ends in one of two states a consumer can branch on: `CompensatedFailure` where the
+world holds nothing of the run any more, and the alert-grade `CompensationIncomplete`, whose
+`outstanding` list is what a person reconciles from and is never empty. `Applied` keeps only
+an order-independent digest of the arguments, so a card number that went into a compensated
+step cannot be read back out of the ledger.
+
+### Fixed
+
+- **tests**: mark the credential-shaped fixtures as fixtures
+
+### Public API surface
+
+- Added: `tesserix_adk.core.Applied`
+- Added: `tesserix_adk.core.CompensatedFailure`
+- Added: `tesserix_adk.core.Compensating`
+- Added: `tesserix_adk.core.CompensationIncomplete`
+- Added: `tesserix_adk.core.CompensationLedger`
+- Added: `tesserix_adk.core.IrreversibleActionError`
+- Added: `tesserix_adk.core.Reversal`
+- Added: `tesserix_adk.core.ReversalOutcome`
+- Added: `tesserix_adk.core.arguments_digest`
+- Added: `tesserix_adk.core.compensation.Applied`
+- Added: `tesserix_adk.core.compensation.CompensatedFailure`
+- Added: `tesserix_adk.core.compensation.Compensating`
+- Added: `tesserix_adk.core.compensation.CompensationIncomplete`
+- Added: `tesserix_adk.core.compensation.CompensationLedger`
+- Added: `tesserix_adk.core.compensation.Reversal`
+- Added: `tesserix_adk.core.compensation.ReversalOutcome`
+- Added: `tesserix_adk.core.compensation.arguments_digest`
+- Added: `tesserix_adk.core.errors.IrreversibleActionError`
+- Added: `tesserix_adk.runtime.Compensator`
+- Added: `tesserix_adk.runtime.MemoryCompensationLedger`
+- Added: `tesserix_adk.runtime.compensation.Compensator`
+- Added: `tesserix_adk.runtime.compensation.MemoryCompensationLedger`
+- Added: `tesserix_adk.workflows.CompensatingActivity`
+- Added: `tesserix_adk.workflows.Compensations`
+- Added: `tesserix_adk.workflows.Saga`
+- Added: `tesserix_adk.workflows.compensating_activity`
+- Added: `tesserix_adk.workflows.compensation.CompensatingActivity`
+- Added: `tesserix_adk.workflows.compensation.Compensations`
+- Added: `tesserix_adk.workflows.compensation.Saga`
+- Added: `tesserix_adk.workflows.compensation.compensating_activity`
+
 ## 0.24.0
 
 ### Added
