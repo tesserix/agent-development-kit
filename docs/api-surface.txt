@@ -448,6 +448,7 @@ tesserix_adk.core.InexactAmountError :: class InexactAmountError(AdkError)
 tesserix_adk.core.InjectionSignal :: class InjectionSignal(AdkModel)
 tesserix_adk.core.InjectionSuspectedError :: class InjectionSuspectedError(GuardrailViolationError)
 tesserix_adk.core.InlineRefs :: class InlineRefs(object) {adapt(self, schema: 'dict[str, Any]') -> 'dict[str, Any]'}
+tesserix_adk.core.Instrumentation :: class Instrumentation(object) {run(self, run_id: 'str', **attributes: 'str') -> 'Iterator[RunSpan]'; step(self, kind: 'SpanKind', name: 'str', *, attempt: 'int' = 1, **attributes: 'str') -> 'Iterator[Span]'}
 tesserix_adk.core.InvalidRequestError :: class InvalidRequestError(ProviderError)
 tesserix_adk.core.Invariant :: class Invariant(Generic) {check(self, result: 'BaseModel') -> 'tuple[PolicyViolation, ...]'}
 tesserix_adk.core.IrreversibleActionError :: class IrreversibleActionError(AdkError)
@@ -539,6 +540,7 @@ tesserix_adk.core.RESERVED_ACTION_CLASS :: RESERVED_ACTION_CLASS: str
 tesserix_adk.core.RULES :: RULES: tuple
 tesserix_adk.core.RateLimitError :: class RateLimitError(ProviderError)
 tesserix_adk.core.ReasoningDelta :: class ReasoningDelta(StreamEvent)
+tesserix_adk.core.Recording :: class Recording(object) {exported(self, run_id: 'str') -> 'dict[str, str]'}
 tesserix_adk.core.RecursionLimitError :: class RecursionLimitError(LoopLimitError)
 tesserix_adk.core.Redacted :: class Redacted(AdkModel)
 tesserix_adk.core.RedactionConfig :: class RedactionConfig(AdkModel)
@@ -568,12 +570,15 @@ tesserix_adk.core.RunGrant :: class RunGrant(AdkModel)
 tesserix_adk.core.RunLease :: class RunLease(AdkModel) {held_at(self, now: 'float') -> 'bool'; superseded_by(self, other: 'RunLease') -> 'bool'}
 tesserix_adk.core.RunLeaseError :: class RunLeaseError(AdkError)
 tesserix_adk.core.RunRecord :: class RunRecord(AdkModel) {scrubbed(self) -> 'Self'}
+tesserix_adk.core.RunSpan :: class RunSpan(Span)
 tesserix_adk.core.RunState :: class RunState(StrEnum)
 tesserix_adk.core.RunningLoopError :: class RunningLoopError(AdkError, RuntimeError)
 tesserix_adk.core.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple
 tesserix_adk.core.SEPARATOR :: SEPARATOR: str
 tesserix_adk.core.SMART :: SMART: TaskClass
+tesserix_adk.core.SPAN_NAMES :: SPAN_NAMES: dict
 tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
+tesserix_adk.core.Sampling :: class Sampling(AdkModel) {keeps(self, run_id: 'str') -> 'bool'}
 tesserix_adk.core.SandboxError :: class SandboxError(AdkError)
 tesserix_adk.core.SandboxMemoryError :: class SandboxMemoryError(SandboxError)
 tesserix_adk.core.SandboxTimeoutError :: class SandboxTimeoutError(SandboxError)
@@ -591,6 +596,10 @@ tesserix_adk.core.Sensitive :: class Sensitive(object)
 tesserix_adk.core.SessionRecord :: class SessionRecord(AdkModel)
 tesserix_adk.core.Severity :: Severity = typing.Literal['error', 'warning']
 tesserix_adk.core.SignalKind :: class SignalKind(StrEnum)
+tesserix_adk.core.Span :: class Span(object) {first_token(self) -> 'None'; iterated(self, count: 'int' = 1) -> 'None'; set(self, **attributes: 'str') -> 'None'}
+tesserix_adk.core.SpanKind :: class SpanKind(StrEnum)
+tesserix_adk.core.SpanLimits :: class SpanLimits(AdkModel)
+tesserix_adk.core.SpanStatus :: class SpanStatus(StrEnum)
 tesserix_adk.core.SpendLedger :: class SpendLedger(Protocol) {forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = Ellipsis) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.core.StateConflictError :: class StateConflictError(AdkError)
 tesserix_adk.core.StateDelta :: class StateDelta(AdkModel) {applied_to(self, record: 'RunRecord') -> 'RunRecord'}
@@ -613,6 +622,7 @@ tesserix_adk.core.SuspensionStore :: class SuspensionStore(Protocol) {attempted(
 tesserix_adk.core.TRUST_BY_ORIGIN :: TRUST_BY_ORIGIN: dict
 tesserix_adk.core.TaskClass :: class TaskClass(str)
 tesserix_adk.core.TelemetryConfig :: class TelemetryConfig(AdkModel)
+tesserix_adk.core.TelemetryLoss :: class TelemetryLoss(object)
 tesserix_adk.core.TemplateError :: class TemplateError(ConfigurationError)
 tesserix_adk.core.TenantConfig :: class TenantConfig(AdkModel)
 tesserix_adk.core.TenantConfigProvider :: class TenantConfigProvider(Protocol) {config_for(self, tenant: 'str') -> 'TenantConfig'}
@@ -649,6 +659,7 @@ tesserix_adk.core.ToolRefusal :: class ToolRefusal(ToolError)
 tesserix_adk.core.ToolRegistry :: class ToolRegistry(Protocol) {declarations(self) -> 'Any'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'}
 tesserix_adk.core.ToolResultError :: class ToolResultError(AdkError)
 tesserix_adk.core.ToolTimedOutError :: class ToolTimedOutError(AdkError)
+tesserix_adk.core.Trace :: class Trace(object) {of_kind(self, kind: 'SpanKind') -> 'tuple[Recording, ...]'}
 tesserix_adk.core.Tracer :: class Tracer(Protocol) {event(self, name: 'str', **attributes: 'Any') -> 'None'; span(self, name: 'str', **attributes: 'Any') -> 'Any'}
 tesserix_adk.core.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
 tesserix_adk.core.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
@@ -976,6 +987,17 @@ tesserix_adk.core.in_payload :: def in_payload(context: 'TenantContext', payload
 tesserix_adk.core.injection.InjectionSignal :: class InjectionSignal(AdkModel)
 tesserix_adk.core.injection.SignalKind :: class SignalKind(StrEnum)
 tesserix_adk.core.injection.screen :: def screen(text: 'str', *, instructions: 'str' = '') -> 'tuple[InjectionSignal, ...]'
+tesserix_adk.core.instrumentation.Instrumentation :: class Instrumentation(object) {run(self, run_id: 'str', **attributes: 'str') -> 'Iterator[RunSpan]'; step(self, kind: 'SpanKind', name: 'str', *, attempt: 'int' = 1, **attributes: 'str') -> 'Iterator[Span]'}
+tesserix_adk.core.instrumentation.Recording :: class Recording(object) {exported(self, run_id: 'str') -> 'dict[str, str]'}
+tesserix_adk.core.instrumentation.RunSpan :: class RunSpan(Span)
+tesserix_adk.core.instrumentation.SPAN_NAMES :: SPAN_NAMES: dict
+tesserix_adk.core.instrumentation.Sampling :: class Sampling(AdkModel) {keeps(self, run_id: 'str') -> 'bool'}
+tesserix_adk.core.instrumentation.Span :: class Span(object) {first_token(self) -> 'None'; iterated(self, count: 'int' = 1) -> 'None'; set(self, **attributes: 'str') -> 'None'}
+tesserix_adk.core.instrumentation.SpanKind :: class SpanKind(StrEnum)
+tesserix_adk.core.instrumentation.SpanLimits :: class SpanLimits(AdkModel)
+tesserix_adk.core.instrumentation.SpanStatus :: class SpanStatus(StrEnum)
+tesserix_adk.core.instrumentation.TelemetryLoss :: class TelemetryLoss(object)
+tesserix_adk.core.instrumentation.Trace :: class Trace(object) {of_kind(self, kind: 'SpanKind') -> 'tuple[Recording, ...]'}
 tesserix_adk.core.lease.DEFAULT_LEASE :: DEFAULT_LEASE: LeasePolicy
 tesserix_adk.core.lease.LeasePolicy :: class LeasePolicy(AdkModel) {due_to_renew(self, lease: 'RunLease', *, now: 'float') -> 'bool'}
 tesserix_adk.core.lease.LeaseStore :: class LeaseStore(Protocol) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
