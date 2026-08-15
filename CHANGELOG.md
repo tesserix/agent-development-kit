@@ -8,6 +8,109 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.24.0
+
+### Added
+
+- **tesserix_adk.core.lease, tesserix_adk.runtime.lease, tesserix_adk.runtime.resume, tesserix_adk.adapters.checkpoints, tesserix_adk.workflows.continuation, tesserix_adk.cli.resume**: A checkpointed run can now be carried on by a worker that did not start it, without two
+workers carrying it on at once. `Resumer` takes a `RunLease` **before** it reads the frontier,
+so the worker that loses never sees the run; the second is refused with `RunLeaseError` naming
+who holds it. Expiry is decided on the store's clock and never on the caller's — the Lua calls
+`TIME`, the SQL calls `now()` — and every acquisition raises a fence, so a holder that was
+paused past its TTL is rejected on the number rather than on the time. `Leaseholder` renews
+inside `LeasePolicy.renew_within` and releases on the way out. `LeaseStoreConformance` carries
+the guarantees for any implementation, and `MemoryLeaseStore` is the first to be held to them.
+
+A frontier is durable, so `Checkpointer` now masks before it sizes: keys, bearer tokens and
+anything matching `extra_patterns` are redacted once, on the way in, and every store inherits
+it — including one a consumer writes. `redact=False` opts out where the store is already
+trusted. Binary parts are left alone rather than half-masked.
+
+A transcript too large to checkpoint travels as `history_handle`, resolved at resume time
+through a `HistoryStore`. A handle that no longer resolves raises `HistoryUnavailableError`
+instead of continuing against a conversation with a hole in it.
+
+`tesserix_adk.adapters` ships `RedisCheckpointStore`, `RedisLeaseStore`,
+`PostgresCheckpointStore` and `PostgresLeaseStore`. The DDL is published as
+`EXPECTED_CHECKPOINT_SCHEMA` and applied by nobody here — schema lifecycle belongs to whatever
+owns migrations. `PostgresCheckpointStore.verify` reads the recorded schema version before use.
+
+`ContinuationPolicy.due` says when an execution has run long enough to be worth starting
+again, on the journal's steps or on the engine's own history size, and `continued` builds what
+crosses over: the transcript as a handle, the ledger and iteration count as numbers, and the
+approval and grant the run was acting under. The journal deliberately does not cross. A
+`Continuation` that dropped the binding cannot be constructed.
+
+`adk run --resume` and `adk inspect` print the same summary off the same frontier, so what an
+operator reads before deciding and what the command resumes can never drift. Inspecting takes
+no lease. The exit codes are `0` carried on, `1` nothing checkpointed, `2` an unreadable
+command line, `3` held by another worker, `4` must not be carried on.
+
+### Public API surface
+
+- Added: `tesserix_adk.adapters.CHECKPOINT_SCHEMA_VERSION`
+- Added: `tesserix_adk.adapters.CheckpointTables`
+- Added: `tesserix_adk.adapters.DEFAULT_CHECKPOINT_NAMESPACE`
+- Added: `tesserix_adk.adapters.DEFAULT_CHECKPOINT_TABLES`
+- Added: `tesserix_adk.adapters.EXPECTED_CHECKPOINT_SCHEMA`
+- Added: `tesserix_adk.adapters.PostgresCheckpointStore`
+- Added: `tesserix_adk.adapters.PostgresLeaseStore`
+- Added: `tesserix_adk.adapters.RedisCheckpointStore`
+- Added: `tesserix_adk.adapters.RedisLeaseStore`
+- Added: `tesserix_adk.adapters.checkpoints.CHECKPOINT_SCHEMA_VERSION`
+- Added: `tesserix_adk.adapters.checkpoints.CheckpointTables`
+- Added: `tesserix_adk.adapters.checkpoints.DEFAULT_CHECKPOINT_NAMESPACE`
+- Added: `tesserix_adk.adapters.checkpoints.DEFAULT_CHECKPOINT_TABLES`
+- Added: `tesserix_adk.adapters.checkpoints.EXPECTED_CHECKPOINT_SCHEMA`
+- Added: `tesserix_adk.adapters.checkpoints.PostgresCheckpointStore`
+- Added: `tesserix_adk.adapters.checkpoints.PostgresLeaseStore`
+- Added: `tesserix_adk.adapters.checkpoints.RedisCheckpointStore`
+- Added: `tesserix_adk.adapters.checkpoints.RedisLeaseStore`
+- Added: `tesserix_adk.cli.Frontiers`
+- Added: `tesserix_adk.cli.Resumes`
+- Added: `tesserix_adk.cli.describe`
+- Added: `tesserix_adk.cli.frontier_main`
+- Added: `tesserix_adk.cli.resume.Frontiers`
+- Added: `tesserix_adk.cli.resume.Resumes`
+- Added: `tesserix_adk.cli.resume.describe`
+- Added: `tesserix_adk.cli.resume.main`
+- Added: `tesserix_adk.cli.resume.show`
+- Added: `tesserix_adk.cli.resume_main`
+- Added: `tesserix_adk.core.DEFAULT_LEASE`
+- Added: `tesserix_adk.core.HistoryUnavailableError`
+- Added: `tesserix_adk.core.LeasePolicy`
+- Added: `tesserix_adk.core.LeaseStore`
+- Added: `tesserix_adk.core.RunLease`
+- Added: `tesserix_adk.core.RunLeaseError`
+- Added: `tesserix_adk.core.errors.HistoryUnavailableError`
+- Added: `tesserix_adk.core.errors.RunLeaseError`
+- Added: `tesserix_adk.core.lease.DEFAULT_LEASE`
+- Added: `tesserix_adk.core.lease.LeasePolicy`
+- Added: `tesserix_adk.core.lease.LeaseStore`
+- Added: `tesserix_adk.core.lease.RunLease`
+- Added: `tesserix_adk.runtime.HistoryStore`
+- Added: `tesserix_adk.runtime.Leaseholder`
+- Added: `tesserix_adk.runtime.MemoryLeaseStore`
+- Added: `tesserix_adk.runtime.ResumedRun`
+- Added: `tesserix_adk.runtime.Resumer`
+- Added: `tesserix_adk.runtime.checkpoint.scrubbed`
+- Added: `tesserix_adk.runtime.lease.Leaseholder`
+- Added: `tesserix_adk.runtime.lease.MemoryLeaseStore`
+- Added: `tesserix_adk.runtime.resume.HistoryStore`
+- Added: `tesserix_adk.runtime.resume.ResumedRun`
+- Added: `tesserix_adk.runtime.resume.Resumer`
+- Added: `tesserix_adk.runtime.scrubbed`
+- Added: `tesserix_adk.testing.LeaseStoreConformance`
+- Added: `tesserix_adk.testing.conformance.LeaseStoreConformance`
+- Added: `tesserix_adk.workflows.Continuation`
+- Added: `tesserix_adk.workflows.ContinuationPolicy`
+- Added: `tesserix_adk.workflows.DEFAULT_CONTINUATION`
+- Added: `tesserix_adk.workflows.continuation.Continuation`
+- Added: `tesserix_adk.workflows.continuation.ContinuationPolicy`
+- Added: `tesserix_adk.workflows.continuation.DEFAULT_CONTINUATION`
+- Added: `tesserix_adk.workflows.continuation.continued`
+- Added: `tesserix_adk.workflows.continued`
+
 ## 0.23.0
 
 ### Added
