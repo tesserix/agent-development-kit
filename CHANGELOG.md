@@ -8,6 +8,46 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.41.0
+
+### Added
+
+- **added**: `tesserix_adk.observability.convention` gives agent telemetry one versioned set of
+attribute names, so the same query answers the same question across products instead of
+each one naming the tenant differently. `AttributeSet.here` fills the tenant and user from
+the bound scope and `rendered` produces the `adk.` attributes an exporter receives.
+Nothing is estimated: a provider that reported no usage renders
+`adk.input_tokens.unavailable`, and a model with no price list renders
+`adk.cost.unavailable` rather than a zero a dashboard would total as free. `CARDINALITY`
+declares which names are safe as metric dimensions, `conforms` refuses a missing mandatory
+name or one squatting the reserved namespace, and long values are truncated visibly rather
+than dropped by the backend.
+
+### Public API surface
+
+- Added: `tesserix_adk.observability.AttributeSet`
+- Added: `tesserix_adk.observability.CARDINALITY`
+- Added: `tesserix_adk.observability.CONVENTION_VERSION`
+- Added: `tesserix_adk.observability.CacheStatus`
+- Added: `tesserix_adk.observability.Cardinality`
+- Added: `tesserix_adk.observability.MANDATORY`
+- Added: `tesserix_adk.observability.MAX_VALUE_LENGTH`
+- Added: `tesserix_adk.observability.Measured`
+- Added: `tesserix_adk.observability.RESERVED_PREFIX`
+- Added: `tesserix_adk.observability.Unavailability`
+- Added: `tesserix_adk.observability.conforms`
+- Added: `tesserix_adk.observability.convention.AttributeSet`
+- Added: `tesserix_adk.observability.convention.CARDINALITY`
+- Added: `tesserix_adk.observability.convention.CONVENTION_VERSION`
+- Added: `tesserix_adk.observability.convention.CacheStatus`
+- Added: `tesserix_adk.observability.convention.Cardinality`
+- Added: `tesserix_adk.observability.convention.MANDATORY`
+- Added: `tesserix_adk.observability.convention.MAX_VALUE_LENGTH`
+- Added: `tesserix_adk.observability.convention.Measured`
+- Added: `tesserix_adk.observability.convention.RESERVED_PREFIX`
+- Added: `tesserix_adk.observability.convention.Unavailability`
+- Added: `tesserix_adk.observability.convention.conforms`
+
 ## 0.40.0
 
 ### Added
