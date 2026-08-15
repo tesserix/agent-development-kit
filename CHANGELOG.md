@@ -8,6 +8,53 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.19.0
+
+### Added
+
+- **tesserix_adk.core.prompt_lint**: `tesserix_adk.core` now ships a check that keeps business rules out of prompt text. Pricing,
+refund thresholds, cancellation windows and eligibility conditions written in English are
+business rules with none of the properties a business rule needs: untested, unversioned
+against the code that depends on them, and advisory, because the model may simply not apply
+one and nothing fails when it does not.
+
+`lint_directory` runs over a project's prompt directory in CI and `lint_prompt` over a prompt
+still held inline, so a project migrating to a registry can lint what it has today. Seven
+rules — `ADK-P000` to `ADK-P006` — cover monetary thresholds and shares of an amount,
+conditional rule chains, time windows governing an outcome, language granting the model
+authority to decide, instructions to perform an irreversible action directly, and embedded
+endpoints. Each carries a remedy, because a check that only says no is a check projects turn
+off, and each names the file, the line and the offending text.
+
+Ordinary prose passes. "Return at most 5 suggestions, in 2 sentences each" is output shaping,
+and the rules key on currency, shares, time units and authorisation verbs rather than on
+digits. Where a finding is accepted, `# adk-lint: allow ADK-P001 — reason` suppresses it for
+its own line and the line below, and only for the code it names. A suppression with no reason
+raises `ADK-P000` in its place, which is an error, and every report counts its suppressions,
+so a project that silenced the check reads as `12 suppressed` rather than as green.
+
+`ADK-P005` pairs with the tools epic's approval gate: a prompt is not an enforcement point,
+and a retry of one is a second refund.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.LintFinding`
+- Added: `tesserix_adk.core.LintReport`
+- Added: `tesserix_adk.core.LintRule`
+- Added: `tesserix_adk.core.PROMPT_SUFFIXES`
+- Added: `tesserix_adk.core.RULES`
+- Added: `tesserix_adk.core.Severity`
+- Added: `tesserix_adk.core.lint_directory`
+- Added: `tesserix_adk.core.lint_prompt`
+- Added: `tesserix_adk.core.prompt_lint.LintFinding`
+- Added: `tesserix_adk.core.prompt_lint.LintReport`
+- Added: `tesserix_adk.core.prompt_lint.LintRule`
+- Added: `tesserix_adk.core.prompt_lint.PROMPT_SUFFIXES`
+- Added: `tesserix_adk.core.prompt_lint.RULES`
+- Added: `tesserix_adk.core.prompt_lint.Severity`
+- Added: `tesserix_adk.core.prompt_lint.lint_directory`
+- Added: `tesserix_adk.core.prompt_lint.lint_prompt`
+
 ## 0.18.0
 
 ### Added
