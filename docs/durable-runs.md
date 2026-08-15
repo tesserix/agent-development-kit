@@ -22,7 +22,7 @@ final = await workflow.run(
 
 Nothing here imports a workflow engine. The kit supplies the deterministic driver and the
 activity payloads; binding them to Temporal activities is the deployment's job, through the
-optional `tesserix-adk[workflows]` extra. The package imports cleanly with nothing installed,
+optional `tesserix-adk[temporal]` extra. The package imports cleanly with nothing installed,
 so a consumer that does not want durability does not pay for it.
 
 ## The two activities

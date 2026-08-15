@@ -13,7 +13,7 @@ none of them again.
 
 Nothing here imports a workflow engine. The kit supplies the deterministic driver and the
 activity payloads; binding those to Temporal activities belongs to the deployment and to
-`tesserix-adk[workflows]`, which is why this module imports cleanly with nothing installed.
+`tesserix-adk[temporal]`, which is why this module imports cleanly with nothing installed.
 
 Every name exported here is semver-governed: it appears in `docs/api-surface.txt`, so a
 change to it shows up in a pull request's diff and follows `docs/versioning.md`.
