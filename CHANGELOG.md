@@ -8,6 +8,52 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.14.0
+
+### Added
+
+- **tesserix_adk.memory.reversible**: `tesserix_adk.memory` now makes compression reversible. Every lossy scheme is a bet that the
+model will not need the part that was removed, and the bet is occasionally catastrophically
+wrong: the elided log line was the one naming the failing host, and the agent then answers
+confidently from a hole in its context without knowing the hole is there.
+
+`ReversibleRouter` wraps a `ContentRouter`, retains the original for the run that admitted
+it, and appends a note to the compressed form naming the size of what was removed and the
+tool that reads it back. `expand_content_tool` is that tool, resolving a handle within the
+caller's `ToolContext`. An irreversible quality risk becomes a recoverable extra turn, which
+is what makes an aggressive ratio defensible — and it makes the accuracy question testable,
+because whether the model retrieves when it should is a behaviour, while whether a summary
+kept the right sentence is not.
+
+The handle is the claim check the kit already issues for oversized tool results, so its
+scope rules come with it: the tenant and the run are hashed into the handle as well as
+checked at the lookup. A handle cannot be transplanted between runs, derived for another
+tenant, or read past its retention window, and every one of those failures is the same
+`ClaimUnavailableError` — telling a model which condition failed tells it what handles other
+runs hold, and it would do nothing different either way.
+
+Retrieval is itself subject to admission: an original larger than the budget left comes back
+as the leading window that fits, marked `truncated`, rather than putting back into the
+prompt exactly what compression took out. Every expansion is audited with the handle, the
+requester and the resulting size; refusals are audited too, and the content never reaches
+the record. `Compressed` gains `handle`, and `ContentRouter` exposes the `count` it sizes
+with so a caller can agree with it.
+
+### Public API surface
+
+- Added: `tesserix_adk.memory.EXPAND_TOOL`
+- Added: `tesserix_adk.memory.Expansion`
+- Added: `tesserix_adk.memory.ReversibleRouter`
+- Added: `tesserix_adk.memory.reversible.EXPAND_TOOL`
+- Added: `tesserix_adk.memory.reversible.Expansion`
+- Added: `tesserix_adk.memory.reversible.ReversibleRouter`
+- Added: `tesserix_adk.tools.ContentExpander`
+- Added: `tesserix_adk.tools.Expanded`
+- Added: `tesserix_adk.tools.expand_content_tool`
+- Added: `tesserix_adk.tools.expansion.ContentExpander`
+- Added: `tesserix_adk.tools.expansion.Expanded`
+- Added: `tesserix_adk.tools.expansion.expand_content_tool`
+
 ## 0.13.0
 
 ### Added
