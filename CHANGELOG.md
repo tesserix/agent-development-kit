@@ -8,6 +8,88 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.28.0
+
+### Added
+
+- **tesserix_adk.core.pii, tesserix_adk.core.content_policy, tesserix_adk.guardrails.pii, tesserix_adk.guardrails.content_filter**: Personal identifiers are now taken out on every path that could keep one, and content
+policy is a declared taxonomy rather than whatever the model vendor happened to refuse.
+
+The detectors live in `tesserix_adk.core.pii` because three separate paths need the same
+ones: `PIIGuard` before prompt assembly, `PIIRedactor` on the memory write path, and
+`Redactor(pii_tenant=…)` on the telemetry exporter. Redaction applied only at the agent
+boundary has already lost — the checkpoint, the memory record and the span attribute
+emitted first.
+
+One set of detectors also means one shape of placeholder. `placeholder` keeps the *kind*
+and a pseudonym salted per tenant, so an agent can still reason about "the same traveller as
+last week" without holding the value, and neither tenant can probe the other's subjects by
+guessing one. Hand-rolled redaction gives the same person `[REDACTED]` in one store and
+`xxxx1234` in another, and nothing can be joined.
+
+Over-redaction is treated as a real cost rather than a safe default: a booking reference
+redacted as a passport number breaks the work the agent exists for. Every match carries a
+confidence — unambiguous shapes at `1.0`, a passport or phone shape at `0.6` — and a tenant
+raises `threshold` or names `allow` patterns to keep what is theirs. A card is checked
+against Luhn, without which every sixteen-digit order reference is a card number. Where two
+detectors overlap the earlier one wins, so a card is a card rather than a phone number.
+
+`ContentCategory` and `ContentSeverity` declare what a refusal means, and `refusal_of`
+normalises a provider's own safety refusal into the same `ContentBlockedError` the kit
+raises, so changing provider does not change what a caller handles.
+
+What a passage is about and what to do about it are kept apart. A classifier answers the
+first and its answer is the same for every tenant; `Thresholds` answers the second and is
+not. A customer-facing agent and an internal triage agent reading the same abusive
+transcript differ by configuration rather than by code — blocking the transcript stops the
+triage the agent exists for. `HeuristicClassifier` ships so the policy path can be wired
+before a deployment has a model for it, and answers `MEDIUM` and never `HIGH`, because a
+term list cannot tell a slur from a quotation of one.
+
+Both guards fail closed. A detector that raises, or a classifier that times out or raises,
+produces `GuardrailEvaluationError`: content nobody could evaluate is not content that was
+found clean. The refusal carries categories, a severity and a classifier name and no part of
+what was said, because an output-stage block that quoted the payload would have emitted it.
+
+### Public API surface
+
+- Added: `tesserix_adk.core.Classification`
+- Added: `tesserix_adk.core.ContentBlockedError`
+- Added: `tesserix_adk.core.ContentCategory`
+- Added: `tesserix_adk.core.ContentClassifier`
+- Added: `tesserix_adk.core.ContentSeverity`
+- Added: `tesserix_adk.core.DEFAULT_DETECTORS`
+- Added: `tesserix_adk.core.HeuristicClassifier`
+- Added: `tesserix_adk.core.PIIDetector`
+- Added: `tesserix_adk.core.PIIKind`
+- Added: `tesserix_adk.core.PIIMatch`
+- Added: `tesserix_adk.core.PatternDetector`
+- Added: `tesserix_adk.core.Redacted`
+- Added: `tesserix_adk.core.Thresholds`
+- Added: `tesserix_adk.core.content_policy.Classification`
+- Added: `tesserix_adk.core.content_policy.ContentCategory`
+- Added: `tesserix_adk.core.content_policy.ContentClassifier`
+- Added: `tesserix_adk.core.content_policy.ContentSeverity`
+- Added: `tesserix_adk.core.content_policy.HeuristicClassifier`
+- Added: `tesserix_adk.core.content_policy.Thresholds`
+- Added: `tesserix_adk.core.pii.DEFAULT_DETECTORS`
+- Added: `tesserix_adk.core.pii.PIIDetector`
+- Added: `tesserix_adk.core.pii.PIIKind`
+- Added: `tesserix_adk.core.pii.PIIMatch`
+- Added: `tesserix_adk.core.pii.PatternDetector`
+- Added: `tesserix_adk.core.pii.Redacted`
+- Added: `tesserix_adk.core.pii.placeholder`
+- Added: `tesserix_adk.core.pii.redact`
+- Added: `tesserix_adk.core.placeholder`
+- Added: `tesserix_adk.core.redact`
+- Added: `tesserix_adk.guardrails.ContentFilterGuard`
+- Added: `tesserix_adk.guardrails.PIIGuard`
+- Added: `tesserix_adk.guardrails.content_filter.ContentFilterGuard`
+- Added: `tesserix_adk.guardrails.content_filter.refusal_of`
+- Added: `tesserix_adk.guardrails.pii.PIIGuard`
+- Added: `tesserix_adk.guardrails.refusal_of`
+- Added: `tesserix_adk.memory.erasure.PIIRedactor`
+
 ## 0.27.0
 
 ### Added
