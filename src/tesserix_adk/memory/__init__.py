@@ -65,11 +65,13 @@ from tesserix_adk.memory.erasure import (
 from tesserix_adk.memory.protocol import MemoryStore
 from tesserix_adk.memory.provenance import Origin, Provenance
 from tesserix_adk.memory.records import MemoryHit, MemoryKind, MemoryQuery, MemoryRecord
+from tesserix_adk.memory.reversible import EXPAND_TOOL, Expansion, ReversibleRouter
 from tesserix_adk.memory.scope import MemoryScope
 
 __all__ = [
     "DEFAULT_COMPRESSORS",
     "DEFAULT_REDACTOR",
+    "EXPAND_TOOL",
     "INSTRUCTION_SIGNATURES",
     "Admission",
     "AdmissionPolicy",
@@ -93,6 +95,7 @@ __all__ = [
     "DerivedIndex",
     "DropOldest",
     "ErasureReceipt",
+    "Expansion",
     "HalfLife",
     "MemoryCapabilities",
     "MemoryGuard",
@@ -112,6 +115,7 @@ __all__ = [
     "Provenance",
     "Recall",
     "Resolution",
+    "ReversibleRouter",
     "SectionOutcome",
     "SectionPlan",
     "SizeCounter",

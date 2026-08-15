@@ -98,6 +98,7 @@ code lands here as the kit is built.
 | Redaction and erasure — masking on write, derived artefacts, two-phase erasure, receipts | [`docs/erasure.md`](docs/erasure.md) |
 | Memory admission — what may persist, provenance on every fact, re-judged on the way back in | [`docs/memory-admission.md`](docs/memory-admission.md) |
 | Content compression — routing admitted content to a compressor that understands it, and declining where nothing does | [`docs/content-compression.md`](docs/content-compression.md) |
+| Reversible compression — a retrieval handle on compressed content, scoped to one run, audited on the way back | [`docs/reversible-compression.md`](docs/reversible-compression.md) |
 | Memory adapters — Redis, PostgreSQL and pgvector, settings, retries, paging | [`docs/memory-adapters.md`](docs/memory-adapters.md) |
 | Graph memory — relations over a temporal graph, metered extraction, tenant ceilings, queued writes | [`docs/graph-memory.md`](docs/graph-memory.md) |
 | Sandboxed code execution — what the code cannot reach, ceilings, artifacts, stronger backends | [`docs/sandbox.md`](docs/sandbox.md) |

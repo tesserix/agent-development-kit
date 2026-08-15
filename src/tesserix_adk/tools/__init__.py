@@ -13,6 +13,7 @@ from tesserix_adk.tools.errors import (
     refusal,
     transient,
 )
+from tesserix_adk.tools.expansion import ContentExpander, Expanded, expand_content_tool
 from tesserix_adk.tools.intake import (
     DEFAULT_INTAKE_CHARS,
     SUPPORTED_AUDIO,
@@ -55,6 +56,8 @@ __all__ = [
     "SUPPORTED_DOCUMENTS",
     "AgentToolView",
     "ArgumentPolicy",
+    "ContentExpander",
+    "Expanded",
     "OcrBackend",
     "OcrPage",
     "Region",
@@ -77,6 +80,7 @@ __all__ = [
     "ToolRegistry",
     "TranscriptionBackend",
     "claim_check_tool",
+    "expand_content_tool",
     "ocr_document",
     "ocr_tool",
     "permanent",

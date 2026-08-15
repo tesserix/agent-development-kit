@@ -935,7 +935,9 @@ tesserix_adk.memory.DecayPolicy :: class DecayPolicy(Protocol) {weigh(self, reco
 tesserix_adk.memory.Derivation :: class Derivation(AdkModel)
 tesserix_adk.memory.DerivedIndex :: class DerivedIndex(Protocol) {purge(self, artefact_ids: 'tuple[str, ...]') -> 'int'}
 tesserix_adk.memory.DropOldest :: class DropOldest(object) {compact(self, entries: 'Sequence[ContextEntry]', *, budget_tokens: 'int', count: 'TokenCounter') -> 'CompactionOutcome'}
+tesserix_adk.memory.EXPAND_TOOL :: EXPAND_TOOL: str
 tesserix_adk.memory.ErasureReceipt :: class ErasureReceipt(AdkModel)
+tesserix_adk.memory.Expansion :: class Expansion(AdkModel)
 tesserix_adk.memory.HalfLife :: class HalfLife(object) {weigh(self, record: 'MemoryRecord', *, now: 'float') -> 'float'}
 tesserix_adk.memory.INSTRUCTION_SIGNATURES :: INSTRUCTION_SIGNATURES: tuple
 tesserix_adk.memory.MemoryCapabilities :: class MemoryCapabilities(object)
@@ -956,6 +958,7 @@ tesserix_adk.memory.ProseCompressor :: class ProseCompressor(object) {compress(s
 tesserix_adk.memory.Provenance :: class Provenance(AdkModel)
 tesserix_adk.memory.Recall :: class Recall(AdkModel)
 tesserix_adk.memory.Resolution :: class Resolution(StrEnum)
+tesserix_adk.memory.ReversibleRouter :: class ReversibleRouter(object) {admit(self, content: 'str', *, budget_tokens: 'int', tenant: 'str', run_id: 'str', untrusted: 'bool' = False) -> 'Compressed'; expand(self, handle: 'str', *, tenant: 'str', run_id: 'str', budget_tokens: 'int | None' = None, user: 'str | None' = None) -> 'Expansion'}
 tesserix_adk.memory.SectionOutcome :: class SectionOutcome(AdkModel)
 tesserix_adk.memory.SectionPlan :: class SectionPlan(AdkModel)
 tesserix_adk.memory.SizeCounter :: SizeCounter: TypeAliasType
@@ -1030,6 +1033,9 @@ tesserix_adk.memory.records.MemoryKind :: class MemoryKind(StrEnum)
 tesserix_adk.memory.records.MemoryQuery :: class MemoryQuery(AdkModel)
 tesserix_adk.memory.records.MemoryRecord :: class MemoryRecord(AdkModel)
 tesserix_adk.memory.require_memory :: def require_memory(store: 'object', needs: 'MemoryNeeds') -> 'None'
+tesserix_adk.memory.reversible.EXPAND_TOOL :: EXPAND_TOOL: str
+tesserix_adk.memory.reversible.Expansion :: class Expansion(AdkModel)
+tesserix_adk.memory.reversible.ReversibleRouter :: class ReversibleRouter(object) {admit(self, content: 'str', *, budget_tokens: 'int', tenant: 'str', run_id: 'str', untrusted: 'bool' = False) -> 'Compressed'; expand(self, handle: 'str', *, tenant: 'str', run_id: 'str', budget_tokens: 'int | None' = None, user: 'str | None' = None) -> 'Expansion'}
 tesserix_adk.memory.scope.MemoryScope :: class MemoryScope(AdkModel)
 tesserix_adk.models.BatchConfig :: class BatchConfig(object)
 tesserix_adk.models.BatchingEmbedder :: class BatchingEmbedder(object) {aclose(self) -> 'None'; embed(self, text: 'str', *, model: 'str', tenant: 'str' = 'default', interactive: 'bool' = False) -> 'Vector'}
@@ -1823,9 +1829,11 @@ tesserix_adk.testing.retrieval.Indexed :: class Indexed(object)
 tesserix_adk.testing.retrieval.POISONED_CORPUS :: POISONED_CORPUS: tuple
 tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
+tesserix_adk.tools.ContentExpander :: class ContentExpander(Protocol) {expand(self, handle: 'str', *, tenant: 'str', run_id: 'str', budget_tokens: 'int | None' = None, user: 'str | None' = None) -> 'Expanded'}
 tesserix_adk.tools.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int
 tesserix_adk.tools.DEFAULT_INTAKE_CHARS :: DEFAULT_INTAKE_CHARS: int
 tesserix_adk.tools.DEFAULT_LIMITS :: DEFAULT_LIMITS: SandboxLimits
+tesserix_adk.tools.Expanded :: class Expanded(Protocol)
 tesserix_adk.tools.LENIENT :: LENIENT: ArgumentPolicy
 tesserix_adk.tools.OcrBackend :: class OcrBackend(Protocol) {pages(self, path: 'Path') -> 'AsyncIterator[OcrPage]'}
 tesserix_adk.tools.OcrPage :: class OcrPage(AdkModel)
@@ -1870,6 +1878,10 @@ tesserix_adk.tools.errors.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.tools.errors.permanent :: def permanent(code: 'str', *, message: 'str' = '') -> 'ToolErrorRule'
 tesserix_adk.tools.errors.refusal :: def refusal(code: 'str', message: 'str') -> 'ToolErrorRule'
 tesserix_adk.tools.errors.transient :: def transient(code: 'str', *, retry_after: 'float | None' = None, message: 'str' = '') -> 'ToolErrorRule'
+tesserix_adk.tools.expand_content_tool :: def expand_content_tool(expander: 'ContentExpander', *, name: 'str' = 'expand_content', budget_tokens: 'int | None' = None) -> 'Tool[..., str]'
+tesserix_adk.tools.expansion.ContentExpander :: class ContentExpander(Protocol) {expand(self, handle: 'str', *, tenant: 'str', run_id: 'str', budget_tokens: 'int | None' = None, user: 'str | None' = None) -> 'Expanded'}
+tesserix_adk.tools.expansion.Expanded :: class Expanded(Protocol)
+tesserix_adk.tools.expansion.expand_content_tool :: def expand_content_tool(expander: 'ContentExpander', *, name: 'str' = 'expand_content', budget_tokens: 'int | None' = None) -> 'Tool[..., str]'
 tesserix_adk.tools.intake.DEFAULT_INTAKE_CHARS :: DEFAULT_INTAKE_CHARS: int
 tesserix_adk.tools.intake.OcrBackend :: class OcrBackend(Protocol) {pages(self, path: 'Path') -> 'AsyncIterator[OcrPage]'}
 tesserix_adk.tools.intake.OcrPage :: class OcrPage(AdkModel)

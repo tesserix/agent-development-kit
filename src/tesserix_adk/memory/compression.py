@@ -391,6 +391,8 @@ class Compressed(AdkModel):
         compressed_tokens: The size after.
         reason: Why nothing was compressed, where nothing was. Empty on the happy path.
         untrusted: Whether this content is still untrusted. Compression never changes it.
+        handle: What resolves back to the original, where the admission was made
+            reversible. Empty where nothing retained the original.
     """
 
     content: str = ""
@@ -400,6 +402,7 @@ class Compressed(AdkModel):
     compressed_tokens: int = Field(default=0, ge=0)
     reason: str = ""
     untrusted: bool = False
+    handle: str = ""
 
     @property
     def ratio(self) -> float:
@@ -436,6 +439,11 @@ class ContentRouter:
         self._compressors = DEFAULT_COMPRESSORS if compressors is None else compressors
         self._count = count
         self._threshold = threshold_tokens
+
+    @property
+    def count(self) -> SizeCounter:
+        """How this router counts tokens, so a caller sizing its own text agrees with it."""
+        return self._count
 
     def admit(self, content: str, *, budget_tokens: int, untrusted: bool = False) -> Compressed:
         """Compress `content` by what it is, and record what happened either way.
