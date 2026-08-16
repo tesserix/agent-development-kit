@@ -8,6 +8,54 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.43.0
+
+### Added
+
+- **added**: `tesserix_adk.observability.propagation` carries one trace across an A2A hop, a queue and a
+workflow that suspends for a day. `W3CContext` renders and reads the standard `traceparent`
+and `tracestate` header pair, so a peer that knows nothing about this kit joins the same
+trace; other vendors' state survives the hop, and the sampling decision is carried rather
+than re-decided, because a peer deciding for itself is how a trace arrives truncated at the
+boundary. Identifiers derive from the run id with sha256 — no clock, no random source — so
+a workflow replayed after a worker restart rebuilds exactly the trace the first attempt
+did rather than exporting a second one alongside it, while a retry stays a sibling span.
+`Link` covers the cases where parent-child would misstate causality: delayed queue
+delivery, fan-out branches, resumption after a suspension, and a hop that arrived with no
+readable context, which `joined()` records as a visible gap linked back by correlation id
+instead of refusing work whose trace went missing.
+
+### Fixed
+
+- **tests**: mark the export-redaction fixture token as synthetic
+
+### Public API surface
+
+- Added: `tesserix_adk.observability.CORRELATION`
+- Added: `tesserix_adk.observability.Link`
+- Added: `tesserix_adk.observability.LinkKind`
+- Added: `tesserix_adk.observability.MAX_STATE_ENTRIES`
+- Added: `tesserix_adk.observability.MAX_STATE_LENGTH`
+- Added: `tesserix_adk.observability.TRACEPARENT`
+- Added: `tesserix_adk.observability.TRACESTATE`
+- Added: `tesserix_adk.observability.VENDOR`
+- Added: `tesserix_adk.observability.W3CContext`
+- Added: `tesserix_adk.observability.joined`
+- Added: `tesserix_adk.observability.propagation.CORRELATION`
+- Added: `tesserix_adk.observability.propagation.Link`
+- Added: `tesserix_adk.observability.propagation.LinkKind`
+- Added: `tesserix_adk.observability.propagation.MAX_STATE_ENTRIES`
+- Added: `tesserix_adk.observability.propagation.MAX_STATE_LENGTH`
+- Added: `tesserix_adk.observability.propagation.TRACEPARENT`
+- Added: `tesserix_adk.observability.propagation.TRACESTATE`
+- Added: `tesserix_adk.observability.propagation.VENDOR`
+- Added: `tesserix_adk.observability.propagation.W3CContext`
+- Added: `tesserix_adk.observability.propagation.joined`
+- Added: `tesserix_adk.observability.propagation.span_id_of`
+- Added: `tesserix_adk.observability.propagation.trace_id_of`
+- Added: `tesserix_adk.observability.span_id_of`
+- Added: `tesserix_adk.observability.trace_id_of`
+
 ## 0.42.0
 
 ### Added
