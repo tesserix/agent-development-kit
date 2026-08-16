@@ -41,7 +41,7 @@ Homepage = "https://github.com/tesserix/agent-development-kit"
 Issues = "https://github.com/tesserix/agent-development-kit/issues"
 
 [build-system]
-requires = ["hatchling>=1.31.0", "hatch-vcs>=0.5.0"]
+requires = ["hatchling>=1.32.0", "hatch-vcs>=0.5.0"]
 build-backend = "hatchling.build"
 
 # The tag is the version. Deriving it anywhere else lets the artefact disagree with the
