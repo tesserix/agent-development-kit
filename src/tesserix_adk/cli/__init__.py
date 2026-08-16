@@ -9,6 +9,7 @@ from tesserix_adk.cli.prompts import main as prompts_main
 from tesserix_adk.cli.resume import Frontiers, Resumes, describe
 from tesserix_adk.cli.resume import main as resume_main
 from tesserix_adk.cli.resume import show as frontier_main
+from tesserix_adk.cli.trace import main as trace_main
 
 __all__ = [
     "Aliases",
@@ -24,4 +25,5 @@ __all__ = [
     "inspect_main",
     "prompts_main",
     "resume_main",
+    "trace_main",
 ]

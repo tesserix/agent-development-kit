@@ -268,6 +268,12 @@ tesserix_adk.cli.resume.describe :: def describe(checkpoint: 'Checkpoint') -> 's
 tesserix_adk.cli.resume.main :: def main(argv: 'Sequence[str]', *, resumer: 'Resumes', out: 'TextIO | None' = None, worker: 'str' = 'cli') -> 'int'
 tesserix_adk.cli.resume.show :: def show(argv: 'Sequence[str]', *, frontiers: 'Frontiers', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.resume_main :: def resume_main(argv: 'Sequence[str]', *, resumer: 'Resumes', out: 'TextIO | None' = None, worker: 'str' = 'cli') -> 'int'
+tesserix_adk.cli.trace.MISSING :: MISSING: int
+tesserix_adk.cli.trace.MISUSED :: MISUSED: int
+tesserix_adk.cli.trace.OK :: OK: int
+tesserix_adk.cli.trace.UNREADABLE :: UNREADABLE: int
+tesserix_adk.cli.trace.main :: def main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.trace_main :: def trace_main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.core.Abstention :: class Abstention(AdkModel)
 tesserix_adk.core.ActionClass :: class ActionClass(AdkModel)
 tesserix_adk.core.ActionRegistry :: class ActionRegistry(object) {named(self, action_class: 'str') -> 'ActionClass | None'; of(self, tool: 'str') -> 'ActionClass | None'}
@@ -1606,6 +1612,7 @@ tesserix_adk.observability.DENIED_KEYS :: DENIED_KEYS: frozenset
 tesserix_adk.observability.Dimensions :: class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] | None') -> 'str'; of(self, record: 'SpendRecord') -> 'dict[str, str]'}
 tesserix_adk.observability.ExportedEvent :: class ExportedEvent(AdkModel)
 tesserix_adk.observability.ExportedSpan :: class ExportedSpan(AdkModel)
+tesserix_adk.observability.FILE_VERSION :: FILE_VERSION: str
 tesserix_adk.observability.HEADER :: HEADER: str
 tesserix_adk.observability.INPUT_TOKENS :: INPUT_TOKENS: str
 tesserix_adk.observability.LATENCY_SECONDS :: LATENCY_SECONDS: str
@@ -1621,6 +1628,7 @@ tesserix_adk.observability.Measured :: class Measured(AdkModel) {rendered(self) 
 tesserix_adk.observability.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
 tesserix_adk.observability.NODE_SPAN :: NODE_SPAN: str
 tesserix_adk.observability.Node :: class Node(AdkModel) {in_currency(self, currency: 'str') -> 'Cost | None'}
+tesserix_adk.observability.ORPHAN :: ORPHAN: str
 tesserix_adk.observability.Outcome :: class Outcome(StrEnum)
 tesserix_adk.observability.PAYLOAD_ATTRIBUTES :: PAYLOAD_ATTRIBUTES: frozenset
 tesserix_adk.observability.Pattern :: class Pattern(StrEnum)
@@ -1629,6 +1637,7 @@ tesserix_adk.observability.REDACTED_EVENT :: REDACTED_EVENT: str
 tesserix_adk.observability.REFERENCE_SUFFIX :: REFERENCE_SUFFIX: str
 tesserix_adk.observability.RESERVED_PREFIX :: RESERVED_PREFIX: str
 tesserix_adk.observability.Rate :: class Rate(AdkModel) {applied(self, cost: 'Cost') -> 'Cost | None'}
+tesserix_adk.observability.RecordedSpan :: class RecordedSpan(AdkModel)
 tesserix_adk.observability.RedactingSpanProcessor :: class RedactingSpanProcessor(object) {process(self, span: 'PendingSpan') -> 'ExportedSpan'}
 tesserix_adk.observability.Redaction :: class Redaction(AdkModel)
 tesserix_adk.observability.RedactionPolicy :: class RedactionPolicy(AdkModel)
@@ -1637,6 +1646,7 @@ tesserix_adk.observability.Redactor :: class Redactor(object) {scrub(self, attri
 tesserix_adk.observability.RunTimer :: class RunTimer(object) {finished(self, *, output_tokens: 'int', hits: 'CacheHits | None' = None) -> 'LatencyReport'; first_token(self) -> 'None'}
 tesserix_adk.observability.RunTree :: class RunTree(AdkModel) {by_step(self) -> 'dict[Step, Totals]'; children(self, run_id: 'str') -> 'tuple[Node, ...]'; node(self, run_id: 'str') -> 'Node | None'; records(self) -> 'tuple[SpendRecord, ...]'; totals_by(self, *by: 'str') -> 'dict[tuple[str, ...], Totals]'}
 tesserix_adk.observability.SPAN_NAMES :: SPAN_NAMES: dict
+tesserix_adk.observability.STOPPED :: STOPPED: str
 tesserix_adk.observability.SpanEvent :: class SpanEvent(AdkModel)
 tesserix_adk.observability.SpendRecord :: class SpendRecord(AdkModel)
 tesserix_adk.observability.Step :: class Step(StrEnum)
@@ -1647,12 +1657,15 @@ tesserix_adk.observability.TRACEPARENT :: TRACEPARENT: str
 tesserix_adk.observability.TRACESTATE :: TRACESTATE: str
 tesserix_adk.observability.Totals :: class Totals(AdkModel)
 tesserix_adk.observability.TraceContext :: class TraceContext(AdkModel) {carried(self) -> 'dict[str, str]'; child(self, *, run_id: 'str', agent: 'str', pattern: 'Pattern' = <Pattern.DELEGATION: 'delegation'>, branch: 'str | None' = None, tenant: 'str | None' = None) -> 'Self'; header(self) -> 'str'}
+tesserix_adk.observability.TraceFile :: class TraceFile(AdkModel)
+tesserix_adk.observability.TraceNode :: class TraceNode(AdkModel)
 tesserix_adk.observability.TreeTotals :: class TreeTotals(AdkModel)
 tesserix_adk.observability.UNKNOWN :: UNKNOWN: str
 tesserix_adk.observability.Unavailability :: class Unavailability(StrEnum)
 tesserix_adk.observability.VENDOR :: VENDOR: str
 tesserix_adk.observability.VERSION :: VERSION: str
 tesserix_adk.observability.W3CContext :: class W3CContext(AdkModel) {carried(self) -> 'dict[str, str]'; child(self, name: 'str', *, attempt: 'int' = 1) -> 'Self'; link(self, kind: 'LinkKind', **attributes: 'str') -> 'Link'}
+tesserix_adk.observability.assembled :: def assembled(spans: 'Sequence[RecordedSpan]') -> 'tuple[TraceNode, ...]'
 tesserix_adk.observability.attributes_of :: def attributes_of(record: 'SpendRecord') -> 'dict[str, str]'
 tesserix_adk.observability.attributes_of_context :: def attributes_of_context(context: 'TraceContext') -> 'dict[str, str]'
 tesserix_adk.observability.attribution.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
@@ -1701,6 +1714,16 @@ tesserix_adk.observability.latency.LatencyReport :: class LatencyReport(AdkModel
 tesserix_adk.observability.latency.RunTimer :: class RunTimer(object) {finished(self, *, output_tokens: 'int', hits: 'CacheHits | None' = None) -> 'LatencyReport'; first_token(self) -> 'None'}
 tesserix_adk.observability.latency.TIME_TO_FIRST_TOKEN :: TIME_TO_FIRST_TOKEN: str
 tesserix_adk.observability.latency.TOKENS_PER_SECOND :: TOKENS_PER_SECOND: str
+tesserix_adk.observability.local_view.FILE_VERSION :: FILE_VERSION: str
+tesserix_adk.observability.local_view.ORPHAN :: ORPHAN: str
+tesserix_adk.observability.local_view.RecordedSpan :: class RecordedSpan(AdkModel)
+tesserix_adk.observability.local_view.STOPPED :: STOPPED: str
+tesserix_adk.observability.local_view.TraceFile :: class TraceFile(AdkModel)
+tesserix_adk.observability.local_view.TraceNode :: class TraceNode(AdkModel)
+tesserix_adk.observability.local_view.assembled :: def assembled(spans: 'Sequence[RecordedSpan]') -> 'tuple[TraceNode, ...]'
+tesserix_adk.observability.local_view.machine_readable :: def machine_readable(nodes: 'Sequence[TraceNode]') -> 'str'
+tesserix_adk.observability.local_view.rendered :: def rendered(nodes: 'Sequence[TraceNode]', *, depth: 'int | None' = None, only: 'Sequence[str]' = ()) -> 'str'
+tesserix_adk.observability.machine_readable :: def machine_readable(nodes: 'Sequence[TraceNode]') -> 'str'
 tesserix_adk.observability.metrics.CACHED_TOKENS :: CACHED_TOKENS: str
 tesserix_adk.observability.metrics.CALLS :: CALLS: str
 tesserix_adk.observability.metrics.COST :: COST: str
@@ -1728,6 +1751,7 @@ tesserix_adk.observability.redaction.MASK :: MASK: str
 tesserix_adk.observability.redaction.Redaction :: class Redaction(AdkModel)
 tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
 tesserix_adk.observability.render :: def render(assembled: 'RunTree') -> 'str'
+tesserix_adk.observability.rendered :: def rendered(nodes: 'Sequence[TraceNode]', *, depth: 'int | None' = None, only: 'Sequence[str]' = ()) -> 'str'
 tesserix_adk.observability.span_id_of :: def span_id_of(run_id: 'str', name: 'str' = '', attempt: 'int' = 1) -> 'str'
 tesserix_adk.observability.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
