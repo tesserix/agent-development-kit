@@ -12,3 +12,5 @@ ba8d0abb3c56f3ada1d321f349c5ca05b8f406ad:tests/test_state.py:generic-api-key:83
 9766217305ecb60291b15310ce75c8778d4f7ba4:tests/test_audit_trail.py:generic-api-key:274
 1ed696ccdd00f9c0a48bfacfd3ad8d8ceddeb0bb:tests/test_audit_trail.py:generic-api-key:275
 7f7686fab864eda974bd2fbd0ee27ab6d9746f5e:tests/test_run_resume.py:generic-api-key:310
+c2a1a835b470aedbb9291869a9166b9858c1e1ed:examples/export_redaction.py:generic-api-key:21
+c2a1a835b470aedbb9291869a9166b9858c1e1ed:tests/test_export_redaction.py:generic-api-key:26

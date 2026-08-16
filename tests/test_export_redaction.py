@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 CARD = "4111 1111 1111 1111"
-TOKEN = "sk-live-0123456789abcdef"  # noqa: S105 — a synthetic shape, not a credential
+TOKEN = "sk-test-0123456789abcdef"  # noqa: S105 — synthetic, and marked so by the prefix
 
 
 def _span(**overrides: object) -> PendingSpan:
