@@ -12,9 +12,10 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from tesserix_adk.core.errors import AdkError
+from tesserix_adk.testing.fake_model import FakeModelProvider
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Callable, Iterator, Mapping
 
 __all__ = ["NetworkAccessInTestError", "QuarantineError"]
 
@@ -72,6 +73,22 @@ def _block_network(request: pytest.FixtureRequest) -> Iterator[None]:
     finally:
         socket.socket.connect = real_connect  # type: ignore[method-assign]
         socket.getaddrinfo = real_getaddrinfo
+
+
+@pytest.fixture
+def fake_model_factory() -> Callable[..., FakeModelProvider]:
+    """Build a scripted model provider, one per run.
+
+    Two concurrent runs sharing one fake consume each other's turns, so a test that
+    needs more than one asks for more than one rather than reusing the fixture value.
+    """
+    return FakeModelProvider
+
+
+@pytest.fixture
+def fake_model(fake_model_factory: Callable[..., FakeModelProvider]) -> FakeModelProvider:
+    """An empty strict fake: the script is written by the test that needs one."""
+    return fake_model_factory()
 
 
 def pytest_configure(config: pytest.Config) -> None:

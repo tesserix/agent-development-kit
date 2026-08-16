@@ -442,7 +442,7 @@ class ScriptedProvider:
             CapabilityError: If this fake does not declare `streaming`.
         """
         self._capabilities.require(Capability.STREAMING, provider=self._name, model=request.model)
-        return _replayed(await self.complete(request))
+        return replayed(await self.complete(request))
 
 
 class StallingProvider:
@@ -513,7 +513,7 @@ class StallingProvider:
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
         """Stream the scripted answer, or stall mid-stream until released or cancelled."""
-        return _replayed(await self.complete(request))
+        return replayed(await self.complete(request))
 
 
 class FakeToolRegistry:
@@ -630,7 +630,7 @@ def _pieces(text: str) -> list[str]:
     return re.findall(r"\S+\s*", text)
 
 
-async def _replayed(response: ModelResponse) -> AsyncIterator[StreamEvent]:
+async def replayed(response: ModelResponse) -> AsyncIterator[StreamEvent]:
     """One already-decided response, told as the stream a vendor would have sent."""
     for piece in _pieces(response.content):
         yield TextDelta(text=piece)

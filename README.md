@@ -178,6 +178,7 @@ code lands here as the kit is built.
 | One trace across hops — W3C headers a non-kit peer already reads, identifiers a replay rebuilds rather than duplicates, a broken hop linked back rather than dropped | [`docs/trace-propagation.md`](docs/trace-propagation.md) |
 | Tool allowlists — agent, tenant and caller intersected once, enforced at dispatch, delegation that only narrows | [`docs/tool-allowlists.md`](docs/tool-allowlists.md) |
 | Testing a guard — an attack corpus with a benign control set, recall and false positives together, per-guard bars that ratchet | [`docs/guard-testing.md`](docs/guard-testing.md) |
+| A model provider you can script — exact token counts, injectable provider faults, an unscripted call that fails rather than answers forever | [`docs/fake-model-provider.md`](docs/fake-model-provider.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
 | Tool concurrency — bounded fan-out, per-tool and per-tenant lanes, per-call failure | [`docs/tool-concurrency.md`](docs/tool-concurrency.md) |
 | Connection pooling — client reuse across runs, credential rotation, bounded exhaustion | [`docs/connection-pooling.md`](docs/connection-pooling.md) |

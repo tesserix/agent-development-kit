@@ -15,6 +15,12 @@ from tesserix_adk.testing.cassette import (
     redacted,
 )
 from tesserix_adk.testing.embedding import FakeEmbedder
+from tesserix_adk.testing.fake_model import (
+    FakeModelProvider,
+    Fault,
+    ScriptedTurn,
+    ScriptExhaustedError,
+)
 from tesserix_adk.testing.fakes import (
     CAPABLE,
     BudgetExceededError,
@@ -124,10 +130,12 @@ __all__ = [
     "FakeIndex",
     "FakeKeyValueStore",
     "FakeMeter",
+    "FakeModelProvider",
     "FakeSecrets",
     "FakeTenantLedger",
     "FakeToolRegistry",
     "FakeTracer",
+    "Fault",
     "GuardCase",
     "GuardFamily",
     "GuardMetrics",
@@ -157,7 +165,9 @@ __all__ = [
     "RecordedGuard",
     "RecordingProvider",
     "ReplayingProvider",
+    "ScriptExhaustedError",
     "ScriptedProvider",
+    "ScriptedTurn",
     "SearchIndexConformance",
     "SeededDocument",
     "SentRequest",
