@@ -8,6 +8,34 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.47.0
+
+### Added
+
+- **added**: Cassette record and replay of provider traffic: `CassetteMode` with replay the default,
+`ADK_CASSETTE_MODE` read by `mode_from_env`, a `cassette` pytest marker with the
+`cassettes` and `cassette_dir` fixtures, `MatchOn` to widen what a recording answers,
+`CassetteMismatchError` naming the diverging field instead of falling through to a live
+call, streamed chunk boundaries recorded and replayed, and a `Cassette.save` that raises
+`CassetteLeakError` rather than committing anything credential-shaped.
+
+### Public API surface
+
+- Added: `tesserix_adk.testing.CassetteHarness`
+- Added: `tesserix_adk.testing.CassetteLeakError`
+- Added: `tesserix_adk.testing.CassetteMismatchError`
+- Added: `tesserix_adk.testing.CassetteMode`
+- Added: `tesserix_adk.testing.ENV_MODE`
+- Added: `tesserix_adk.testing.MatchOn`
+- Added: `tesserix_adk.testing.cassette.CassetteHarness`
+- Added: `tesserix_adk.testing.cassette.CassetteLeakError`
+- Added: `tesserix_adk.testing.cassette.CassetteMismatchError`
+- Added: `tesserix_adk.testing.cassette.CassetteMode`
+- Added: `tesserix_adk.testing.cassette.ENV_MODE`
+- Added: `tesserix_adk.testing.cassette.MatchOn`
+- Added: `tesserix_adk.testing.cassette.mode_from_env`
+- Added: `tesserix_adk.testing.mode_from_env`
+
 ## 0.46.0
 
 ### Added
