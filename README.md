@@ -171,6 +171,7 @@ code lands here as the kit is built.
 | Store isolation — the partition derived from context rather than passed, a mismatched row withheld, guarantees stated with their limits | [`docs/store-isolation.md`](docs/store-isolation.md) |
 | Proving isolation — two tenants seeded with confusable data, markers that survive summarising, surfaces nobody read counted as a failure | [`docs/isolation-suite.md`](docs/isolation-suite.md) |
 | Spans without wiring — a run-rooted trace the run emits itself, retries as siblings, a collector outage that costs telemetry rather than the run | [`docs/auto-instrumentation.md`](docs/auto-instrumentation.md) |
+| Redaction before export — a payload allowlist off by default, nested tool arguments walked, a detector outage that costs an attribute rather than the span | [`docs/export-redaction.md`](docs/export-redaction.md) |
 | One set of attribute names — a versioned telemetry convention, unmeasured numbers stated rather than guessed, cardinality declared per name | [`docs/telemetry-convention.md`](docs/telemetry-convention.md) |
 | Tool allowlists — agent, tenant and caller intersected once, enforced at dispatch, delegation that only narrows | [`docs/tool-allowlists.md`](docs/tool-allowlists.md) |
 | Testing a guard — an attack corpus with a benign control set, recall and false positives together, per-guard bars that ratchet | [`docs/guard-testing.md`](docs/guard-testing.md) |
