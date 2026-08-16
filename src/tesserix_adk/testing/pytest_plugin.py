@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import datetime as dt
 import socket
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from tesserix_adk.core.errors import AdkError
+from tesserix_adk.core.errors import AdkError, ConfigurationError
+from tesserix_adk.testing.cassette import CassetteHarness, mode_from_env
 from tesserix_adk.testing.fake_model import FakeModelProvider
 
 if TYPE_CHECKING:
@@ -91,10 +93,45 @@ def fake_model(fake_model_factory: Callable[..., FakeModelProvider]) -> FakeMode
     return fake_model_factory()
 
 
+@pytest.fixture
+def cassette_dir() -> Path:
+    """Where cassettes live. Override it in a conftest to move them."""
+    return Path("tests/cassettes")
+
+
+@pytest.fixture
+def cassettes(request: pytest.FixtureRequest, cassette_dir: Path) -> Iterator[CassetteHarness]:
+    """The cassette named by `@pytest.mark.cassette(...)`, in the mode the environment asks for.
+
+    Replay is the default, so a suite cannot start spending because somebody forgot a
+    flag. What was recorded is written back only when this run recorded it.
+
+    Raises:
+        ConfigurationError: If the test carries no cassette marker.
+    """
+    marker = request.node.get_closest_marker("cassette")
+    if marker is None or not marker.args:
+        message = (
+            f"{request.node.name} asked for the cassettes fixture without "
+            f"@pytest.mark.cassette('<name>'), so there is no cassette to load"
+        )
+        raise ConfigurationError(message)
+    harness = CassetteHarness(
+        cassette_dir / f"{marker.args[0]}.json",
+        mode=mode_from_env(),
+        **marker.kwargs,
+    )
+    yield harness
+    harness.save()
+
+
 def pytest_configure(config: pytest.Config) -> None:
     """Register the markers this plugin owns."""
     config.addinivalue_line(
         "markers", "allow_network: this test is an integration test and may use the network"
+    )
+    config.addinivalue_line(
+        "markers", "cassette(name, **options): replay provider traffic recorded under `name`"
     )
     config.addinivalue_line(
         "markers",

@@ -14,15 +14,23 @@ run that used it.
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections.abc import Mapping
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
-from tesserix_adk.core.errors import AdkError, ProviderError
+from tesserix_adk.core.errors import AdkError, ConfigurationError, ProviderError
 from tesserix_adk.core.models import AdkModel
-from tesserix_adk.runtime import ModelResponse, RunFingerprint, fingerprint_of
+from tesserix_adk.core.streaming import StreamEnd, TextDelta, ToolCallDelta, UsageDelta
+from tesserix_adk.runtime import (
+    ModelResponse,
+    RunFingerprint,
+    canonical_digest,
+    fingerprint_of,
+)
 from tesserix_adk.testing.fakes import CAPABLE, estimate_tokens
 
 if TYPE_CHECKING:
@@ -34,14 +42,21 @@ if TYPE_CHECKING:
     from tesserix_adk.runtime import ModelRequest
 
 __all__ = [
+    "ENV_MODE",
     "Cassette",
+    "CassetteHarness",
+    "CassetteLeakError",
+    "CassetteMismatchError",
     "CassetteMissError",
+    "CassetteMode",
     "CassetteVersionError",
     "Interaction",
+    "MatchOn",
     "RecordedError",
     "RecordingProvider",
     "ReplayingProvider",
     "assert_same_run",
+    "mode_from_env",
     "redacted",
 ]
 
@@ -49,6 +64,8 @@ __all__ = [
 CASSETTE_FORMAT = "1"
 
 REDACTED = "[REDACTED]"
+
+_REFRESH = "Re-record it with ADK_CASSETTE_MODE=refresh"
 
 _SECRET_KEYS = re.compile(
     r"(token|secret|password|passwd|api[_-]?key|authorization|auth|credential|cookie|session)",
@@ -71,6 +88,100 @@ class CassetteMissError(AdkError):
     Names the fields on which the request diverged from the nearest recording, because a
     bare miss sends the reader off to diff two blobs by eye.
     """
+
+
+class CassetteMismatchError(CassetteMissError):
+    """Raised when the request a run issued is not the one that was recorded.
+
+    Carries the diverging fields and the command that re-records, so the reader is not
+    left to work out how to get back to green. A `CassetteMissError`, so a consumer that
+    already catches the general case keeps working.
+    """
+
+
+class CassetteLeakError(AdkError):
+    """Raised when a cassette about to be written still holds something secret.
+
+    Refused at the write, not at review: a token in a committed file outlives every run
+    that used it, and nobody reads a 4000-line JSON diff closely.
+    """
+
+
+class CassetteMode(StrEnum):
+    """How a cassette-backed test treats the provider.
+
+    `REPLAY` is the default everywhere, so a suite cannot spend money by forgetting to
+    set something.
+    """
+
+    REPLAY = "replay"
+    RECORD = "record"
+    REFRESH = "refresh"
+
+
+ENV_MODE = "ADK_CASSETTE_MODE"
+
+
+def mode_from_env(environ: Mapping[str, str] | None = None) -> CassetteMode:
+    """Read the cassette mode from the environment.
+
+    Args:
+        environ: Where to read it from. Defaults to the process environment.
+
+    Raises:
+        ConfigurationError: If the variable holds something no mode is named after. A
+            typo silently meaning "replay" is a suite that never records again.
+    """
+    raw = (environ if environ is not None else os.environ).get(ENV_MODE, "").strip()
+    if not raw:
+        return CassetteMode.REPLAY
+    try:
+        return CassetteMode(raw.lower())
+    except ValueError as err:
+        named = ", ".join(mode.value for mode in CassetteMode)
+        message = f"{ENV_MODE}={raw!r} names no cassette mode; it is one of {named}"
+        raise ConfigurationError(message) from err
+
+
+class MatchOn(AdkModel):
+    """Which parts of a request have to agree for a recording to serve it.
+
+    Every field is compared by default. Dropping one widens what a cassette answers: a
+    test about tool wiring need not be re-recorded because a word in the prompt changed.
+
+    Args:
+        model: Whether the model name has to match.
+        messages: Whether the assembled prompt has to match.
+        tools: Whether the tool schemas offered have to match.
+        output_schema: Whether the requested output schema has to match.
+        hooks: Whether the hook chain has to match.
+    """
+
+    model: bool = True
+    messages: bool = True
+    tools: bool = True
+    output_schema: bool = True
+    hooks: bool = True
+
+    @model_validator(mode="after")
+    def _matches_something(self) -> MatchOn:
+        """Refuse a strategy under which every request matches every recording."""
+        if not self.fields:
+            message = "a match strategy has to compare at least one field of the request"
+            raise ValueError(message)
+        return self
+
+    @property
+    def fields(self) -> tuple[str, ...]:
+        """The fingerprint fields this strategy compares, in a stable order."""
+        return tuple(name for name in _MATCHABLE if getattr(self, name))
+
+    def key(self, fingerprint: RunFingerprint) -> str:
+        """The key a recording is filed and found under."""
+        return canonical_digest({name: getattr(fingerprint, name) for name in self.fields})
+
+
+_MATCHABLE = ("model", "messages", "tools", "output_schema", "hooks")
 
 
 class CassetteVersionError(AdkError):
@@ -106,11 +217,15 @@ class Interaction(AdkModel):
         fingerprint: The canonical summary of the request. Digests, never content.
         response: What the provider returned, redacted.
         error: What it raised instead, where it raised.
+        chunks: The text deltas as they arrived, where the exchange was streamed. Kept
+            because a consumer that renders per chunk behaves differently on different
+            boundaries, and a replay that re-chunks tests the wrong thing.
     """
 
     fingerprint: RunFingerprint
     response: ModelResponse | None = None
     error: RecordedError | None = None
+    chunks: tuple[str, ...] = ()
 
 
 class Cassette(AdkModel):
@@ -129,8 +244,21 @@ class Cassette(AdkModel):
     interactions: tuple[Interaction, ...] = ()
 
     def save(self, path: Path) -> None:
-        """Write the cassette to `path` as indented JSON, so a diff is readable in review."""
-        path.write_text(json.dumps(self.model_dump(mode="json"), indent=2, sort_keys=True) + "\n")
+        """Write the cassette to `path` as indented JSON, so a diff is readable in review.
+
+        Raises:
+            CassetteLeakError: If anything credential-shaped survived redaction. The
+                write is refused rather than left for review to catch.
+        """
+        written = json.dumps(self.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
+        leaked = [pattern.pattern for pattern in _SECRET_VALUES if pattern.search(written)]
+        if leaked:
+            message = (
+                f"refusing to write {path}: it still holds something credential-shaped "
+                f"({len(leaked)} pattern(s) matched). Redact it at the source"
+            )
+            raise CassetteLeakError(message)
+        path.write_text(written)
 
     @classmethod
     def load(cls, path: Path) -> Cassette:
@@ -222,8 +350,34 @@ class RecordingProvider:
         return response
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
-        """Not recorded yet — recorded streaming is #150."""
-        raise NotImplementedError("RecordingProvider does not stream; see #150")
+        """Pass the wrapped provider's stream through, keeping its chunk boundaries.
+
+        A consumer that stops part way still has what arrived recorded: the point it
+        stopped at is usually what the test was about.
+        """
+        fingerprint = fingerprint_of(request, hooks=self._hooks)
+        return self._recording(await self._inner.stream(request), fingerprint)
+
+    async def _recording(
+        self, events: AsyncIterator[StreamEvent], fingerprint: RunFingerprint
+    ) -> AsyncIterator[StreamEvent]:
+        chunks: list[str] = []
+        answer: ModelResponse | None = None
+        try:
+            async for event in events:
+                if isinstance(event, TextDelta):
+                    chunks.append(redacted(event.text))
+                if isinstance(event, StreamEnd):
+                    answer = _scrubbed(event.response)
+                yield event
+        finally:
+            self._interactions.append(
+                Interaction(
+                    fingerprint=fingerprint,
+                    response=answer if answer is not None else _assembled(chunks),
+                    chunks=tuple(chunks),
+                )
+            )
 
 
 class ReplayingProvider:
@@ -250,6 +404,7 @@ class ReplayingProvider:
         expect_version: str | None = None,
         hooks: Iterable[str] = (),
         capabilities: ModelCapabilities | None = None,
+        match: MatchOn | None = None,
     ) -> None:
         if expect_provider is not None and cassette.provider != expect_provider:
             raise CassetteVersionError(
@@ -265,6 +420,7 @@ class ReplayingProvider:
         self._cassette = cassette
         self._hooks = tuple(hooks)
         self._capabilities = capabilities if capabilities is not None else CAPABLE
+        self._match = match if match is not None else MatchOn()
         self.served: list[Interaction] = []
 
     @property
@@ -296,25 +452,36 @@ class ReplayingProvider:
         return interaction.response or ModelResponse()
 
     async def stream(self, request: ModelRequest) -> AsyncIterator[StreamEvent]:
-        """Not replayed yet — recorded streaming is #150."""
-        raise NotImplementedError("ReplayingProvider does not stream; see #150")
+        """Replay a recorded stream, chunk boundaries included.
+
+        Raises:
+            CassetteMismatchError: If nothing was recorded for the request.
+            ProviderError: If what was recorded for it was a failure.
+        """
+        fingerprint = fingerprint_of(request, hooks=self._hooks)
+        interaction = self._next(fingerprint)
+        self.served.append(interaction)
+        if interaction.error is not None:
+            raise interaction.error.raised()
+        return _served(interaction)
 
     def _next(self, fingerprint: RunFingerprint) -> Interaction:
-        taken = sum(1 for served in self.served if served.fingerprint.digest == fingerprint.digest)
+        key = self._match.key(fingerprint)
+        taken = sum(1 for served in self.served if self._match.key(served.fingerprint) == key)
         matching = [
             interaction
             for interaction in self._cassette.interactions
-            if interaction.fingerprint.digest == fingerprint.digest
+            if self._match.key(interaction.fingerprint) == key
         ]
         if len(matching) > taken:
             return matching[taken]
-        raise CassetteMissError(self._miss(fingerprint, exhausted=bool(matching)))
+        raise CassetteMismatchError(self._miss(fingerprint, exhausted=bool(matching)))
 
     def _miss(self, fingerprint: RunFingerprint, *, exhausted: bool) -> str:
         if exhausted:
             return (
                 "cassette has no further recording for this request; the run asked more "
-                "times than it did when recorded"
+                f"times than it did when recorded. {_REFRESH}"
             )
         nearest = min(
             (interaction.fingerprint for interaction in self._cassette.interactions),
@@ -322,10 +489,102 @@ class ReplayingProvider:
             default=None,
         )
         if nearest is None:
-            return "cassette is empty, so there is nothing to replay"
+            return f"cassette is empty, so there is nothing to replay. {_REFRESH}"
         return (
             f"no recording for this request; it differs from the nearest one in "
-            f"{', '.join(fingerprint.diff(nearest))}"
+            f"{', '.join(fingerprint.diff(nearest))}. {_REFRESH}"
+        )
+
+
+class CassetteHarness:
+    """Picks the provider a test gets, from the mode and whether a cassette exists.
+
+    Args:
+        path: Where the cassette lives.
+        mode: What to do about it. `REPLAY` never opens a socket; `RECORD` records only
+            what is not on the cassette already, so a suite does not re-buy what it has;
+            `REFRESH` records over it deliberately.
+        hooks: The hook names in the chain, so the fingerprint covers them.
+        match: Which parts of a request have to agree for a recording to serve it.
+        provider: The provider name stamped on a new recording.
+        version: The provider version stamped on a new recording.
+        capabilities: What the recorded provider declared, for a replay.
+
+    Example:
+        >>> harness = CassetteHarness(path, mode=CassetteMode.REPLAY)   # doctest: +SKIP
+        >>> runtime_provider = harness.provider()                       # doctest: +SKIP
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        mode: CassetteMode = CassetteMode.REPLAY,
+        hooks: Iterable[str] = (),
+        match: MatchOn | None = None,
+        provider: str = "recorded",
+        version: str = "",
+        capabilities: ModelCapabilities | None = None,
+    ) -> None:
+        self.path = path
+        self.mode = mode
+        self._hooks = tuple(hooks)
+        self._match = match
+        self._provider = provider
+        self._version = version
+        self._capabilities = capabilities
+        self._recorder: RecordingProvider | None = None
+
+    def provider(self, live: ModelProvider | None = None) -> ModelProvider:
+        """The provider this test should run against.
+
+        Args:
+            live: The real provider, needed only where this run will record.
+
+        Raises:
+            CassetteMismatchError: In replay mode with no cassette to replay, naming the
+                command that records one. Falling through to a live call here is how a
+                suite starts spending without anybody deciding to.
+            ConfigurationError: If a recording mode was asked for without a live provider.
+        """
+        if self._recording():
+            if live is None:
+                message = (
+                    f"{self.mode.value} mode needs a live provider to record from; "
+                    f"pass one, or run in {CassetteMode.REPLAY.value} mode"
+                )
+                raise ConfigurationError(message)
+            self._recorder = RecordingProvider(
+                live, provider=self._provider, version=self._version, hooks=self._hooks
+            )
+            return self._recorder
+        if not self.path.exists():
+            message = (
+                f"no cassette at {self.path} to replay. "
+                f"Record one with {ENV_MODE}={CassetteMode.RECORD.value}"
+            )
+            raise CassetteMismatchError(message)
+        return ReplayingProvider(
+            Cassette.load(self.path),
+            hooks=self._hooks,
+            capabilities=self._capabilities,
+            match=self._match,
+        )
+
+    def save(self) -> None:
+        """Write what was recorded, if this run recorded anything.
+
+        Raises:
+            CassetteLeakError: If the recording still holds something credential-shaped.
+        """
+        if self._recorder is not None:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self._recorder.cassette.save(self.path)
+
+    def _recording(self) -> bool:
+        """Whether this run should call the real provider."""
+        return self.mode is CassetteMode.REFRESH or (
+            self.mode is CassetteMode.RECORD and not self.path.exists()
         )
 
 
@@ -367,6 +626,27 @@ def redacted(text: str) -> str:
     for pattern in _SECRET_VALUES:
         text = pattern.sub(REDACTED, text)
     return text
+
+
+def _assembled(chunks: list[str]) -> ModelResponse:
+    """What a stream that ended early amounts to, so the recording is not empty."""
+    return ModelResponse(content="".join(chunks))
+
+
+async def _served(interaction: Interaction) -> AsyncIterator[StreamEvent]:
+    """A recorded exchange told again, with the boundaries it arrived on."""
+    response = interaction.response or ModelResponse()
+    for chunk in interaction.chunks:
+        yield TextDelta(text=chunk)
+    for index, call in enumerate(response.tool_calls):
+        yield ToolCallDelta(
+            index=index,
+            id=call.id,
+            name=call.name,
+            arguments=json.dumps(call.arguments, sort_keys=True),
+        )
+    yield UsageDelta(usage=response.usage)
+    yield StreamEnd(response=response)
 
 
 def _scrubbed(response: ModelResponse) -> ModelResponse:

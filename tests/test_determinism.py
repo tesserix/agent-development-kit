@@ -288,7 +288,7 @@ class TestReplayRefusesToGuess:
         )
 
         assert run.state is RunState.FAILED
-        assert "CassetteMissError" in (run.events[-1].detail or "")
+        assert "CassetteMismatchError" in (run.events[-1].detail or "")
         assert "messages" in (run.events[-1].detail or "")
 
     async def test_a_changed_model_misses_and_says_so(self) -> None:
