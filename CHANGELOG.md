@@ -8,6 +8,43 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.46.0
+
+### Added
+
+- **added**: `tesserix_adk.testing.FakeModelProvider` is a model provider a test scripts turn by turn,
+with no vendor SDK and no network, so a suite stops failing on somebody else's outage.
+`ScriptedTurn.saying`, `.calling`, `.returning` and `.failing` write the script; token
+counts and cost are reported back exactly as scripted, because a budget assertion
+compared against an estimate is an assertion that flakes.
+
+`Fault` scripts what a provider really does — timeout, rate limit, transport failure,
+malformed body — each raised as the kit's own error type, so the retry and degradation
+paths are exercised against what they will really see. A payload that violates the
+requested schema is returned rather than raised: what an invalid answer means is the
+runtime's decision, and a fake that refuses to produce one hides the repair path.
+
+Strict by default: an unscripted call raises `ScriptExhaustedError` naming the calls made
+against the turns written, because a fake that answers forever lets a runaway loop pass
+its test and arrive as a bill. `remaining` catches the inverse, a run that stopped earlier
+than the script expected. `requests` records every prompt the runtime assembled, which is
+where a test asserts what the prompt actually contained rather than what it was meant to.
+
+The `fake_model` and `fake_model_factory` fixtures come with the pytest plugin.
+Concurrent runs get one fake each — a shared script two runs consume leaves both tests
+asserting about a conversation neither of them had.
+
+### Public API surface
+
+- Added: `tesserix_adk.testing.FakeModelProvider`
+- Added: `tesserix_adk.testing.Fault`
+- Added: `tesserix_adk.testing.ScriptExhaustedError`
+- Added: `tesserix_adk.testing.ScriptedTurn`
+- Added: `tesserix_adk.testing.fake_model.FakeModelProvider`
+- Added: `tesserix_adk.testing.fake_model.Fault`
+- Added: `tesserix_adk.testing.fake_model.ScriptExhaustedError`
+- Added: `tesserix_adk.testing.fake_model.ScriptedTurn`
+
 ## 0.45.0
 
 ### Added
