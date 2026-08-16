@@ -8,6 +8,43 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.42.0
+
+### Added
+
+- **added**: `tesserix_adk.observability.export` puts redaction in the export path, so attaching an
+attribute is never a data-protection decision. `RedactingSpanProcessor` rewrites every
+attribute, span event and exception message on the way out: a `SecretStr` renders as a
+mask, a denylisted key is dropped whatever its value looks like, a model payload travels
+only if the deployment allowlisted it, and everything else is scanned for sensitive shapes
+— recursively, so a secret nested in a JSON tool argument is found. A dropped payload
+leaves a content reference a developer can still correlate on. Failure is closed: a
+detector that raises costs that attribute and increments `RedactionStats.failures`, never
+the span, because losing the trace loses the causality that explains the failure.
+
+### Public API surface
+
+- Added: `tesserix_adk.observability.DENIED_KEYS`
+- Added: `tesserix_adk.observability.ExportedEvent`
+- Added: `tesserix_adk.observability.ExportedSpan`
+- Added: `tesserix_adk.observability.PAYLOAD_ATTRIBUTES`
+- Added: `tesserix_adk.observability.PendingSpan`
+- Added: `tesserix_adk.observability.REFERENCE_SUFFIX`
+- Added: `tesserix_adk.observability.RedactingSpanProcessor`
+- Added: `tesserix_adk.observability.RedactionPolicy`
+- Added: `tesserix_adk.observability.RedactionStats`
+- Added: `tesserix_adk.observability.SpanEvent`
+- Added: `tesserix_adk.observability.export.DENIED_KEYS`
+- Added: `tesserix_adk.observability.export.ExportedEvent`
+- Added: `tesserix_adk.observability.export.ExportedSpan`
+- Added: `tesserix_adk.observability.export.PAYLOAD_ATTRIBUTES`
+- Added: `tesserix_adk.observability.export.PendingSpan`
+- Added: `tesserix_adk.observability.export.REFERENCE_SUFFIX`
+- Added: `tesserix_adk.observability.export.RedactingSpanProcessor`
+- Added: `tesserix_adk.observability.export.RedactionPolicy`
+- Added: `tesserix_adk.observability.export.RedactionStats`
+- Added: `tesserix_adk.observability.export.SpanEvent`
+
 ## 0.41.0
 
 ### Added
