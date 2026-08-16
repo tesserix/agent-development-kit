@@ -8,6 +8,49 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.45.0
+
+### Added
+
+- **added**: `tesserix_adk.observability.spend_metrics` turns spend into series an operator can alert
+on, instead of an invoice arriving a month after a runaway retry loop. `SpendMeter` emits
+tokens, cost, latency, iterations, tool fan-out and budget breaches off the same
+`SpendRecord`s the spans are built from, so metrics and traces cannot disagree about a run,
+and each cost figure carries the `PricingTable` version that produced it so a mid-window
+price change starts a new series rather than rewriting an old one. A call the provider
+reported no usage for lands in an explicit unknown series and contributes nothing to cost,
+because a zero gets summed and understates the bill; a call nobody can price still has its
+tokens counted; a self-hosted model is priced from a configured rate rather than read as
+free capacity. Currency is carried, never converted on the kit's own authority. A `key=`
+makes a replay after a worker restart count once while a genuine retry still counts, and a
+collector that refuses a counter costs that counter rather than the run, with the loss
+counted locally.
+
+### Public API surface
+
+- Added: `tesserix_adk.observability.BUDGET_BREACHES`
+- Added: `tesserix_adk.observability.DROPPED`
+- Added: `tesserix_adk.observability.ITERATIONS`
+- Added: `tesserix_adk.observability.LATENCY`
+- Added: `tesserix_adk.observability.MeterStats`
+- Added: `tesserix_adk.observability.ModelRate`
+- Added: `tesserix_adk.observability.PricingTable`
+- Added: `tesserix_adk.observability.SpendMeter`
+- Added: `tesserix_adk.observability.TOOL_CALLS`
+- Added: `tesserix_adk.observability.UNKNOWN_USAGE`
+- Added: `tesserix_adk.observability.UNPRICED`
+- Added: `tesserix_adk.observability.spend_metrics.BUDGET_BREACHES`
+- Added: `tesserix_adk.observability.spend_metrics.DROPPED`
+- Added: `tesserix_adk.observability.spend_metrics.ITERATIONS`
+- Added: `tesserix_adk.observability.spend_metrics.LATENCY`
+- Added: `tesserix_adk.observability.spend_metrics.MeterStats`
+- Added: `tesserix_adk.observability.spend_metrics.ModelRate`
+- Added: `tesserix_adk.observability.spend_metrics.PricingTable`
+- Added: `tesserix_adk.observability.spend_metrics.SpendMeter`
+- Added: `tesserix_adk.observability.spend_metrics.TOOL_CALLS`
+- Added: `tesserix_adk.observability.spend_metrics.UNKNOWN_USAGE`
+- Added: `tesserix_adk.observability.spend_metrics.UNPRICED`
+
 ## 0.44.0
 
 ### Added
