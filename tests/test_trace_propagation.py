@@ -90,6 +90,14 @@ class TestTraceState:
         assert extracted is not None
         assert "v0=x" in extracted.carried()[TRACESTATE]
 
+    def test_a_few_long_entries_are_capped_by_length_before_they_are_by_count(self) -> None:
+        wordy = ",".join(f"v{index}={'x' * 120}" for index in range(8))
+        extracted = W3CContext.extracted({TRACEPARENT: PEER, TRACESTATE: wordy})
+        assert extracted is not None
+        rendered = extracted.carried()[TRACESTATE]
+        assert len(rendered) <= MAX_STATE_LENGTH
+        assert len(rendered.split(",")) < 8
+
     def test_an_unparseable_state_entry_does_not_cost_the_trace(self) -> None:
         extracted = W3CContext.extracted({TRACEPARENT: PEER, TRACESTATE: "junk"})
         assert extracted is not None
@@ -177,8 +185,14 @@ class TestLinks:
         assert rendered["adk.link.kind"] == "continuation"
         assert rendered["adk.link.trace_id"] == _root().trace_id
 
+    def test_an_attribute_that_already_names_itself_is_not_prefixed_twice(self) -> None:
+        _, link = joined({"adk-correlation": "run-1"}, run_id="run-2")
+        assert link is not None
+        assert "adk.correlation_id" in link.rendered()
+
     def test_a_link_can_be_built_for_a_context_this_process_never_held(self) -> None:
-        link = Link(trace_id=trace_id_of("run-9"), span_id=span_id_of("run-9"), kind=LinkKind.FAN_OUT)
+        elsewhere = trace_id_of("run-9"), span_id_of("run-9")
+        link = Link(trace_id=elsewhere[0], span_id=elsewhere[1], kind=LinkKind.FAN_OUT)
         assert link.rendered()["adk.link.span_id"] == span_id_of("run-9")
 
 
