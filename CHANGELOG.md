@@ -8,6 +8,51 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.44.0
+
+### Added
+
+- **added**: `tesserix_adk.observability.local_view` makes a run readable without a collector, and
+`adk trace` reads one back from a file. `rendered()` draws the steps as a tree with
+durations, attempts, guard verdicts, budget state, tokens and cost, and marks the step a
+run stopped at: a failed run is never drawn as a tidy successful tree, a filter that would
+have hidden the failure keeps it anyway, and a depth cap states what it hid. A step that
+reported no cost is drawn without one rather than as a zero somebody would sum. A span
+whose parent never arrived is marked and kept rather than dropped, because it is usually
+the step being looked for. `machine_readable()` gives the same tree as JSON for test
+assertions. `TraceFile` puts a saved trace through the export path's redaction and states
+the format version that produced it, so a file attached to a bug report cannot carry what
+an export would not, and a file from a newer version is refused rather than misread. The
+renderer defines no attribute names of its own, so the local view cannot drift from what
+production shows.
+
+### Public API surface
+
+- Added: `tesserix_adk.cli.trace.MISSING`
+- Added: `tesserix_adk.cli.trace.MISUSED`
+- Added: `tesserix_adk.cli.trace.OK`
+- Added: `tesserix_adk.cli.trace.UNREADABLE`
+- Added: `tesserix_adk.cli.trace.main`
+- Added: `tesserix_adk.cli.trace_main`
+- Added: `tesserix_adk.observability.FILE_VERSION`
+- Added: `tesserix_adk.observability.ORPHAN`
+- Added: `tesserix_adk.observability.RecordedSpan`
+- Added: `tesserix_adk.observability.STOPPED`
+- Added: `tesserix_adk.observability.TraceFile`
+- Added: `tesserix_adk.observability.TraceNode`
+- Added: `tesserix_adk.observability.assembled`
+- Added: `tesserix_adk.observability.local_view.FILE_VERSION`
+- Added: `tesserix_adk.observability.local_view.ORPHAN`
+- Added: `tesserix_adk.observability.local_view.RecordedSpan`
+- Added: `tesserix_adk.observability.local_view.STOPPED`
+- Added: `tesserix_adk.observability.local_view.TraceFile`
+- Added: `tesserix_adk.observability.local_view.TraceNode`
+- Added: `tesserix_adk.observability.local_view.assembled`
+- Added: `tesserix_adk.observability.local_view.machine_readable`
+- Added: `tesserix_adk.observability.local_view.rendered`
+- Added: `tesserix_adk.observability.machine_readable`
+- Added: `tesserix_adk.observability.rendered`
+
 ## 0.43.0
 
 ### Added
