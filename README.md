@@ -173,6 +173,7 @@ code lands here as the kit is built.
 | Spans without wiring — a run-rooted trace the run emits itself, retries as siblings, a collector outage that costs telemetry rather than the run | [`docs/auto-instrumentation.md`](docs/auto-instrumentation.md) |
 | Redaction before export — a payload allowlist off by default, nested tool arguments walked, a detector outage that costs an attribute rather than the span | [`docs/export-redaction.md`](docs/export-redaction.md) |
 | One set of attribute names — a versioned telemetry convention, unmeasured numbers stated rather than guessed, cardinality declared per name | [`docs/telemetry-convention.md`](docs/telemetry-convention.md) |
+| Spend you can alert on — a versioned pricing table on every figure, unreported usage counted as unknown rather than zero, a replay that does not double count | [`docs/spend-metrics.md`](docs/spend-metrics.md) |
 | Debugging without a collector — a run drawn as a tree, a failure never drawn as a tidy one, a trace file redacted before it is shared | [`docs/local-trace-view.md`](docs/local-trace-view.md) |
 | One trace across hops — W3C headers a non-kit peer already reads, identifiers a replay rebuilds rather than duplicates, a broken hop linked back rather than dropped | [`docs/trace-propagation.md`](docs/trace-propagation.md) |
 | Tool allowlists — agent, tenant and caller intersected once, enforced at dispatch, delegation that only narrows | [`docs/tool-allowlists.md`](docs/tool-allowlists.md) |

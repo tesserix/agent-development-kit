@@ -1598,6 +1598,7 @@ tesserix_adk.models.verify_artefact :: def verify_artefact(model: 'OnnxModel', *
 tesserix_adk.observability.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
 tesserix_adk.observability.AttributeSet :: class AttributeSet(AdkModel) {metric_dimensions(self) -> 'dict[str, str]'; rendered(self) -> 'dict[str, str]'}
 tesserix_adk.observability.Attribution :: class Attribution(AdkModel)
+tesserix_adk.observability.BUDGET_BREACHES :: BUDGET_BREACHES: str
 tesserix_adk.observability.CACHED_TOKENS :: CACHED_TOKENS: str
 tesserix_adk.observability.CACHE_HIT_RATIO :: CACHE_HIT_RATIO: str
 tesserix_adk.observability.CALLS :: CALLS: str
@@ -1609,12 +1610,15 @@ tesserix_adk.observability.CacheHits :: class CacheHits(AdkModel)
 tesserix_adk.observability.CacheStatus :: class CacheStatus(StrEnum)
 tesserix_adk.observability.Cardinality :: class Cardinality(StrEnum)
 tesserix_adk.observability.DENIED_KEYS :: DENIED_KEYS: frozenset
+tesserix_adk.observability.DROPPED :: DROPPED: str
 tesserix_adk.observability.Dimensions :: class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] | None') -> 'str'; of(self, record: 'SpendRecord') -> 'dict[str, str]'}
 tesserix_adk.observability.ExportedEvent :: class ExportedEvent(AdkModel)
 tesserix_adk.observability.ExportedSpan :: class ExportedSpan(AdkModel)
 tesserix_adk.observability.FILE_VERSION :: FILE_VERSION: str
 tesserix_adk.observability.HEADER :: HEADER: str
 tesserix_adk.observability.INPUT_TOKENS :: INPUT_TOKENS: str
+tesserix_adk.observability.ITERATIONS :: ITERATIONS: str
+tesserix_adk.observability.LATENCY :: LATENCY: str
 tesserix_adk.observability.LATENCY_SECONDS :: LATENCY_SECONDS: str
 tesserix_adk.observability.LatencyReport :: class LatencyReport(AdkModel) {attributes(self) -> 'dict[str, str]'; emit(self, meter: 'Meter', **dimensions: 'str') -> 'None'; render(self) -> 'str'}
 tesserix_adk.observability.Link :: class Link(AdkModel) {rendered(self) -> 'dict[str, str]'}
@@ -1626,6 +1630,8 @@ tesserix_adk.observability.MAX_STATE_LENGTH :: MAX_STATE_LENGTH: int
 tesserix_adk.observability.MAX_VALUE_LENGTH :: MAX_VALUE_LENGTH: int
 tesserix_adk.observability.Measured :: class Measured(AdkModel) {rendered(self) -> 'str'}
 tesserix_adk.observability.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
+tesserix_adk.observability.MeterStats :: class MeterStats(object)
+tesserix_adk.observability.ModelRate :: class ModelRate(AdkModel) {of(self, *, input_tokens: 'int', output_tokens: 'int', cached_tokens: 'int' = 0) -> 'Cost'}
 tesserix_adk.observability.NODE_SPAN :: NODE_SPAN: str
 tesserix_adk.observability.Node :: class Node(AdkModel) {in_currency(self, currency: 'str') -> 'Cost | None'}
 tesserix_adk.observability.ORPHAN :: ORPHAN: str
@@ -1633,6 +1639,7 @@ tesserix_adk.observability.Outcome :: class Outcome(StrEnum)
 tesserix_adk.observability.PAYLOAD_ATTRIBUTES :: PAYLOAD_ATTRIBUTES: frozenset
 tesserix_adk.observability.Pattern :: class Pattern(StrEnum)
 tesserix_adk.observability.PendingSpan :: class PendingSpan(AdkModel)
+tesserix_adk.observability.PricingTable :: class PricingTable(AdkModel) {rate_of(self, model: 'str') -> 'ModelRate | None'}
 tesserix_adk.observability.REDACTED_EVENT :: REDACTED_EVENT: str
 tesserix_adk.observability.REFERENCE_SUFFIX :: REFERENCE_SUFFIX: str
 tesserix_adk.observability.RESERVED_PREFIX :: RESERVED_PREFIX: str
@@ -1648,11 +1655,13 @@ tesserix_adk.observability.RunTree :: class RunTree(AdkModel) {by_step(self) -> 
 tesserix_adk.observability.SPAN_NAMES :: SPAN_NAMES: dict
 tesserix_adk.observability.STOPPED :: STOPPED: str
 tesserix_adk.observability.SpanEvent :: class SpanEvent(AdkModel)
+tesserix_adk.observability.SpendMeter :: class SpendMeter(object) {record(self, record: 'SpendRecord', *, seconds: 'float | None' = None, iterations: 'int' = 0, tool_calls: 'int' = 0, breached: 'bool' = False, key: 'str | None' = None) -> 'None'}
 tesserix_adk.observability.SpendRecord :: class SpendRecord(AdkModel)
 tesserix_adk.observability.Step :: class Step(StrEnum)
 tesserix_adk.observability.TIME_TO_FIRST_TOKEN :: TIME_TO_FIRST_TOKEN: str
 tesserix_adk.observability.TOKENS :: TOKENS: str
 tesserix_adk.observability.TOKENS_PER_SECOND :: TOKENS_PER_SECOND: str
+tesserix_adk.observability.TOOL_CALLS :: TOOL_CALLS: str
 tesserix_adk.observability.TRACEPARENT :: TRACEPARENT: str
 tesserix_adk.observability.TRACESTATE :: TRACESTATE: str
 tesserix_adk.observability.Totals :: class Totals(AdkModel)
@@ -1661,6 +1670,8 @@ tesserix_adk.observability.TraceFile :: class TraceFile(AdkModel)
 tesserix_adk.observability.TraceNode :: class TraceNode(AdkModel)
 tesserix_adk.observability.TreeTotals :: class TreeTotals(AdkModel)
 tesserix_adk.observability.UNKNOWN :: UNKNOWN: str
+tesserix_adk.observability.UNKNOWN_USAGE :: UNKNOWN_USAGE: str
+tesserix_adk.observability.UNPRICED :: UNPRICED: str
 tesserix_adk.observability.Unavailability :: class Unavailability(StrEnum)
 tesserix_adk.observability.VENDOR :: VENDOR: str
 tesserix_adk.observability.VERSION :: VERSION: str
@@ -1753,6 +1764,17 @@ tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(s
 tesserix_adk.observability.render :: def render(assembled: 'RunTree') -> 'str'
 tesserix_adk.observability.rendered :: def rendered(nodes: 'Sequence[TraceNode]', *, depth: 'int | None' = None, only: 'Sequence[str]' = ()) -> 'str'
 tesserix_adk.observability.span_id_of :: def span_id_of(run_id: 'str', name: 'str' = '', attempt: 'int' = 1) -> 'str'
+tesserix_adk.observability.spend_metrics.BUDGET_BREACHES :: BUDGET_BREACHES: str
+tesserix_adk.observability.spend_metrics.DROPPED :: DROPPED: str
+tesserix_adk.observability.spend_metrics.ITERATIONS :: ITERATIONS: str
+tesserix_adk.observability.spend_metrics.LATENCY :: LATENCY: str
+tesserix_adk.observability.spend_metrics.MeterStats :: class MeterStats(object)
+tesserix_adk.observability.spend_metrics.ModelRate :: class ModelRate(AdkModel) {of(self, *, input_tokens: 'int', output_tokens: 'int', cached_tokens: 'int' = 0) -> 'Cost'}
+tesserix_adk.observability.spend_metrics.PricingTable :: class PricingTable(AdkModel) {rate_of(self, model: 'str') -> 'ModelRate | None'}
+tesserix_adk.observability.spend_metrics.SpendMeter :: class SpendMeter(object) {record(self, record: 'SpendRecord', *, seconds: 'float | None' = None, iterations: 'int' = 0, tool_calls: 'int' = 0, breached: 'bool' = False, key: 'str | None' = None) -> 'None'}
+tesserix_adk.observability.spend_metrics.TOOL_CALLS :: TOOL_CALLS: str
+tesserix_adk.observability.spend_metrics.UNKNOWN_USAGE :: UNKNOWN_USAGE: str
+tesserix_adk.observability.spend_metrics.UNPRICED :: UNPRICED: str
 tesserix_adk.observability.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
 tesserix_adk.observability.totals_of :: def totals_of(group: 'Sequence[SpendRecord]') -> 'Totals'
