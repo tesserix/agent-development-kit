@@ -8,14 +8,11 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.48.0
+
 ### Added
 
-- **added**: origin-aware token optimiser routing selects RTK for allowlisted CLI commands
-  and Headroom MCP for JSON, API, MCP, RAG, conversation, gateway, and multi-agent context.
-  Headroom processing requires explicit boundary permission, is bound to one tenant and
-  run for retrieval, preserves the content trust label, and degrades compression failures
-  to unchanged content. The new `tesserix_adk.memory` API is additive and follows the
-  package's normal alpha stability policy.
+- **memory**: route token optimization by origin
 
 ### Public API surface
 
