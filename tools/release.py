@@ -198,6 +198,9 @@ def main(argv: list[str] | None = None) -> int:
     """Show the plan, or apply it with `--apply`."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", help="release this version instead of the derived one")
+    parser.add_argument(
+        "--print-version", action="store_true", help="print only the derived version"
+    )
     parser.add_argument("--apply", action="store_true", help="fold the notes and consume fragments")
     parser.add_argument("--notes", help="also write the release body to this file")
     args = parser.parse_args(argv)
@@ -211,6 +214,10 @@ def main(argv: list[str] | None = None) -> int:
     except ReleaseError as err:
         sys.stderr.write(f"{err}\n")
         return 1
+
+    if args.print_version:
+        sys.stdout.write(f"{version}\n")
+        return 0
 
     sys.stdout.write(plan(current=current, fragments=fragments, diff=diff))
     if args.version:

@@ -1308,6 +1308,7 @@ tesserix_adk.memory.ErasureReceipt :: class ErasureReceipt(AdkModel)
 tesserix_adk.memory.Expansion :: class Expansion(AdkModel)
 tesserix_adk.memory.FrozenPrefix :: class FrozenPrefix(object) {advance(self, messages: 'Sequence[Message]', *, turn: 'int') -> 'PrefixBoundary'; compressible(self, messages: 'Sequence[Message]') -> 'tuple[int, ...]'; live(self, messages: 'Sequence[Message]') -> 'tuple[Message, ...]'; reset(self, reason: 'str') -> 'PrefixBoundary'; verify(self, messages: 'Sequence[Message]') -> 'None'}
 tesserix_adk.memory.HalfLife :: class HalfLife(object) {weigh(self, record: 'MemoryRecord', *, now: 'float') -> 'float'}
+tesserix_adk.memory.HeadroomMcpOptimizer :: class HeadroomMcpOptimizer(object) {compress(self, content: 'str', *, tenant: 'str', run_id: 'str', untrusted: 'bool' = False) -> 'OptimizationResult'; retrieve(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'}
 tesserix_adk.memory.INSTRUCTION_SIGNATURES :: INSTRUCTION_SIGNATURES: tuple
 tesserix_adk.memory.MemoryCapabilities :: class MemoryCapabilities(object)
 tesserix_adk.memory.MemoryGuard :: class MemoryGuard(Protocol) {check_input(self, content: 'str') -> 'GuardResult'}
@@ -1319,6 +1320,12 @@ tesserix_adk.memory.MemoryRecord :: class MemoryRecord(AdkModel)
 tesserix_adk.memory.MemoryRedactor :: class MemoryRedactor(Protocol) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.MemoryScope :: class MemoryScope(AdkModel)
 tesserix_adk.memory.MemoryStore :: class MemoryStore(Protocol) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'Sequence[Derivation]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'Sequence[MemoryRecord]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
+tesserix_adk.memory.OptimizationBackend :: class OptimizationBackend(StrEnum)
+tesserix_adk.memory.OptimizationChannel :: class OptimizationChannel(StrEnum)
+tesserix_adk.memory.OptimizationDecision :: class OptimizationDecision(AdkModel)
+tesserix_adk.memory.OptimizationError :: class OptimizationError(AdkError)
+tesserix_adk.memory.OptimizationPolicy :: class OptimizationPolicy(AdkModel)
+tesserix_adk.memory.OptimizationResult :: class OptimizationResult(AdkModel)
 tesserix_adk.memory.Origin :: class Origin(StrEnum)
 tesserix_adk.memory.POSITION_METRIC :: POSITION_METRIC: str
 tesserix_adk.memory.PassThrough :: class PassThrough(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
@@ -1331,6 +1338,7 @@ tesserix_adk.memory.RESETS_METRIC :: RESETS_METRIC: str
 tesserix_adk.memory.Recall :: class Recall(AdkModel)
 tesserix_adk.memory.Resolution :: class Resolution(StrEnum)
 tesserix_adk.memory.ReversibleRouter :: class ReversibleRouter(object) {admit(self, content: 'str', *, budget_tokens: 'int', tenant: 'str', run_id: 'str', untrusted: 'bool' = False) -> 'Compressed'; expand(self, handle: 'str', *, tenant: 'str', run_id: 'str', budget_tokens: 'int | None' = None, user: 'str | None' = None) -> 'Expansion'}
+tesserix_adk.memory.RtkCommandPlan :: class RtkCommandPlan(AdkModel)
 tesserix_adk.memory.SECTION :: SECTION: str
 tesserix_adk.memory.SectionOutcome :: class SectionOutcome(AdkModel)
 tesserix_adk.memory.SectionPlan :: class SectionPlan(AdkModel)
@@ -1341,6 +1349,7 @@ tesserix_adk.memory.SupersedeMatching :: class SupersedeMatching(object) {resolv
 tesserix_adk.memory.Supersession :: class Supersession(AdkModel)
 tesserix_adk.memory.TabularCompressor :: class TabularCompressor(object) {compress(self, content: 'str', *, budget_tokens: 'int') -> 'str'}
 tesserix_adk.memory.TokenCounter :: TokenCounter: TypeAliasType
+tesserix_adk.memory.TokenOptimizer :: class TokenOptimizer(object) {optimize(self, content: 'str', *, channel: 'OptimizationChannel', tenant: 'str', run_id: 'str', headroom_allowed: 'bool' = False, untrusted: 'bool' = False) -> 'OptimizationResult'; plan_command(self, argv: 'Sequence[str]') -> 'RtkCommandPlan'; retrieve(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'; select(self, channel: 'OptimizationChannel', *, command: 'Sequence[str]' = (), headroom_allowed: 'bool' = False) -> 'OptimizationDecision'}
 tesserix_adk.memory.Verdict :: class Verdict(StrEnum)
 tesserix_adk.memory.WriteGate :: class WriteGate(object) {admit(self, record: 'MemoryRecord', provenance: 'Provenance', *, tenant: 'str', user: 'str | None' = None) -> 'MemoryRecord'; recall(self, records: 'Iterable[MemoryRecord]', *, guard: 'MemoryGuard | None' = None) -> 'Recall'}
 tesserix_adk.memory.admission.Admission :: class Admission(AdkModel)
@@ -1399,6 +1408,15 @@ tesserix_adk.memory.erasure.PIIRedactor :: class PIIRedactor(object) {redact(sel
 tesserix_adk.memory.erasure.PatternRedactor :: class PatternRedactor(object) {redact(self, value: 'JsonValue') -> 'tuple[JsonValue, tuple[str, ...]]'}
 tesserix_adk.memory.estimate_tokens :: def estimate_tokens(content: 'str') -> 'int'
 tesserix_adk.memory.instruction_shaped :: def instruction_shaped(value: 'JsonValue') -> 'str'
+tesserix_adk.memory.optimization.HeadroomMcpOptimizer :: class HeadroomMcpOptimizer(object) {compress(self, content: 'str', *, tenant: 'str', run_id: 'str', untrusted: 'bool' = False) -> 'OptimizationResult'; retrieve(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'}
+tesserix_adk.memory.optimization.OptimizationBackend :: class OptimizationBackend(StrEnum)
+tesserix_adk.memory.optimization.OptimizationChannel :: class OptimizationChannel(StrEnum)
+tesserix_adk.memory.optimization.OptimizationDecision :: class OptimizationDecision(AdkModel)
+tesserix_adk.memory.optimization.OptimizationError :: class OptimizationError(AdkError)
+tesserix_adk.memory.optimization.OptimizationPolicy :: class OptimizationPolicy(AdkModel)
+tesserix_adk.memory.optimization.OptimizationResult :: class OptimizationResult(AdkModel)
+tesserix_adk.memory.optimization.RtkCommandPlan :: class RtkCommandPlan(AdkModel)
+tesserix_adk.memory.optimization.TokenOptimizer :: class TokenOptimizer(object) {optimize(self, content: 'str', *, channel: 'OptimizationChannel', tenant: 'str', run_id: 'str', headroom_allowed: 'bool' = False, untrusted: 'bool' = False) -> 'OptimizationResult'; plan_command(self, argv: 'Sequence[str]') -> 'RtkCommandPlan'; retrieve(self, handle: 'str', *, tenant: 'str', run_id: 'str') -> 'str'; select(self, channel: 'OptimizationChannel', *, command: 'Sequence[str]' = (), headroom_allowed: 'bool' = False) -> 'OptimizationDecision'}
 tesserix_adk.memory.pinned :: def pinned(message: 'Message') -> 'Message'
 tesserix_adk.memory.prefix.COMPRESSED :: COMPRESSED: str
 tesserix_adk.memory.prefix.FrozenPrefix :: class FrozenPrefix(object) {advance(self, messages: 'Sequence[Message]', *, turn: 'int') -> 'PrefixBoundary'; compressible(self, messages: 'Sequence[Message]') -> 'tuple[int, ...]'; live(self, messages: 'Sequence[Message]') -> 'tuple[Message, ...]'; reset(self, reason: 'str') -> 'PrefixBoundary'; verify(self, messages: 'Sequence[Message]') -> 'None'}

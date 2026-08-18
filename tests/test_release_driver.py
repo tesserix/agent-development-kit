@@ -178,6 +178,13 @@ def repo(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
 
 @pytest.mark.usefixtures("repo")
 class TestTheCommandTheReleaserRuns:
+    def test_machine_readable_version_is_only_the_derived_number(
+        self, capsys: pytest.CaptureFixture[str], repo: list[list[str]]
+    ) -> None:
+        assert driver.main(["--print-version"]) == 0
+        assert capsys.readouterr().out == "0.4.3\n"
+        assert repo == []
+
     def test_it_shows_the_plan_without_touching_anything(
         self, capsys: pytest.CaptureFixture[str], repo: list[list[str]]
     ) -> None:

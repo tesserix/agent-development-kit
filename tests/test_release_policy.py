@@ -256,6 +256,25 @@ def test_the_check_compares_against_the_last_tag(monkeypatch: pytest.MonkeyPatch
     assert release_check.main([]) == 1
 
 
+def test_the_check_accepts_the_version_derived_by_the_release_plan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("tools.release_check.latest_tag", lambda: "v0.1.0")
+    monkeypatch.setattr(
+        "tools.release_check.read_at",
+        lambda ref, path: {  # noqa: ARG005
+            "docs/api-surface.txt": "",
+            "docs/deprecations.md": deprecations_tool.render(()),
+        }[path],
+    )
+    monkeypatch.setattr(
+        "tools.release_check.collect_surface",
+        lambda: {"tesserix_adk.core.New": "class New(object)"},
+    )
+
+    assert release_check.main(["--version", "0.2.0"]) == 0
+
+
 def test_the_check_reports_the_problems_it_found(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

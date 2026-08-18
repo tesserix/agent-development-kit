@@ -59,7 +59,8 @@ deprecations-check: ## Fail if the deprecations page is out of date or a removal
 	uv run python -m tools.deprecations
 
 release-check: ## Fail if this release breaks the versioning policy against the last tag
-	uv run python -m tools.release_check
+	@planned_version=$$(uv run python -m tools.release --print-version); \
+		uv run python -m tools.release_check --version "$$planned_version"
 
 # The version only labels a preview; the real one comes from the tag at release time.
 VERSION ?= next

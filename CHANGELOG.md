@@ -8,6 +8,36 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+### Added
+
+- **added**: origin-aware token optimiser routing selects RTK for allowlisted CLI commands
+  and Headroom MCP for JSON, API, MCP, RAG, conversation, gateway, and multi-agent context.
+  Headroom processing requires explicit boundary permission, is bound to one tenant and
+  run for retrieval, preserves the content trust label, and degrades compression failures
+  to unchanged content. The new `tesserix_adk.memory` API is additive and follows the
+  package's normal alpha stability policy.
+
+### Public API surface
+
+- Added: `tesserix_adk.memory.HeadroomMcpOptimizer`
+- Added: `tesserix_adk.memory.OptimizationBackend`
+- Added: `tesserix_adk.memory.OptimizationChannel`
+- Added: `tesserix_adk.memory.OptimizationDecision`
+- Added: `tesserix_adk.memory.OptimizationError`
+- Added: `tesserix_adk.memory.OptimizationPolicy`
+- Added: `tesserix_adk.memory.OptimizationResult`
+- Added: `tesserix_adk.memory.RtkCommandPlan`
+- Added: `tesserix_adk.memory.TokenOptimizer`
+- Added: `tesserix_adk.memory.optimization.HeadroomMcpOptimizer`
+- Added: `tesserix_adk.memory.optimization.OptimizationBackend`
+- Added: `tesserix_adk.memory.optimization.OptimizationChannel`
+- Added: `tesserix_adk.memory.optimization.OptimizationDecision`
+- Added: `tesserix_adk.memory.optimization.OptimizationError`
+- Added: `tesserix_adk.memory.optimization.OptimizationPolicy`
+- Added: `tesserix_adk.memory.optimization.OptimizationResult`
+- Added: `tesserix_adk.memory.optimization.RtkCommandPlan`
+- Added: `tesserix_adk.memory.optimization.TokenOptimizer`
+
 ## 0.47.0
 
 ### Added

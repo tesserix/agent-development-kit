@@ -209,7 +209,7 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --all-groups
       - run: uv run python -m tools.deprecations
-      - run: uv run python -m tools.release_check
+      - run: make release-check
 
   release-notes:
     name: release notes assemble
