@@ -8,6 +8,46 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.50.0
+
+### Added
+
+- **tesserix_adk.mcp.AgentGatewayRouter**: Add a first-class AgentGateway MCP router and ToolRegistry adapter with operator-owned
+allowlists, per-call credentials, tenant-bound sessions, bounded schemas and results,
+typed redacted failures, and deterministic concurrent discovery.
+- **mcp**: add AgentGateway router (#263)
+
+### Public API surface
+
+- Added: `tesserix_adk.adapters.McpStreamableHttpTransport`
+- Added: `tesserix_adk.adapters.agent_gateway_tools`
+- Added: `tesserix_adk.adapters.agentgateway.McpStreamableHttpTransport`
+- Added: `tesserix_adk.adapters.agentgateway.agent_gateway_tools`
+- Added: `tesserix_adk.mcp.AgentGatewayConfig`
+- Added: `tesserix_adk.mcp.AgentGatewayRoute`
+- Added: `tesserix_adk.mcp.AgentGatewayRouter`
+- Added: `tesserix_adk.mcp.AgentGatewayToolConfig`
+- Added: `tesserix_adk.mcp.AgentGatewayTools`
+- Added: `tesserix_adk.mcp.AgentGatewayTransport`
+- Added: `tesserix_adk.mcp.GatewayTool`
+- Added: `tesserix_adk.mcp.GatewayToolResult`
+- Added: `tesserix_adk.mcp.McpGatewayError`
+- Added: `tesserix_adk.mcp.McpGatewayReason`
+- Added: `tesserix_adk.mcp.McpToolDescriptor`
+- Added: `tesserix_adk.mcp.gateway.AgentGatewayConfig`
+- Added: `tesserix_adk.mcp.gateway.AgentGatewayRoute`
+- Added: `tesserix_adk.mcp.gateway.AgentGatewayRouter`
+- Added: `tesserix_adk.mcp.gateway.AgentGatewayToolConfig`
+- Added: `tesserix_adk.mcp.gateway.AgentGatewayTools`
+- Added: `tesserix_adk.mcp.gateway.AgentGatewayTransport`
+- Added: `tesserix_adk.mcp.gateway.GatewayTool`
+- Added: `tesserix_adk.mcp.gateway.GatewayToolResult`
+- Added: `tesserix_adk.mcp.gateway.McpGatewayError`
+- Added: `tesserix_adk.mcp.gateway.McpGatewayReason`
+- Added: `tesserix_adk.mcp.gateway.McpToolDescriptor`
+- Added: `tesserix_adk.tools.ArgumentValidator`
+- Added: `tesserix_adk.tools.validation.ArgumentValidator`
+
 ## 0.49.0
 
 ### Added
