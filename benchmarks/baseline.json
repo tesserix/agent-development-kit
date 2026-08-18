@@ -69,7 +69,7 @@
         "iterations": 20,
         "spread": 0.0286,
         "metrics": {
-          "peak_bytes": 50620.0,
+          "peak_bytes": 56089.0,
           "tokens": 25.0
         }
       },
