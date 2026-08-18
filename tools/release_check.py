@@ -145,6 +145,9 @@ def main(argv: list[str] | None = None) -> int:
     """Check the working tree against the last release, or an explicit `--ref`."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ref", help="git ref of the released version to compare against")
+    parser.add_argument(
+        "--version", help="planned version to validate instead of checkout metadata"
+    )
     args = parser.parse_args(argv)
 
     ref = args.ref or latest_tag()
@@ -157,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         current=collect_surface(),
         records=parse_deprecations(read_at(ref, DEPRECATIONS_PATH)),
         baseline_version=_released_version(ref),
-        version=VERSION,
+        version=args.version or VERSION,
     )
     if problems:
         sys.stderr.write(f"release blocked against {ref}:\n  " + "\n  ".join(problems) + "\n")
