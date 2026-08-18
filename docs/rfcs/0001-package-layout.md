@@ -28,7 +28,7 @@ the first consumer who installs it.
 
 ## 2. Subpackages
 
-Fifteen, plus `experimental`. Each owns one remit; a module that needs two of them
+Sixteen, plus `experimental`. Each owns one remit; a module that needs two of them
 is two modules.
 
 | Subpackage | Remit |
@@ -37,6 +37,7 @@ is two modules.
 | `runtime` | Run loop, caps, cancellation, timeout, checkpointing, streaming. |
 | `models` | Model adapters and the ModelBus. Provider-specific code, behind a core protocol. |
 | `tools` | Tool registry, argument schemas, invocation and the ToolBus. |
+| `code_intelligence` | Backend-neutral source workspace, query and automatic context contracts. |
 | `mcp` | Model Context Protocol client and server integration. |
 | `a2a` | Agent-to-agent interoperability. |
 | `memory` | Run state, working context, episodic and semantic stores. |
@@ -62,6 +63,7 @@ adapters                               leaf — nothing imports it
 evals
 workflows
 a2a · mcp · rag · memory · guardrails · observability · tools · models
+code_intelligence
 runtime                                imports core only
 core                                   imports nothing else in the kit
 ```
@@ -69,12 +71,14 @@ core                                   imports nothing else in the kit
 Three consequences worth stating explicitly, because each is a decision rather than
 a derivation.
 
-**`runtime` imports `core` only — not `guardrails`, not `observability`.** Both are
-crossed on every model and tool call, so the obvious layout has the runtime import
-them. It must not. Their *protocols* live in `core` and the runtime holds those; the
-implementations are injected at composition time by `adapters` or `cli`. Otherwise
-the runtime cannot be tested without a guardrail stack, the enforcement packages
-cannot be swapped, and `core` acquires a transitive dependency on everything.
+**`runtime` imports `core` only — not `guardrails`, not `observability`, not code
+intelligence.** These are crossed during a run, so the obvious layout has the runtime
+import them. It must not. Generic contributor contracts live in `runtime`; code
+intelligence implements one from the layer above, while other protocols live in `core`
+and the runtime holds those. Implementations are injected at composition time by
+`adapters` or `cli`. Otherwise the runtime cannot be tested without every integration,
+the enforcement packages cannot be swapped, and `core` acquires a transitive dependency
+on everything.
 
 **The integration rank is mutually exclusive.** `tools` may not import `models`,
 `memory` may not import `rag`. Where two genuinely need a shared type, that type

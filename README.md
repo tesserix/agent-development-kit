@@ -188,6 +188,7 @@ code lands here as the kit is built.
 | Response caching — key determinants, what is refused, tenant isolation, semantic tier | [`docs/response-caching.md`](docs/response-caching.md) |
 | Transports — SSE framing, websocket control channel, reconnection, the boundary | [`docs/transports.md`](docs/transports.md) |
 | Async and sync — the sync surface, the running-loop refusal, worker pools, stall detection | [`docs/async-and-sync.md`](docs/async-and-sync.md) |
+| Code intelligence — compact source context, structural tools, Graft adapters, gateway tenancy | [`docs/code-intelligence.md`](docs/code-intelligence.md) |
 | The context window — keyed admission, eviction order, counting | [`docs/context.md`](docs/context.md) |
 | Benchmarks — the gated metrics, variance controls, updating a baseline | [`docs/benchmarks.md`](docs/benchmarks.md) |
 | Latency objectives — first token, sustained rate, cache hit ratio, sampling versus audit | [`docs/latency-objectives.md`](docs/latency-objectives.md) |

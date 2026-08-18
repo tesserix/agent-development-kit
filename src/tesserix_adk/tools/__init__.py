@@ -1,6 +1,7 @@
 """Tool registry, argument schemas, invocation and the ToolBus."""
 
 from tesserix_adk.tools.claim_check import DEFAULT_FETCH_CHARS, claim_check_tool
+from tesserix_adk.tools.code_intelligence import code_intelligence_tools
 from tesserix_adk.tools.context import ToolContext
 from tesserix_adk.tools.credentials import (
     DEFAULT_TTL_SECONDS,
@@ -106,6 +107,7 @@ __all__ = [
     "ToolRegistry",
     "TranscriptionBackend",
     "claim_check_tool",
+    "code_intelligence_tools",
     "expand_content_tool",
     "ocr_document",
     "ocr_tool",

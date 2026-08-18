@@ -46,7 +46,14 @@ from tesserix_adk.runtime.compaction import (
     compact_conversation,
 )
 from tesserix_adk.runtime.compensation import Compensator, MemoryCompensationLedger
-from tesserix_adk.runtime.context import ContextWindow, Segment
+from tesserix_adk.runtime.context import (
+    ContextContribution,
+    ContextContributionError,
+    ContextContributor,
+    ContextRequest,
+    ContextWindow,
+    Segment,
+)
 from tesserix_adk.runtime.credentials import (
     DEFAULT_SKEW_SECONDS,
     Reauthoriser,
@@ -202,6 +209,10 @@ __all__ = [
     "CompactionEvent",
     "Compensator",
     "Confidence",
+    "ContextContribution",
+    "ContextContributionError",
+    "ContextContributor",
+    "ContextRequest",
     "ContextWindow",
     "CostEstimate",
     "Deadline",

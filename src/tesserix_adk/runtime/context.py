@@ -12,19 +12,74 @@ cost dressed as a saving. A prefix that cannot fit alone is refused, not trimmed
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from tesserix_adk.core.errors import ContextWindowExceededError
+from pydantic import Field, model_validator
+
+from tesserix_adk.core.errors import AdkError, ContextWindowExceededError
 from tesserix_adk.core.models import AdkModel
 from tesserix_adk.runtime.prompt import PROMPT_LAYERS, PromptLayer, approximate_tokens
 
 if TYPE_CHECKING:
     from tesserix_adk.runtime.prompt import Tokenizer
 
-__all__ = ["ContextWindow", "Segment"]
+__all__ = [
+    "ContextContribution",
+    "ContextContributionError",
+    "ContextContributor",
+    "ContextRequest",
+    "ContextWindow",
+    "Segment",
+]
 
 # The prefix. Everything below is assembled fresh each turn and so can be given up.
 _PROTECTED = (PromptLayer.SYSTEM, PromptLayer.TOOLS, PromptLayer.PINNED)
+
+
+class ContextContributionError(AdkError):
+    """A required context contributor could not answer."""
+
+
+class ContextRequest(AdkModel):
+    """Facts a context contributor receives before prompt assembly."""
+
+    run_id: str = Field(min_length=1)
+    tenant: str = Field(min_length=1)
+    user: str | None = None
+    agent_name: str = Field(min_length=1)
+    query: str = Field(min_length=1)
+
+
+class ContextContribution(AdkModel):
+    """Retrieved context and optional stable keys used for admission deduplication."""
+
+    content: tuple[str, ...] = ()
+    keys: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def _one_key_per_segment(self) -> ContextContribution:
+        if self.keys and len(self.keys) != len(self.content):
+            raise ValueError("context keys must name every contributed segment")
+        return self
+
+
+@runtime_checkable
+class ContextContributor(Protocol):
+    """A context source attached once to every run of a runner."""
+
+    @property
+    def name(self) -> str:
+        """Stable name recorded on retrieval events."""
+        ...
+
+    @property
+    def required(self) -> bool:
+        """Whether an outage stops the run instead of degrading it."""
+        ...
+
+    async def contribute(self, request: ContextRequest) -> ContextContribution:
+        """Return context for one authorized run."""
+        ...
 
 
 class Segment(AdkModel):
