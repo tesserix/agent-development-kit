@@ -80,6 +80,7 @@ tesserix_adk.adapters.IsolationGuarantee :: class IsolationGuarantee(AdkModel) {
 tesserix_adk.adapters.Isolator :: class Isolator(Generic) {read(self, operation: 'Callable[[], Awaitable[Sequence[RecordT]]]') -> 'Sequence[RecordT]'}
 tesserix_adk.adapters.JetStreamAudit :: class JetStreamAudit(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'}
 tesserix_adk.adapters.JetStreamPublisher :: class JetStreamPublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
+tesserix_adk.adapters.McpStreamableHttpTransport :: class McpStreamableHttpTransport(object) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.adapters.MemoryPage :: class MemoryPage(AdkModel)
 tesserix_adk.adapters.MemoryStoreSettings :: class MemoryStoreSettings(AdkModel)
 tesserix_adk.adapters.MessagePublisher :: class MessagePublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
@@ -127,6 +128,9 @@ tesserix_adk.adapters.TransportAuthorizationError :: class TransportAuthorizatio
 tesserix_adk.adapters.WebSocketBridge :: class WebSocketBridge(Generic) {serve(self, connection: 'WebSocketLike', *, run_id: 'str', tenant: 'str', after: 'int | None' = None) -> 'None'}
 tesserix_adk.adapters.WebSocketLike :: class WebSocketLike(Protocol) {close(self, code: 'int' = 1000) -> 'None'; receive_text(self) -> 'str'; send_text(self, data: 'str') -> 'None'}
 tesserix_adk.adapters.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
+tesserix_adk.adapters.agent_gateway_tools :: def agent_gateway_tools(routed: 'AgentGatewayTools') -> 'tuple[Tool[..., JsonValue], ...]'
+tesserix_adk.adapters.agentgateway.McpStreamableHttpTransport :: class McpStreamableHttpTransport(object) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
+tesserix_adk.adapters.agentgateway.agent_gateway_tools :: def agent_gateway_tools(routed: 'AgentGatewayTools') -> 'tuple[Tool[..., JsonValue], ...]'
 tesserix_adk.adapters.approvals.ConsoleApprovals :: class ConsoleApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision'}
 tesserix_adk.adapters.approvals.DEFAULT_APPROVAL_SUBJECT :: DEFAULT_APPROVAL_SUBJECT: str
 tesserix_adk.adapters.approvals.HttpPoster :: class HttpPoster(Protocol) {post(self, url: 'str', *, content: 'bytes', headers: 'Mapping[str, str]') -> 'tuple[int, bytes]'}
@@ -1287,12 +1291,23 @@ tesserix_adk.guardrails.output.validated :: def validated(content: 'str', *, sch
 tesserix_adk.guardrails.pii.PIIGuard :: class PIIGuard(Guard) {apply(self, content: 'str') -> 'Redacted'; check_input(self, content: 'str') -> 'GuardResult'; check_output(self, content: 'str') -> 'GuardResult'}
 tesserix_adk.guardrails.refusal_of :: def refusal_of(categories: 'tuple[str, ...]', *, severity: 'str' = 'high', classifier: 'str' = 'provider', stage: 'str' = 'output') -> 'ContentBlockedError'
 tesserix_adk.guardrails.validated :: def validated(content: 'str', *, schema: 'SchemaGuard', policy: 'PolicyGuard | None' = None, reask: 'Reask | None' = None, attempts: 'int' = 1) -> 'BaseModel'
+tesserix_adk.mcp.AgentGatewayConfig :: class AgentGatewayConfig(AdkModel) {endpoint(self, server: 'str') -> 'str'; route_for(self, server: 'str') -> 'AgentGatewayRoute'}
+tesserix_adk.mcp.AgentGatewayRoute :: class AgentGatewayRoute(AdkModel)
+tesserix_adk.mcp.AgentGatewayRouter :: class AgentGatewayRouter(object) {tools_for(self, *, identity: 'AgentIdentity', run_id: 'str', agent_version: 'str' = '1.0.0') -> 'AgentGatewayTools'}
+tesserix_adk.mcp.AgentGatewayToolConfig :: class AgentGatewayToolConfig(AdkModel)
+tesserix_adk.mcp.AgentGatewayTools :: class AgentGatewayTools(object) {invoke(self, name: 'str', arguments: 'Mapping[str, JsonValue]') -> 'GatewayToolResult'}
+tesserix_adk.mcp.AgentGatewayTransport :: class AgentGatewayTransport(Protocol) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.mcp.AuthorisedCall :: class AuthorisedCall(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
 tesserix_adk.mcp.CallCredential :: class CallCredential(Protocol) {headers(self) -> 'dict[str, str]'}
 tesserix_adk.mcp.CredentialSource :: class CredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'CallCredential'}
+tesserix_adk.mcp.GatewayTool :: class GatewayTool(AdkModel)
+tesserix_adk.mcp.GatewayToolResult :: class GatewayToolResult(AdkModel)
 tesserix_adk.mcp.META_PREFIX :: META_PREFIX: str
 tesserix_adk.mcp.McpAuthorizer :: class McpAuthorizer(object) {authorise(self, *, server: 'str', identity: 'AgentIdentity', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = '1.0.0', strict: 'bool' = False) -> 'AuthorisedCall'; declared(self, server: 'str') -> 'McpServerAuth'; narrowed_for(self, *, server: 'str', identity: 'AgentIdentity', requested: 'Iterable[str]') -> 'frozenset[str]'}
+tesserix_adk.mcp.McpGatewayError :: class McpGatewayError(AdkError)
+tesserix_adk.mcp.McpGatewayReason :: class McpGatewayReason(StrEnum)
 tesserix_adk.mcp.McpServerAuth :: class McpServerAuth(AdkModel)
+tesserix_adk.mcp.McpToolDescriptor :: class McpToolDescriptor(AdkModel)
 tesserix_adk.mcp.ServerSessions :: class ServerSessions(object) {lease(self, *, server: 'str', identity: 'AgentIdentity') -> 'SessionLease'}
 tesserix_adk.mcp.SessionLease :: class SessionLease(object) {check(self, identity: 'AgentIdentity') -> 'None'}
 tesserix_adk.mcp.auth.AuthorisedCall :: class AuthorisedCall(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
@@ -1303,6 +1318,17 @@ tesserix_adk.mcp.auth.McpAuthorizer :: class McpAuthorizer(object) {authorise(se
 tesserix_adk.mcp.auth.McpServerAuth :: class McpServerAuth(AdkModel)
 tesserix_adk.mcp.auth.ServerSessions :: class ServerSessions(object) {lease(self, *, server: 'str', identity: 'AgentIdentity') -> 'SessionLease'}
 tesserix_adk.mcp.auth.SessionLease :: class SessionLease(object) {check(self, identity: 'AgentIdentity') -> 'None'}
+tesserix_adk.mcp.gateway.AgentGatewayConfig :: class AgentGatewayConfig(AdkModel) {endpoint(self, server: 'str') -> 'str'; route_for(self, server: 'str') -> 'AgentGatewayRoute'}
+tesserix_adk.mcp.gateway.AgentGatewayRoute :: class AgentGatewayRoute(AdkModel)
+tesserix_adk.mcp.gateway.AgentGatewayRouter :: class AgentGatewayRouter(object) {tools_for(self, *, identity: 'AgentIdentity', run_id: 'str', agent_version: 'str' = '1.0.0') -> 'AgentGatewayTools'}
+tesserix_adk.mcp.gateway.AgentGatewayToolConfig :: class AgentGatewayToolConfig(AdkModel)
+tesserix_adk.mcp.gateway.AgentGatewayTools :: class AgentGatewayTools(object) {invoke(self, name: 'str', arguments: 'Mapping[str, JsonValue]') -> 'GatewayToolResult'}
+tesserix_adk.mcp.gateway.AgentGatewayTransport :: class AgentGatewayTransport(Protocol) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
+tesserix_adk.mcp.gateway.GatewayTool :: class GatewayTool(AdkModel)
+tesserix_adk.mcp.gateway.GatewayToolResult :: class GatewayToolResult(AdkModel)
+tesserix_adk.mcp.gateway.McpGatewayError :: class McpGatewayError(AdkError)
+tesserix_adk.mcp.gateway.McpGatewayReason :: class McpGatewayReason(StrEnum)
+tesserix_adk.mcp.gateway.McpToolDescriptor :: class McpToolDescriptor(AdkModel)
 tesserix_adk.memory.Admission :: class Admission(AdkModel)
 tesserix_adk.memory.AdmissionPolicy :: class AdmissionPolicy(AdkModel) {decide(self, record: 'MemoryRecord', provenance: 'Provenance', *, at: 'float | None' = None) -> 'Admission'}
 tesserix_adk.memory.AssembledContext :: class AssembledContext(AdkModel) {span_attributes(self) -> 'dict[str, int]'}
@@ -2497,6 +2523,7 @@ tesserix_adk.testing.sampled :: def sampled(corpus: 'Sequence[GuardCase]', size:
 tesserix_adk.testing.sentinel_for :: def sentinel_for(tenant: 'str', kind: 'str') -> 'str'
 tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
+tesserix_adk.tools.ArgumentValidator :: class ArgumentValidator(Protocol) {arguments(self, arguments: 'object') -> 'Mapping[str, object]'}
 tesserix_adk.tools.Attribution :: class Attribution(AdkModel) {headers(self) -> 'dict[str, str]'}
 tesserix_adk.tools.CachingCredentials :: class CachingCredentials(object) {invalidate_all(self) -> 'None'; issue(self, request: 'CredentialRequest') -> 'Credential'}
 tesserix_adk.tools.ContentExpander :: class ContentExpander(Protocol) {expand(self, handle: 'str', *, tenant: 'str', run_id: 'str', budget_tokens: 'int | None' = None, user: 'str | None' = None) -> 'Expanded'}
@@ -2609,6 +2636,7 @@ tesserix_adk.tools.transcribe_audio :: def transcribe_audio(path: 'Path', *, bac
 tesserix_adk.tools.transcribe_tool :: def transcribe_tool(backend: 'TranscriptionBackend', *, root: 'Path', name: 'str' = 'transcribe_recording', max_chars: 'int' = 4096) -> 'Tool[..., str]'
 tesserix_adk.tools.transient :: def transient(code: 'str', *, retry_after: 'float | None' = None, message: 'str' = '') -> 'ToolErrorRule'
 tesserix_adk.tools.validation.ArgumentPolicy :: class ArgumentPolicy(object)
+tesserix_adk.tools.validation.ArgumentValidator :: class ArgumentValidator(Protocol) {arguments(self, arguments: 'object') -> 'Mapping[str, object]'}
 tesserix_adk.tools.validation.LENIENT :: LENIENT: ArgumentPolicy
 tesserix_adk.tools.validation.STRICT :: STRICT: ArgumentPolicy
 tesserix_adk.tools.validation.ToolArgumentValidator :: class ToolArgumentValidator(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'; validate(self, arguments: 'object') -> 'Any'}

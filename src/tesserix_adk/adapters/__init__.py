@@ -1,5 +1,6 @@
 """Concrete backing stores and transports."""
 
+from tesserix_adk.adapters.agentgateway import McpStreamableHttpTransport, agent_gateway_tools
 from tesserix_adk.adapters.approvals import (
     DEFAULT_APPROVAL_SUBJECT,
     ConsoleApprovals,
@@ -207,6 +208,7 @@ __all__ = [
     "Isolator",
     "JetStreamAudit",
     "JetStreamPublisher",
+    "McpStreamableHttpTransport",
     "MemoryPage",
     "MemoryStoreSettings",
     "MessagePublisher",
@@ -252,6 +254,7 @@ __all__ = [
     "WebSocketBridge",
     "WebSocketLike",
     "WebhookApprovals",
+    "agent_gateway_tools",
     "open_graphiti",
     "partitioned",
     "sse_events",
