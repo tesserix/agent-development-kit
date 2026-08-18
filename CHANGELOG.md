@@ -8,6 +8,50 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.49.0
+
+### Added
+
+- **tesserix_adk.code_intelligence**: Add backend-neutral source-code intelligence with automatic untrusted context contribution,
+six tenant-bound agent tools, and bounded local-process and MCP adapters for Graft.
+
+### Public API surface
+
+- Added: `tesserix_adk.adapters.GraftMcpBackend`
+- Added: `tesserix_adk.adapters.GraftSubprocessBackend`
+- Added: `tesserix_adk.adapters.graft.GraftMcpBackend`
+- Added: `tesserix_adk.adapters.graft.GraftSubprocessBackend`
+- Added: `tesserix_adk.code_intelligence.CodeContextArguments`
+- Added: `tesserix_adk.code_intelligence.CodeContextBackend`
+- Added: `tesserix_adk.code_intelligence.CodeContextOperation`
+- Added: `tesserix_adk.code_intelligence.CodeContextRequest`
+- Added: `tesserix_adk.code_intelligence.CodeContextResult`
+- Added: `tesserix_adk.code_intelligence.CodeIntelligenceContributor`
+- Added: `tesserix_adk.code_intelligence.CodeIntelligenceError`
+- Added: `tesserix_adk.code_intelligence.CodeIntelligenceUnavailableError`
+- Added: `tesserix_adk.code_intelligence.CodeWorkspace`
+- Added: `tesserix_adk.code_intelligence.CodeWorkspaceNotFoundError`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeContextArguments`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeContextBackend`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeContextOperation`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeContextRequest`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeContextResult`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeIntelligenceError`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeIntelligenceUnavailableError`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeWorkspace`
+- Added: `tesserix_adk.code_intelligence.contracts.CodeWorkspaceNotFoundError`
+- Added: `tesserix_adk.code_intelligence.contributor.CodeIntelligenceContributor`
+- Added: `tesserix_adk.runtime.ContextContribution`
+- Added: `tesserix_adk.runtime.ContextContributionError`
+- Added: `tesserix_adk.runtime.ContextContributor`
+- Added: `tesserix_adk.runtime.ContextRequest`
+- Added: `tesserix_adk.runtime.context.ContextContribution`
+- Added: `tesserix_adk.runtime.context.ContextContributionError`
+- Added: `tesserix_adk.runtime.context.ContextContributor`
+- Added: `tesserix_adk.runtime.context.ContextRequest`
+- Added: `tesserix_adk.tools.code_intelligence.code_intelligence_tools`
+- Added: `tesserix_adk.tools.code_intelligence_tools`
+
 ## 0.48.0
 
 ### Added
