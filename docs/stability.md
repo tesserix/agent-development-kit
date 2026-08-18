@@ -25,6 +25,7 @@ between them needs to know which they are taking on.
 | `models` | `alpha` | Provider abstraction still being validated against a second provider. |
 | `runtime` | `alpha` | Execution loop and step semantics under active design. |
 | `tools` | `alpha` | Tool declaration and dispatch. |
+| `code_intelligence` | `alpha` | Source context contracts and backend mappings are new. |
 | `memory` | `alpha` | Store protocol settled; the retrieval surface is not. |
 | `rag` | `alpha` | Retrieval pipeline surface is provisional. |
 | `guardrails` | `alpha` | Policy interfaces provisional. |

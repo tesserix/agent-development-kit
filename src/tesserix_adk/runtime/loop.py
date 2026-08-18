@@ -140,6 +140,11 @@ from tesserix_adk.runtime.checkpoint import (
     plan_resume,
     refuse_if_undecidable,
 )
+from tesserix_adk.runtime.context import (
+    ContextContributionError,
+    ContextContributor,
+    ContextRequest,
+)
 from tesserix_adk.runtime.fanout import Lanes, Turn, phased
 from tesserix_adk.runtime.progress import (
     WATCHING,
@@ -460,6 +465,7 @@ class AgentRunner:
         claim_check: ClaimCheck | None = None,
         checkpoints: Checkpointer | None = None,
         autonomy: AutonomyGate | None = None,
+        context_contributors: Iterable[ContextContributor] = (),
     ) -> None:
         verify_conformance(provider, ModelProvider)
         self._provider = provider
@@ -507,6 +513,9 @@ class AgentRunner:
         self._claims = claim_check
         self._checkpoints = checkpoints
         self._autonomy = autonomy
+        self._context_contributors = tuple(context_contributors)
+        for contributor in self._context_contributors:
+            verify_conformance(contributor, ContextContributor)
         self._orphans: set[asyncio.Task[Any]] = set()
 
     def reload(self, router: ModelRouter) -> None:
@@ -810,12 +819,13 @@ class AgentRunner:
 
         try:
             run, asked = await self._asked(run, agent, user_input, bounds)
+            run, retrieved = await self._context_for(run, agent, asked, memory, bounds)
             contract = self._contract_for(agent, bounds.provider)
             prompt = assemble_prompt(
                 agent,
                 asked,
                 history=history,
-                retrieved=memory,
+                retrieved=retrieved,
                 tools=self._declarations_for(agent, bounds),
                 output=contract,
             )
@@ -844,6 +854,71 @@ class AgentRunner:
             return await self._forgotten(
                 await self._terminate(stop.run, agent, stop.state, stop.detail, bounds)
             )
+
+    async def _context_for(
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        query: str,
+        supplied: Iterable[str],
+        bounds: _Bounds,
+    ) -> tuple[Run[Any], tuple[str, ...]]:
+        """Collect context once, with outages explicit and payloads absent from events."""
+        content = list(supplied)
+        held: set[str] = set()
+        request = ContextRequest(
+            run_id=run.id,
+            tenant=run.tenant,
+            user=run.user,
+            agent_name=agent.name,
+            query=query,
+        )
+        for contributor in self._context_contributors:
+            try:
+                contribution = await self._bounded(
+                    contributor.contribute(request),
+                    limit=self._limit(bounds, None),
+                    bounds=bounds,
+                    what=f"context contributor {contributor.name}",
+                )
+            except _Aborted as abort:
+                raise self._cancelled(run, abort, name=contributor.name) from None
+            except Exception as failure:
+                run = run.record_event(
+                    self._event(
+                        RunEventKind.CONTEXT_DEGRADED,
+                        name=contributor.name,
+                        detail=f"{type(failure).__name__}: contributor unavailable",
+                    )
+                )
+                if contributor.required:
+                    raise _Terminal(
+                        run,
+                        RunState.FAILED,
+                        _named(
+                            ContextContributionError(
+                                f"required context contributor {contributor.name!r} is unavailable"
+                            )
+                        ),
+                    ) from failure
+                continue
+            keys = contribution.keys or tuple("" for _ in contribution.content)
+            admitted = 0
+            for segment, key in zip(contribution.content, keys, strict=True):
+                if key and key in held:
+                    continue
+                content.append(segment)
+                admitted += 1
+                if key:
+                    held.add(key)
+            run = run.record_event(
+                self._event(
+                    RunEventKind.CONTEXT_RETRIEVED,
+                    name=contributor.name,
+                    detail=f"{admitted} segments admitted",
+                )
+            )
+        return run, tuple(content)
 
     async def resume_with_decision[OutputT: BaseModel](
         self,

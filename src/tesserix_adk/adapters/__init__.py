@@ -39,6 +39,7 @@ from tesserix_adk.adapters.checkpoints import (
     RedisCheckpointStore,
     RedisLeaseStore,
 )
+from tesserix_adk.adapters.graft import GraftMcpBackend, GraftSubprocessBackend
 from tesserix_adk.adapters.grants import (
     DEFAULT_GRANT_TABLES,
     EXPECTED_GRANT_SCHEMA,
@@ -191,6 +192,8 @@ __all__ = [
     "ExtractedSubgraph",
     "ExtractionCharge",
     "ExtractionMeter",
+    "GraftMcpBackend",
+    "GraftSubprocessBackend",
     "GrantTables",
     "GraphEngine",
     "GraphMemoryStore",

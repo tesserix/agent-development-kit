@@ -64,6 +64,8 @@ tesserix_adk.adapters.ExtractedSubgraph :: class ExtractedSubgraph(AdkModel)
 tesserix_adk.adapters.ExtractionCharge :: class ExtractionCharge(AdkModel)
 tesserix_adk.adapters.ExtractionMeter :: class ExtractionMeter(object) {charge(self, tenant: 'str', cost: 'Decimal') -> 'None'; check(self, tenant: 'str') -> 'None'; spent(self, tenant: 'str') -> 'Decimal'}
 tesserix_adk.adapters.GRANT_SCHEMA_VERSION :: GRANT_SCHEMA_VERSION: int
+tesserix_adk.adapters.GraftMcpBackend :: class GraftMcpBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
+tesserix_adk.adapters.GraftSubprocessBackend :: class GraftSubprocessBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.GrantTables :: class GrantTables(object)
 tesserix_adk.adapters.GraphEngine :: class GraphEngine(Protocol) {commit(self, subgraph: 'ExtractedSubgraph') -> 'None'; drop(self, path: 'tuple[str, str, str, str]') -> 'Mapping[str, int]'; edges(self, path: 'tuple[str, str, str, str]', *, as_of: 'float | None', limit: 'int') -> 'Sequence[ExtractedEdge]'}
 tesserix_adk.adapters.GraphMemoryStore :: class GraphMemoryStore(object) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'Sequence[Derivation]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; enqueue(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; flush(self) -> 'int'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'Sequence[MemoryRecord]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; relations(self, scope: 'MemoryScope', *, as_of: 'float | None' = None, limit: 'int' = 10) -> 'Sequence[MemoryHit]'; retry_pending(self) -> 'int'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; writing(self) -> 'AsyncIterator[None]'}
@@ -157,6 +159,8 @@ tesserix_adk.adapters.checkpoints.PostgresCheckpointStore :: class PostgresCheck
 tesserix_adk.adapters.checkpoints.PostgresLeaseStore :: class PostgresLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
 tesserix_adk.adapters.checkpoints.RedisCheckpointStore :: class RedisCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
 tesserix_adk.adapters.checkpoints.RedisLeaseStore :: class RedisLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
+tesserix_adk.adapters.graft.GraftMcpBackend :: class GraftMcpBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
+tesserix_adk.adapters.graft.GraftSubprocessBackend :: class GraftSubprocessBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.grants.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables
 tesserix_adk.adapters.grants.EXPECTED_GRANT_SCHEMA :: EXPECTED_GRANT_SCHEMA: str
 tesserix_adk.adapters.grants.GRANT_SCHEMA_VERSION :: GRANT_SCHEMA_VERSION: int
@@ -274,6 +278,26 @@ tesserix_adk.cli.trace.OK :: OK: int
 tesserix_adk.cli.trace.UNREADABLE :: UNREADABLE: int
 tesserix_adk.cli.trace.main :: def main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.trace_main :: def trace_main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.code_intelligence.CodeContextArguments :: class CodeContextArguments(AdkModel)
+tesserix_adk.code_intelligence.CodeContextBackend :: class CodeContextBackend(Protocol) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
+tesserix_adk.code_intelligence.CodeContextOperation :: class CodeContextOperation(StrEnum)
+tesserix_adk.code_intelligence.CodeContextRequest :: class CodeContextRequest(AdkModel)
+tesserix_adk.code_intelligence.CodeContextResult :: class CodeContextResult(AdkModel)
+tesserix_adk.code_intelligence.CodeIntelligenceContributor :: class CodeIntelligenceContributor(object) {contribute(self, request: 'ContextRequest') -> 'ContextContribution'}
+tesserix_adk.code_intelligence.CodeIntelligenceError :: class CodeIntelligenceError(AdkError)
+tesserix_adk.code_intelligence.CodeIntelligenceUnavailableError :: class CodeIntelligenceUnavailableError(CodeIntelligenceError)
+tesserix_adk.code_intelligence.CodeWorkspace :: class CodeWorkspace(AdkModel)
+tesserix_adk.code_intelligence.CodeWorkspaceNotFoundError :: class CodeWorkspaceNotFoundError(CodeIntelligenceError)
+tesserix_adk.code_intelligence.contracts.CodeContextArguments :: class CodeContextArguments(AdkModel)
+tesserix_adk.code_intelligence.contracts.CodeContextBackend :: class CodeContextBackend(Protocol) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
+tesserix_adk.code_intelligence.contracts.CodeContextOperation :: class CodeContextOperation(StrEnum)
+tesserix_adk.code_intelligence.contracts.CodeContextRequest :: class CodeContextRequest(AdkModel)
+tesserix_adk.code_intelligence.contracts.CodeContextResult :: class CodeContextResult(AdkModel)
+tesserix_adk.code_intelligence.contracts.CodeIntelligenceError :: class CodeIntelligenceError(AdkError)
+tesserix_adk.code_intelligence.contracts.CodeIntelligenceUnavailableError :: class CodeIntelligenceUnavailableError(CodeIntelligenceError)
+tesserix_adk.code_intelligence.contracts.CodeWorkspace :: class CodeWorkspace(AdkModel)
+tesserix_adk.code_intelligence.contracts.CodeWorkspaceNotFoundError :: class CodeWorkspaceNotFoundError(CodeIntelligenceError)
+tesserix_adk.code_intelligence.contributor.CodeIntelligenceContributor :: class CodeIntelligenceContributor(object) {contribute(self, request: 'ContextRequest') -> 'ContextContribution'}
 tesserix_adk.core.Abstention :: class Abstention(AdkModel)
 tesserix_adk.core.ActionClass :: class ActionClass(AdkModel)
 tesserix_adk.core.ActionRegistry :: class ActionRegistry(object) {named(self, action_class: 'str') -> 'ActionClass | None'; of(self, tool: 'str') -> 'ActionClass | None'}
@@ -1970,6 +1994,10 @@ tesserix_adk.runtime.Compaction :: class Compaction(AdkModel)
 tesserix_adk.runtime.CompactionEvent :: class CompactionEvent(AdkModel) {attributes(self) -> 'dict[str, str]'}
 tesserix_adk.runtime.Compensator :: class Compensator(object) {unwind(self, run_id: 'str', *, tenant: 'str', cause: 'str', branch: 'str | None' = None) -> 'CompensatedFailure | CompensationIncomplete'}
 tesserix_adk.runtime.Confidence :: class Confidence(StrEnum)
+tesserix_adk.runtime.ContextContribution :: class ContextContribution(AdkModel)
+tesserix_adk.runtime.ContextContributionError :: class ContextContributionError(AdkError)
+tesserix_adk.runtime.ContextContributor :: class ContextContributor(Protocol) {contribute(self, request: 'ContextRequest') -> 'ContextContribution'}
+tesserix_adk.runtime.ContextRequest :: class ContextRequest(AdkModel)
 tesserix_adk.runtime.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.CostEstimate :: class CostEstimate(AdkModel) {as_limits(self, *, headroom: 'Decimal' = Decimal('1')) -> 'BudgetLimits'; with_children(self, *children: 'CostEstimate') -> 'CostEstimate'}
 tesserix_adk.runtime.DEFAULT_APPROVAL_WAIT_SECONDS :: DEFAULT_APPROVAL_WAIT_SECONDS: float
@@ -2124,6 +2152,10 @@ tesserix_adk.runtime.compaction.cited :: def cited(message: 'Message', citations
 tesserix_adk.runtime.compaction.compact_conversation :: def compact_conversation(history: 'Sequence[Message]', *, summarise: 'Summariser', threshold_tokens: 'int', keep_recent: 'int' = 4, tokenizer: 'Tokenizer | None' = None, run_id: 'str' = '') -> 'Compaction'
 tesserix_adk.runtime.compensation.Compensator :: class Compensator(object) {unwind(self, run_id: 'str', *, tenant: 'str', cause: 'str', branch: 'str | None' = None) -> 'CompensatedFailure | CompensationIncomplete'}
 tesserix_adk.runtime.compensation.MemoryCompensationLedger :: class MemoryCompensationLedger(object) {forget(self, *, tenant: 'str') -> 'int'; mark(self, reversal: 'Reversal') -> 'None'; outstanding(self, run_id: 'str', *, tenant: 'str', branch: 'str | None' = None) -> 'Sequence[Applied]'; record(self, action: 'Applied') -> 'None'}
+tesserix_adk.runtime.context.ContextContribution :: class ContextContribution(AdkModel)
+tesserix_adk.runtime.context.ContextContributionError :: class ContextContributionError(AdkError)
+tesserix_adk.runtime.context.ContextContributor :: class ContextContributor(Protocol) {contribute(self, request: 'ContextRequest') -> 'ContextContribution'}
+tesserix_adk.runtime.context.ContextRequest :: class ContextRequest(AdkModel)
 tesserix_adk.runtime.context.ContextWindow :: class ContextWindow(object) {admit(self, segment: 'Segment') -> 'bool'; fit(self) -> 'tuple[Segment, ...]'; holds(self, key: 'str') -> 'bool'; texts(self, layer: 'PromptLayer') -> 'tuple[str, ...]'}
 tesserix_adk.runtime.context.Segment :: class Segment(AdkModel)
 tesserix_adk.runtime.credentials.DEFAULT_SKEW_SECONDS :: DEFAULT_SKEW_SECONDS: float
@@ -2510,6 +2542,8 @@ tesserix_adk.tools.TranscriptionBackend :: class TranscriptionBackend(Protocol) 
 tesserix_adk.tools.claim_check.DEFAULT_FETCH_CHARS :: DEFAULT_FETCH_CHARS: int
 tesserix_adk.tools.claim_check.claim_check_tool :: def claim_check_tool(store: 'ClaimCheckStore', *, name: 'str' = 'fetch_result', max_chars: 'int' = 4096) -> 'Tool[..., str]'
 tesserix_adk.tools.claim_check_tool :: def claim_check_tool(store: 'ClaimCheckStore', *, name: 'str' = 'fetch_result', max_chars: 'int' = 4096) -> 'Tool[..., str]'
+tesserix_adk.tools.code_intelligence.code_intelligence_tools :: def code_intelligence_tools(backend: 'CodeContextBackend') -> 'tuple[Tool[..., str], ...]'
+tesserix_adk.tools.code_intelligence_tools :: def code_intelligence_tools(backend: 'CodeContextBackend') -> 'tuple[Tool[..., str], ...]'
 tesserix_adk.tools.context.ToolContext :: class ToolContext(object) {raise_if_cancelled(self) -> 'None'}
 tesserix_adk.tools.credentials.Attribution :: class Attribution(AdkModel) {headers(self) -> 'dict[str, str]'}
 tesserix_adk.tools.credentials.CachingCredentials :: class CachingCredentials(object) {invalidate_all(self) -> 'None'; issue(self, request: 'CredentialRequest') -> 'Credential'}

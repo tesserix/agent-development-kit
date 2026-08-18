@@ -12,6 +12,7 @@ layers =
     tesserix_adk.evals
     tesserix_adk.workflows
     tesserix_adk.a2a | tesserix_adk.mcp | tesserix_adk.rag | tesserix_adk.memory | tesserix_adk.guardrails | tesserix_adk.observability | tesserix_adk.tools | tesserix_adk.models
+    tesserix_adk.code_intelligence
     tesserix_adk.runtime
     tesserix_adk.core
 
@@ -35,6 +36,7 @@ forbidden_modules =
     tesserix_adk.cli
     tesserix_adk.testing
     tesserix_adk.adapters
+    tesserix_adk.code_intelligence
     tesserix_adk.experimental
 
 [importlinter:contract:leaves-are-not-imported]
@@ -53,6 +55,7 @@ source_modules =
     tesserix_adk.guardrails
     tesserix_adk.evals
     tesserix_adk.observability
+    tesserix_adk.code_intelligence
 forbidden_modules =
     tesserix_adk.cli
     tesserix_adk.testing
