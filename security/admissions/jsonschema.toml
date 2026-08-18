@@ -1,0 +1,18 @@
+package = "jsonschema"
+profile = "extra:mcp"
+decided = 2026-08-19
+owner = "@sam123ben"
+need = "Validate dynamic MCP tool arguments against the JSON Schema discovered through AgentGateway."
+alternatives = '''
+The MCP SDK already installs jsonschema transitively, but relying on an undeclared
+transitive dependency makes the adapter break if that implementation detail changes.
+Writing a partial validator was rejected because silently accepting an unsupported
+keyword widens a remote tool call. The dependency remains inside the MCP extra.
+'''
+maintenance = "Active: regular 4.x releases with multiple maintainers."
+licence = "MIT"
+transitive = 4
+native_build = true
+security_history = "No unfixed advisories in the repository's current dependency audit."
+review_by = 2027-08-19
+notes = "The rpds-py transitive dependency has native code and publishes wheels for supported platforms."

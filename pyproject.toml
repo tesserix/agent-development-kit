@@ -28,7 +28,7 @@ dependencies = [
 # a small agent must stay a small dependency. `all` is a pure union of the others so it
 # cannot become the only tested path. See docs/contributing.md.
 [project.optional-dependencies]
-mcp = ["mcp>=1.9"]
+mcp = ["mcp>=1.9", "jsonschema>=4.23"]
 temporal = ["temporalio>=1.9"]
 # The one recorded cap: below 1.0 the version number promises nothing.
 graphiti = ["graphiti-core>=0.14,<1"]

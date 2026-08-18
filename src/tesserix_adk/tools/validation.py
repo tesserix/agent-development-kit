@@ -21,7 +21,7 @@ from __future__ import annotations
 import inspect
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
@@ -31,7 +31,7 @@ from tesserix_adk.core.schema import annotations_of
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Mapping
 
-__all__ = ["LENIENT", "STRICT", "ArgumentPolicy", "ToolArgumentValidator"]
+__all__ = ["LENIENT", "STRICT", "ArgumentPolicy", "ArgumentValidator", "ToolArgumentValidator"]
 
 # A provider that wraps the arguments in one of these is saying the same thing twice.
 _ENVELOPES = frozenset({"arguments", "args", "input", "parameters"})
@@ -55,6 +55,13 @@ class ArgumentPolicy:
 
 STRICT = ArgumentPolicy()
 LENIENT = ArgumentPolicy(strict=False)
+
+
+class ArgumentValidator(Protocol):
+    """What a Tool needs in order to hold model arguments to its advertised schema."""
+
+    def arguments(self, arguments: object) -> Mapping[str, object]:
+        """Return validated keyword arguments, or raise a typed refusal."""
 
 
 class ToolArgumentValidator:

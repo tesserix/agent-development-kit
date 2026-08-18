@@ -58,6 +58,7 @@ from tesserix_adk.tools.validation import (
     LENIENT,
     STRICT,
     ArgumentPolicy,
+    ArgumentValidator,
     ToolArgumentValidator,
 )
 
@@ -74,6 +75,7 @@ __all__ = [
     "SUPPORTED_DOCUMENTS",
     "AgentToolView",
     "ArgumentPolicy",
+    "ArgumentValidator",
     "Attribution",
     "CachingCredentials",
     "ContentExpander",

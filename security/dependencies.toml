@@ -42,6 +42,14 @@ floor = "1.9"
 reason = "Oldest release with the 1.x server and client surface the mcp extra targets."
 
 [[floor]]
+package = "jsonschema"
+floor = "4.23"
+reason = """
+Oldest release tested by the schema conformance suite. AgentGateway MCP tools compile
+untrusted input schemas at the adapter boundary instead of treating schema prose as code.
+"""
+
+[[floor]]
 package = "temporalio"
 floor = "1.9"
 reason = "Oldest release with the worker API the workflows extra targets."

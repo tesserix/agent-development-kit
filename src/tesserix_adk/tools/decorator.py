@@ -41,7 +41,12 @@ from tesserix_adk.core.schema import (
     schema_for,
 )
 from tesserix_adk.tools.context import ToolContext
-from tesserix_adk.tools.validation import STRICT, ArgumentPolicy, ToolArgumentValidator
+from tesserix_adk.tools.validation import (
+    STRICT,
+    ArgumentPolicy,
+    ArgumentValidator,
+    ToolArgumentValidator,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -103,7 +108,7 @@ class Tool[**P, R]:
     returns_schema: dict[str, Any] | None
     is_async: bool
     function: Callable[P, Awaitable[R]] | Callable[P, R]
-    validator: ToolArgumentValidator
+    validator: ArgumentValidator
     context_parameter: str | None = None
     context_required: bool = False
     timeout: float | None = None
