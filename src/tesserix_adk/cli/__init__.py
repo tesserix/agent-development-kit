@@ -10,6 +10,8 @@ from tesserix_adk.cli.prompts import main as prompts_main
 from tesserix_adk.cli.resume import Frontiers, Resumes, describe
 from tesserix_adk.cli.resume import main as resume_main
 from tesserix_adk.cli.resume import show as frontier_main
+from tesserix_adk.cli.surface import Resolve
+from tesserix_adk.cli.surface import main as surface_main
 from tesserix_adk.cli.trace import main as trace_main
 
 __all__ = [
@@ -18,6 +20,7 @@ __all__ = [
     "Frontiers",
     "Lookup",
     "Prompts",
+    "Resolve",
     "Resumes",
     "Waiting",
     "approvals_main",
@@ -27,5 +30,6 @@ __all__ = [
     "inspect_main",
     "prompts_main",
     "resume_main",
+    "surface_main",
     "trace_main",
 ]

@@ -395,11 +395,17 @@ class McpServerConfig(AdkModel):
             envelope and in every rejection, so it is the operator's word, not the server's.
         endpoint: Where it lives, in whatever form the transport reads. Empty is an
             in-process session the consumer supplies itself.
-        allow: The tools this process may adopt. Empty adopts whatever is advertised, which
-            is the setting to leave behind once the server is known.
+        allow: The tools this process may adopt, by the server's own names for them. Empty
+            adopts none; `*` adopts whatever is advertised, which is the setting to leave
+            behind once the server is known.
+        deny: The tools this process may never adopt, whatever the allowlist says.
+        prefix: What this server's tools are namespaced under, so two servers that both
+            advertise `search` can be told apart. Empty keeps the server's own names.
         timeout_seconds: The ceiling on one call to this server.
         max_tools: How many of its tools may reach a model at all. A server that grows a
             hundred tools should not silently spend a context window.
+        max_schema_bytes: The ceiling on this server's schemas taken together, which is
+            what a tool list actually costs a context window.
         max_result_bytes: The ceiling on one result, applied before it enters a prompt.
         transport: How the server is reached. Moving one from a developer's subprocess to a
             shared cluster endpoint is this field and nothing else.
@@ -416,8 +422,11 @@ class McpServerConfig(AdkModel):
     name: str
     endpoint: str = ""
     allow: tuple[str, ...] = ()
+    deny: tuple[str, ...] = ()
+    prefix: str = ""
     timeout_seconds: float = Field(default=15.0, gt=0, le=300)
     max_tools: int = Field(default=40, ge=1, le=128)
+    max_schema_bytes: int = Field(default=256 * 1024, ge=1, le=4 * 1024 * 1024)
     max_result_bytes: int = Field(default=64 * 1024, ge=1, le=4 * 1024 * 1024)
     transport: Literal["stdio", "http"] = "http"
     command: tuple[str, ...] = ()
@@ -432,6 +441,23 @@ class McpServerConfig(AdkModel):
         if not _SERVER_NAME.fullmatch(value):
             raise ValueError("an MCP server name may contain only letters, digits, '_' and '-'")
         return value
+
+    @field_validator("prefix")
+    @classmethod
+    def _portable_prefix(cls, value: str) -> str:
+        if value and not _SERVER_NAME.fullmatch(value):
+            raise ValueError("an MCP tool prefix may contain only letters, digits, '_' and '-'")
+        return value
+
+    @model_validator(mode="after")
+    def _one_answer_per_tool(self) -> McpServerConfig:
+        """Refuse a declaration that both allows and denies a tool, or denies everything."""
+        both = sorted(set(self.allow) & set(self.deny))
+        if both:
+            raise ValueError(f"{', '.join(both)} is both allowed and denied")
+        if "*" in self.deny:
+            raise ValueError("denying '*' is an empty allowlist; leave allow empty instead")
+        return self
 
     @model_validator(mode="after")
     def _reachable_as_declared(self) -> McpServerConfig:

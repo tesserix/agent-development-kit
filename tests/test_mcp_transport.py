@@ -132,8 +132,8 @@ def _json_rpc(request: httpx.Request) -> httpx.Response:
 class TestOneServerReachedTwoWays:
     @pytest.mark.asyncio
     async def test_discovery_and_a_call_agree_across_transports(self, tmp_path: Path) -> None:
-        stdio_config = _stdio(tmp_path)
-        http_config = _endpoint()
+        stdio_config = _stdio(tmp_path, allow=("*",))
+        http_config = _endpoint(allow=("*",))
         http = HttpTransport(
             http_config, client=httpx.AsyncClient(transport=httpx.MockTransport(_json_rpc))
         )
@@ -401,7 +401,7 @@ class TestRecordingTransport:
                 "tools/call": {"content": [{"type": "text", "text": "found leave"}]},
             }
         )
-        config = McpServerConfig(name="handbook", endpoint="http://x/mcp")
+        config = McpServerConfig(name="handbook", endpoint="http://x/mcp", allow=("*",))
 
         async with McpClient(TransportSession(transport, config=config), config=config) as client:
             discovery = await client.discover()
