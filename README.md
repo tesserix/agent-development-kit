@@ -172,6 +172,7 @@ code lands here as the kit is built.
 | Who an MCP call is for — the caller's tenant, trace and a per-call credential on every request, failing closed rather than unscoped | [`docs/mcp-auth-context.md`](docs/mcp-auth-context.md) |
 | The tool surface an agent has — default-deny allowlists, deterministic namespacing, collisions and drift as typed errors, inspectable with `adk surface` | [`docs/mcp-tool-surface.md`](docs/mcp-tool-surface.md) |
 | One slow or unavailable MCP server degrading a capability rather than a run — deadlines, safe retries, a per-server breaker, required versus optional | [`docs/mcp-resilience.md`](docs/mcp-resilience.md) |
+| Publishing kit tools over MCP — descriptors generated from the definitions, an export allowlist, the tenant read from the request, approval answered rather than waived | [`docs/mcp-server.md`](docs/mcp-server.md) |
 | AgentGateway MCP routing — registry-owned routes, operator allowlists, pinned tenant-safe tool surfaces | [`docs/agentgateway.md`](docs/agentgateway.md) |
 | Calling a peer agent — the caller's principal on the wire, narrowed on both sides, a chain that cannot loop | [`docs/peer-delegation.md`](docs/peer-delegation.md) |
 | Credential refresh — one mint inside the skew window, authority re-derived rather than renewed, a revoked caller that halts | [`docs/credential-refresh.md`](docs/credential-refresh.md) |

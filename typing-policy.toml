@@ -661,3 +661,14 @@ same way every other `Metric` does. The judge reads the answer text, never the t
 """
 owner = "@sam123ben"
 review_by = 2027-08-20
+
+[[any]]
+symbol = "tesserix_adk.adapters.mcp_server.published"
+kind = "json"
+reason = """
+Takes `Tool[Any, Any]`: a descriptor is generated from what the tool declared — its name,
+its description and its schemas — which says nothing about the argument and result types
+its generic parameters carry. A published server holds tools of every shape at once.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
