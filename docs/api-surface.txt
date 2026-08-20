@@ -1794,9 +1794,11 @@ tesserix_adk.models.shaping.errored :: def errored(message: 'Message') -> 'Messa
 tesserix_adk.models.shaping.provider_effort :: def provider_effort(effort: 'Effort', *, provider: 'str') -> 'dict[str, str]'
 tesserix_adk.models.verify_artefact :: def verify_artefact(model: 'OnnxModel', *, directory: 'Path') -> 'Path'
 tesserix_adk.observability.ATTRIBUTE_PREFIX :: ATTRIBUTE_PREFIX: str
+tesserix_adk.observability.Arm :: class Arm(StrEnum)
 tesserix_adk.observability.AttributeSet :: class AttributeSet(AdkModel) {metric_dimensions(self) -> 'dict[str, str]'; rendered(self) -> 'dict[str, str]'}
 tesserix_adk.observability.Attribution :: class Attribution(AdkModel)
 tesserix_adk.observability.BUDGET_BREACHES :: BUDGET_BREACHES: str
+tesserix_adk.observability.Basis :: class Basis(StrEnum)
 tesserix_adk.observability.CACHED_TOKENS :: CACHED_TOKENS: str
 tesserix_adk.observability.CACHE_HIT_RATIO :: CACHE_HIT_RATIO: str
 tesserix_adk.observability.CALLS :: CALLS: str
@@ -1813,7 +1815,9 @@ tesserix_adk.observability.Dimensions :: class Dimensions(AdkModel) {bucket(self
 tesserix_adk.observability.ExportedEvent :: class ExportedEvent(AdkModel)
 tesserix_adk.observability.ExportedSpan :: class ExportedSpan(AdkModel)
 tesserix_adk.observability.FILE_VERSION :: FILE_VERSION: str
+tesserix_adk.observability.Figure :: class Figure(AdkModel) {label(self) -> 'str'}
 tesserix_adk.observability.HEADER :: HEADER: str
+tesserix_adk.observability.HoldoutPolicy :: class HoldoutPolicy(AdkModel) {arm(self, run_id: 'str') -> 'Arm'}
 tesserix_adk.observability.INPUT_TOKENS :: INPUT_TOKENS: str
 tesserix_adk.observability.ITERATIONS :: ITERATIONS: str
 tesserix_adk.observability.LATENCY :: LATENCY: str
@@ -1826,6 +1830,7 @@ tesserix_adk.observability.MASK :: MASK: str
 tesserix_adk.observability.MAX_STATE_ENTRIES :: MAX_STATE_ENTRIES: int
 tesserix_adk.observability.MAX_STATE_LENGTH :: MAX_STATE_LENGTH: int
 tesserix_adk.observability.MAX_VALUE_LENGTH :: MAX_VALUE_LENGTH: int
+tesserix_adk.observability.MINIMUM_ARM :: MINIMUM_ARM: int
 tesserix_adk.observability.Measured :: class Measured(AdkModel) {rendered(self) -> 'str'}
 tesserix_adk.observability.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
 tesserix_adk.observability.MeterStats :: class MeterStats(object)
@@ -1852,6 +1857,8 @@ tesserix_adk.observability.RunTimer :: class RunTimer(object) {finished(self, *,
 tesserix_adk.observability.RunTree :: class RunTree(AdkModel) {by_step(self) -> 'dict[Step, Totals]'; children(self, run_id: 'str') -> 'tuple[Node, ...]'; node(self, run_id: 'str') -> 'Node | None'; records(self) -> 'tuple[SpendRecord, ...]'; totals_by(self, *by: 'str') -> 'dict[tuple[str, ...], Totals]'}
 tesserix_adk.observability.SPAN_NAMES :: SPAN_NAMES: dict
 tesserix_adk.observability.STOPPED :: STOPPED: str
+tesserix_adk.observability.SavingsReport :: class SavingsReport(AdkModel) {as_dict(self) -> 'dict[str, object]'; summary(self) -> 'str'}
+tesserix_adk.observability.ShapedRun :: class ShapedRun(AdkModel)
 tesserix_adk.observability.SpanEvent :: class SpanEvent(AdkModel)
 tesserix_adk.observability.SpendMeter :: class SpendMeter(object) {record(self, record: 'SpendRecord', *, seconds: 'float | None' = None, iterations: 'int' = 0, tool_calls: 'int' = 0, breached: 'bool' = False, key: 'str | None' = None) -> 'None'}
 tesserix_adk.observability.SpendRecord :: class SpendRecord(AdkModel)
@@ -1874,6 +1881,7 @@ tesserix_adk.observability.Unavailability :: class Unavailability(StrEnum)
 tesserix_adk.observability.VENDOR :: VENDOR: str
 tesserix_adk.observability.VERSION :: VERSION: str
 tesserix_adk.observability.W3CContext :: class W3CContext(AdkModel) {carried(self) -> 'dict[str, str]'; child(self, name: 'str', *, attempt: 'int' = 1) -> 'Self'; link(self, kind: 'LinkKind', **attributes: 'str') -> 'Link'}
+tesserix_adk.observability.account :: def account(runs: 'Iterable[ShapedRun]', *, policy: 'HoldoutPolicy', minimum: 'int' = 30) -> 'SavingsReport'
 tesserix_adk.observability.assembled :: def assembled(spans: 'Sequence[RecordedSpan]') -> 'tuple[TraceNode, ...]'
 tesserix_adk.observability.attributes_of :: def attributes_of(record: 'SpendRecord') -> 'dict[str, str]'
 tesserix_adk.observability.attributes_of_context :: def attributes_of_context(context: 'TraceContext') -> 'dict[str, str]'
@@ -1888,6 +1896,7 @@ tesserix_adk.observability.attribution.attributes_of :: def attributes_of(record
 tesserix_adk.observability.attribution.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.attribution.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
 tesserix_adk.observability.attribution.totals_of :: def totals_of(group: 'Sequence[SpendRecord]') -> 'Totals'
+tesserix_adk.observability.by_tenant :: def by_tenant(runs: 'Iterable[ShapedRun]', *, policy: 'HoldoutPolicy', minimum: 'int' = 30) -> 'dict[str, SavingsReport]'
 tesserix_adk.observability.conforms :: def conforms(attributes: 'Mapping[str, str]') -> 'None'
 tesserix_adk.observability.convention.AttributeSet :: class AttributeSet(AdkModel) {metric_dimensions(self) -> 'dict[str, str]'; rendered(self) -> 'dict[str, str]'}
 tesserix_adk.observability.convention.CARDINALITY :: CARDINALITY: dict
@@ -1961,6 +1970,15 @@ tesserix_adk.observability.redaction.Redaction :: class Redaction(AdkModel)
 tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
 tesserix_adk.observability.render :: def render(assembled: 'RunTree') -> 'str'
 tesserix_adk.observability.rendered :: def rendered(nodes: 'Sequence[TraceNode]', *, depth: 'int | None' = None, only: 'Sequence[str]' = ()) -> 'str'
+tesserix_adk.observability.savings.Arm :: class Arm(StrEnum)
+tesserix_adk.observability.savings.Basis :: class Basis(StrEnum)
+tesserix_adk.observability.savings.Figure :: class Figure(AdkModel) {label(self) -> 'str'}
+tesserix_adk.observability.savings.HoldoutPolicy :: class HoldoutPolicy(AdkModel) {arm(self, run_id: 'str') -> 'Arm'}
+tesserix_adk.observability.savings.MINIMUM_ARM :: MINIMUM_ARM: int
+tesserix_adk.observability.savings.SavingsReport :: class SavingsReport(AdkModel) {as_dict(self) -> 'dict[str, object]'; summary(self) -> 'str'}
+tesserix_adk.observability.savings.ShapedRun :: class ShapedRun(AdkModel)
+tesserix_adk.observability.savings.account :: def account(runs: 'Iterable[ShapedRun]', *, policy: 'HoldoutPolicy', minimum: 'int' = 30) -> 'SavingsReport'
+tesserix_adk.observability.savings.by_tenant :: def by_tenant(runs: 'Iterable[ShapedRun]', *, policy: 'HoldoutPolicy', minimum: 'int' = 30) -> 'dict[str, SavingsReport]'
 tesserix_adk.observability.span_id_of :: def span_id_of(run_id: 'str', name: 'str' = '', attempt: 'int' = 1) -> 'str'
 tesserix_adk.observability.spend_metrics.BUDGET_BREACHES :: BUDGET_BREACHES: str
 tesserix_adk.observability.spend_metrics.DROPPED :: DROPPED: str
