@@ -401,6 +401,16 @@ class McpServerConfig(AdkModel):
         max_tools: How many of its tools may reach a model at all. A server that grows a
             hundred tools should not silently spend a context window.
         max_result_bytes: The ceiling on one result, applied before it enters a prompt.
+        transport: How the server is reached. Moving one from a developer's subprocess to a
+            shared cluster endpoint is this field and nothing else.
+        command: The child's argv, for a stdio server. Explicit, never a shell string.
+        env_allow: The environment variables the child inherits. Everything else is left
+            behind, so a subprocess cannot pick up a credential nobody meant to give it.
+        max_message_bytes: The ceiling on one transport message, so a server writing
+            without end costs a typed failure rather than this process's memory.
+        read_timeout_seconds: How long a read may stall before the call is failed. A stream
+            that goes quiet without closing is the failure this catches.
+        max_in_flight: How many requests may be outstanding on one connection at once.
     """
 
     name: str
@@ -409,6 +419,12 @@ class McpServerConfig(AdkModel):
     timeout_seconds: float = Field(default=15.0, gt=0, le=300)
     max_tools: int = Field(default=40, ge=1, le=128)
     max_result_bytes: int = Field(default=64 * 1024, ge=1, le=4 * 1024 * 1024)
+    transport: Literal["stdio", "http"] = "http"
+    command: tuple[str, ...] = ()
+    env_allow: tuple[str, ...] = ()
+    max_message_bytes: int = Field(default=1024 * 1024, ge=1, le=16 * 1024 * 1024)
+    read_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
+    max_in_flight: int = Field(default=8, ge=1, le=64)
 
     @field_validator("name")
     @classmethod
@@ -416,6 +432,15 @@ class McpServerConfig(AdkModel):
         if not _SERVER_NAME.fullmatch(value):
             raise ValueError("an MCP server name may contain only letters, digits, '_' and '-'")
         return value
+
+    @model_validator(mode="after")
+    def _reachable_as_declared(self) -> McpServerConfig:
+        """Refuse a declaration that names a transport it does not say how to reach."""
+        if self.transport == "stdio" and not self.command:
+            raise ValueError("a stdio MCP server needs the argv of the process to run")
+        if self.transport == "http" and self.command:
+            raise ValueError("an http MCP server is reached by endpoint, not by argv")
+        return self
 
 
 class McpConfig(AdkModel):
