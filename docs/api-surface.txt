@@ -141,6 +141,7 @@ tesserix_adk.adapters.DEFAULT_CHECKPOINT_NAMESPACE :: DEFAULT_CHECKPOINT_NAMESPA
 tesserix_adk.adapters.DEFAULT_CHECKPOINT_TABLES :: DEFAULT_CHECKPOINT_TABLES: CheckpointTables
 tesserix_adk.adapters.DEFAULT_CHUNK_TABLES :: DEFAULT_CHUNK_TABLES: ChunkTables
 tesserix_adk.adapters.DEFAULT_COLLECTION :: DEFAULT_COLLECTION: str
+tesserix_adk.adapters.DEFAULT_EVENT_SUBJECT :: DEFAULT_EVENT_SUBJECT: str
 tesserix_adk.adapters.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables
 tesserix_adk.adapters.DEFAULT_HEARTBEAT_SECONDS :: DEFAULT_HEARTBEAT_SECONDS: float
 tesserix_adk.adapters.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
@@ -149,9 +150,12 @@ tesserix_adk.adapters.DEFAULT_PAYLOAD_LIMIT_BYTES :: DEFAULT_PAYLOAD_LIMIT_BYTES
 tesserix_adk.adapters.DEFAULT_QUEUE_NAMESPACE :: DEFAULT_QUEUE_NAMESPACE: str
 tesserix_adk.adapters.DEFAULT_RETRY_MILLISECONDS :: DEFAULT_RETRY_MILLISECONDS: int
 tesserix_adk.adapters.DEFAULT_STATE_NAMESPACE :: DEFAULT_STATE_NAMESPACE: str
+tesserix_adk.adapters.DEFAULT_STREAM_REQUIREMENT :: DEFAULT_STREAM_REQUIREMENT: StreamRequirement
 tesserix_adk.adapters.DEFAULT_TABLE :: DEFAULT_TABLE: str
 tesserix_adk.adapters.DISTANCE_OPERATORS :: DISTANCE_OPERATORS: dict
+tesserix_adk.adapters.DeadLetter :: class DeadLetter(Protocol) {bury(self, payload: 'bytes', *, reason: 'str') -> 'None'}
 tesserix_adk.adapters.Degraded :: class Degraded(AdkModel)
+tesserix_adk.adapters.DurableConsumer :: class DurableConsumer(object) {consume(self) -> 'int'}
 tesserix_adk.adapters.EXPECTED_AUDIT_SCHEMA :: EXPECTED_AUDIT_SCHEMA: str
 tesserix_adk.adapters.EXPECTED_CEILING_SCHEMA :: EXPECTED_CEILING_SCHEMA: str
 tesserix_adk.adapters.EXPECTED_CHECKPOINT_SCHEMA :: EXPECTED_CHECKPOINT_SCHEMA: str
@@ -185,6 +189,9 @@ tesserix_adk.adapters.InspectableRedis :: class InspectableRedis(Protocol) {conf
 tesserix_adk.adapters.IsolationGuarantee :: class IsolationGuarantee(AdkModel) {statement(self) -> 'str'}
 tesserix_adk.adapters.Isolator :: class Isolator(Generic) {read(self, operation: 'Callable[[], Awaitable[Sequence[RecordT]]]') -> 'Sequence[RecordT]'}
 tesserix_adk.adapters.JetStreamAudit :: class JetStreamAudit(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'}
+tesserix_adk.adapters.JetStreamContext :: class JetStreamContext(Protocol) {publish(self, subject: 'str', payload: 'bytes', *, headers: 'Mapping[str, str] | None' = None, timeout: 'float | None' = None) -> 'PublishAck'; stream_info(self, name: 'str') -> 'Any'}
+tesserix_adk.adapters.JetStreamEventPublisher :: class JetStreamEventPublisher(object) {flush(self) -> 'None'; publish(self, event: 'EventEnvelope') -> 'None'; publish_batch(self, events: 'tuple[EventEnvelope, ...]') -> 'None'; verify(self) -> 'None'}
+tesserix_adk.adapters.JetStreamMessage :: class JetStreamMessage(Protocol) {ack(self) -> 'None'; nak(self) -> 'None'; term(self) -> 'None'}
 tesserix_adk.adapters.JetStreamPublisher :: class JetStreamPublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
 tesserix_adk.adapters.MAX_NAME_LENGTH :: MAX_NAME_LENGTH: int
 tesserix_adk.adapters.McpClient :: class McpClient(object) {aclose(self) -> 'None'; connect(self) -> 'McpServerInfo'; discover(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; refresh(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; tools(self) -> 'tuple[Tool[..., str], ...]'}
@@ -231,6 +238,7 @@ tesserix_adk.adapters.PostgresMemoryStore :: class PostgresMemoryStore(object) {
 tesserix_adk.adapters.PostgresStateStore :: class PostgresStateStore(object) {bound(self, session: 'SqlSession') -> 'PostgresStateStore'; delete_run(self, key: 'StateKey') -> 'None'; delete_session(self, key: 'StateKey', *, cascade: 'bool' = False) -> 'None'; get_run(self, key: 'StateKey') -> 'RunRecord | None'; get_session(self, key: 'StateKey') -> 'SessionRecord | None'; list_runs(self, query: 'StateQuery') -> 'StatePage'; patch_run(self, key: 'StateKey', delta: 'StateDelta') -> 'RunRecord'; put_run(self, record: 'RunRecord') -> 'RunRecord'; put_session(self, record: 'SessionRecord') -> 'SessionRecord'; verify(self) -> 'None'}
 tesserix_adk.adapters.PostgresStoreSettings :: class PostgresStoreSettings(MemoryStoreSettings)
 tesserix_adk.adapters.PostgresWorkQueue :: class PostgresWorkQueue(object) {adopt(self, *, worker: 'str') -> 'tuple[WorkItem, ...]'; bound(self, session: 'SqlSession') -> 'PostgresWorkQueue'; claim(self, *, worker: 'str', queue: 'str' = 'default', lease_seconds: 'float | None' = None) -> 'WorkItem | None'; complete(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; dead_letters(self, *, tenant: 'str', limit: 'int' = 50) -> 'tuple[WorkItem, ...]'; enqueue(self, item: 'WorkItem') -> 'WorkItem'; fail(self, item_id: 'str', *, tenant: 'str', worker: 'str', error: 'str', retryable: 'bool' = True) -> 'WorkItem'; heartbeat(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; reap(self) -> 'tuple[WorkItem, ...]'; stats(self, *, queue: 'str' = 'default') -> 'QueueStats'; verify(self) -> 'None'}
+tesserix_adk.adapters.PublishAck :: class PublishAck(Protocol)
 tesserix_adk.adapters.RecordingTransport :: class RecordingTransport(object) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.RedisCacheStore :: class RedisCacheStore(object) {get(self, digest: 'str') -> 'CacheEntry | None'; purge(self, **by: 'str | None') -> 'int'; put(self, entry: 'CacheEntry') -> 'None'}
 tesserix_adk.adapters.RedisCheckpointStore :: class RedisCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
@@ -255,6 +263,7 @@ tesserix_adk.adapters.SqlTransactor :: class SqlTransactor(SqlSession, Protocol)
 tesserix_adk.adapters.StateTables :: class StateTables(object)
 tesserix_adk.adapters.StdioTransport :: class StdioTransport(object) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.StreamGap :: class StreamGap(ProgressEvent)
+tesserix_adk.adapters.StreamRequirement :: class StreamRequirement(object)
 tesserix_adk.adapters.SurfaceEntry :: class SurfaceEntry(AdkModel)
 tesserix_adk.adapters.SurfacePin :: class SurfacePin(AdkModel)
 tesserix_adk.adapters.TenantAuthority :: class TenantAuthority(object) {authorised(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'AuthorisedCall'; headers_for(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'dict[str, str]'; meta_for(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'dict[str, str]'; secrets_for(self, *, server: 'str') -> 'tuple[str, ...]'}
@@ -336,6 +345,16 @@ tesserix_adk.adapters.isolation.Isolator :: class Isolator(Generic) {read(self, 
 tesserix_adk.adapters.isolation.Partition :: class Partition(object) {key(self, namespace: 'str', *parts: 'str') -> 'str'; only(self, items: 'Sequence[ItemT]', *, tenant_of: 'Callable[[ItemT], str]', where: 'str') -> 'Sequence[ItemT]'; pattern(self, namespace: 'str') -> 'str'; predicate(self, *, column: 'str' = 'tenant', position: 'int' = 1) -> 'tuple[str, str]'; verify(self, found: 'str', *, where: 'str') -> 'None'}
 tesserix_adk.adapters.isolation.PartitionMechanism :: class PartitionMechanism(StrEnum)
 tesserix_adk.adapters.isolation.partitioned :: def partitioned(items: 'Iterable[ItemT]', *, tenant_of: 'Callable[[ItemT], str]') -> 'dict[str, list[ItemT]]'
+tesserix_adk.adapters.jetstream.DEFAULT_EVENT_SUBJECT :: DEFAULT_EVENT_SUBJECT: str
+tesserix_adk.adapters.jetstream.DEFAULT_STREAM_REQUIREMENT :: DEFAULT_STREAM_REQUIREMENT: StreamRequirement
+tesserix_adk.adapters.jetstream.DeadLetter :: class DeadLetter(Protocol) {bury(self, payload: 'bytes', *, reason: 'str') -> 'None'}
+tesserix_adk.adapters.jetstream.DurableConsumer :: class DurableConsumer(object) {consume(self) -> 'int'}
+tesserix_adk.adapters.jetstream.JetStreamContext :: class JetStreamContext(Protocol) {publish(self, subject: 'str', payload: 'bytes', *, headers: 'Mapping[str, str] | None' = None, timeout: 'float | None' = None) -> 'PublishAck'; stream_info(self, name: 'str') -> 'Any'}
+tesserix_adk.adapters.jetstream.JetStreamEventPublisher :: class JetStreamEventPublisher(object) {flush(self) -> 'None'; publish(self, event: 'EventEnvelope') -> 'None'; publish_batch(self, events: 'tuple[EventEnvelope, ...]') -> 'None'; verify(self) -> 'None'}
+tesserix_adk.adapters.jetstream.JetStreamMessage :: class JetStreamMessage(Protocol) {ack(self) -> 'None'; nak(self) -> 'None'; term(self) -> 'None'}
+tesserix_adk.adapters.jetstream.PublishAck :: class PublishAck(Protocol)
+tesserix_adk.adapters.jetstream.StreamRequirement :: class StreamRequirement(object)
+tesserix_adk.adapters.jetstream.subject_for :: def subject_for(root: 'str', *, tenant: 'str', kind: 'EventType') -> 'str'
 tesserix_adk.adapters.ledger.CoalescingLedger :: class CoalescingLedger(object) {flush(self) -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.ledger.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
 tesserix_adk.adapters.ledger.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
@@ -430,6 +449,7 @@ tesserix_adk.adapters.state.InspectableRedis :: class InspectableRedis(Protocol)
 tesserix_adk.adapters.state.RedisStateStore :: class RedisStateStore(object) {delete_run(self, key: 'StateKey') -> 'None'; delete_session(self, key: 'StateKey', *, cascade: 'bool' = False) -> 'None'; get_run(self, key: 'StateKey') -> 'RunRecord | None'; get_session(self, key: 'StateKey') -> 'SessionRecord | None'; list_runs(self, query: 'StateQuery') -> 'StatePage'; patch_run(self, key: 'StateKey', delta: 'StateDelta') -> 'RunRecord'; preflight(self) -> 'None'; put_run(self, record: 'RunRecord') -> 'RunRecord'; put_session(self, record: 'SessionRecord') -> 'SessionRecord'}
 tesserix_adk.adapters.state.RedisStoreSettings :: class RedisStoreSettings(MemoryStoreSettings)
 tesserix_adk.adapters.state.RedisWorkQueue :: class RedisWorkQueue(object) {adopt(self, *, worker: 'str') -> 'tuple[WorkItem, ...]'; claim(self, *, worker: 'str', queue: 'str' = 'default', lease_seconds: 'float | None' = None) -> 'WorkItem | None'; complete(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; dead_letters(self, *, tenant: 'str', limit: 'int' = 50) -> 'tuple[WorkItem, ...]'; enqueue(self, item: 'WorkItem') -> 'WorkItem'; fail(self, item_id: 'str', *, tenant: 'str', worker: 'str', error: 'str', retryable: 'bool' = True) -> 'WorkItem'; heartbeat(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; preflight(self) -> 'None'; reap(self) -> 'tuple[WorkItem, ...]'; stats(self, *, queue: 'str' = 'default') -> 'QueueStats'}
+tesserix_adk.adapters.subject_for :: def subject_for(root: 'str', *, tenant: 'str', kind: 'EventType') -> 'str'
 tesserix_adk.adapters.transport.ApprovalInbox :: class ApprovalInbox(object) {decide(self, decision: 'ApprovalDecision', *, tenant: 'str') -> 'None'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'; wait_for(self, record_id: 'str') -> 'None'}
 tesserix_adk.adapters.transport.DEFAULT_HEARTBEAT_SECONDS :: DEFAULT_HEARTBEAT_SECONDS: float
 tesserix_adk.adapters.transport.DEFAULT_PAYLOAD_LIMIT_BYTES :: DEFAULT_PAYLOAD_LIMIT_BYTES: int
