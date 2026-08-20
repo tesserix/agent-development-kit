@@ -1,0 +1,56 @@
+name: eval gate
+
+on:
+  workflow_call:
+    inputs:
+      baseline:
+        description: the stored baseline artefact
+        type: string
+        default: evals/baseline.json
+      candidate:
+        description: the artefact this run measured
+        type: string
+        default: evals/candidate.json
+      policy:
+        description: the gate policy
+        type: string
+        default: evals/policy.json
+      artefacts:
+        description: base URL of this run's per-case artefacts
+        type: string
+        default: ""
+      comment:
+        description: post the verdict on the pull request
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: compare against the baseline
+        id: gate
+        run: |
+          set +e
+          uv run python -m tesserix_adk.cli.evals compare \
+            --baseline "${{ inputs.baseline }}" \
+            --candidate "${{ inputs.candidate }}" \
+            --policy "${{ inputs.policy }}" \
+            --artefacts "${{ inputs.artefacts }}" \
+            --comment eval-gate-comment.md
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+      - name: say so on the pull request
+        if: ${{ inputs.comment && github.event_name == 'pull_request' && hashFiles('eval-gate-comment.md') != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file eval-gate-comment.md --edit-last --create-if-none
+      - name: fail on a regression the policy blocks
+        run: exit ${{ steps.gate.outputs.code }}

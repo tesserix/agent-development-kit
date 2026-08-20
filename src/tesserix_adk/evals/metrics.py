@@ -483,6 +483,8 @@ class MetricReport:
         verdicts: One per declared threshold.
         failures: Metrics that raised, with their tracebacks.
         unscored: Cases that produced no run, so no metric could see them.
+        values: Every known per-case value, by metric and then by case id. An unknown is
+            absent rather than zero, so a regression gate can name the cases that moved.
     """
 
     suite: str
@@ -492,6 +494,7 @@ class MetricReport:
     verdicts: tuple[ThresholdResult, ...] = ()
     failures: tuple[MetricFailure, ...] = ()
     unscored: tuple[str, ...] = ()
+    values: Mapping[str, Mapping[str, float]] = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -584,6 +587,7 @@ class MetricReport:
                 {"case_id": failure.case_id, "metric": failure.metric} for failure in self.failures
             ],
             "unscored": list(self.unscored),
+            "values": {name: dict(cases) for name, cases in self.values.items()},
         }
 
 
@@ -652,6 +656,10 @@ def measure(
         verdicts=verdicts,
         failures=tuple(failures),
         unscored=tuple(unscored),
+        values={
+            name: {case_id: value.value for case_id, value in measured if value.value is not None}
+            for name, measured in scored.items()
+        },
     )
 
 

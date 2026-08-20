@@ -184,6 +184,7 @@ code lands here as the kit is built.
 | Golden datasets and deterministic replay — a versioned dataset file, derived run ids, and a case that did not run reported as one | [`docs/eval-datasets.md`](docs/eval-datasets.md) |
 | Eval metrics — correctness, cost per case and p95 latency as peers, with unknowns kept out of the mean and thresholds that fail closed | [`docs/eval-metrics.md`](docs/eval-metrics.md) |
 | Eval judge — a rubric-scored model judge that cannot gate until it agrees with human labels | [`docs/eval-judge.md`](docs/eval-judge.md) |
+| Baseline regression gate — a stored baseline with provenance, a noise band, named failing cases and a merge that blocks | [`docs/eval-baseline.md`](docs/eval-baseline.md) |
 | A model provider you can script — exact token counts, injectable provider faults, an unscripted call that fails rather than answers forever | [`docs/fake-model-provider.md`](docs/fake-model-provider.md) |
 | Recorded provider traffic — three modes with replay the default, a miss that names the diverging field, chunk boundaries kept, a credential that refuses to be written | [`docs/cassettes.md`](docs/cassettes.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
