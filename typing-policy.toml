@@ -743,3 +743,33 @@ JSON schemas, resolved from a card at runtime rather than declared in Python.
 """
 owner = "@sam123ben"
 review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.core.persistence.Envelope"
+kind = "json"
+reason = """
+The payload is whatever a build wrote — including fields this build has no model for, which
+is the point of reading a record an older or newer worker persisted.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.core.persistence.packed"
+kind = "json"
+reason = """
+`preserved` carries fields this build does not declare, so a read-modify-write by an older
+worker does not delete what a newer one wrote.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.core.persistence.revived"
+kind = "json"
+reason = """
+Turns tagged JSON back into the datetimes and decimals it was written from. What comes back
+is whatever was stored.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21

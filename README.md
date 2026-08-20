@@ -179,6 +179,7 @@ code lands here as the kit is built.
 | Finding a peer — resolution by skill and version, tenant-scoped allowlists, card pinning, caching that survives a registry outage | [`docs/peer-discovery.md`](docs/peer-discovery.md) |
 | Calling a peer — typed both ways, scope attenuation, one trace, one budget, and a peer skill as a tool | [`docs/peer-invocation.md`](docs/peer-invocation.md) |
 | Reading a peer's answer — sealed as data, screened by field, per-peer trust policy, and what a peer's word may never authorise | [`docs/peer-output.md`](docs/peer-output.md) |
+| Versioned persisted state — envelopes, canonical bytes, migrations on read, and what a rolling deploy may not lose | [`docs/state-versioning.md`](docs/state-versioning.md) |
 | Credential refresh — one mint inside the skew window, authority re-derived rather than renewed, a revoked caller that halts | [`docs/credential-refresh.md`](docs/credential-refresh.md) |
 | Store isolation — the partition derived from context rather than passed, a mismatched row withheld, guarantees stated with their limits | [`docs/store-isolation.md`](docs/store-isolation.md) |
 | Proving isolation — two tenants seeded with confusable data, markers that survive summarising, surfaces nobody read counted as a failure | [`docs/isolation-suite.md`](docs/isolation-suite.md) |

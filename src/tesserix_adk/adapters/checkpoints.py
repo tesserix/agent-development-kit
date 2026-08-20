@@ -23,6 +23,7 @@ from tesserix_adk.adapters.state import _text
 from tesserix_adk.core.checkpoint import Checkpoint
 from tesserix_adk.core.errors import ConfigurationError, RunLeaseError, StatePersistenceError
 from tesserix_adk.core.lease import RunLease
+from tesserix_adk.core.persistence import StateKind, packed, unpacked
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -105,7 +106,7 @@ class RedisCheckpointStore:
             StatePersistenceError: If the frontier is larger than this store writes. Half a
                 frontier resumes into a conversation that never happened.
         """
-        blob = checkpoint.model_dump_json()
+        blob = packed(checkpoint, kind=StateKind.CHECKPOINT)
         size = len(blob.encode())
         if size > self._max_bytes:
             raise StatePersistenceError(
@@ -119,7 +120,7 @@ class RedisCheckpointStore:
     async def latest(self, run_id: str, *, tenant: str) -> Checkpoint | None:
         """Return the frontier of `run_id`, or `None` where nothing was written."""
         blob = await self._client.eval(GET, 1, self._key(run_id, tenant))
-        return None if not blob else Checkpoint.model_validate_json(_text(blob))
+        return None if not blob else unpacked(_text(blob), Checkpoint, kind=StateKind.CHECKPOINT)
 
     async def forget(self, run_id: str, *, tenant: str) -> None:
         """Drop the frontier, because the run reached a terminal state."""
@@ -279,7 +280,7 @@ class PostgresCheckpointStore:
             checkpoint.tenant,
             checkpoint.format_version,
             checkpoint.created_at,
-            checkpoint.model_dump_json(),
+            packed(checkpoint, kind=StateKind.CHECKPOINT),
         )
 
     async def latest(self, run_id: str, *, tenant: str) -> Checkpoint | None:
@@ -289,7 +290,7 @@ class PostgresCheckpointStore:
         )
         if not rows or not rows[0] or rows[0][0] is None:
             return None
-        return Checkpoint.model_validate_json(_text(rows[0][0]))
+        return unpacked(_text(rows[0][0]), Checkpoint, kind=StateKind.CHECKPOINT)
 
     async def forget(self, run_id: str, *, tenant: str) -> None:
         """Drop the frontier, because the run reached a terminal state."""

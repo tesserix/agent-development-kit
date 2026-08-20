@@ -119,6 +119,7 @@ __all__ = [
     "SecretResolutionError",
     "StateConflictError",
     "StateInUseError",
+    "StateMigrationError",
     "StateNotFoundError",
     "StatePersistenceError",
     "StreamInterruptedError",
@@ -143,6 +144,7 @@ __all__ = [
     "UncitedClaimError",
     "UngroundedCitationError",
     "UnknownTenantError",
+    "UnsupportedStateVersionError",
     "WorkItemNotFoundError",
     "WorkersBusyError",
     "WriteQueueFullError",
@@ -2842,6 +2844,72 @@ class CheckpointTooLargeError(AdkError):
                 "run_id": run_id,
                 "size_bytes": str(size_bytes),
                 "max_bytes": str(max_bytes),
+            },
+        )
+
+
+class UnsupportedStateVersionError(AdkError):
+    """Raised when persisted state was written at a version this build cannot read.
+
+    A partially rolled-back deploy leaves newer payloads in the store, and a build that
+    coerced one into the shape it understands would silently rewrite state it never
+    understood. The item is left exactly as it is, for a worker that does understand it.
+
+    Args:
+        kind: What was being read.
+        found: The version it carries.
+        supported: The version this build writes and reads.
+        oldest: The oldest version this build still reads.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        kind: str = "",
+        found: int = 0,
+        supported: int = 0,
+        oldest: int = 0,
+    ) -> None:
+        self.kind = kind
+        self.found = found
+        self.supported = supported
+        self.oldest = oldest
+        super().__init__(
+            *args,
+            details={
+                "kind": kind,
+                "found": str(found),
+                "supported": str(supported),
+                "oldest": str(oldest),
+            },
+        )
+
+
+class StateMigrationError(AdkError):
+    """Raised when persisted state could not be brought forward into a record.
+
+    Either a registered migration raised part-way, or the payload does not make the record
+    it was read as. Nothing is half-applied: migrations run on a copy, so the stored item
+    is exactly as it was and a later attempt sees the same thing.
+
+    Args:
+        kind: What was being read.
+        from_version: The version the failing step read.
+        to_version: The version it was producing.
+    """
+
+    def __init__(
+        self, *args: object, kind: str = "", from_version: int = 0, to_version: int = 0
+    ) -> None:
+        self.kind = kind
+        self.from_version = from_version
+        self.to_version = to_version
+        super().__init__(
+            *args,
+            details={
+                "kind": kind,
+                "from_version": str(from_version),
+                "to_version": str(to_version),
             },
         )
 

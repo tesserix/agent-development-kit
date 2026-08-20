@@ -556,6 +556,7 @@ tesserix_adk.core.BudgetScope :: class BudgetScope(StrEnum)
 tesserix_adk.core.BudgetUnavailableError :: class BudgetUnavailableError(AdkError)
 tesserix_adk.core.CHEAP :: CHEAP: TaskClass
 tesserix_adk.core.CHECKPOINT_FORMAT :: CHECKPOINT_FORMAT: int
+tesserix_adk.core.CURRENT_VERSIONS :: CURRENT_VERSIONS: dict
 tesserix_adk.core.CachingSecrets :: class CachingSecrets(object) {invalidate(self, ref: 'SecretRef') -> 'None'; invalidate_all(self) -> 'None'; resolve(self, ref: 'SecretRef') -> 'SecretStr'}
 tesserix_adk.core.CachingTenantConfig :: class CachingTenantConfig(object) {config_for(self, tenant: 'str') -> 'TenantConfig'; invalidate(self, tenant: 'str') -> 'None'}
 tesserix_adk.core.CallCredential :: class CallCredential(Protocol) {headers(self) -> 'dict[str, str]'}
@@ -625,6 +626,7 @@ tesserix_adk.core.DispatchNode :: class DispatchNode(Generic)
 tesserix_adk.core.DispatchResult :: class DispatchResult(Generic) {value(self, name: 'str') -> 'T'}
 tesserix_adk.core.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
+tesserix_adk.core.Envelope :: class Envelope(AdkModel) {digest(self) -> 'str'; opened(self, model: 'type[ModelT]') -> 'ModelT'; preserved(self, model: 'type[ModelT]') -> 'dict[str, Any]'; to_json(self) -> 'str'}
 tesserix_adk.core.EnvironmentSecrets :: class EnvironmentSecrets(object) {resolve(self, ref: 'SecretRef') -> 'SecretStr'; variable_for(self, ref: 'SecretRef') -> 'str'}
 tesserix_adk.core.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
 tesserix_adk.core.EvalIncompleteError :: class EvalIncompleteError(AdkError)
@@ -811,7 +813,9 @@ tesserix_adk.core.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple
 tesserix_adk.core.SEPARATOR :: SEPARATOR: str
 tesserix_adk.core.SMART :: SMART: TaskClass
 tesserix_adk.core.SPAN_NAMES :: SPAN_NAMES: dict
+tesserix_adk.core.STATE_REGISTRY :: STATE_REGISTRY: StateRegistry
 tesserix_adk.core.STRICT_SUBSET :: STRICT_SUBSET: StrictSubset
+tesserix_adk.core.SUPPORTED_WINDOW :: SUPPORTED_WINDOW: int
 tesserix_adk.core.Sampling :: class Sampling(AdkModel) {keeps(self, run_id: 'str') -> 'bool'}
 tesserix_adk.core.SandboxError :: class SandboxError(AdkError)
 tesserix_adk.core.SandboxMemoryError :: class SandboxMemoryError(SandboxError)
@@ -839,10 +843,14 @@ tesserix_adk.core.StateConflictError :: class StateConflictError(AdkError)
 tesserix_adk.core.StateDelta :: class StateDelta(AdkModel) {applied_to(self, record: 'RunRecord') -> 'RunRecord'}
 tesserix_adk.core.StateInUseError :: class StateInUseError(AdkError)
 tesserix_adk.core.StateKey :: class StateKey(AdkModel)
+tesserix_adk.core.StateKind :: class StateKind(StrEnum)
+tesserix_adk.core.StateMigration :: class StateMigration(object)
+tesserix_adk.core.StateMigrationError :: class StateMigrationError(AdkError)
 tesserix_adk.core.StateNotFoundError :: class StateNotFoundError(AdkError)
 tesserix_adk.core.StatePage :: class StatePage(AdkModel)
 tesserix_adk.core.StatePersistenceError :: class StatePersistenceError(AdkError)
 tesserix_adk.core.StateQuery :: class StateQuery(AdkModel)
+tesserix_adk.core.StateRegistry :: class StateRegistry(object) {oldest(self, kind: 'str') -> 'int'; register(self, migration: 'StateMigration') -> 'None'; upgraded(self, envelope: 'Envelope') -> 'Envelope'; version(self, kind: 'str') -> 'int'}
 tesserix_adk.core.StateStore :: class StateStore(Protocol) {delete_run(self, key: 'StateKey') -> 'None'; delete_session(self, key: 'StateKey', *, cascade: 'bool' = False) -> 'None'; get_run(self, key: 'StateKey') -> 'RunRecord | None'; get_session(self, key: 'StateKey') -> 'SessionRecord | None'; list_runs(self, query: 'StateQuery') -> 'StatePage'; patch_run(self, key: 'StateKey', delta: 'StateDelta') -> 'RunRecord'; put_run(self, record: 'RunRecord') -> 'RunRecord'; put_session(self, record: 'SessionRecord') -> 'SessionRecord'}
 tesserix_adk.core.StopReason :: class StopReason(StrEnum)
 tesserix_adk.core.StoreConfig :: class StoreConfig(AdkModel)
@@ -902,6 +910,7 @@ tesserix_adk.core.UncitedClaimError :: class UncitedClaimError(AdkError)
 tesserix_adk.core.UngroundedCitationError :: class UngroundedCitationError(AdkError)
 tesserix_adk.core.UnknownTenantError :: class UnknownTenantError(ConfigurationError)
 tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'; sliced(self, limits: 'BudgetLimits') -> 'UnlimitedBudget'}
+tesserix_adk.core.UnsupportedStateVersionError :: class UnsupportedStateVersionError(AdkError)
 tesserix_adk.core.Usage :: class Usage(AdkModel)
 tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.VERSION :: VERSION: str
@@ -960,6 +969,7 @@ tesserix_adk.core.budget.TenantLedger :: class TenantLedger(Protocol) {consume(s
 tesserix_adk.core.budget.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'; sliced(self, limits: 'BudgetLimits') -> 'UnlimitedBudget'}
 tesserix_adk.core.budget.most_restrictive :: def most_restrictive(*scoped: 'ScopedLimits') -> 'ResolvedBudget'
 tesserix_adk.core.canonical :: def canonical(name: 'str') -> 'str'
+tesserix_adk.core.canonical_json :: def canonical_json(value: 'object') -> 'str'
 tesserix_adk.core.capabilities.Capability :: class Capability(StrEnum)
 tesserix_adk.core.capabilities.CapabilitySet :: CapabilitySet = typing.Annotated[frozenset[tesserix_adk.core.capabilities.Capability], BeforeValidator(func=<class 'frozenset'>, json_schema_input_type=PydanticUndefined)]
 tesserix_adk.core.capabilities.ModelCapabilities :: class ModelCapabilities(AdkModel) {declaring(self, **overrides: 'object') -> 'Self'; require(self, requirement: 'Capability', *, provider: 'str', model: 'str') -> 'None'; supports(self, requirement: 'Capability') -> 'bool'}
@@ -1156,6 +1166,7 @@ tesserix_adk.core.errors.ScopeEscalationError :: class ScopeEscalationError(AdkE
 tesserix_adk.core.errors.SecretResolutionError :: class SecretResolutionError(AdkError)
 tesserix_adk.core.errors.StateConflictError :: class StateConflictError(AdkError)
 tesserix_adk.core.errors.StateInUseError :: class StateInUseError(AdkError)
+tesserix_adk.core.errors.StateMigrationError :: class StateMigrationError(AdkError)
 tesserix_adk.core.errors.StateNotFoundError :: class StateNotFoundError(AdkError)
 tesserix_adk.core.errors.StatePersistenceError :: class StatePersistenceError(AdkError)
 tesserix_adk.core.errors.StreamInterruptedError :: class StreamInterruptedError(ProviderError)
@@ -1180,6 +1191,7 @@ tesserix_adk.core.errors.TrustBoundaryError :: class TrustBoundaryError(Configur
 tesserix_adk.core.errors.UncitedClaimError :: class UncitedClaimError(AdkError)
 tesserix_adk.core.errors.UngroundedCitationError :: class UngroundedCitationError(AdkError)
 tesserix_adk.core.errors.UnknownTenantError :: class UnknownTenantError(ConfigurationError)
+tesserix_adk.core.errors.UnsupportedStateVersionError :: class UnsupportedStateVersionError(AdkError)
 tesserix_adk.core.errors.WorkItemNotFoundError :: class WorkItemNotFoundError(AdkError)
 tesserix_adk.core.errors.WorkersBusyError :: class WorkersBusyError(AdkError)
 tesserix_adk.core.errors.WriteQueueFullError :: class WriteQueueFullError(AdkError)
@@ -1274,7 +1286,19 @@ tesserix_adk.core.output_policy.PolicyViolation :: class PolicyViolation(AdkMode
 tesserix_adk.core.output_policy.RequiresCitation :: class RequiresCitation(object) {check(self, result: 'BaseModel') -> 'tuple[PolicyViolation, ...]'}
 tesserix_adk.core.output_policy.evaluate :: def evaluate(result: 'BaseModel', policies: 'Sequence[Policy]') -> 'PolicyReport'
 tesserix_adk.core.output_policy.reach :: def reach(result: 'BaseModel', path: 'str') -> 'object'
+tesserix_adk.core.packed :: def packed(record: 'AdkModel', *, kind: 'str', preserved: 'Mapping[str, Any] | None' = None, registry: 'StateRegistry | None' = None) -> 'str'
 tesserix_adk.core.parsed_from_strings :: def parsed_from_strings(annotation: 'type[Value] | Any', value: 'object') -> 'Value'
+tesserix_adk.core.persistence.CURRENT_VERSIONS :: CURRENT_VERSIONS: dict
+tesserix_adk.core.persistence.Envelope :: class Envelope(AdkModel) {digest(self) -> 'str'; opened(self, model: 'type[ModelT]') -> 'ModelT'; preserved(self, model: 'type[ModelT]') -> 'dict[str, Any]'; to_json(self) -> 'str'}
+tesserix_adk.core.persistence.STATE_REGISTRY :: STATE_REGISTRY: StateRegistry
+tesserix_adk.core.persistence.SUPPORTED_WINDOW :: SUPPORTED_WINDOW: int
+tesserix_adk.core.persistence.StateKind :: class StateKind(StrEnum)
+tesserix_adk.core.persistence.StateMigration :: class StateMigration(object)
+tesserix_adk.core.persistence.StateRegistry :: class StateRegistry(object) {oldest(self, kind: 'str') -> 'int'; register(self, migration: 'StateMigration') -> 'None'; upgraded(self, envelope: 'Envelope') -> 'Envelope'; version(self, kind: 'str') -> 'int'}
+tesserix_adk.core.persistence.canonical_json :: def canonical_json(value: 'object') -> 'str'
+tesserix_adk.core.persistence.packed :: def packed(record: 'AdkModel', *, kind: 'str', preserved: 'Mapping[str, Any] | None' = None, registry: 'StateRegistry | None' = None) -> 'str'
+tesserix_adk.core.persistence.revived :: def revived(payload: 'Mapping[str, Any]') -> 'dict[str, Any]'
+tesserix_adk.core.persistence.unpacked :: def unpacked(text: 'str', model: 'type[ModelT]', *, kind: 'str', registry: 'StateRegistry | None' = None) -> 'ModelT'
 tesserix_adk.core.pii.DEFAULT_DETECTORS :: DEFAULT_DETECTORS: tuple
 tesserix_adk.core.pii.PIIDetector :: class PIIDetector(Protocol) {detect(self, text: 'str') -> 'tuple[PIIMatch, ...]'}
 tesserix_adk.core.pii.PIIKind :: class PIIKind(StrEnum)
@@ -1363,6 +1387,7 @@ tesserix_adk.core.resolve_config :: def resolve_config(overrides: 'dict[str, Any
 tesserix_adk.core.resolve_hooks :: def resolve_hooks(decisions: 'Sequence[HookDecision] | Iterable[HookDecision]') -> 'HookDecision'
 tesserix_adk.core.resolve_tenant_policy :: def resolve_tenant_policy(source: 'TenantConfigProvider') -> 'TenantPolicy'
 tesserix_adk.core.restored :: def restored(headers: 'Mapping[str, str]', *, authenticated: 'str | None' = None) -> 'TenantContext'
+tesserix_adk.core.revived :: def revived(payload: 'Mapping[str, Any]') -> 'dict[str, Any]'
 tesserix_adk.core.routing.CHEAP :: CHEAP: TaskClass
 tesserix_adk.core.routing.ModelRequirements :: class ModelRequirements(AdkModel) {unsatisfied_by(self, declared: 'object') -> 'tuple[str, ...]'}
 tesserix_adk.core.routing.ModelRouter :: class ModelRouter(Protocol) {resolve(self, task_class: 'TaskClass', *, requirements: 'ModelRequirements | None' = None, tenant: 'str | None' = None, agent: 'str | None' = None, pinned: 'ModelRef | None' = None) -> 'RoutingDecision'}
@@ -1448,6 +1473,7 @@ tesserix_adk.core.tool_access.ToolDecision :: class ToolDecision(AdkModel)
 tesserix_adk.core.tool_access.canonical :: def canonical(name: 'str') -> 'str'
 tesserix_adk.core.trust.AXES :: AXES: tuple
 tesserix_adk.core.trust.TrustBoundary :: class TrustBoundary(AdkModel) {admits(self, other: 'TrustBoundary') -> 'bool'; differs_from(self, other: 'TrustBoundary') -> 'tuple[str, ...]'}
+tesserix_adk.core.unpacked :: def unpacked(text: 'str', model: 'type[ModelT]', *, kind: 'str', registry: 'StateRegistry | None' = None) -> 'ModelT'
 tesserix_adk.core.validated :: def validated(model: 'type[Model]', payload: 'object') -> 'Model'
 tesserix_adk.core.verify_conformance :: def verify_conformance(obj: 'object', protocol: 'type') -> 'None'
 tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 'CountSource') -> 'CountSource'
