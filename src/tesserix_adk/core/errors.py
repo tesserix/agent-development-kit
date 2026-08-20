@@ -28,6 +28,7 @@ __all__ = [
     "AuthorisationError",
     "AuthorityRevokedError",
     "AutonomyRefusedError",
+    "BaselineUnusableError",
     "BudgetExceededError",
     "BudgetUnavailableError",
     "CancelledError",
@@ -3026,6 +3027,39 @@ class EvalIncompleteError(AdkError):
     def retryable(self) -> bool:
         """Yes. Scoring the rest of the dataset makes the same comparison answerable."""
         return True
+
+
+class BaselineUnusableError(AdkError):
+    """Raised when the stored baseline cannot decide a change, so the gate refuses instead.
+
+    A gate that passes because there was nothing to compare against is not a gate: the
+    first regression it should have caught merges with a green tick. The refusal names
+    what is wrong with the artefact and the command that records a good one, so the answer
+    is a deliberate bootstrap rather than a flag that turns the gate off.
+
+    Args:
+        path: Where the baseline was looked for, where a file was involved.
+        reason: `missing`, `format`, `dataset` where the two runs measured different
+            dataset versions, or `suite` where they measured different suites.
+        remedy: The command that produces a usable baseline.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        path: str = "",
+        reason: str = "missing",
+        remedy: str = "",
+    ) -> None:
+        self.path = path
+        self.reason = reason
+        self.remedy = remedy
+        super().__init__(*args, details={"path": path, "reason": reason, "remedy": remedy})
+
+    @property
+    def retryable(self) -> bool:
+        """No. Recording a baseline is a decision, not a second attempt."""
+        return False
 
 
 class IncomparableEvalError(AdkError):

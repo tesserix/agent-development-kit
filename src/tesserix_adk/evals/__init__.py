@@ -1,5 +1,17 @@
 """Evaluation harness, gold sets and quality gates."""
 
+from tesserix_adk.evals.baseline import (
+    BASELINE_FORMAT,
+    Baseline,
+    BaselinePolicy,
+    BaselineReport,
+    CaseRegression,
+    Delta,
+    MetricSnapshot,
+    Provenance,
+    compare,
+    promote,
+)
 from tesserix_adk.evals.dataset import DATASET_FORMAT, EvalCase, EvalSuite
 from tesserix_adk.evals.gate import (
     DEFAULT_POLICY,
@@ -58,20 +70,26 @@ from tesserix_adk.evals.suite import (
 )
 
 __all__ = [
+    "BASELINE_FORMAT",
     "DATASET_FORMAT",
     "DEFAULT_FLOOR",
     "DEFAULT_POLICY",
     "JUDGE_PROMPT_VERSION",
     "TIE_CEILING",
     "Aggregate",
+    "Baseline",
+    "BaselinePolicy",
+    "BaselineReport",
     "Bypass",
     "CacheHitRate",
     "Calibration",
     "CaseExecutor",
+    "CaseRegression",
     "CaseResult",
     "CaseStatus",
     "Comparison",
     "CostPerCase",
+    "Delta",
     "EvalCase",
     "EvalSuite",
     "ExactMatch",
@@ -90,7 +108,9 @@ __all__ = [
     "MetricFailure",
     "MetricMove",
     "MetricReport",
+    "MetricSnapshot",
     "MetricValue",
+    "Provenance",
     "RefusalRate",
     "Rubric",
     "RubricLevel",
@@ -105,7 +125,9 @@ __all__ = [
     "ToolSequenceMatch",
     "Verdict",
     "agreement",
+    "compare",
     "gate",
     "measure",
+    "promote",
     "shares_family",
 ]
