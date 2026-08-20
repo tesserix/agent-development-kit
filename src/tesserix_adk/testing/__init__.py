@@ -73,6 +73,7 @@ from tesserix_adk.testing.http_cassette import (
     SentRequest,
 )
 from tesserix_adk.testing.injection import INJECTION_FIXTURES, InjectionFixture
+from tesserix_adk.testing.mcp import FaultyMcpServer, McpFault
 from tesserix_adk.testing.memory import InMemoryMemoryStore
 from tesserix_adk.testing.retrieval import POISONED_CORPUS, FakeIndex, Indexed
 from tesserix_adk.testing.spy import (
@@ -168,6 +169,7 @@ __all__ = [
     "FakeToolRegistry",
     "FakeTracer",
     "Fault",
+    "FaultyMcpServer",
     "GuardCase",
     "GuardFamily",
     "GuardMetrics",
@@ -187,6 +189,7 @@ __all__ = [
     "LeakReport",
     "LeaseStoreConformance",
     "MatchOn",
+    "McpFault",
     "MemoryStoreConformance",
     "MetricPoint",
     "ModelProviderConformance",

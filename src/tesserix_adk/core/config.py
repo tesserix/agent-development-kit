@@ -417,6 +417,18 @@ class McpServerConfig(AdkModel):
         read_timeout_seconds: How long a read may stall before the call is failed. A stream
             that goes quiet without closing is the failure this catches.
         max_in_flight: How many requests may be outstanding on one connection at once.
+        required: Whether an agent can be assembled without this server. A required server
+            that cannot be reached fails assembly; an optional one is absent, and its
+            absence is stated to the model as data rather than guessed around.
+        connect_timeout_seconds: The ceiling on the handshake, so an unreachable server
+            costs a startup pause rather than a startup hang.
+        discovery_timeout_seconds: The ceiling on reading its tool list.
+        retry: How often a transport fault against this server is worth another attempt,
+            and how long to wait first. One attempt is no retry at all.
+        breaker_failures: Consecutive faults after which this server stops being called,
+            so model turns are not spent on doomed calls.
+        breaker_reset_seconds: How long the breaker stays shut before one probe is let
+            through. Recovery is measured, never assumed.
     """
 
     name: str
@@ -434,6 +446,12 @@ class McpServerConfig(AdkModel):
     max_message_bytes: int = Field(default=1024 * 1024, ge=1, le=16 * 1024 * 1024)
     read_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
     max_in_flight: int = Field(default=8, ge=1, le=64)
+    required: bool = True
+    connect_timeout_seconds: float = Field(default=10.0, gt=0, le=120)
+    discovery_timeout_seconds: float = Field(default=10.0, gt=0, le=120)
+    retry: RetryConfig = Field(default_factory=lambda: RetryConfig(max_attempts=2))
+    breaker_failures: int = Field(default=5, ge=1, le=100)
+    breaker_reset_seconds: float = Field(default=30.0, gt=0, le=3600)
 
     @field_validator("name")
     @classmethod

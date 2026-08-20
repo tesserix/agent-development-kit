@@ -17,7 +17,7 @@ from tesserix_adk.mcp import McpGatewayError, McpGatewayReason
 from tesserix_adk.tools import STRICT, ArgumentPolicy
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from pydantic import JsonValue
 
@@ -195,3 +195,28 @@ def without_remote_prose(value: JsonValue) -> JsonValue:
     if isinstance(value, list):
         return [without_remote_prose(child) for child in value]
     return value
+
+
+def schema_violations(schema: Mapping[str, JsonValue], value: object) -> tuple[str, ...]:
+    """The paths at which `value` fails `schema`, sorted, or empty where it does not.
+
+    Paths rather than messages: a validator's prose is written from remote input, and
+    remote input is what the caller is deciding what to do about.
+    """
+    jsonschema = require_extra("mcp", "jsonschema")
+    validator_for = cast(
+        "Callable[[dict[str, JsonValue]], type[JsonValidator]]",
+        jsonschema.validators.validator_for,
+    )
+    compiled = dict(schema)
+    try:
+        validator = validator_for(compiled)(compiled)
+        failures = list(cast("Any", validator.iter_errors(value)))
+    except Exception:
+        return ()
+    return tuple(
+        sorted(
+            ".".join(str(part) for part in cast("Any", failure.absolute_path)) or "result"
+            for failure in failures
+        )
+    )
