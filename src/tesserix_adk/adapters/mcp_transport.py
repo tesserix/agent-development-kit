@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
     from pydantic import JsonValue
 
+    from tesserix_adk.adapters.mcp_context import CallAuthority
     from tesserix_adk.core.config import McpServerConfig
 
 __all__ = [
@@ -373,8 +374,11 @@ class HttpTransport:
         config: The declared server, which owns the endpoint and the ceilings.
         client: An HTTP client to use, mostly so a test can supply one. When it is not
             given the transport owns its own and closes it.
-        headers: Headers sent with every message. Authority belongs to its own story;
-            nothing here mints a credential.
+        headers: Headers sent with every message, for a server reached with something
+            static such as a routing key.
+        authority: What mints the per-call credential and carries the caller's tenant and
+            trace. Resolved before the message is built, so a call that cannot be
+            authorised sends nothing.
     """
 
     def __init__(
@@ -383,11 +387,13 @@ class HttpTransport:
         *,
         client: httpx.AsyncClient | None = None,
         headers: Mapping[str, str] | None = None,
+        authority: CallAuthority | None = None,
     ) -> None:
         if not config.endpoint:
             raise ConfigurationError(f"the MCP server {config.name} declares no endpoint")
         self._config = config
         self._headers = dict(headers or {})
+        self._authority = authority
         self._owned = client is None
         self._client = client or httpx.AsyncClient(
             follow_redirects=False, timeout=config.read_timeout_seconds
@@ -423,8 +429,9 @@ class HttpTransport:
             "method": method,
             "params": dict(params),
         }
+        sent = await self._authorised(timeout_seconds)
         async with self._gate:
-            body = await self._posted(message, timeout_seconds=timeout_seconds)
+            body = await self._posted(message, timeout_seconds=timeout_seconds, headers=sent)
         if "error" in body:
             raise self._failure("the MCP server returned an error", McpTransportReason.PROTOCOL)
         result = body.get("result")
@@ -447,6 +454,7 @@ class HttpTransport:
             await self._posted(
                 message,
                 timeout_seconds=self._config.read_timeout_seconds,
+                headers=await self._authorised(self._config.read_timeout_seconds),
                 answered=False,
             )
 
@@ -458,11 +466,26 @@ class HttpTransport:
         if self._owned:
             await self._client.aclose()
 
+    async def _authorised(self, timeout_seconds: float) -> dict[str, str]:
+        """What this request presents, minted for the caller bound at this moment.
+
+        Raises:
+            McpAuthError: Where the call cannot be attributed or authorised. Raised
+                before anything is posted.
+        """
+        if self._authority is None:
+            return dict(self._headers)
+        minted = await self._authority.headers_for(
+            server=self._config.name, holding_for=timeout_seconds
+        )
+        return {**self._headers, **minted}
+
     async def _posted(
         self,
         message: dict[str, JsonValue],
         *,
         timeout_seconds: float,
+        headers: Mapping[str, str],
         answered: bool = True,
     ) -> dict[str, Any]:
         """Try the endpoint a bounded number of times, then report the outage as one."""
@@ -470,7 +493,7 @@ class HttpTransport:
         for attempt in range(_ATTEMPTS):
             try:
                 async with asyncio.timeout(timeout_seconds):
-                    return await self._once(message, answered=answered)
+                    return await self._once(message, headers=headers, answered=answered)
             except (httpx.TransportError, httpx.HTTPError) as unreachable:
                 last = unreachable
             except TimeoutError as quiet:
@@ -483,14 +506,16 @@ class HttpTransport:
             "the MCP endpoint could not be reached", McpTransportReason.UNAVAILABLE
         ) from last
 
-    async def _once(self, message: dict[str, JsonValue], *, answered: bool) -> dict[str, Any]:
+    async def _once(
+        self, message: dict[str, JsonValue], *, headers: Mapping[str, str], answered: bool
+    ) -> dict[str, Any]:
         """Post once and read at most one message back."""
         request = self._client.build_request(
             "POST",
             self._config.endpoint,
             json=message,
             headers={
-                **self._headers,
+                **headers,
                 "accept": "application/json, text/event-stream",
                 "content-type": "application/json",
             },
