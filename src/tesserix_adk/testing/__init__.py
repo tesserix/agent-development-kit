@@ -22,6 +22,7 @@ from tesserix_adk.testing.cassette import (
     redacted,
 )
 from tesserix_adk.testing.embedding import FakeEmbedder
+from tesserix_adk.testing.events import InMemoryEventPublisher, assert_events
 from tesserix_adk.testing.fake_model import (
     FakeModelProvider,
     Fault,
@@ -182,6 +183,7 @@ __all__ = [
     "HttpExchange",
     "HttpReplay",
     "IdempotencyStoreConformance",
+    "InMemoryEventPublisher",
     "InMemoryMemoryStore",
     "Indexed",
     "InjectionFixture",
@@ -229,6 +231,7 @@ __all__ = [
     "assert_allows",
     "assert_blocks",
     "assert_context_propagated",
+    "assert_events",
     "assert_fails_closed",
     "assert_idempotency_key_stable",
     "assert_no_leak",

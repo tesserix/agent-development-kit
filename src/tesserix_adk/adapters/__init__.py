@@ -40,6 +40,7 @@ from tesserix_adk.adapters.checkpoints import (
     RedisCheckpointStore,
     RedisLeaseStore,
 )
+from tesserix_adk.adapters.eventing import payload_of, publishing
 from tesserix_adk.adapters.graft import GraftMcpBackend, GraftSubprocessBackend
 from tesserix_adk.adapters.grants import (
     DEFAULT_GRANT_TABLES,
@@ -358,8 +359,10 @@ __all__ = [
     "namespaced",
     "open_graphiti",
     "partitioned",
+    "payload_of",
     "peer_tool",
     "published",
+    "publishing",
     "redacted",
     "sse_events",
     "transport_for",

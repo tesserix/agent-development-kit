@@ -52,6 +52,8 @@ __all__ = [
     "EstimateUnavailableError",
     "EvalIncompleteError",
     "EventLoopStalledError",
+    "EventPublishError",
+    "EventTooLargeError",
     "ExtractionError",
     "FallbackExhaustedError",
     "FallbackUnsafeError",
@@ -2910,6 +2912,63 @@ class StateMigrationError(AdkError):
                 "kind": kind,
                 "from_version": str(from_version),
                 "to_version": str(to_version),
+            },
+        )
+
+
+class EventPublishError(AdkError):
+    """Raised when an event could not be delivered and the delivery mode says that stops the run.
+
+    Only under `Delivery.GUARANTEED`. Best-effort delivery counts the drop and lets the run
+    continue, because a dashboard missing an event is not a run failing.
+
+    Args:
+        event_type: What was being published.
+        run_id: The run it belongs to.
+        tenant: The isolation boundary it was emitted under.
+    """
+
+    def __init__(
+        self, *args: object, event_type: str = "", run_id: str = "", tenant: str = ""
+    ) -> None:
+        self.event_type = event_type
+        super().__init__(*args, run_id=run_id, tenant=tenant, details={"event_type": event_type})
+
+
+class EventTooLargeError(AdkError):
+    """Raised when an event is larger than the transport will carry.
+
+    Refused rather than truncated: an event trimmed to fit is an event a consumer reads as
+    complete.
+
+    Args:
+        event_type: What was being published.
+        size_bytes: What it weighed.
+        limit_bytes: What the transport takes.
+        run_id: The run it belongs to.
+        tenant: The isolation boundary it was emitted under.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        event_type: str = "",
+        size_bytes: int = 0,
+        limit_bytes: int = 0,
+        run_id: str = "",
+        tenant: str = "",
+    ) -> None:
+        self.event_type = event_type
+        self.size_bytes = size_bytes
+        self.limit_bytes = limit_bytes
+        super().__init__(
+            *args,
+            run_id=run_id,
+            tenant=tenant,
+            details={
+                "event_type": event_type,
+                "size_bytes": str(size_bytes),
+                "limit_bytes": str(limit_bytes),
             },
         )
 

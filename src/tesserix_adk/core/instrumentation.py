@@ -41,6 +41,7 @@ __all__ = [
     "SpanStatus",
     "TelemetryLoss",
     "Trace",
+    "span_here",
 ]
 
 
@@ -217,6 +218,11 @@ class _Collector:
 _COLLECTOR: ContextVar[_Collector | None] = ContextVar("adk_collector", default=None)
 _PARENT: ContextVar[str | None] = ContextVar("adk_parent_span", default=None)
 _IDS = itertools.count(1)
+
+
+def span_here() -> str | None:
+    """The span open right now, or None outside any. What an emitted event parents itself to."""
+    return _PARENT.get()
 
 
 class Span:
