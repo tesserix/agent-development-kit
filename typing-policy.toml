@@ -672,3 +672,14 @@ its generic parameters carry. A published server holds tools of every shape at o
 """
 owner = "@sam123ben"
 review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.a2a.card.card_for"
+kind = "json"
+reason = """
+Takes `AgentDefinition[Any]`: a card describes how an agent is called, and the answer
+type its runs produce is not part of that description. Parameterising it would make every
+publisher name a type the card never renders.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
