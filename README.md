@@ -177,6 +177,7 @@ code lands here as the kit is built.
 | Calling a peer agent — the caller's principal on the wire, narrowed on both sides, a chain that cannot loop | [`docs/peer-delegation.md`](docs/peer-delegation.md) |
 | Publishing an agent card — generated from the definition, export default-deny, served at the well-known path with an ETag | [`docs/agent-cards.md`](docs/agent-cards.md) |
 | Finding a peer — resolution by skill and version, tenant-scoped allowlists, card pinning, caching that survives a registry outage | [`docs/peer-discovery.md`](docs/peer-discovery.md) |
+| Calling a peer — typed both ways, scope attenuation, one trace, one budget, and a peer skill as a tool | [`docs/peer-invocation.md`](docs/peer-invocation.md) |
 | Credential refresh — one mint inside the skew window, authority re-derived rather than renewed, a revoked caller that halts | [`docs/credential-refresh.md`](docs/credential-refresh.md) |
 | Store isolation — the partition derived from context rather than passed, a mismatched row withheld, guarantees stated with their limits | [`docs/store-isolation.md`](docs/store-isolation.md) |
 | Proving isolation — two tenants seeded with confusable data, markers that survive summarising, surfaces nobody read counted as a failure | [`docs/isolation-suite.md`](docs/isolation-suite.md) |
