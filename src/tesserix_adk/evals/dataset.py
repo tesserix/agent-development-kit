@@ -48,6 +48,9 @@ class EvalCase(AdkModel):
         user: The acting principal, where the case is about one.
         expected: The answer a human would accept, for metrics that need a reference. A
             case without one is still useful to metrics that judge cost or a schema.
+        expected_tools: The tool names a good answer calls, in order, where the case is
+            about the sequence rather than the words.
+        expected_sources: The source ids a good answer may cite.
         tags: Labels a run can select on, such as the release the case was added for.
         metadata: Anything a project's own metrics read.
 
@@ -61,6 +64,8 @@ class EvalCase(AdkModel):
     tenant: str = Field(min_length=1)
     user: str | None = None
     expected: str | None = None
+    expected_tools: tuple[str, ...] = ()
+    expected_sources: tuple[str, ...] = ()
     tags: tuple[str, ...] = ()
     metadata: Mapping[str, str] = Field(default_factory=dict)
 
