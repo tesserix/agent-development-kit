@@ -1254,6 +1254,7 @@ tesserix_adk.core.weaker_source :: def weaker_source(one: 'CountSource', other: 
 tesserix_adk.core.weakest :: def weakest(*levels: 'TrustLevel') -> 'TrustLevel'
 tesserix_adk.core.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source: 'str') -> 'str'
 tesserix_adk.evals.Aggregate :: class Aggregate(object) {line(self) -> 'str'}
+tesserix_adk.evals.Answer :: class Answer(AdkModel)
 tesserix_adk.evals.BASELINE_FORMAT :: BASELINE_FORMAT: int
 tesserix_adk.evals.Baseline :: class Baseline(AdkModel) {snapshot(self, metric: 'str') -> 'MetricSnapshot | None'; write(self, path: 'Path') -> 'None'}
 tesserix_adk.evals.BaselinePolicy :: class BaselinePolicy(AdkModel) {blocks(self, metric: 'str') -> 'bool'}
@@ -1262,18 +1263,26 @@ tesserix_adk.evals.Bypass :: class Bypass(AdkModel)
 tesserix_adk.evals.CacheHitRate :: class CacheHitRate(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.Calibration :: class Calibration(AdkModel) {require(self, *, stamp: 'str' = '') -> 'None'; summary(self) -> 'str'}
 tesserix_adk.evals.CaseExecutor :: class CaseExecutor(Protocol)
+tesserix_adk.evals.CaseMeasurement :: class CaseMeasurement(AdkModel)
 tesserix_adk.evals.CaseRegression :: class CaseRegression(AdkModel) {artefact(self, base: 'str', suite: 'str') -> 'str'}
 tesserix_adk.evals.CaseResult :: class CaseResult(object) {answer(self) -> 'dict[str, Any]'}
 tesserix_adk.evals.CaseStatus :: class CaseStatus(StrEnum)
 tesserix_adk.evals.Comparison :: class Comparison(AdkModel)
+tesserix_adk.evals.CompressionCase :: class CompressionCase(AdkModel)
+tesserix_adk.evals.CompressionFixtures :: class CompressionFixtures(AdkModel)
+tesserix_adk.evals.CompressionReport :: class CompressionReport(AdkModel) {as_dict(self) -> 'dict[str, object]'; case(self, case_id: 'str') -> 'CaseMeasurement'; failing(self) -> 'tuple[KindReport, ...]'; kind(self, kind: 'ContentKind') -> 'KindReport'; summary(self) -> 'str'; table(self) -> 'str'}
 tesserix_adk.evals.CostPerCase :: class CostPerCase(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.DATASET_FORMAT :: DATASET_FORMAT: int
+tesserix_adk.evals.DEFAULT_FIXTURES :: DEFAULT_FIXTURES: CompressionFixtures
 tesserix_adk.evals.DEFAULT_FLOOR :: DEFAULT_FLOOR: float
+tesserix_adk.evals.DEFAULT_FLOORS :: DEFAULT_FLOORS: FloorPolicy
 tesserix_adk.evals.DEFAULT_POLICY :: DEFAULT_POLICY: GatePolicy
 tesserix_adk.evals.Delta :: class Delta(AdkModel) {line(self) -> 'str'}
 tesserix_adk.evals.EvalCase :: class EvalCase(AdkModel) {redacted(self) -> 'EvalCase'}
 tesserix_adk.evals.EvalSuite :: class EvalSuite(AdkModel) {tagged(self, tag: 'str') -> 'tuple[EvalCase, ...]'; to_jsonl(self, path: 'Path') -> 'None'}
 tesserix_adk.evals.ExactMatch :: class ExactMatch(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.Floor :: class Floor(AdkModel)
+tesserix_adk.evals.FloorPolicy :: class FloorPolicy(AdkModel) {floor(self, kind: 'ContentKind') -> 'Floor | None'}
 tesserix_adk.evals.GatePolicy :: class GatePolicy(AdkModel)
 tesserix_adk.evals.GateReport :: class GateReport(AdkModel) {attributes(self) -> 'dict[str, str]'; permits(self, digest: 'str') -> 'bool'; summary(self) -> 'str'}
 tesserix_adk.evals.Groundedness :: class Groundedness(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
@@ -1282,6 +1291,7 @@ tesserix_adk.evals.JUDGE_PROMPT_VERSION :: JUDGE_PROMPT_VERSION: str
 tesserix_adk.evals.Judge :: class Judge(Protocol) {score(self, case: 'EvalCase', candidate: 'str', *, candidate_model: 'str' = '') -> 'JudgeScore'}
 tesserix_adk.evals.JudgeMetric :: class JudgeMetric(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.JudgeScore :: class JudgeScore(AdkModel)
+tesserix_adk.evals.KindReport :: class KindReport(AdkModel) {line(self) -> 'str'}
 tesserix_adk.evals.Labelled :: class Labelled(AdkModel)
 tesserix_adk.evals.LatencyMs :: class LatencyMs(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.LlmJudge :: class LlmJudge(object) {calibrate(self, examples: 'Sequence[Labelled]') -> 'Calibration'; compare(self, case: 'EvalCase', a: 'str', b: 'str') -> 'Comparison'; score(self, case: 'EvalCase', candidate: 'str', *, candidate_model: 'str' = '') -> 'JudgeScore'}
@@ -1297,6 +1307,7 @@ tesserix_adk.evals.RefusalRate :: class RefusalRate(object) {compute(self, case:
 tesserix_adk.evals.Rubric :: class Rubric(AdkModel) {contains(self, score: 'int') -> 'bool'; instructions(self) -> 'str'}
 tesserix_adk.evals.RubricLevel :: class RubricLevel(AdkModel)
 tesserix_adk.evals.SchemaValidity :: class SchemaValidity(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.Solver :: class Solver(Protocol) {answer(self, case: 'CompressionCase', content: 'str', *, handle: 'str') -> 'Answer'}
 tesserix_adk.evals.SuiteResult :: class SuiteResult(object) {digest(self) -> 'str'; errored(self) -> 'tuple[CaseResult, ...]'; incomplete(self) -> 'tuple[CaseResult, ...]'}
 tesserix_adk.evals.SuiteRunner :: class SuiteRunner(object) {run(self, suite: 'EvalSuite') -> 'SuiteResult'; run_id_for(self, suite: 'EvalSuite', case: 'EvalCase') -> 'str'}
 tesserix_adk.evals.TIE_CEILING :: TIE_CEILING: float
@@ -1319,6 +1330,18 @@ tesserix_adk.evals.baseline.Provenance :: class Provenance(AdkModel) {difference
 tesserix_adk.evals.baseline.compare :: def compare(baseline: 'Baseline', candidate: 'Baseline', *, policy: 'BaselinePolicy', override: 'Bypass | None' = None) -> 'BaselineReport'
 tesserix_adk.evals.baseline.promote :: def promote(candidate: 'Baseline', path: 'Path') -> 'Path | None'
 tesserix_adk.evals.compare :: def compare(baseline: 'Baseline', candidate: 'Baseline', *, policy: 'BaselinePolicy', override: 'Bypass | None' = None) -> 'BaselineReport'
+tesserix_adk.evals.compression.Answer :: class Answer(AdkModel)
+tesserix_adk.evals.compression.CaseMeasurement :: class CaseMeasurement(AdkModel)
+tesserix_adk.evals.compression.CompressionCase :: class CompressionCase(AdkModel)
+tesserix_adk.evals.compression.CompressionFixtures :: class CompressionFixtures(AdkModel)
+tesserix_adk.evals.compression.CompressionReport :: class CompressionReport(AdkModel) {as_dict(self) -> 'dict[str, object]'; case(self, case_id: 'str') -> 'CaseMeasurement'; failing(self) -> 'tuple[KindReport, ...]'; kind(self, kind: 'ContentKind') -> 'KindReport'; summary(self) -> 'str'; table(self) -> 'str'}
+tesserix_adk.evals.compression.DEFAULT_FIXTURES :: DEFAULT_FIXTURES: CompressionFixtures
+tesserix_adk.evals.compression.DEFAULT_FLOORS :: DEFAULT_FLOORS: FloorPolicy
+tesserix_adk.evals.compression.Floor :: class Floor(AdkModel)
+tesserix_adk.evals.compression.FloorPolicy :: class FloorPolicy(AdkModel) {floor(self, kind: 'ContentKind') -> 'Floor | None'}
+tesserix_adk.evals.compression.KindReport :: class KindReport(AdkModel) {line(self) -> 'str'}
+tesserix_adk.evals.compression.Solver :: class Solver(Protocol) {answer(self, case: 'CompressionCase', content: 'str', *, handle: 'str') -> 'Answer'}
+tesserix_adk.evals.compression.measure_compression :: def measure_compression(fixtures: 'CompressionFixtures', router: 'ReversibleRouter', solver: 'Solver', *, floors: 'FloorPolicy', tenant: 'str' = 'evals', run_id: 'str' = 'compression-gate') -> 'CompressionReport'
 tesserix_adk.evals.dataset.DATASET_FORMAT :: DATASET_FORMAT: int
 tesserix_adk.evals.dataset.EvalCase :: class EvalCase(AdkModel) {redacted(self) -> 'EvalCase'}
 tesserix_adk.evals.dataset.EvalSuite :: class EvalSuite(AdkModel) {tagged(self, tag: 'str') -> 'tuple[EvalCase, ...]'; to_jsonl(self, path: 'Path') -> 'None'}
@@ -1348,6 +1371,7 @@ tesserix_adk.evals.judge.TIE_CEILING :: TIE_CEILING: float
 tesserix_adk.evals.judge.agreement :: def agreement(scores: 'Sequence[JudgeScore]', labels: 'Sequence[HumanLabel]', *, floor: 'float' = 0.6) -> 'Calibration'
 tesserix_adk.evals.judge.shares_family :: def shares_family(judge_model: 'str', candidate_model: 'str') -> 'bool'
 tesserix_adk.evals.measure :: def measure(suite: 'EvalSuite', result: 'SuiteResult', metrics: 'Sequence[Metric]', *, thresholds: 'Sequence[Threshold]' = ()) -> 'MetricReport'
+tesserix_adk.evals.measure_compression :: def measure_compression(fixtures: 'CompressionFixtures', router: 'ReversibleRouter', solver: 'Solver', *, floors: 'FloorPolicy', tenant: 'str' = 'evals', run_id: 'str' = 'compression-gate') -> 'CompressionReport'
 tesserix_adk.evals.metrics.Aggregate :: class Aggregate(object) {line(self) -> 'str'}
 tesserix_adk.evals.metrics.CacheHitRate :: class CacheHitRate(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.metrics.CostPerCase :: class CostPerCase(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
