@@ -773,3 +773,14 @@ is whatever was stored.
 """
 owner = "@sam123ben"
 review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.adapters.jetstream.JetStreamContext"
+kind = "json"
+reason = """
+`stream_info` returns the client library's own info object, whose shape is the SDK's and not
+this kit's. The fields the adapter needs of it are read by name and checked, which is
+honester than a stub that would drift from the SDK.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
