@@ -45,6 +45,7 @@ from tesserix_adk.core.errors import (
     StatePersistenceError,
     WorkItemNotFoundError,
 )
+from tesserix_adk.core.persistence import StateKind, packed, unpacked
 from tesserix_adk.core.primitives import Usage
 from tesserix_adk.core.queue import QueuePolicy, QueueStats, WorkItem, WorkState
 from tesserix_adk.core.run import RunState
@@ -216,14 +217,16 @@ class PostgresStateStore:
     async def get_session(self, key: StateKey) -> SessionRecord | None:
         """Return the session, or None where there is not one."""
         rows = await self._fetch(GET_SESSION, key.tenant, key.id)
-        return None if not rows else SessionRecord.model_validate_json(_text(rows[0][0]))
+        if not rows:
+            return None
+        return unpacked(_text(rows[0][0]), SessionRecord, kind=StateKind.SESSION)
 
     async def put_session(self, record: SessionRecord) -> SessionRecord:
         """Store the session at its read version plus one, or refuse."""
         written = record.model_copy(
             update={"version": record.version + 1, "updated_at": self._clock.now()}
         )
-        blob = self._sized(written.model_dump_json(), record.key)
+        blob = self._sized(packed(written, kind=StateKind.SESSION), record.key)
         rows = await self._fetch(
             PUT_SESSION, record.tenant, record.session_id, record.version, written.updated_at, blob
         )
@@ -250,7 +253,7 @@ class PostgresStateStore:
         """Store the run at its read version plus one, or refuse."""
         written = record.scrubbed().model_copy(update={"updated_at": self._clock.now()})
         key = record.key
-        blob = self._sized(_zeroed(written).model_dump_json(), key)
+        blob = self._sized(packed(_zeroed(written), kind=StateKind.RUN), key)
         rows = await self._fetch(
             PUT_RUN,
             key.tenant,
@@ -436,7 +439,9 @@ class PostgresWorkQueue:
             self._sized(placed),
             _TERMINAL_WORK,
         )
-        return placed if not rows else WorkItem.model_validate_json(_text(rows[0][0]))
+        if not rows:
+            return placed
+        return unpacked(_text(rows[0][0]), WorkItem, kind=StateKind.WORK_ITEM)
 
     async def claim(
         self, *, worker: str, queue: str = "default", lease_seconds: float | None = None
@@ -447,7 +452,7 @@ class PostgresWorkQueue:
         rows = await self._fetch(CLAIM, queue, now, worker, now + lease)
         if not rows:
             return None
-        item = WorkItem.model_validate_json(_text(rows[0][0]))
+        item = unpacked(_text(rows[0][0]), WorkItem, kind=StateKind.WORK_ITEM)
         claimed = self._policy.claimed(item, worker=worker, now=now, lease_seconds=lease_seconds)
         await self._write(claimed)
         return claimed
@@ -497,7 +502,7 @@ class PostgresWorkQueue:
     async def dead_letters(self, *, tenant: str, limit: int = 50) -> tuple[WorkItem, ...]:
         """Return items that ran out of attempts, in the order they were enqueued."""
         rows = await self._fetch(DEAD_LETTERS, tenant, limit)
-        return tuple(WorkItem.model_validate_json(_text(row[0])) for row in rows)
+        return tuple(unpacked(_text(row[0]), WorkItem, kind=StateKind.WORK_ITEM) for row in rows)
 
     async def stats(self, *, queue: str = "default") -> QueueStats:
         """Return the depth, ages and counters a deployment alerts on."""
@@ -523,7 +528,7 @@ class PostgresWorkQueue:
         """Return every item in `rows` to the queue, where its lease has not moved since."""
         moved = []
         for row in rows:
-            item = WorkItem.model_validate_json(_text(row[0]))
+            item = unpacked(_text(row[0]), WorkItem, kind=StateKind.WORK_ITEM)
             given = self._policy.returned(item, error=error, now=self._clock.now(), backoff=backoff)
             if await self._write(given, fence=float(row[1]), reaped=reaped):
                 moved.append(given)
@@ -536,7 +541,7 @@ class PostgresWorkQueue:
             raise WorkItemNotFoundError(
                 f"no item {item_id!r} in {tenant!r}", item_id=item_id, tenant=tenant
             )
-        item = WorkItem.model_validate_json(_text(rows[0][0]))
+        item = unpacked(_text(rows[0][0]), WorkItem, kind=StateKind.WORK_ITEM)
         if not item.held or item.worker != worker:
             raise LeaseLostError(
                 f"{item_id!r} is no longer held by {worker!r}",
@@ -578,7 +583,7 @@ class PostgresWorkQueue:
 
     def _sized(self, item: WorkItem) -> str:
         """The item as it will be written, if the queue will take it."""
-        blob = item.model_dump_json()
+        blob = packed(item, kind=StateKind.WORK_ITEM)
         size = len(blob.encode())
         if size > self._settings.max_value_bytes:
             raise StatePersistenceError(

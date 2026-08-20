@@ -34,6 +34,7 @@ from tesserix_adk.core.errors import (
     StatePersistenceError,
     WorkItemNotFoundError,
 )
+from tesserix_adk.core.persistence import StateKind, packed, unpacked
 from tesserix_adk.core.primitives import Usage
 from tesserix_adk.core.queue import QueuePolicy, QueueStats, WorkItem, WorkState
 from tesserix_adk.core.run import RunState
@@ -146,14 +147,16 @@ class RedisStateStore:
     async def get_session(self, key: StateKey) -> SessionRecord | None:
         """Return the session, or None where there is not one."""
         blob = await self._retry(lambda: self._client.eval(GET_BLOB, 1, self._session(key)))
-        return None if blob is None else SessionRecord.model_validate_json(_text(blob))
+        if blob is None:
+            return None
+        return unpacked(_text(blob), SessionRecord, kind=StateKind.SESSION)
 
     async def put_session(self, record: SessionRecord) -> SessionRecord:
         """Store the session at its read version plus one, or refuse."""
         written = record.model_copy(
             update={"version": record.version + 1, "updated_at": self._clock.now()}
         )
-        blob = self._sized(written.model_dump_json(), written.key)
+        blob = self._sized(packed(written, kind=StateKind.SESSION), written.key)
         reply = await self._retry(
             lambda: self._client.eval(
                 PUT_SESSION,
@@ -201,7 +204,7 @@ class RedisStateStore:
         written = record.scrubbed().model_copy(update={"updated_at": self._clock.now()})
         key = record.key
         session = record.session_id or ""
-        blob = self._sized(_zeroed(written).model_dump_json(), key)
+        blob = self._sized(packed(_zeroed(written), kind=StateKind.RUN), key)
         reply = await self._retry(
             lambda: self._client.eval(
                 PUT_RUN,
@@ -396,7 +399,7 @@ class RedisWorkQueue:
                 f"{self._base}:item:",
             )
         )
-        return placed if held is None else WorkItem.model_validate_json(_text(held))
+        return placed if held is None else unpacked(_text(held), WorkItem, kind=StateKind.WORK_ITEM)
 
     async def claim(
         self, *, worker: str, queue: str = "default", lease_seconds: float | None = None
@@ -422,7 +425,7 @@ class RedisWorkQueue:
         )
         if reply is None:
             return None
-        item = WorkItem.model_validate_json(_text(reply[1]))
+        item = unpacked(_text(reply[1]), WorkItem, kind=StateKind.WORK_ITEM)
         claimed = self._policy.claimed(item, worker=worker, now=now, lease_seconds=lease)
         await self._settle(claimed, worker=worker)
         return claimed
@@ -483,7 +486,11 @@ class RedisWorkQueue:
                 DEAD_LETTERS, 1, self._dead(tenant), self._base, str(limit - 1)
             )
         )
-        return tuple(WorkItem.model_validate_json(_text(blob)) for blob in blobs or () if blob)
+        return tuple(
+            unpacked(_text(blob), WorkItem, kind=StateKind.WORK_ITEM)
+            for blob in blobs or ()
+            if blob
+        )
 
     async def stats(self, *, queue: str = "default") -> QueueStats:
         """Return the depth, ages and counters a deployment alerts on."""
@@ -535,7 +542,7 @@ class RedisWorkQueue:
                 holder=answer[1] or None,
                 reason=answer[2] or "expired",
             )
-        return WorkItem.model_validate_json(answer[1] or "")
+        return unpacked(answer[1] or "", WorkItem, kind=StateKind.WORK_ITEM)
 
     async def _give_back(
         self,
@@ -549,7 +556,7 @@ class RedisWorkQueue:
         now = self._clock.now()
         moved = []
         for entry in refs or ():
-            item = WorkItem.model_validate_json(_text(entry[0]))
+            item = unpacked(_text(entry[0]), WorkItem, kind=StateKind.WORK_ITEM)
             given = self._policy.returned(item, error=error, now=now, backoff=backoff)
             settled = await self._settle(
                 given, worker=item.worker or "", fence=_text(entry[1]), reaped=reaped
@@ -592,7 +599,7 @@ class RedisWorkQueue:
 
     def _sized(self, item: WorkItem) -> str:
         """The item as it will be written, if the store will take it."""
-        blob = item.model_dump_json()
+        blob = packed(item, kind=StateKind.WORK_ITEM)
         size = len(blob.encode())
         if size > self._settings.max_value_bytes:
             raise StatePersistenceError(
@@ -741,7 +748,7 @@ def _refuse_a_stale_write(reply: Any, key: StateKey, expected: int) -> None:  # 
 
 def _merged(reply: Sequence[Any]) -> RunRecord:
     """A run as the blob it was written as, plus everything patched into it since."""
-    record = RunRecord.model_validate_json(_text(reply[0]))
+    record = unpacked(_text(reply[0]), RunRecord, kind=StateKind.RUN)
     version, inputs, outputs, cost, iterations, cursor = (int(_text(n) or 0) for n in reply[1])
     delta = StateDelta(
         usage=Usage(input_tokens=inputs, output_tokens=outputs),
