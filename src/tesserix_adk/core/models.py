@@ -103,10 +103,18 @@ def parsed_from_strings[Value](annotation: type[Value] | Any, value: object) -> 
     adapter: TypeAdapter[Value] = TypeAdapter(annotation)
     try:
         if isinstance(value, str):
-            return adapter.validate_strings(value)
+            return _from_text(adapter, value)
         return adapter.validate_python(value)
     except ValidationError as failure:
         raise _violation(_named(annotation), failure, value) from failure
+
+
+def _from_text[Value](adapter: TypeAdapter[Value], text: str) -> Value:
+    """Read one environment string, which is JSON wherever the field is not a scalar."""
+    try:
+        return adapter.validate_strings(text)
+    except ValidationError:
+        return adapter.validate_json(text)
 
 
 def telemetry_dump(model: BaseModel) -> dict[str, Any]:

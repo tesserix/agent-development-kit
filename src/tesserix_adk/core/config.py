@@ -46,6 +46,8 @@ __all__ = [
     "DeadlineConfig",
     "Layer",
     "LoopConfig",
+    "McpConfig",
+    "McpServerConfig",
     "Provenance",
     "ProviderConfig",
     "RedactionConfig",
@@ -73,6 +75,9 @@ PRECEDENCE: tuple[Layer, ...] = ("code", "env", "file")
 # The default search root, rendered portably in the public API snapshot.
 _CWD = "."
 _NUMBER = re.compile(r"-?\d+(\.\d+)?")
+
+# The same portable name the MCP gateway routes use: no path, no quoting, no surprises.
+_SERVER_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
 
 # ISO 8601 durations, parsed by pydantic itself rather than by a regex of our own.
 _ISO_DURATION = TypeAdapter(timedelta).validate_strings
@@ -382,6 +387,62 @@ class StoreConfig(AdkModel):
     postgres_dsn: SecretStr | None = None
 
 
+class McpServerConfig(AdkModel):
+    """One declared MCP server, so adopting its tools is configuration rather than code.
+
+    Args:
+        name: What this server is called here. It names the tools' origin in the untrusted
+            envelope and in every rejection, so it is the operator's word, not the server's.
+        endpoint: Where it lives, in whatever form the transport reads. Empty is an
+            in-process session the consumer supplies itself.
+        allow: The tools this process may adopt. Empty adopts whatever is advertised, which
+            is the setting to leave behind once the server is known.
+        timeout_seconds: The ceiling on one call to this server.
+        max_tools: How many of its tools may reach a model at all. A server that grows a
+            hundred tools should not silently spend a context window.
+        max_result_bytes: The ceiling on one result, applied before it enters a prompt.
+    """
+
+    name: str
+    endpoint: str = ""
+    allow: tuple[str, ...] = ()
+    timeout_seconds: float = Field(default=15.0, gt=0, le=300)
+    max_tools: int = Field(default=40, ge=1, le=128)
+    max_result_bytes: int = Field(default=64 * 1024, ge=1, le=4 * 1024 * 1024)
+
+    @field_validator("name")
+    @classmethod
+    def _portable_name(cls, value: str) -> str:
+        if not _SERVER_NAME.fullmatch(value):
+            raise ValueError("an MCP server name may contain only letters, digits, '_' and '-'")
+        return value
+
+
+class McpConfig(AdkModel):
+    """The MCP servers this process may reach. Empty is a process that reaches none."""
+
+    servers: tuple[McpServerConfig, ...] = ()
+
+    @model_validator(mode="after")
+    def _one_entry_per_server(self) -> McpConfig:
+        names = [server.name for server in self.servers]
+        if len(names) != len(set(names)):
+            raise ValueError("an MCP server may be declared only once")
+        return self
+
+    def server(self, name: str) -> McpServerConfig:
+        """Return the declared server called `name`.
+
+        Raises:
+            ConfigurationError: No server is declared under that name, which is a typo in
+                configuration rather than something to fall back from.
+        """
+        found = next((server for server in self.servers if server.name == name), None)
+        if found is None:
+            raise ConfigurationError(f"no MCP server named {name} is declared")
+        return found
+
+
 class AdkConfig(AdkModel):
     """The kit's resolved configuration. Frozen, fully typed, validated at startup."""
 
@@ -393,6 +454,7 @@ class AdkConfig(AdkModel):
     telemetry: TelemetryConfig = TelemetryConfig()
     redaction: RedactionConfig = RedactionConfig()
     stores: StoreConfig = StoreConfig()
+    mcp: McpConfig = McpConfig()
 
     @field_validator("budget")
     @classmethod

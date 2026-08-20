@@ -88,6 +88,14 @@ from tesserix_adk.adapters.ledger import (
     RedisLedger,
     SqlExecutor,
 )
+from tesserix_adk.adapters.mcp import (
+    McpClient,
+    McpDiscovery,
+    McpRejection,
+    McpSchemaError,
+    McpServerInfo,
+    McpSession,
+)
 from tesserix_adk.adapters.memory import (
     DEFAULT_COLLECTION,
     DEFAULT_TABLE,
@@ -208,6 +216,12 @@ __all__ = [
     "Isolator",
     "JetStreamAudit",
     "JetStreamPublisher",
+    "McpClient",
+    "McpDiscovery",
+    "McpRejection",
+    "McpSchemaError",
+    "McpServerInfo",
+    "McpSession",
     "McpStreamableHttpTransport",
     "MemoryPage",
     "MemoryStoreSettings",
