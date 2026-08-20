@@ -8,6 +8,276 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.51.0
+
+### Added
+
+- **added**: Tool-call assertions for agents under test: `ToolSpy` wraps any `ToolRegistry` and records
+each `RecordedCall` — arguments, tenant, user, idempotency key, result or error, elapsed
+time — including calls that raised or were cancelled. `assert_tool_sequence`,
+`assert_tool_called_once_with`, `assert_no_tool_called`, `assert_idempotency_key_stable` and
+`assert_context_propagated` each fail naming the first divergence. `scoped_run` binds a real
+tenant and ambient context with a resolved `ToolAllowlist`, so a scope the run does not hold
+refuses before dispatch. `approving`, `denying` and `ApprovalStub` cover the approved,
+refused and nobody-answered states of a human gate, and `failing_tool`, `slow_tool` and
+`peak_concurrency` inject a domain error, a timeout and measured overlap.
+- **added**: Golden eval datasets and deterministic suite replay. `EvalCase` and `EvalSuite` are the
+dataset: JSONL with a header line carrying `DATASET_FORMAT`, the suite name and the dataset
+version, refusing a duplicate case id, a format this build does not read, and a
+credential-shaped identity field, and scrubbing every other field on the way to disk.
+`SuiteRunner` replays a suite through a `CaseExecutor`, returning results in dataset order
+under derived run ids, bounded concurrency and each case's own tenant, with per-case
+artefacts. `SuiteResult.digest()` covers the answers and never the timings, and a case whose
+executor raised, whose run came back non-terminal, or that answered for another tenant is
+reported as `ERRORED` or `INCOMPLETE` rather than scored — `ok` and `exit_code` follow.
+- **added**: Metric definitions with cost and latency as first-class citizens. `Metric` is the protocol a
+consumer implements; `ExactMatch`, `SchemaValidity`, `ToolSequenceMatch`, `Groundedness` and
+`RefusalRate` cover correctness, and `TokensIn`, `TokensOut`, `CostPerCase`, `LatencyMs` and
+`CacheHitRate` measure spend and speed on the same footing. `measure` aggregates them per
+suite and per tag with p50, p95 and a 95% interval withheld below five scored cases, judges
+declared `Threshold`s as pass, warn or fail, and returns a `MetricReport` as a table, a
+one-line summary or the JSON a gate reads. A `MetricValue` nobody could compute is unknown
+rather than zero — an unpriced self-hosted model, a response with no usage, a cancelled run —
+a metric that raised is a `MetricFailure` with its traceback rather than a passing zero, and a
+threshold whose metric produced no value fails. `EvalCase` gains `expected_tools` and
+`expected_sources`.
+- **added**: An LLM judge that has to agree with people before it may gate anything. `Rubric` and
+`RubricLevel` define a named, versioned scale; `LlmJudge` scores against it through any
+provider and returns a `JudgeScore` carrying the score, the reason, quoted evidence and the
+rubric, model and prompt version that produced it. A reply that is not the rubric's shape,
+names an undeclared score or quotes no evidence is a `SchemaViolationError`, never a number
+mined out of prose. `agreement` measures a judge against `HumanLabel`s with Cohen's kappa and
+rank correlation, and `Calibration.require` refuses a judge below its floor, one that gave
+nearly every case the same score, or one that has moved since it was measured, with
+`JudgeNotCalibratedError`. `JudgeMetric` is the gate: constructing it runs that refusal, so
+uncalibrated scores never reach a report. The candidate is quoted data throughout — sealed
+inside a per-case delimiter it cannot guess, with any instruction-shaped text recorded on the
+score rather than obeyed. `LlmJudge.compare` randomises which candidate is shown first,
+n-sample self-consistency reports the spread it saw, and candidate length is recorded so a
+judge rewarding verbosity is visible in its own calibration.
+- **added**: A stored baseline and a CI gate that reads it. `Baseline` holds a suite's per-metric
+aggregates *and* every per-case value, with the `Provenance` — dataset version, agent
+version, prompt version, model, cassette digest — that makes two runs comparable at all.
+`compare` judges a candidate against it under a `BaselinePolicy`, returning per-metric
+`Delta`s with a noise band and the `CaseRegression`s a reviewer has to open, as a
+`BaselineReport` whose `exit_code` is what blocks the merge and whose `comment` is what CI
+posts. It fails closed: a missing baseline, another tool's JSON, a dataset edited in the
+same change and a declared metric nobody measured each raise `BaselineUnusableError` with
+the command that records a good one. Quarantined case ids are kept out of the comparison
+and still reported, an override excuses only the metrics it names and appears in the
+comment, and `promote` makes a merged run the baseline while keeping the one it replaced.
+`python -m tesserix_adk.cli.evals` and the reusable `eval-gate.yml` workflow are the CI
+side of it. `MetricReport` now also carries `values`, the per-case numbers a regression
+report needs to name a case.
+- **added**: A compression quality gate that measures savings and task accuracy in the same run, per
+content type. `measure_compression` admits every `CompressionCase` through a
+`ReversibleRouter`, asks a solver the case's question from the compressed content and from
+the whole content, and reports a `KindReport` per content type against a `Floor` — so an
+aggregate improvement can never mask a regression, because one kind below its floor fails
+the report and `failing()` names the cases inside it. Retrieval is an outcome rather than a
+detail: a case whose answer lives in elided content is `lost` when it is answered without
+expanding the handle, even where the answer is right, and `recovered` where the handle was
+expanded. It fails closed — a floor naming a content type the fixtures do not cover raises
+`EvalIncompleteError`, a solver that raises leaves the case `unmeasured` and fails its kind,
+and a savings floor above zero catches a compressor that quietly became a pass-through.
+`DEFAULT_FIXTURES` is a synthetic, deterministic, offline corpus spanning every kind the
+router routes, and `DEFAULT_FLOORS` is what this kit holds its own compressors to.
+- **added**: Token savings accounted as measured or as estimated, with a holdout behind the estimate.
+`account` totals `ShapedRun` records into a `SavingsReport` whose input `Figure` is
+`measured` — both counts existed at the same moment — and whose output `Figure` is
+`estimated` from a comparison against a `HoldoutPolicy`'s control arm, carrying an interval
+rather than a bare point figure. `Figure.label` prints the `Basis` beside every number, so a
+counterfactual is never displayed as a measurement. A holdout of zero reports `0` tokens and
+says no control exists rather than omitting the gap; fewer than `MINIMUM_ARM` runs in either
+arm reports `insufficient` rather than an interval so wide it reads as a result. Arm
+assignment is a stable hash of the run id, so a retried run cannot switch arms mid-flight,
+and it is recorded even where shaping was globally off. `by_tenant` groups before totalling
+so no tenant's figure draws on another's traffic, and a record carries a run id, a tenant, an
+arm and four integers — never content.
+
+### Public API surface
+
+- Added: `tesserix_adk.cli.evals.main`
+- Added: `tesserix_adk.cli.evals_main`
+- Added: `tesserix_adk.core.errors.BaselineUnusableError`
+- Added: `tesserix_adk.core.errors.JudgeNotCalibratedError`
+- Added: `tesserix_adk.evals.Aggregate`
+- Added: `tesserix_adk.evals.Answer`
+- Added: `tesserix_adk.evals.BASELINE_FORMAT`
+- Added: `tesserix_adk.evals.Baseline`
+- Added: `tesserix_adk.evals.BaselinePolicy`
+- Added: `tesserix_adk.evals.BaselineReport`
+- Added: `tesserix_adk.evals.CacheHitRate`
+- Added: `tesserix_adk.evals.Calibration`
+- Added: `tesserix_adk.evals.CaseExecutor`
+- Added: `tesserix_adk.evals.CaseMeasurement`
+- Added: `tesserix_adk.evals.CaseRegression`
+- Added: `tesserix_adk.evals.CaseResult`
+- Added: `tesserix_adk.evals.CaseStatus`
+- Added: `tesserix_adk.evals.Comparison`
+- Added: `tesserix_adk.evals.CompressionCase`
+- Added: `tesserix_adk.evals.CompressionFixtures`
+- Added: `tesserix_adk.evals.CompressionReport`
+- Added: `tesserix_adk.evals.CostPerCase`
+- Added: `tesserix_adk.evals.DATASET_FORMAT`
+- Added: `tesserix_adk.evals.DEFAULT_FIXTURES`
+- Added: `tesserix_adk.evals.DEFAULT_FLOOR`
+- Added: `tesserix_adk.evals.DEFAULT_FLOORS`
+- Added: `tesserix_adk.evals.Delta`
+- Added: `tesserix_adk.evals.EvalCase`
+- Added: `tesserix_adk.evals.EvalSuite`
+- Added: `tesserix_adk.evals.ExactMatch`
+- Added: `tesserix_adk.evals.Floor`
+- Added: `tesserix_adk.evals.FloorPolicy`
+- Added: `tesserix_adk.evals.Groundedness`
+- Added: `tesserix_adk.evals.HumanLabel`
+- Added: `tesserix_adk.evals.JUDGE_PROMPT_VERSION`
+- Added: `tesserix_adk.evals.Judge`
+- Added: `tesserix_adk.evals.JudgeMetric`
+- Added: `tesserix_adk.evals.JudgeScore`
+- Added: `tesserix_adk.evals.KindReport`
+- Added: `tesserix_adk.evals.Labelled`
+- Added: `tesserix_adk.evals.LatencyMs`
+- Added: `tesserix_adk.evals.LlmJudge`
+- Added: `tesserix_adk.evals.Metric`
+- Added: `tesserix_adk.evals.MetricFailure`
+- Added: `tesserix_adk.evals.MetricReport`
+- Added: `tesserix_adk.evals.MetricSnapshot`
+- Added: `tesserix_adk.evals.MetricValue`
+- Added: `tesserix_adk.evals.Provenance`
+- Added: `tesserix_adk.evals.RefusalRate`
+- Added: `tesserix_adk.evals.Rubric`
+- Added: `tesserix_adk.evals.RubricLevel`
+- Added: `tesserix_adk.evals.SchemaValidity`
+- Added: `tesserix_adk.evals.Solver`
+- Added: `tesserix_adk.evals.SuiteResult`
+- Added: `tesserix_adk.evals.SuiteRunner`
+- Added: `tesserix_adk.evals.TIE_CEILING`
+- Added: `tesserix_adk.evals.Threshold`
+- Added: `tesserix_adk.evals.ThresholdResult`
+- Added: `tesserix_adk.evals.TokensIn`
+- Added: `tesserix_adk.evals.TokensOut`
+- Added: `tesserix_adk.evals.ToolSequenceMatch`
+- Added: `tesserix_adk.evals.agreement`
+- Added: `tesserix_adk.evals.baseline.BASELINE_FORMAT`
+- Added: `tesserix_adk.evals.baseline.Baseline`
+- Added: `tesserix_adk.evals.baseline.BaselinePolicy`
+- Added: `tesserix_adk.evals.baseline.BaselineReport`
+- Added: `tesserix_adk.evals.baseline.CaseRegression`
+- Added: `tesserix_adk.evals.baseline.Delta`
+- Added: `tesserix_adk.evals.baseline.MetricSnapshot`
+- Added: `tesserix_adk.evals.baseline.Provenance`
+- Added: `tesserix_adk.evals.baseline.compare`
+- Added: `tesserix_adk.evals.baseline.promote`
+- Added: `tesserix_adk.evals.compare`
+- Added: `tesserix_adk.evals.compression.Answer`
+- Added: `tesserix_adk.evals.compression.CaseMeasurement`
+- Added: `tesserix_adk.evals.compression.CompressionCase`
+- Added: `tesserix_adk.evals.compression.CompressionFixtures`
+- Added: `tesserix_adk.evals.compression.CompressionReport`
+- Added: `tesserix_adk.evals.compression.DEFAULT_FIXTURES`
+- Added: `tesserix_adk.evals.compression.DEFAULT_FLOORS`
+- Added: `tesserix_adk.evals.compression.Floor`
+- Added: `tesserix_adk.evals.compression.FloorPolicy`
+- Added: `tesserix_adk.evals.compression.KindReport`
+- Added: `tesserix_adk.evals.compression.Solver`
+- Added: `tesserix_adk.evals.compression.measure_compression`
+- Added: `tesserix_adk.evals.dataset.DATASET_FORMAT`
+- Added: `tesserix_adk.evals.dataset.EvalCase`
+- Added: `tesserix_adk.evals.dataset.EvalSuite`
+- Added: `tesserix_adk.evals.judge.Calibration`
+- Added: `tesserix_adk.evals.judge.Comparison`
+- Added: `tesserix_adk.evals.judge.DEFAULT_FLOOR`
+- Added: `tesserix_adk.evals.judge.HumanLabel`
+- Added: `tesserix_adk.evals.judge.JUDGE_PROMPT_VERSION`
+- Added: `tesserix_adk.evals.judge.Judge`
+- Added: `tesserix_adk.evals.judge.JudgeMetric`
+- Added: `tesserix_adk.evals.judge.JudgeScore`
+- Added: `tesserix_adk.evals.judge.Labelled`
+- Added: `tesserix_adk.evals.judge.LlmJudge`
+- Added: `tesserix_adk.evals.judge.Rubric`
+- Added: `tesserix_adk.evals.judge.RubricLevel`
+- Added: `tesserix_adk.evals.judge.TIE_CEILING`
+- Added: `tesserix_adk.evals.judge.agreement`
+- Added: `tesserix_adk.evals.judge.shares_family`
+- Added: `tesserix_adk.evals.measure`
+- Added: `tesserix_adk.evals.measure_compression`
+- Added: `tesserix_adk.evals.metrics.Aggregate`
+- Added: `tesserix_adk.evals.metrics.CacheHitRate`
+- Added: `tesserix_adk.evals.metrics.CostPerCase`
+- Added: `tesserix_adk.evals.metrics.ExactMatch`
+- Added: `tesserix_adk.evals.metrics.Groundedness`
+- Added: `tesserix_adk.evals.metrics.LatencyMs`
+- Added: `tesserix_adk.evals.metrics.Metric`
+- Added: `tesserix_adk.evals.metrics.MetricFailure`
+- Added: `tesserix_adk.evals.metrics.MetricReport`
+- Added: `tesserix_adk.evals.metrics.MetricValue`
+- Added: `tesserix_adk.evals.metrics.RefusalRate`
+- Added: `tesserix_adk.evals.metrics.SchemaValidity`
+- Added: `tesserix_adk.evals.metrics.Threshold`
+- Added: `tesserix_adk.evals.metrics.ThresholdResult`
+- Added: `tesserix_adk.evals.metrics.TokensIn`
+- Added: `tesserix_adk.evals.metrics.TokensOut`
+- Added: `tesserix_adk.evals.metrics.ToolSequenceMatch`
+- Added: `tesserix_adk.evals.metrics.measure`
+- Added: `tesserix_adk.evals.promote`
+- Added: `tesserix_adk.evals.shares_family`
+- Added: `tesserix_adk.evals.suite.CaseExecutor`
+- Added: `tesserix_adk.evals.suite.CaseResult`
+- Added: `tesserix_adk.evals.suite.CaseStatus`
+- Added: `tesserix_adk.evals.suite.SuiteResult`
+- Added: `tesserix_adk.evals.suite.SuiteRunner`
+- Added: `tesserix_adk.observability.Arm`
+- Added: `tesserix_adk.observability.Basis`
+- Added: `tesserix_adk.observability.Figure`
+- Added: `tesserix_adk.observability.HoldoutPolicy`
+- Added: `tesserix_adk.observability.MINIMUM_ARM`
+- Added: `tesserix_adk.observability.SavingsReport`
+- Added: `tesserix_adk.observability.ShapedRun`
+- Added: `tesserix_adk.observability.account`
+- Added: `tesserix_adk.observability.by_tenant`
+- Added: `tesserix_adk.observability.savings.Arm`
+- Added: `tesserix_adk.observability.savings.Basis`
+- Added: `tesserix_adk.observability.savings.Figure`
+- Added: `tesserix_adk.observability.savings.HoldoutPolicy`
+- Added: `tesserix_adk.observability.savings.MINIMUM_ARM`
+- Added: `tesserix_adk.observability.savings.SavingsReport`
+- Added: `tesserix_adk.observability.savings.ShapedRun`
+- Added: `tesserix_adk.observability.savings.account`
+- Added: `tesserix_adk.observability.savings.by_tenant`
+- Added: `tesserix_adk.testing.ApprovalStub`
+- Added: `tesserix_adk.testing.ConcurrencyProbe`
+- Added: `tesserix_adk.testing.RecordedCall`
+- Added: `tesserix_adk.testing.ScopedRun`
+- Added: `tesserix_adk.testing.ToolSpy`
+- Added: `tesserix_adk.testing.approving`
+- Added: `tesserix_adk.testing.assert_context_propagated`
+- Added: `tesserix_adk.testing.assert_idempotency_key_stable`
+- Added: `tesserix_adk.testing.assert_no_tool_called`
+- Added: `tesserix_adk.testing.assert_tool_called_once_with`
+- Added: `tesserix_adk.testing.assert_tool_sequence`
+- Added: `tesserix_adk.testing.denying`
+- Added: `tesserix_adk.testing.failing_tool`
+- Added: `tesserix_adk.testing.peak_concurrency`
+- Added: `tesserix_adk.testing.scoped_run`
+- Added: `tesserix_adk.testing.slow_tool`
+- Added: `tesserix_adk.testing.spy.ApprovalStub`
+- Added: `tesserix_adk.testing.spy.ConcurrencyProbe`
+- Added: `tesserix_adk.testing.spy.RecordedCall`
+- Added: `tesserix_adk.testing.spy.ScopedRun`
+- Added: `tesserix_adk.testing.spy.ToolSpy`
+- Added: `tesserix_adk.testing.spy.approving`
+- Added: `tesserix_adk.testing.spy.assert_context_propagated`
+- Added: `tesserix_adk.testing.spy.assert_idempotency_key_stable`
+- Added: `tesserix_adk.testing.spy.assert_no_tool_called`
+- Added: `tesserix_adk.testing.spy.assert_tool_called_once_with`
+- Added: `tesserix_adk.testing.spy.assert_tool_sequence`
+- Added: `tesserix_adk.testing.spy.denying`
+- Added: `tesserix_adk.testing.spy.failing_tool`
+- Added: `tesserix_adk.testing.spy.peak_concurrency`
+- Added: `tesserix_adk.testing.spy.scoped_run`
+- Added: `tesserix_adk.testing.spy.slow_tool`
+
 ## 0.50.0
 
 ### Added
