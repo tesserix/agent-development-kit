@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, ClassVar, Self
 
 from pydantic import Field, field_validator
 
+from tesserix_adk.a2a.card import AgentCard
 from tesserix_adk.core import (
     AdkModel,
     AgentIdentity,
@@ -217,38 +218,6 @@ class DelegationClaims(AdkModel):
             "a2a.chain": self.chain.describe(),
             "a2a.scopes": " ".join(sorted(self.scopes)),
         }
-
-
-class AgentCard(AdkModel):
-    """What a peer publishes about the delegations it takes.
-
-    Args:
-        agent: The peer's name.
-        audience: What a credential for it is minted for.
-        declared: What it will act on. A delegation is narrowed to this on arrival, so a
-            peer never runs with more than it published even if a caller sends more.
-        accepted_issuers: Which callers it takes delegations from. Empty accepts any,
-            which is a deliberate statement rather than a default.
-        required_scopes: What it will not run without.
-    """
-
-    agent: str = Field(min_length=1)
-    audience: str
-    declared: tuple[str, ...] = ()
-    accepted_issuers: tuple[str, ...] = ()
-    required_scopes: tuple[str, ...] = ()
-
-    @field_validator("audience")
-    @classmethod
-    def _addressable(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("an agent card names the audience a delegation to it is minted for")
-        return value
-
-    @property
-    def accepts(self) -> ScopeSet:
-        """What the peer declared it acts on."""
-        return ScopeSet.of(*self.declared)
 
 
 @dataclass(frozen=True, slots=True)

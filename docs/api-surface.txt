@@ -1,14 +1,35 @@
 tesserix_adk.__version__ :: __version__: str
-tesserix_adk.a2a.AgentCard :: class AgentCard(AdkModel)
+tesserix_adk.a2a.AgentCard :: class AgentCard(AdkModel) {rendered(self) -> 'bytes'}
+tesserix_adk.a2a.AgentCardError :: class AgentCardError(AdkError)
+tesserix_adk.a2a.AgentLimits :: class AgentLimits(AdkModel)
+tesserix_adk.a2a.AgentProvider :: class AgentProvider(AdkModel)
+tesserix_adk.a2a.AgentSkill :: class AgentSkill(AdkModel)
+tesserix_adk.a2a.CardEndpoint :: class CardEndpoint(object) {serve(self, card: 'AgentCard') -> 'None'}
 tesserix_adk.a2a.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
 tesserix_adk.a2a.DelegationChain :: class DelegationChain(AdkModel) {describe(self) -> 'str'; encoded(self) -> 'str'; extended(self, hop: 'DelegationHop') -> 'Self'}
 tesserix_adk.a2a.DelegationClaims :: class DelegationClaims(AdkModel) {attributes(self) -> 'dict[str, str]'; expired(self, now: 'float') -> 'bool'; meta(self) -> 'dict[str, str]'}
 tesserix_adk.a2a.DelegationHop :: class DelegationHop(AdkModel) {describe(self) -> 'str'}
+tesserix_adk.a2a.MAX_CARD_BYTES :: MAX_CARD_BYTES: int
 tesserix_adk.a2a.MAX_CHAIN_DEPTH :: MAX_CHAIN_DEPTH: int
+tesserix_adk.a2a.MAX_SKILLS :: MAX_SKILLS: int
 tesserix_adk.a2a.PeerDelegation :: class PeerDelegation(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
 tesserix_adk.a2a.PeerDelegator :: class PeerDelegator(object) {delegate(self, *, identity: 'AgentIdentity', peer: 'AgentCard', needs: 'Iterable[str]', run_id: 'str', chain: 'DelegationChain | None' = None, agent_version: 'str' = '1.0.0') -> 'PeerDelegation'}
 tesserix_adk.a2a.PeerVerifier :: class PeerVerifier(object) {accept(self, claims: 'DelegationClaims') -> 'AgentIdentity'}
-tesserix_adk.a2a.delegation.AgentCard :: class AgentCard(AdkModel)
+tesserix_adk.a2a.SkillSource :: class SkillSource(Protocol)
+tesserix_adk.a2a.WELL_KNOWN_PATH :: WELL_KNOWN_PATH: str
+tesserix_adk.a2a.card.AgentCard :: class AgentCard(AdkModel) {rendered(self) -> 'bytes'}
+tesserix_adk.a2a.card.AgentCardError :: class AgentCardError(AdkError)
+tesserix_adk.a2a.card.AgentLimits :: class AgentLimits(AdkModel)
+tesserix_adk.a2a.card.AgentProvider :: class AgentProvider(AdkModel)
+tesserix_adk.a2a.card.AgentSkill :: class AgentSkill(AdkModel)
+tesserix_adk.a2a.card.CardEndpoint :: class CardEndpoint(object) {serve(self, card: 'AgentCard') -> 'None'}
+tesserix_adk.a2a.card.MAX_CARD_BYTES :: MAX_CARD_BYTES: int
+tesserix_adk.a2a.card.MAX_SKILLS :: MAX_SKILLS: int
+tesserix_adk.a2a.card.SkillSource :: class SkillSource(Protocol)
+tesserix_adk.a2a.card.WELL_KNOWN_PATH :: WELL_KNOWN_PATH: str
+tesserix_adk.a2a.card.card_for :: def card_for(definition: 'AgentDefinition[Any]', *, audience: 'str', exports: 'Iterable[SkillSource]' = (), accepted_issuers: 'Iterable[str]' = (), calls_per_minute: 'int | None' = None, available: 'bool' = True) -> 'AgentCard'
+tesserix_adk.a2a.card_for :: def card_for(definition: 'AgentDefinition[Any]', *, audience: 'str', exports: 'Iterable[SkillSource]' = (), accepted_issuers: 'Iterable[str]' = (), calls_per_minute: 'int | None' = None, available: 'bool' = True) -> 'AgentCard'
+tesserix_adk.a2a.delegation.AgentCard :: class AgentCard(AdkModel) {rendered(self) -> 'bytes'}
 tesserix_adk.a2a.delegation.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
 tesserix_adk.a2a.delegation.DelegationChain :: class DelegationChain(AdkModel) {describe(self) -> 'str'; encoded(self) -> 'str'; extended(self, hop: 'DelegationHop') -> 'Self'}
 tesserix_adk.a2a.delegation.DelegationClaims :: class DelegationClaims(AdkModel) {attributes(self) -> 'dict[str, str]'; expired(self, now: 'float') -> 'bool'; meta(self) -> 'dict[str, str]'}
@@ -341,6 +362,7 @@ tesserix_adk.adapters.transport_for :: def transport_for(config: 'McpServerConfi
 tesserix_adk.adapters.wire_payload :: def wire_payload(event: 'ProgressEvent', *, limit: 'int' = 65536) -> 'ProgressEvent'
 tesserix_adk.cli.Aliases :: class Aliases(Protocol) {aliases(self, name: 'str', *, tenant: 'str' = '') -> 'Mapping[str, str]'; evaluated(self, name: 'str', version: 'str', *, tenant: 'str' = '') -> 'str'; repoint(self, name: 'str', *, alias: 'str', to: 'str', expected: 'str', by: 'str', reason: 'str', tenant: 'str' = '') -> 'None'}
 tesserix_adk.cli.Answering :: Answering: TypeAliasType
+tesserix_adk.cli.Build :: Build: TypeAliasType
 tesserix_adk.cli.Frontiers :: Frontiers: TypeAliasType
 tesserix_adk.cli.Lookup :: Lookup: TypeAliasType
 tesserix_adk.cli.Prompts :: class Prompts(Protocol) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
@@ -351,6 +373,9 @@ tesserix_adk.cli.approvals.Answering :: Answering: TypeAliasType
 tesserix_adk.cli.approvals.Waiting :: class Waiting(Protocol) {pending(self, *, tenant: 'str') -> 'tuple[SuspendedRun, ...]'}
 tesserix_adk.cli.approvals.main :: def main(argv: 'Sequence[str]', *, waiting: 'Waiting', answering: 'Answering', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.approvals_main :: def approvals_main(argv: 'Sequence[str]', *, waiting: 'Waiting', answering: 'Answering', out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.card.Build :: Build: TypeAliasType
+tesserix_adk.cli.card.main :: def main(argv: 'Sequence[str]', *, build: 'Build', out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.card_main :: def card_main(argv: 'Sequence[str]', *, build: 'Build', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.describe :: def describe(checkpoint: 'Checkpoint') -> 'str'
 tesserix_adk.cli.evals.main :: def main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.evals_main :: def evals_main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'

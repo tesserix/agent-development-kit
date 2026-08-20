@@ -2,6 +2,8 @@
 
 from tesserix_adk.cli.approvals import Answering, Waiting
 from tesserix_adk.cli.approvals import main as approvals_main
+from tesserix_adk.cli.card import Build
+from tesserix_adk.cli.card import main as card_main
 from tesserix_adk.cli.evals import main as evals_main
 from tesserix_adk.cli.inspect import Lookup
 from tesserix_adk.cli.inspect import main as inspect_main
@@ -17,6 +19,7 @@ from tesserix_adk.cli.trace import main as trace_main
 __all__ = [
     "Aliases",
     "Answering",
+    "Build",
     "Frontiers",
     "Lookup",
     "Prompts",
@@ -24,6 +27,7 @@ __all__ = [
     "Resumes",
     "Waiting",
     "approvals_main",
+    "card_main",
     "describe",
     "evals_main",
     "frontier_main",
