@@ -30,6 +30,7 @@ from tesserix_adk.adapters._mcp_schema import (
     MAX_SCHEMA_DEPTH,
     SchemaArguments,
     schema_shape,
+    schema_violations,
 )
 from tesserix_adk.adapters.mcp_surface import (
     SurfaceEntry,
@@ -66,11 +67,14 @@ if TYPE_CHECKING:
 __all__ = [
     "McpClient",
     "McpDiscovery",
+    "McpProtocolError",
     "McpRejection",
     "McpSchemaError",
     "McpServerInfo",
     "McpSession",
 ]
+
+_MAX_PAYLOAD_BYTES = 4 * 1024
 
 _CODE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _TOOLS_CAPABILITY = "tools"
@@ -138,6 +142,27 @@ class McpSchemaError(AdkError):
         self.tool = tool
         self.construct = construct
         super().__init__(message, details={"server": server, "tool": tool, "construct": construct})
+
+
+class McpProtocolError(AdkError):
+    """A server answered with something that is not the answer it promised.
+
+    A truncated stream, a protocol violation, or structured content the tool's own result
+    schema does not allow. Nothing partially parsed is accepted as a result, and the raw
+    payload travels with the error, bounded, so the failure can be read without being
+    reproduced.
+
+    Args:
+        server: The server as configured here.
+        tool: The tool that was called, under the server's own name for it.
+        payload: What actually came back, truncated to a size a log can carry.
+    """
+
+    def __init__(self, message: str, *, server: str, tool: str, payload: str = "") -> None:
+        self.server = server
+        self.tool = tool
+        self.payload = payload[:_MAX_PAYLOAD_BYTES]
+        super().__init__(message, details={"server": server, "tool": tool, "payload": self.payload})
 
 
 class McpRejection(AdkModel):
@@ -210,6 +235,11 @@ class McpClient:
     def server(self) -> str:
         """What this server is called here, which is what its tools' content is sealed as."""
         return self._config.name
+
+    @property
+    def required(self) -> bool:
+        """Whether an agent can be assembled at all without this server's tools."""
+        return self._config.required
 
     async def connect(self) -> McpServerInfo:
         """Initialise the session once and negotiate that the server offers tools at all.
@@ -497,6 +527,8 @@ class McpClient:
                 )
         except TimeoutError as overran:
             raise ToolTimedOutError(name, timeout) from overran
+        except AdkError:
+            raise
         except Exception as unreachable:
             raise ToolFailure(
                 name,
@@ -506,12 +538,41 @@ class McpClient:
             ) from unreachable
         if result.is_error:
             raise self._error(name, result)
+        self._promised(descriptor, name, result)
         return sealed(
             self._rendered(result),
             source=ContentSource(
                 origin=Origin.MCP_RESULT, name=f"{self._config.name}/{descriptor.name}"
             ),
         )
+
+    def _promised(
+        self, descriptor: McpToolDescriptor, name: str, result: GatewayToolResult
+    ) -> None:
+        """Hold a result to the schema the tool advertised, where it advertised one.
+
+        A truncated answer that still parses is the dangerous one: it reads as a result and
+        is half of one. Nothing partially parsed is accepted, and the payload travels with
+        the error so the failure can be read without reproducing it.
+        """
+        if not descriptor.output_schema:
+            return
+        content = result.structured_content
+        if content is None:
+            raise McpProtocolError(
+                f"{name} promises structured content and {self._config.name} returned none",
+                server=self._config.name,
+                tool=descriptor.name,
+                payload=self._rendered(result),
+            )
+        violations = schema_violations(descriptor.output_schema, content)
+        if violations:
+            raise McpProtocolError(
+                f"{name} answered outside its own result schema at {', '.join(violations)}",
+                server=self._config.name,
+                tool=descriptor.name,
+                payload=json.dumps(content, ensure_ascii=False, sort_keys=True),
+            )
 
     def _meta(self, context: ToolContext | None) -> dict[str, str]:
         """What the call carries besides its arguments: the run, and the key for repeating it."""
