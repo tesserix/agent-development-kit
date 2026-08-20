@@ -116,6 +116,14 @@ from tesserix_adk.adapters.mcp_resilience import (
     ServerHealth,
     assembled,
 )
+from tesserix_adk.adapters.mcp_server import (
+    APPROVAL_REQUIRED,
+    ExportedSession,
+    McpExportError,
+    McpExportReason,
+    McpServer,
+    published,
+)
 from tesserix_adk.adapters.mcp_surface import (
     MAX_NAME_LENGTH,
     McpSurfaceDriftError,
@@ -193,6 +201,7 @@ from tesserix_adk.adapters.transport import (
 
 __all__ = [
     "ADAPTER_GUARANTEES",
+    "APPROVAL_REQUIRED",
     "AUDIT_SCHEMA_VERSION",
     "BACKENDS",
     "CEILING_SCHEMA_VERSION",
@@ -244,6 +253,7 @@ __all__ = [
     "Degraded",
     "EntityExtractor",
     "ErasureSweep",
+    "ExportedSession",
     "ExtractedEdge",
     "ExtractedNode",
     "ExtractedSubgraph",
@@ -268,10 +278,13 @@ __all__ = [
     "JetStreamPublisher",
     "McpClient",
     "McpDiscovery",
+    "McpExportError",
+    "McpExportReason",
     "McpFleet",
     "McpProtocolError",
     "McpRejection",
     "McpSchemaError",
+    "McpServer",
     "McpServerInfo",
     "McpServerUnavailableError",
     "McpSession",
@@ -343,6 +356,7 @@ __all__ = [
     "namespaced",
     "open_graphiti",
     "partitioned",
+    "published",
     "redacted",
     "sse_events",
     "transport_for",

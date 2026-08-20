@@ -18,6 +18,7 @@ tesserix_adk.a2a.delegation.PeerDelegation :: class PeerDelegation(object) {head
 tesserix_adk.a2a.delegation.PeerDelegator :: class PeerDelegator(object) {delegate(self, *, identity: 'AgentIdentity', peer: 'AgentCard', needs: 'Iterable[str]', run_id: 'str', chain: 'DelegationChain | None' = None, agent_version: 'str' = '1.0.0') -> 'PeerDelegation'}
 tesserix_adk.a2a.delegation.PeerVerifier :: class PeerVerifier(object) {accept(self, claims: 'DelegationClaims') -> 'AgentIdentity'}
 tesserix_adk.adapters.ADAPTER_GUARANTEES :: ADAPTER_GUARANTEES: dict
+tesserix_adk.adapters.APPROVAL_REQUIRED :: APPROVAL_REQUIRED: str
 tesserix_adk.adapters.AUDIT_SCHEMA_VERSION :: AUDIT_SCHEMA_VERSION: int
 tesserix_adk.adapters.ApprovalInbox :: class ApprovalInbox(object) {decide(self, decision: 'ApprovalDecision', *, tenant: 'str') -> 'None'; request(self, record: 'ApprovalRecord') -> 'ApprovalDecision'; wait_for(self, record_id: 'str') -> 'None'}
 tesserix_adk.adapters.AuditTables :: class AuditTables(object)
@@ -63,6 +64,7 @@ tesserix_adk.adapters.EXPECTED_SCHEMA :: EXPECTED_SCHEMA: str
 tesserix_adk.adapters.EXTRACTION_INSTRUCTION :: EXTRACTION_INSTRUCTION: str
 tesserix_adk.adapters.EntityExtractor :: class EntityExtractor(object) {extract(self, scope: 'MemoryScope', record: 'MemoryRecord', *, budget: 'BudgetPolicy') -> 'tuple[ExtractedSubgraph, ExtractionCharge]'}
 tesserix_adk.adapters.ErasureSweep :: class ErasureSweep(AdkModel)
+tesserix_adk.adapters.ExportedSession :: class ExportedSession(object) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.adapters.ExtractedEdge :: class ExtractedEdge(AdkModel)
 tesserix_adk.adapters.ExtractedNode :: class ExtractedNode(AdkModel)
 tesserix_adk.adapters.ExtractedSubgraph :: class ExtractedSubgraph(AdkModel)
@@ -90,10 +92,13 @@ tesserix_adk.adapters.JetStreamPublisher :: class JetStreamPublisher(Protocol) {
 tesserix_adk.adapters.MAX_NAME_LENGTH :: MAX_NAME_LENGTH: int
 tesserix_adk.adapters.McpClient :: class McpClient(object) {aclose(self) -> 'None'; connect(self) -> 'McpServerInfo'; discover(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; refresh(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; tools(self) -> 'tuple[Tool[..., str], ...]'}
 tesserix_adk.adapters.McpDiscovery :: class McpDiscovery(object)
+tesserix_adk.adapters.McpExportError :: class McpExportError(AdkError)
+tesserix_adk.adapters.McpExportReason :: class McpExportReason(StrEnum)
 tesserix_adk.adapters.McpFleet :: class McpFleet(object) {notice(self) -> 'str'}
 tesserix_adk.adapters.McpProtocolError :: class McpProtocolError(AdkError)
 tesserix_adk.adapters.McpRejection :: class McpRejection(AdkModel)
 tesserix_adk.adapters.McpSchemaError :: class McpSchemaError(AdkError)
+tesserix_adk.adapters.McpServer :: class McpServer(object) {connect(self, *, headers: 'Mapping[str, str] | None' = None, meta: 'Mapping[str, str] | None' = None, authenticated: 'str | None' = None, protocol_version: 'str' = '2025-06-18') -> 'ExportedSession'; reload(self, exports: 'Sequence[str]') -> 'None'}
 tesserix_adk.adapters.McpServerInfo :: class McpServerInfo(AdkModel)
 tesserix_adk.adapters.McpServerUnavailableError :: class McpServerUnavailableError(CapabilityError)
 tesserix_adk.adapters.McpSession :: class McpSession(Protocol) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
@@ -260,6 +265,12 @@ tesserix_adk.adapters.mcp_resilience.ResilientSession :: class ResilientSession(
 tesserix_adk.adapters.mcp_resilience.ServerBreaker :: class ServerBreaker(object) {allows(self) -> 'bool'; failed(self) -> 'None'; succeeded(self) -> 'None'}
 tesserix_adk.adapters.mcp_resilience.ServerHealth :: class ServerHealth(AdkModel)
 tesserix_adk.adapters.mcp_resilience.assembled :: def assembled(clients: 'Sequence[McpClient]', *, known: 'Collection[str]' = ()) -> 'McpFleet'
+tesserix_adk.adapters.mcp_server.APPROVAL_REQUIRED :: APPROVAL_REQUIRED: str
+tesserix_adk.adapters.mcp_server.ExportedSession :: class ExportedSession(object) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
+tesserix_adk.adapters.mcp_server.McpExportError :: class McpExportError(AdkError)
+tesserix_adk.adapters.mcp_server.McpExportReason :: class McpExportReason(StrEnum)
+tesserix_adk.adapters.mcp_server.McpServer :: class McpServer(object) {connect(self, *, headers: 'Mapping[str, str] | None' = None, meta: 'Mapping[str, str] | None' = None, authenticated: 'str | None' = None, protocol_version: 'str' = '2025-06-18') -> 'ExportedSession'; reload(self, exports: 'Sequence[str]') -> 'None'}
+tesserix_adk.adapters.mcp_server.published :: def published(tool: 'Tool[Any, Any]') -> 'McpToolDescriptor'
 tesserix_adk.adapters.mcp_surface.MAX_NAME_LENGTH :: MAX_NAME_LENGTH: int
 tesserix_adk.adapters.mcp_surface.McpSurfaceDriftError :: class McpSurfaceDriftError(AdkError)
 tesserix_adk.adapters.mcp_surface.McpToolConflictError :: class McpToolConflictError(AdkError)
@@ -295,6 +306,7 @@ tesserix_adk.adapters.pgvector.DEFAULT_CHUNK_TABLES :: DEFAULT_CHUNK_TABLES: Chu
 tesserix_adk.adapters.pgvector.EXPECTED_CHUNK_SCHEMA :: EXPECTED_CHUNK_SCHEMA: str
 tesserix_adk.adapters.pgvector.PgvectorIndex :: class PgvectorIndex(object) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'; verify(self) -> 'None'}
 tesserix_adk.adapters.pgvector.PgvectorSettings :: class PgvectorSettings(PostgresStoreSettings)
+tesserix_adk.adapters.published :: def published(tool: 'Tool[Any, Any]') -> 'McpToolDescriptor'
 tesserix_adk.adapters.redacted :: def redacted(result: 'GatewayToolResult', *, secrets: 'Iterable[str]' = ()) -> 'GatewayToolResult'
 tesserix_adk.adapters.sql_state.DEFAULT_TABLES :: DEFAULT_TABLES: StateTables
 tesserix_adk.adapters.sql_state.EXPECTED_SCHEMA :: EXPECTED_SCHEMA: str
