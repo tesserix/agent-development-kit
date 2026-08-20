@@ -1,5 +1,16 @@
 """Agent-to-agent interoperability."""
 
+from tesserix_adk.a2a.boundary import (
+    DEFAULT_KEPT_BYTES,
+    DEFAULT_MAX_CONTENT_BYTES,
+    PeerActionError,
+    PeerBoundary,
+    PeerContent,
+    PeerSuspicionError,
+    PeerTrustPolicy,
+    ProposedAction,
+    TrustDecision,
+)
 from tesserix_adk.a2a.card import (
     MAX_CARD_BYTES,
     MAX_SKILLS,
@@ -59,6 +70,8 @@ from tesserix_adk.a2a.invocation import (
 
 __all__ = [
     "DEFAULT_DISCOVERY_TIMEOUT_SECONDS",
+    "DEFAULT_KEPT_BYTES",
+    "DEFAULT_MAX_CONTENT_BYTES",
     "DEFAULT_MAX_REPORTED_TOKENS",
     "DEFAULT_NEGATIVE_TTL_SECONDS",
     "DEFAULT_PEER_TIMEOUT_SECONDS",
@@ -78,8 +91,11 @@ __all__ = [
     "DelegationChain",
     "DelegationClaims",
     "DelegationHop",
+    "PeerActionError",
+    "PeerBoundary",
     "PeerCall",
     "PeerClient",
+    "PeerContent",
     "PeerDelegation",
     "PeerDelegator",
     "PeerDiscovery",
@@ -93,14 +109,18 @@ __all__ = [
     "PeerReply",
     "PeerResolution",
     "PeerResult",
+    "PeerSuspicionError",
     "PeerTransport",
+    "PeerTrustPolicy",
     "PeerVerifier",
+    "ProposedAction",
     "RegistryFetch",
     "RegistryPeers",
     "SkillSource",
     "StaticPeers",
     "StreamingPeerTransport",
     "TraceCarrier",
+    "TrustDecision",
     "UnsupportedSchemaError",
     "card_for",
     "checkable",

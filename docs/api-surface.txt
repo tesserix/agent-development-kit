@@ -6,6 +6,8 @@ tesserix_adk.a2a.AgentProvider :: class AgentProvider(AdkModel)
 tesserix_adk.a2a.AgentSkill :: class AgentSkill(AdkModel)
 tesserix_adk.a2a.CardEndpoint :: class CardEndpoint(object) {serve(self, card: 'AgentCard') -> 'None'}
 tesserix_adk.a2a.DEFAULT_DISCOVERY_TIMEOUT_SECONDS :: DEFAULT_DISCOVERY_TIMEOUT_SECONDS: float
+tesserix_adk.a2a.DEFAULT_KEPT_BYTES :: DEFAULT_KEPT_BYTES: int
+tesserix_adk.a2a.DEFAULT_MAX_CONTENT_BYTES :: DEFAULT_MAX_CONTENT_BYTES: int
 tesserix_adk.a2a.DEFAULT_MAX_REPORTED_TOKENS :: DEFAULT_MAX_REPORTED_TOKENS: int
 tesserix_adk.a2a.DEFAULT_NEGATIVE_TTL_SECONDS :: DEFAULT_NEGATIVE_TTL_SECONDS: float
 tesserix_adk.a2a.DEFAULT_PEER_TIMEOUT_SECONDS :: DEFAULT_PEER_TIMEOUT_SECONDS: float
@@ -18,8 +20,11 @@ tesserix_adk.a2a.DelegationHop :: class DelegationHop(AdkModel) {describe(self) 
 tesserix_adk.a2a.MAX_CARD_BYTES :: MAX_CARD_BYTES: int
 tesserix_adk.a2a.MAX_CHAIN_DEPTH :: MAX_CHAIN_DEPTH: int
 tesserix_adk.a2a.MAX_SKILLS :: MAX_SKILLS: int
+tesserix_adk.a2a.PeerActionError :: class PeerActionError(AdkError)
+tesserix_adk.a2a.PeerBoundary :: class PeerBoundary(object) {contain(self, result: 'PeerResult', *, tenant: 'str', card: 'str' = '') -> 'PeerContent'; permitted(self, content: 'PeerContent', action: 'ProposedAction', *, decided_by: 'str' = '') -> 'None'}
 tesserix_adk.a2a.PeerCall :: class PeerCall(object)
 tesserix_adk.a2a.PeerClient :: class PeerClient(object) {invoke(self, skill: 'str', payload: 'Mapping[str, Any]', *, idempotency_key: 'str | None' = None, deadline_seconds: 'float | None' = None, cancellation: 'CancellationToken | None' = None) -> 'PeerResult'; stream(self, skill: 'str', payload: 'Mapping[str, Any]', *, idempotency_key: 'str | None' = None, cancellation: 'CancellationToken | None' = None) -> 'AsyncIterator[PeerProgress | PeerResult]'}
+tesserix_adk.a2a.PeerContent :: class PeerContent(AdkModel) {attributes(self) -> 'dict[str, str]'; source(self) -> 'ContentSource'}
 tesserix_adk.a2a.PeerDelegation :: class PeerDelegation(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
 tesserix_adk.a2a.PeerDelegator :: class PeerDelegator(object) {delegate(self, *, identity: 'AgentIdentity', peer: 'AgentCard', needs: 'Iterable[str]', run_id: 'str', chain: 'DelegationChain | None' = None, agent_version: 'str' = '1.0.0') -> 'PeerDelegation'}
 tesserix_adk.a2a.PeerDiscovery :: class PeerDiscovery(Protocol) {find(self, need: 'PeerNeed') -> 'PeerResolution'; invalidate(self, need: 'PeerNeed') -> 'None'}
@@ -33,16 +38,29 @@ tesserix_adk.a2a.PeerRejection :: class PeerRejection(AdkModel)
 tesserix_adk.a2a.PeerReply :: class PeerReply(AdkModel)
 tesserix_adk.a2a.PeerResolution :: class PeerResolution(AdkModel) {attributes(self) -> 'dict[str, str]'}
 tesserix_adk.a2a.PeerResult :: class PeerResult(AdkModel) {attributes(self) -> 'dict[str, str]'; redacted(self, *, tenant: 'str' = '') -> 'dict[str, Any]'}
+tesserix_adk.a2a.PeerSuspicionError :: class PeerSuspicionError(AdkError)
 tesserix_adk.a2a.PeerTransport :: class PeerTransport(Protocol) {cancel(self, call: 'PeerCall') -> 'None'; invoke(self, call: 'PeerCall') -> 'PeerReply'}
+tesserix_adk.a2a.PeerTrustPolicy :: class PeerTrustPolicy(AdkModel) {for_peer(self, peer: 'str') -> 'TrustDecision'}
 tesserix_adk.a2a.PeerVerifier :: class PeerVerifier(object) {accept(self, claims: 'DelegationClaims') -> 'AgentIdentity'}
+tesserix_adk.a2a.ProposedAction :: class ProposedAction(object) {gates(self) -> 'tuple[str, ...]'}
 tesserix_adk.a2a.RegistryFetch :: RegistryFetch: TypeAliasType
 tesserix_adk.a2a.RegistryPeers :: class RegistryPeers(object) {find(self, need: 'PeerNeed') -> 'PeerResolution'; invalidate(self, need: 'PeerNeed') -> 'None'}
 tesserix_adk.a2a.SkillSource :: class SkillSource(Protocol)
 tesserix_adk.a2a.StaticPeers :: class StaticPeers(object) {find(self, need: 'PeerNeed') -> 'PeerResolution'; invalidate(self, need: 'PeerNeed') -> 'None'}
 tesserix_adk.a2a.StreamingPeerTransport :: class StreamingPeerTransport(PeerTransport, Protocol) {stream(self, call: 'PeerCall') -> 'AsyncIterator[PeerProgress | PeerReply]'}
 tesserix_adk.a2a.TraceCarrier :: class TraceCarrier(Protocol) {carried(self) -> 'dict[str, str]'; child(self, name: 'str', *, attempt: 'int' = 1) -> 'Self'}
+tesserix_adk.a2a.TrustDecision :: class TrustDecision(StrEnum)
 tesserix_adk.a2a.UnsupportedSchemaError :: class UnsupportedSchemaError(AdkError)
 tesserix_adk.a2a.WELL_KNOWN_PATH :: WELL_KNOWN_PATH: str
+tesserix_adk.a2a.boundary.DEFAULT_KEPT_BYTES :: DEFAULT_KEPT_BYTES: int
+tesserix_adk.a2a.boundary.DEFAULT_MAX_CONTENT_BYTES :: DEFAULT_MAX_CONTENT_BYTES: int
+tesserix_adk.a2a.boundary.PeerActionError :: class PeerActionError(AdkError)
+tesserix_adk.a2a.boundary.PeerBoundary :: class PeerBoundary(object) {contain(self, result: 'PeerResult', *, tenant: 'str', card: 'str' = '') -> 'PeerContent'; permitted(self, content: 'PeerContent', action: 'ProposedAction', *, decided_by: 'str' = '') -> 'None'}
+tesserix_adk.a2a.boundary.PeerContent :: class PeerContent(AdkModel) {attributes(self) -> 'dict[str, str]'; source(self) -> 'ContentSource'}
+tesserix_adk.a2a.boundary.PeerSuspicionError :: class PeerSuspicionError(AdkError)
+tesserix_adk.a2a.boundary.PeerTrustPolicy :: class PeerTrustPolicy(AdkModel) {for_peer(self, peer: 'str') -> 'TrustDecision'}
+tesserix_adk.a2a.boundary.ProposedAction :: class ProposedAction(object) {gates(self) -> 'tuple[str, ...]'}
+tesserix_adk.a2a.boundary.TrustDecision :: class TrustDecision(StrEnum)
 tesserix_adk.a2a.card.AgentCard :: class AgentCard(AdkModel) {rendered(self) -> 'bytes'}
 tesserix_adk.a2a.card.AgentCardError :: class AgentCardError(AdkError)
 tesserix_adk.a2a.card.AgentLimits :: class AgentLimits(AdkModel)
@@ -2704,7 +2722,10 @@ tesserix_adk.testing.MetricPoint :: class MetricPoint(object)
 tesserix_adk.testing.ModelProviderConformance :: class ModelProviderConformance(ABC) {make_provider(self) -> 'ModelProvider'; test_a_longer_prompt_does_not_count_for_less(self) -> 'None'; test_it_answers_with_a_response(self) -> 'None'; test_it_counts_tokens_without_going_negative(self) -> 'None'; test_it_declares_what_it_can_do(self) -> 'None'; test_it_is_named(self) -> 'None'; test_satisfies_the_protocol(self) -> 'None'; test_streaming_it_never_declared_is_refused(self) -> 'None'; test_the_declaration_does_not_change_between_reads(self) -> 'None'}
 tesserix_adk.testing.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.Observed :: class Observed(object)
+tesserix_adk.testing.PEER_CORPUS :: PEER_CORPUS: tuple
+tesserix_adk.testing.PEER_CORPUS_VERSION :: PEER_CORPUS_VERSION: str
 tesserix_adk.testing.POISONED_CORPUS :: POISONED_CORPUS: tuple
+tesserix_adk.testing.PeerCase :: class PeerCase(object) {rendered(self) -> 'str'}
 tesserix_adk.testing.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.RecordedCall :: class RecordedCall(object)
 tesserix_adk.testing.RecordedError :: class RecordedError(AdkModel) {raised(self) -> 'ProviderError'}
@@ -2861,6 +2882,9 @@ tesserix_adk.testing.measure :: def measure(guard: 'Guardrail', *, families: 'Co
 tesserix_adk.testing.memory.InMemoryMemoryStore :: class InMemoryMemoryStore(object) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'Sequence[Derivation]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'Sequence[MemoryRecord]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; plant(self, scope: 'MemoryScope', kind: 'MemoryKind', key: 'str', payload: 'Any') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'Sequence[MemoryHit]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.testing.mode_from_env :: def mode_from_env(environ: 'Mapping[str, str] | None' = None) -> 'CassetteMode'
 tesserix_adk.testing.peak_concurrency :: def peak_concurrency() -> 'ConcurrencyProbe'
+tesserix_adk.testing.peers.PEER_CORPUS :: PEER_CORPUS: tuple
+tesserix_adk.testing.peers.PEER_CORPUS_VERSION :: PEER_CORPUS_VERSION: str
+tesserix_adk.testing.peers.PeerCase :: class PeerCase(object) {rendered(self) -> 'str'}
 tesserix_adk.testing.pytest_plugin.NetworkAccessInTestError :: class NetworkAccessInTestError(AdkError)
 tesserix_adk.testing.pytest_plugin.QuarantineError :: class QuarantineError(AdkError)
 tesserix_adk.testing.redacted :: def redacted(text: 'str') -> 'str'
