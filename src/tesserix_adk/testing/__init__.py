@@ -75,6 +75,7 @@ from tesserix_adk.testing.http_cassette import (
 from tesserix_adk.testing.injection import INJECTION_FIXTURES, InjectionFixture
 from tesserix_adk.testing.mcp import FaultyMcpServer, McpFault
 from tesserix_adk.testing.memory import InMemoryMemoryStore
+from tesserix_adk.testing.peers import PEER_CORPUS, PEER_CORPUS_VERSION, PeerCase
 from tesserix_adk.testing.retrieval import POISONED_CORPUS, FakeIndex, Indexed
 from tesserix_adk.testing.spy import (
     ApprovalStub,
@@ -141,6 +142,8 @@ __all__ = [
     "GUARD_CORPUS",
     "HTTP_CASSETTE_FORMAT",
     "INJECTION_FIXTURES",
+    "PEER_CORPUS",
+    "PEER_CORPUS_VERSION",
     "POISONED_CORPUS",
     "SENTINEL_KINDS",
     "ApprovalStub",
@@ -195,6 +198,7 @@ __all__ = [
     "ModelProviderConformance",
     "NetworkAccessInTestError",
     "Observed",
+    "PeerCase",
     "QuarantineError",
     "RecordedCall",
     "RecordedError",
