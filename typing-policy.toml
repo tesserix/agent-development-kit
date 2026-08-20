@@ -201,6 +201,31 @@ owner = "@sam123ben"
 review_by = 2026-11-07
 
 [[any]]
+symbol = "tesserix_adk.testing.spy.ToolSpy"
+kind = "provisional"
+removed_by = "#130"
+reason = "Wraps a ToolRegistry and forwards its signature, so it gains the real types when that protocol does."
+owner = "@sam123ben"
+review_by = 2026-11-07
+
+[[any]]
+symbol = "tesserix_adk.testing.spy.failing_tool"
+kind = "variadic"
+reason = """
+Returns a tool: a callable the registry invokes with whatever arguments the model chose,
+which is the `Callable[..., Any]` every tool already is.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.testing.spy.slow_tool"
+kind = "variadic"
+reason = "Returns a tool, same as failing_tool above."
+owner = "@sam123ben"
+review_by = 2027-08-07
+
+[[any]]
 symbol = "tesserix_adk.testing.fakes.FakeKeyValueStore"
 kind = "json"
 reason = "Mirrors KeyValueStore, whose value is whatever the consumer stored."

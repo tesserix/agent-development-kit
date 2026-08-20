@@ -180,6 +180,7 @@ code lands here as the kit is built.
 | One trace across hops — W3C headers a non-kit peer already reads, identifiers a replay rebuilds rather than duplicates, a broken hop linked back rather than dropped | [`docs/trace-propagation.md`](docs/trace-propagation.md) |
 | Tool allowlists — agent, tenant and caller intersected once, enforced at dispatch, delegation that only narrows | [`docs/tool-allowlists.md`](docs/tool-allowlists.md) |
 | Testing a guard — an attack corpus with a benign control set, recall and false positives together, per-guard bars that ratchet | [`docs/guard-testing.md`](docs/guard-testing.md) |
+| Asserting tool calls — the sequence and arguments an agent really used, a real scoped run context, a retry proved not to duplicate | [`docs/tool-assertions.md`](docs/tool-assertions.md) |
 | A model provider you can script — exact token counts, injectable provider faults, an unscripted call that fails rather than answers forever | [`docs/fake-model-provider.md`](docs/fake-model-provider.md) |
 | Recorded provider traffic — three modes with replay the default, a miss that names the diverging field, chunk boundaries kept, a credential that refuses to be written | [`docs/cassettes.md`](docs/cassettes.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
