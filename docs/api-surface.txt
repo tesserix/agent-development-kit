@@ -6,7 +6,9 @@ tesserix_adk.a2a.AgentProvider :: class AgentProvider(AdkModel)
 tesserix_adk.a2a.AgentSkill :: class AgentSkill(AdkModel)
 tesserix_adk.a2a.CardEndpoint :: class CardEndpoint(object) {serve(self, card: 'AgentCard') -> 'None'}
 tesserix_adk.a2a.DEFAULT_DISCOVERY_TIMEOUT_SECONDS :: DEFAULT_DISCOVERY_TIMEOUT_SECONDS: float
+tesserix_adk.a2a.DEFAULT_MAX_REPORTED_TOKENS :: DEFAULT_MAX_REPORTED_TOKENS: int
 tesserix_adk.a2a.DEFAULT_NEGATIVE_TTL_SECONDS :: DEFAULT_NEGATIVE_TTL_SECONDS: float
+tesserix_adk.a2a.DEFAULT_PEER_TIMEOUT_SECONDS :: DEFAULT_PEER_TIMEOUT_SECONDS: float
 tesserix_adk.a2a.DEFAULT_PEER_TTL_SECONDS :: DEFAULT_PEER_TTL_SECONDS: float
 tesserix_adk.a2a.DEFAULT_STALE_SECONDS :: DEFAULT_STALE_SECONDS: float
 tesserix_adk.a2a.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
@@ -16,19 +18,30 @@ tesserix_adk.a2a.DelegationHop :: class DelegationHop(AdkModel) {describe(self) 
 tesserix_adk.a2a.MAX_CARD_BYTES :: MAX_CARD_BYTES: int
 tesserix_adk.a2a.MAX_CHAIN_DEPTH :: MAX_CHAIN_DEPTH: int
 tesserix_adk.a2a.MAX_SKILLS :: MAX_SKILLS: int
+tesserix_adk.a2a.PeerCall :: class PeerCall(object)
+tesserix_adk.a2a.PeerClient :: class PeerClient(object) {invoke(self, skill: 'str', payload: 'Mapping[str, Any]', *, idempotency_key: 'str | None' = None, deadline_seconds: 'float | None' = None, cancellation: 'CancellationToken | None' = None) -> 'PeerResult'; stream(self, skill: 'str', payload: 'Mapping[str, Any]', *, idempotency_key: 'str | None' = None, cancellation: 'CancellationToken | None' = None) -> 'AsyncIterator[PeerProgress | PeerResult]'}
 tesserix_adk.a2a.PeerDelegation :: class PeerDelegation(object) {headers(self) -> 'dict[str, str]'; meta(self) -> 'dict[str, str]'; span_attributes(self) -> 'dict[str, str]'}
 tesserix_adk.a2a.PeerDelegator :: class PeerDelegator(object) {delegate(self, *, identity: 'AgentIdentity', peer: 'AgentCard', needs: 'Iterable[str]', run_id: 'str', chain: 'DelegationChain | None' = None, agent_version: 'str' = '1.0.0') -> 'PeerDelegation'}
 tesserix_adk.a2a.PeerDiscovery :: class PeerDiscovery(Protocol) {find(self, need: 'PeerNeed') -> 'PeerResolution'; invalidate(self, need: 'PeerNeed') -> 'None'}
 tesserix_adk.a2a.PeerDiscoveryError :: class PeerDiscoveryError(AdkError)
 tesserix_adk.a2a.PeerDiscoveryReason :: class PeerDiscoveryReason(StrEnum)
+tesserix_adk.a2a.PeerInvocationError :: class PeerInvocationError(AdkError)
+tesserix_adk.a2a.PeerInvocationReason :: class PeerInvocationReason(StrEnum)
 tesserix_adk.a2a.PeerNeed :: class PeerNeed(AdkModel)
+tesserix_adk.a2a.PeerProgress :: class PeerProgress(AdkModel)
 tesserix_adk.a2a.PeerRejection :: class PeerRejection(AdkModel)
+tesserix_adk.a2a.PeerReply :: class PeerReply(AdkModel)
 tesserix_adk.a2a.PeerResolution :: class PeerResolution(AdkModel) {attributes(self) -> 'dict[str, str]'}
+tesserix_adk.a2a.PeerResult :: class PeerResult(AdkModel) {attributes(self) -> 'dict[str, str]'; redacted(self, *, tenant: 'str' = '') -> 'dict[str, Any]'}
+tesserix_adk.a2a.PeerTransport :: class PeerTransport(Protocol) {cancel(self, call: 'PeerCall') -> 'None'; invoke(self, call: 'PeerCall') -> 'PeerReply'}
 tesserix_adk.a2a.PeerVerifier :: class PeerVerifier(object) {accept(self, claims: 'DelegationClaims') -> 'AgentIdentity'}
 tesserix_adk.a2a.RegistryFetch :: RegistryFetch: TypeAliasType
 tesserix_adk.a2a.RegistryPeers :: class RegistryPeers(object) {find(self, need: 'PeerNeed') -> 'PeerResolution'; invalidate(self, need: 'PeerNeed') -> 'None'}
 tesserix_adk.a2a.SkillSource :: class SkillSource(Protocol)
 tesserix_adk.a2a.StaticPeers :: class StaticPeers(object) {find(self, need: 'PeerNeed') -> 'PeerResolution'; invalidate(self, need: 'PeerNeed') -> 'None'}
+tesserix_adk.a2a.StreamingPeerTransport :: class StreamingPeerTransport(PeerTransport, Protocol) {stream(self, call: 'PeerCall') -> 'AsyncIterator[PeerProgress | PeerReply]'}
+tesserix_adk.a2a.TraceCarrier :: class TraceCarrier(Protocol) {carried(self) -> 'dict[str, str]'; child(self, name: 'str', *, attempt: 'int' = 1) -> 'Self'}
+tesserix_adk.a2a.UnsupportedSchemaError :: class UnsupportedSchemaError(AdkError)
 tesserix_adk.a2a.WELL_KNOWN_PATH :: WELL_KNOWN_PATH: str
 tesserix_adk.a2a.card.AgentCard :: class AgentCard(AdkModel) {rendered(self) -> 'bytes'}
 tesserix_adk.a2a.card.AgentCardError :: class AgentCardError(AdkError)
@@ -42,6 +55,8 @@ tesserix_adk.a2a.card.SkillSource :: class SkillSource(Protocol)
 tesserix_adk.a2a.card.WELL_KNOWN_PATH :: WELL_KNOWN_PATH: str
 tesserix_adk.a2a.card.card_for :: def card_for(definition: 'AgentDefinition[Any]', *, audience: 'str', exports: 'Iterable[SkillSource]' = (), accepted_issuers: 'Iterable[str]' = (), calls_per_minute: 'int | None' = None, available: 'bool' = True) -> 'AgentCard'
 tesserix_adk.a2a.card_for :: def card_for(definition: 'AgentDefinition[Any]', *, audience: 'str', exports: 'Iterable[SkillSource]' = (), accepted_issuers: 'Iterable[str]' = (), calls_per_minute: 'int | None' = None, available: 'bool' = True) -> 'AgentCard'
+tesserix_adk.a2a.checkable :: def checkable(schema: 'Mapping[str, Any]', *, path: 'str' = '') -> 'None'
+tesserix_adk.a2a.conforms :: def conforms(value: 'object', schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.a2a.delegation.AgentCard :: class AgentCard(AdkModel) {rendered(self) -> 'bytes'}
 tesserix_adk.a2a.delegation.DEFAULT_TTL_SECONDS :: DEFAULT_TTL_SECONDS: float
 tesserix_adk.a2a.delegation.DelegationChain :: class DelegationChain(AdkModel) {describe(self) -> 'str'; encoded(self) -> 'str'; extended(self, hop: 'DelegationHop') -> 'Self'}
@@ -66,6 +81,21 @@ tesserix_adk.a2a.discovery.RegistryPeers :: class RegistryPeers(object) {find(se
 tesserix_adk.a2a.discovery.StaticPeers :: class StaticPeers(object) {find(self, need: 'PeerNeed') -> 'PeerResolution'; invalidate(self, need: 'PeerNeed') -> 'None'}
 tesserix_adk.a2a.discovery.fingerprint :: def fingerprint(card: 'AgentCard') -> 'str'
 tesserix_adk.a2a.fingerprint :: def fingerprint(card: 'AgentCard') -> 'str'
+tesserix_adk.a2a.invocation.DEFAULT_MAX_REPORTED_TOKENS :: DEFAULT_MAX_REPORTED_TOKENS: int
+tesserix_adk.a2a.invocation.DEFAULT_PEER_TIMEOUT_SECONDS :: DEFAULT_PEER_TIMEOUT_SECONDS: float
+tesserix_adk.a2a.invocation.PeerCall :: class PeerCall(object)
+tesserix_adk.a2a.invocation.PeerClient :: class PeerClient(object) {invoke(self, skill: 'str', payload: 'Mapping[str, Any]', *, idempotency_key: 'str | None' = None, deadline_seconds: 'float | None' = None, cancellation: 'CancellationToken | None' = None) -> 'PeerResult'; stream(self, skill: 'str', payload: 'Mapping[str, Any]', *, idempotency_key: 'str | None' = None, cancellation: 'CancellationToken | None' = None) -> 'AsyncIterator[PeerProgress | PeerResult]'}
+tesserix_adk.a2a.invocation.PeerInvocationError :: class PeerInvocationError(AdkError)
+tesserix_adk.a2a.invocation.PeerInvocationReason :: class PeerInvocationReason(StrEnum)
+tesserix_adk.a2a.invocation.PeerProgress :: class PeerProgress(AdkModel)
+tesserix_adk.a2a.invocation.PeerReply :: class PeerReply(AdkModel)
+tesserix_adk.a2a.invocation.PeerResult :: class PeerResult(AdkModel) {attributes(self) -> 'dict[str, str]'; redacted(self, *, tenant: 'str' = '') -> 'dict[str, Any]'}
+tesserix_adk.a2a.invocation.PeerTransport :: class PeerTransport(Protocol) {cancel(self, call: 'PeerCall') -> 'None'; invoke(self, call: 'PeerCall') -> 'PeerReply'}
+tesserix_adk.a2a.invocation.StreamingPeerTransport :: class StreamingPeerTransport(PeerTransport, Protocol) {stream(self, call: 'PeerCall') -> 'AsyncIterator[PeerProgress | PeerReply]'}
+tesserix_adk.a2a.invocation.TraceCarrier :: class TraceCarrier(Protocol) {carried(self) -> 'dict[str, str]'; child(self, name: 'str', *, attempt: 'int' = 1) -> 'Self'}
+tesserix_adk.a2a.invocation.UnsupportedSchemaError :: class UnsupportedSchemaError(AdkError)
+tesserix_adk.a2a.invocation.checkable :: def checkable(schema: 'Mapping[str, Any]', *, path: 'str' = '') -> 'None'
+tesserix_adk.a2a.invocation.conforms :: def conforms(value: 'object', schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.adapters.ADAPTER_GUARANTEES :: ADAPTER_GUARANTEES: dict
 tesserix_adk.adapters.APPROVAL_REQUIRED :: APPROVAL_REQUIRED: str
 tesserix_adk.adapters.AUDIT_SCHEMA_VERSION :: AUDIT_SCHEMA_VERSION: int
@@ -165,6 +195,7 @@ tesserix_adk.adapters.PROTOCOL_VERSION :: PROTOCOL_VERSION: str
 tesserix_adk.adapters.Partition :: class Partition(object) {key(self, namespace: 'str', *parts: 'str') -> 'str'; only(self, items: 'Sequence[ItemT]', *, tenant_of: 'Callable[[ItemT], str]', where: 'str') -> 'Sequence[ItemT]'; pattern(self, namespace: 'str') -> 'str'; predicate(self, *, column: 'str' = 'tenant', position: 'int' = 1) -> 'tuple[str, str]'; verify(self, found: 'str', *, where: 'str') -> 'None'}
 tesserix_adk.adapters.PartitionMechanism :: class PartitionMechanism(StrEnum)
 tesserix_adk.adapters.PayloadElided :: class PayloadElided(ProgressEvent)
+tesserix_adk.adapters.PeerArguments :: class PeerArguments(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'}
 tesserix_adk.adapters.PgvectorIndex :: class PgvectorIndex(object) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'; verify(self) -> 'None'}
 tesserix_adk.adapters.PgvectorMemoryStore :: class PgvectorMemoryStore(object) {erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; verify(self) -> 'None'}
 tesserix_adk.adapters.PgvectorSettings :: class PgvectorSettings(PostgresStoreSettings)
@@ -349,6 +380,9 @@ tesserix_adk.adapters.memory.RoutedMemoryStore :: class RoutedMemoryStore(object
 tesserix_adk.adapters.namespaced :: def namespaced(tool: 'str', *, prefix: 'str' = '', limit: 'int' = 64) -> 'str'
 tesserix_adk.adapters.open_graphiti :: def open_graphiti(settings: 'GraphSettings', *, factory: 'Callable[[str, str], GraphitiClient] | None' = None) -> 'GraphitiEngine'
 tesserix_adk.adapters.partitioned :: def partitioned(items: 'Iterable[ItemT]', *, tenant_of: 'Callable[[ItemT], str]') -> 'dict[str, list[ItemT]]'
+tesserix_adk.adapters.peer_tool :: def peer_tool(client: 'PeerClient', skill: 'str', *, name: 'str' = '') -> 'Tool[..., dict[str, Any]]'
+tesserix_adk.adapters.peer_tools.PeerArguments :: class PeerArguments(object) {arguments(self, arguments: 'object') -> 'dict[str, Any]'}
+tesserix_adk.adapters.peer_tools.peer_tool :: def peer_tool(client: 'PeerClient', skill: 'str', *, name: 'str' = '') -> 'Tool[..., dict[str, Any]]'
 tesserix_adk.adapters.pgvector.CHUNK_SCHEMA_VERSION :: CHUNK_SCHEMA_VERSION: int
 tesserix_adk.adapters.pgvector.ChunkTables :: class ChunkTables(object)
 tesserix_adk.adapters.pgvector.DEFAULT_CHUNK_TABLES :: DEFAULT_CHUNK_TABLES: ChunkTables

@@ -156,6 +156,7 @@ from tesserix_adk.adapters.memory import (
     RedisMemoryStore,
     RoutedMemoryStore,
 )
+from tesserix_adk.adapters.peer_tools import PeerArguments, peer_tool
 from tesserix_adk.adapters.pgvector import (
     CHUNK_SCHEMA_VERSION,
     DEFAULT_CHUNK_TABLES,
@@ -301,6 +302,7 @@ __all__ = [
     "Partition",
     "PartitionMechanism",
     "PayloadElided",
+    "PeerArguments",
     "PgvectorIndex",
     "PgvectorMemoryStore",
     "PgvectorSettings",
@@ -356,6 +358,7 @@ __all__ = [
     "namespaced",
     "open_graphiti",
     "partitioned",
+    "peer_tool",
     "published",
     "redacted",
     "sse_events",

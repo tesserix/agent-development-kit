@@ -683,3 +683,63 @@ publisher name a type the card never renders.
 """
 owner = "@sam123ben"
 review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.a2a.invocation.conforms"
+kind = "json"
+reason = """
+Checks a JSON payload against a JSON Schema a peer published. Both sides are JSON: the
+value is whatever arrived, and the schema is a mapping of keywords to JSON values.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.a2a.invocation.checkable"
+kind = "json"
+reason = """
+Walks the same published JSON Schema `conforms` checks against, which is JSON data rather
+than a type the kit declares.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.a2a.invocation.PeerClient"
+kind = "json"
+reason = """
+Sends and returns JSON: a peer's payload and answer are shaped by the card's schemas at
+runtime, not by a type either agent shares with the other at compile time.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.a2a.invocation.PeerResult"
+kind = "json"
+reason = """
+Carries the peer's validated JSON answer. Its shape is the card's output schema, which is
+data the peer publishes rather than a type the caller can name.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.adapters.peer_tools.PeerArguments"
+kind = "json"
+reason = """
+Validates the JSON a model chose to send against the peer's published JSON Schema. Both
+the schema and the arguments are JSON.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.adapters.peer_tools.peer_tool"
+kind = "json"
+reason = """
+Returns `Tool[..., dict[str, Any]]`: the tool's parameters and result are the peer's own
+JSON schemas, resolved from a card at runtime rather than declared in Python.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
