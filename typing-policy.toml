@@ -509,3 +509,14 @@ gets follows from its idempotency declaration, not from what it takes or returns
 """
 owner = "@sam123ben"
 review_by = 2027-08-15
+
+[[any]]
+symbol = "tesserix_adk.evals.suite.CaseResult"
+kind = "variadic"
+reason = """
+Holds the `Run` an executor returned, and a suite scores agents whose output types differ
+from each other and from the harness. Parameterising the result on one of them would only
+move the `Any` to whoever assembles the report.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-07
