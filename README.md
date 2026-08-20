@@ -167,6 +167,7 @@ code lands here as the kit is built.
 | Acting for a caller — declared scopes intersected with the caller's once, refused at dispatch, delegation that only narrows | [`docs/agent-identity.md`](docs/agent-identity.md) |
 | Tool credentials — scoped, short-lived, minted per audience and caller, carrying run attribution downstream | [`docs/tool-credentials.md`](docs/tool-credentials.md) |
 | MCP credentials — authority on the call rather than the connection, narrowed to the server's allowlist, no token in the metadata | [`docs/mcp-credentials.md`](docs/mcp-credentials.md) |
+| MCP servers as native tools — the server's own schema enforced locally, a schema the kit cannot hold refused rather than guessed, results sealed at the boundary | [`docs/mcp-client.md`](docs/mcp-client.md) |
 | AgentGateway MCP routing — registry-owned routes, operator allowlists, pinned tenant-safe tool surfaces | [`docs/agentgateway.md`](docs/agentgateway.md) |
 | Calling a peer agent — the caller's principal on the wire, narrowed on both sides, a chain that cannot loop | [`docs/peer-delegation.md`](docs/peer-delegation.md) |
 | Credential refresh — one mint inside the skew window, authority re-derived rather than renewed, a revoked caller that halts | [`docs/credential-refresh.md`](docs/credential-refresh.md) |
