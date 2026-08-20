@@ -651,3 +651,13 @@ whatever JSON holds. It also carries the measured `Run[Any]`s' metrics.
 """
 owner = "@sam123ben"
 review_by = 2027-08-07
+
+[[any]]
+symbol = "tesserix_adk.evals.judge.JudgeMetric"
+kind = "variadic"
+reason = """
+Measures a `Run` whose declared output type varies across the agents one suite scores, in the
+same way every other `Metric` does. The judge reads the answer text, never the typed output.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-20

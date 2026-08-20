@@ -904,6 +904,7 @@ tesserix_adk.core.errors.IndeterminateToolCallError :: class IndeterminateToolCa
 tesserix_adk.core.errors.InexactAmountError :: class InexactAmountError(AdkError)
 tesserix_adk.core.errors.InvalidRequestError :: class InvalidRequestError(ProviderError)
 tesserix_adk.core.errors.IrreversibleActionError :: class IrreversibleActionError(AdkError)
+tesserix_adk.core.errors.JudgeNotCalibratedError :: class JudgeNotCalibratedError(AdkError)
 tesserix_adk.core.errors.LeaseLostError :: class LeaseLostError(AdkError)
 tesserix_adk.core.errors.LoopLimitError :: class LoopLimitError(AdkError)
 tesserix_adk.core.errors.MaxIterationsError :: class MaxIterationsError(LoopLimitError)
@@ -1252,11 +1253,14 @@ tesserix_adk.core.wrap_untrusted :: def wrap_untrusted(content: 'str', *, source
 tesserix_adk.evals.Aggregate :: class Aggregate(object) {line(self) -> 'str'}
 tesserix_adk.evals.Bypass :: class Bypass(AdkModel)
 tesserix_adk.evals.CacheHitRate :: class CacheHitRate(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.Calibration :: class Calibration(AdkModel) {require(self, *, stamp: 'str' = '') -> 'None'; summary(self) -> 'str'}
 tesserix_adk.evals.CaseExecutor :: class CaseExecutor(Protocol)
 tesserix_adk.evals.CaseResult :: class CaseResult(object) {answer(self) -> 'dict[str, Any]'}
 tesserix_adk.evals.CaseStatus :: class CaseStatus(StrEnum)
+tesserix_adk.evals.Comparison :: class Comparison(AdkModel)
 tesserix_adk.evals.CostPerCase :: class CostPerCase(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.DATASET_FORMAT :: DATASET_FORMAT: int
+tesserix_adk.evals.DEFAULT_FLOOR :: DEFAULT_FLOOR: float
 tesserix_adk.evals.DEFAULT_POLICY :: DEFAULT_POLICY: GatePolicy
 tesserix_adk.evals.EvalCase :: class EvalCase(AdkModel) {redacted(self) -> 'EvalCase'}
 tesserix_adk.evals.EvalSuite :: class EvalSuite(AdkModel) {tagged(self, tag: 'str') -> 'tuple[EvalCase, ...]'; to_jsonl(self, path: 'Path') -> 'None'}
@@ -1264,7 +1268,14 @@ tesserix_adk.evals.ExactMatch :: class ExactMatch(object) {compute(self, case: '
 tesserix_adk.evals.GatePolicy :: class GatePolicy(AdkModel)
 tesserix_adk.evals.GateReport :: class GateReport(AdkModel) {attributes(self) -> 'dict[str, str]'; permits(self, digest: 'str') -> 'bool'; summary(self) -> 'str'}
 tesserix_adk.evals.Groundedness :: class Groundedness(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.HumanLabel :: class HumanLabel(AdkModel)
+tesserix_adk.evals.JUDGE_PROMPT_VERSION :: JUDGE_PROMPT_VERSION: str
+tesserix_adk.evals.Judge :: class Judge(Protocol) {score(self, case: 'EvalCase', candidate: 'str', *, candidate_model: 'str' = '') -> 'JudgeScore'}
+tesserix_adk.evals.JudgeMetric :: class JudgeMetric(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.JudgeScore :: class JudgeScore(AdkModel)
+tesserix_adk.evals.Labelled :: class Labelled(AdkModel)
 tesserix_adk.evals.LatencyMs :: class LatencyMs(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.LlmJudge :: class LlmJudge(object) {calibrate(self, examples: 'Sequence[Labelled]') -> 'Calibration'; compare(self, case: 'EvalCase', a: 'str', b: 'str') -> 'Comparison'; score(self, case: 'EvalCase', candidate: 'str', *, candidate_model: 'str' = '') -> 'JudgeScore'}
 tesserix_adk.evals.Measured :: class Measured(AdkModel)
 tesserix_adk.evals.Metric :: class Metric(Protocol) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.MetricFailure :: class MetricFailure(object)
@@ -1272,9 +1283,12 @@ tesserix_adk.evals.MetricMove :: class MetricMove(AdkModel)
 tesserix_adk.evals.MetricReport :: class MetricReport(object) {aggregate(self, metric: 'str', *, tag: 'str | None' = None) -> 'Aggregate'; as_dict(self) -> 'dict[str, Any]'; summary(self) -> 'str'; table(self) -> 'str'; verdict(self, metric: 'str') -> 'ThresholdResult'}
 tesserix_adk.evals.MetricValue :: class MetricValue(object)
 tesserix_adk.evals.RefusalRate :: class RefusalRate(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.Rubric :: class Rubric(AdkModel) {contains(self, score: 'int') -> 'bool'; instructions(self) -> 'str'}
+tesserix_adk.evals.RubricLevel :: class RubricLevel(AdkModel)
 tesserix_adk.evals.SchemaValidity :: class SchemaValidity(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.SuiteResult :: class SuiteResult(object) {digest(self) -> 'str'; errored(self) -> 'tuple[CaseResult, ...]'; incomplete(self) -> 'tuple[CaseResult, ...]'}
 tesserix_adk.evals.SuiteRunner :: class SuiteRunner(object) {run(self, suite: 'EvalSuite') -> 'SuiteResult'; run_id_for(self, suite: 'EvalSuite', case: 'EvalCase') -> 'str'}
+tesserix_adk.evals.TIE_CEILING :: TIE_CEILING: float
 tesserix_adk.evals.Threshold :: class Threshold(object) {judge(self, value: 'float | None') -> 'ThresholdResult'}
 tesserix_adk.evals.ThresholdResult :: class ThresholdResult(object)
 tesserix_adk.evals.TokensIn :: class TokensIn(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
@@ -1282,6 +1296,7 @@ tesserix_adk.evals.TokensOut :: class TokensOut(object) {compute(self, case: 'Ev
 tesserix_adk.evals.Tolerance :: class Tolerance(AdkModel) {regression(self, before: 'float', after: 'float') -> 'float'}
 tesserix_adk.evals.ToolSequenceMatch :: class ToolSequenceMatch(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.Verdict :: Verdict = typing.Literal['pass', 'fail', 'repeat']
+tesserix_adk.evals.agreement :: def agreement(scores: 'Sequence[JudgeScore]', labels: 'Sequence[HumanLabel]', *, floor: 'float' = 0.6) -> 'Calibration'
 tesserix_adk.evals.dataset.DATASET_FORMAT :: DATASET_FORMAT: int
 tesserix_adk.evals.dataset.EvalCase :: class EvalCase(AdkModel) {redacted(self) -> 'EvalCase'}
 tesserix_adk.evals.dataset.EvalSuite :: class EvalSuite(AdkModel) {tagged(self, tag: 'str') -> 'tuple[EvalCase, ...]'; to_jsonl(self, path: 'Path') -> 'None'}
@@ -1295,6 +1310,21 @@ tesserix_adk.evals.gate.MetricMove :: class MetricMove(AdkModel)
 tesserix_adk.evals.gate.Tolerance :: class Tolerance(AdkModel) {regression(self, before: 'float', after: 'float') -> 'float'}
 tesserix_adk.evals.gate.Verdict :: Verdict = typing.Literal['pass', 'fail', 'repeat']
 tesserix_adk.evals.gate.gate :: def gate(baseline: 'Measured', candidate: 'Measured', *, policy: 'GatePolicy' = GatePolicy(tolerances=(Tolerance(metric='task_success', direction='higher_is_better', tolerance=0.01, noise=0.0), Tolerance(metric='schema_validity', direction='higher_is_better', tolerance=0.0, noise=0.0), Tolerance(metric='judge_score', direction='higher_is_better', tolerance=0.05, noise=0.02), Tolerance(metric='p95_latency_ms', direction='lower_is_better', tolerance=250.0, noise=0.0), Tolerance(metric='cost_per_run', direction='lower_is_better', tolerance=0.0005, noise=0.0)), repeats=3), bypass: 'Bypass | None' = None) -> 'GateReport'
+tesserix_adk.evals.judge.Calibration :: class Calibration(AdkModel) {require(self, *, stamp: 'str' = '') -> 'None'; summary(self) -> 'str'}
+tesserix_adk.evals.judge.Comparison :: class Comparison(AdkModel)
+tesserix_adk.evals.judge.DEFAULT_FLOOR :: DEFAULT_FLOOR: float
+tesserix_adk.evals.judge.HumanLabel :: class HumanLabel(AdkModel)
+tesserix_adk.evals.judge.JUDGE_PROMPT_VERSION :: JUDGE_PROMPT_VERSION: str
+tesserix_adk.evals.judge.Judge :: class Judge(Protocol) {score(self, case: 'EvalCase', candidate: 'str', *, candidate_model: 'str' = '') -> 'JudgeScore'}
+tesserix_adk.evals.judge.JudgeMetric :: class JudgeMetric(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
+tesserix_adk.evals.judge.JudgeScore :: class JudgeScore(AdkModel)
+tesserix_adk.evals.judge.Labelled :: class Labelled(AdkModel)
+tesserix_adk.evals.judge.LlmJudge :: class LlmJudge(object) {calibrate(self, examples: 'Sequence[Labelled]') -> 'Calibration'; compare(self, case: 'EvalCase', a: 'str', b: 'str') -> 'Comparison'; score(self, case: 'EvalCase', candidate: 'str', *, candidate_model: 'str' = '') -> 'JudgeScore'}
+tesserix_adk.evals.judge.Rubric :: class Rubric(AdkModel) {contains(self, score: 'int') -> 'bool'; instructions(self) -> 'str'}
+tesserix_adk.evals.judge.RubricLevel :: class RubricLevel(AdkModel)
+tesserix_adk.evals.judge.TIE_CEILING :: TIE_CEILING: float
+tesserix_adk.evals.judge.agreement :: def agreement(scores: 'Sequence[JudgeScore]', labels: 'Sequence[HumanLabel]', *, floor: 'float' = 0.6) -> 'Calibration'
+tesserix_adk.evals.judge.shares_family :: def shares_family(judge_model: 'str', candidate_model: 'str') -> 'bool'
 tesserix_adk.evals.measure :: def measure(suite: 'EvalSuite', result: 'SuiteResult', metrics: 'Sequence[Metric]', *, thresholds: 'Sequence[Threshold]' = ()) -> 'MetricReport'
 tesserix_adk.evals.metrics.Aggregate :: class Aggregate(object) {line(self) -> 'str'}
 tesserix_adk.evals.metrics.CacheHitRate :: class CacheHitRate(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
@@ -1314,6 +1344,7 @@ tesserix_adk.evals.metrics.TokensIn :: class TokensIn(object) {compute(self, cas
 tesserix_adk.evals.metrics.TokensOut :: class TokensOut(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.metrics.ToolSequenceMatch :: class ToolSequenceMatch(object) {compute(self, case: 'EvalCase', run: 'Run[Any]') -> 'MetricValue'}
 tesserix_adk.evals.metrics.measure :: def measure(suite: 'EvalSuite', result: 'SuiteResult', metrics: 'Sequence[Metric]', *, thresholds: 'Sequence[Threshold]' = ()) -> 'MetricReport'
+tesserix_adk.evals.shares_family :: def shares_family(judge_model: 'str', candidate_model: 'str') -> 'bool'
 tesserix_adk.evals.suite.CaseExecutor :: class CaseExecutor(Protocol)
 tesserix_adk.evals.suite.CaseResult :: class CaseResult(object) {answer(self) -> 'dict[str, Any]'}
 tesserix_adk.evals.suite.CaseStatus :: class CaseStatus(StrEnum)

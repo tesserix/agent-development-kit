@@ -70,6 +70,7 @@ __all__ = [
     "InexactAmountError",
     "InvalidRequestError",
     "IrreversibleActionError",
+    "JudgeNotCalibratedError",
     "LeaseLostError",
     "LoopLimitError",
     "MaxIterationsError",
@@ -3046,6 +3047,53 @@ class IncomparableEvalError(AdkError):
     @property
     def retryable(self) -> bool:
         """No. Re-measuring the baseline is a decision, not a retry."""
+        return False
+
+
+class JudgeNotCalibratedError(AdkError):
+    """Raised when a model judge is used as a gate without demonstrated human agreement.
+
+    A judge nobody compared against people is a random number with a rationale attached,
+    and a gate reading it moves prompts in whichever direction the noise points. The
+    refusal names what was measured and what was required, so the answer is a calibration
+    run rather than a guess at which knob to turn.
+
+    Args:
+        judge: The judge model, prompt version and rubric it was measured on.
+        rubric: The rubric the floor belongs to.
+        agreement: The agreement measured, or `None` where nothing measured it.
+        floor: The agreement the rubric requires before the judge may gate.
+        reason: `below_floor`, `unmeasured`, `uninformative` or `drift`.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        judge: str = "",
+        rubric: str = "",
+        agreement: float | None = None,
+        floor: float = 0.0,
+        reason: str = "below_floor",
+    ) -> None:
+        self.judge = judge
+        self.rubric = rubric
+        self.agreement = agreement
+        self.floor = floor
+        self.reason = reason
+        super().__init__(
+            *args,
+            details={
+                "judge": judge,
+                "rubric": rubric,
+                "agreement": "unmeasured" if agreement is None else f"{agreement:g}",
+                "floor": f"{floor:g}",
+                "reason": reason,
+            },
+        )
+
+    @property
+    def retryable(self) -> bool:
+        """No. Labelling more examples is work, not a second attempt at the same call."""
         return False
 
 
