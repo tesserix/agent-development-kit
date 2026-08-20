@@ -186,6 +186,7 @@ code lands here as the kit is built.
 | Eval judge — a rubric-scored model judge that cannot gate until it agrees with human labels | [`docs/eval-judge.md`](docs/eval-judge.md) |
 | Baseline regression gate — a stored baseline with provenance, a noise band, named failing cases and a merge that blocks | [`docs/eval-baseline.md`](docs/eval-baseline.md) |
 | Compression gate — savings and task accuracy measured together, per content type, against floors that block a merge | [`docs/compression-gate.md`](docs/compression-gate.md) |
+| Savings accounting — input savings measured, output savings estimated against a holdout, every figure labelled | [`docs/savings-accounting.md`](docs/savings-accounting.md) |
 | A model provider you can script — exact token counts, injectable provider faults, an unscripted call that fails rather than answers forever | [`docs/fake-model-provider.md`](docs/fake-model-provider.md) |
 | Recorded provider traffic — three modes with replay the default, a miss that names the diverging field, chunk boundaries kept, a credential that refuses to be written | [`docs/cassettes.md`](docs/cassettes.md) |
 | Watching a run — typed progress events, consumption patterns, provisional output, cancellation, backpressure | [`docs/run-progress.md`](docs/run-progress.md) |
