@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from tesserix_adk.adapters.mcp import McpClient, McpSchemaError, McpServerInfo
+from tesserix_adk.adapters.mcp_surface import McpToolConflictError
 from tesserix_adk.core.config import McpServerConfig
 from tesserix_adk.core.errors import (
     ConfigurationError,
@@ -134,6 +135,7 @@ class _Session:
 
 
 def _client(session: _Session, **overrides: Any) -> McpClient:
+    overrides.setdefault("allow", ("*",))
     return McpClient(session, config=McpServerConfig(name="handbook", **overrides))
 
 
@@ -550,13 +552,11 @@ class TestNamesThatCollide:
     """A remote name already taken locally is a conflict, not an override."""
 
     @pytest.mark.asyncio
-    async def test_a_colliding_tool_is_reported_and_withheld(self) -> None:
+    async def test_a_colliding_tool_stops_discovery(self) -> None:
         client = _client(_Session([_SEARCH, _TAGS]))
 
-        discovery = await client.discover(known=("search",))
-
-        assert discovery.conflicts == ("search",)
-        assert [adapted.name for adapted in discovery.tools] == ["tags"]
+        with pytest.raises(McpToolConflictError, match="search"):
+            await client.discover(known=("search",))
 
 
 class TestBoundedDiscovery:
@@ -571,13 +571,11 @@ class TestBoundedDiscovery:
         assert [adapted.name for adapted in discovery.tools] == ["search", "tags"]
 
     @pytest.mark.asyncio
-    async def test_an_allowlisted_tool_the_server_does_not_advertise_is_reported(self) -> None:
+    async def test_an_allowlisted_tool_the_server_does_not_advertise_is_refused(self) -> None:
         client = _client(_Session([_SEARCH]), allow=("search", "gone"))
 
-        discovery = await client.discover()
-
-        assert [rejection.tool for rejection in discovery.rejected] == ["gone"]
-        assert "advertise" in discovery.rejected[0].reason
+        with pytest.raises(ConfigurationError, match="gone"):
+            await client.discover()
 
     @pytest.mark.asyncio
     async def test_the_cap_holds_and_says_that_it_held(self) -> None:

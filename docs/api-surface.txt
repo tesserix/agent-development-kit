@@ -85,6 +85,7 @@ tesserix_adk.adapters.IsolationGuarantee :: class IsolationGuarantee(AdkModel) {
 tesserix_adk.adapters.Isolator :: class Isolator(Generic) {read(self, operation: 'Callable[[], Awaitable[Sequence[RecordT]]]') -> 'Sequence[RecordT]'}
 tesserix_adk.adapters.JetStreamAudit :: class JetStreamAudit(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'}
 tesserix_adk.adapters.JetStreamPublisher :: class JetStreamPublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
+tesserix_adk.adapters.MAX_NAME_LENGTH :: MAX_NAME_LENGTH: int
 tesserix_adk.adapters.McpClient :: class McpClient(object) {aclose(self) -> 'None'; connect(self) -> 'McpServerInfo'; discover(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; refresh(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; tools(self) -> 'tuple[Tool[..., str], ...]'}
 tesserix_adk.adapters.McpDiscovery :: class McpDiscovery(object)
 tesserix_adk.adapters.McpRejection :: class McpRejection(AdkModel)
@@ -92,6 +93,8 @@ tesserix_adk.adapters.McpSchemaError :: class McpSchemaError(AdkError)
 tesserix_adk.adapters.McpServerInfo :: class McpServerInfo(AdkModel)
 tesserix_adk.adapters.McpSession :: class McpSession(Protocol) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.adapters.McpStreamableHttpTransport :: class McpStreamableHttpTransport(object) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
+tesserix_adk.adapters.McpSurfaceDriftError :: class McpSurfaceDriftError(AdkError)
+tesserix_adk.adapters.McpToolConflictError :: class McpToolConflictError(AdkError)
 tesserix_adk.adapters.McpTransport :: class McpTransport(Protocol) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.McpTransportError :: class McpTransportError(AdkError)
 tesserix_adk.adapters.McpTransportReason :: class McpTransportReason(StrEnum)
@@ -141,7 +144,10 @@ tesserix_adk.adapters.SqlTransactor :: class SqlTransactor(SqlSession, Protocol)
 tesserix_adk.adapters.StateTables :: class StateTables(object)
 tesserix_adk.adapters.StdioTransport :: class StdioTransport(object) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.StreamGap :: class StreamGap(ProgressEvent)
+tesserix_adk.adapters.SurfaceEntry :: class SurfaceEntry(AdkModel)
+tesserix_adk.adapters.SurfacePin :: class SurfacePin(AdkModel)
 tesserix_adk.adapters.TenantAuthority :: class TenantAuthority(object) {authorised(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'AuthorisedCall'; headers_for(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'dict[str, str]'; meta_for(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'dict[str, str]'; secrets_for(self, *, server: 'str') -> 'tuple[str, ...]'}
+tesserix_adk.adapters.ToolSurface :: class ToolSurface(object) {check(self, pin: 'SurfacePin') -> 'None'; names(self) -> 'tuple[str, ...]'; of_server(self, server: 'str') -> 'Self'; pin(self) -> 'SurfacePin'; report(self) -> 'str'}
 tesserix_adk.adapters.TransportAuthorizationError :: class TransportAuthorizationError(AdkError)
 tesserix_adk.adapters.TransportSession :: class TransportSession(object) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.adapters.WebSocketBridge :: class WebSocketBridge(Generic) {serve(self, connection: 'WebSocketLike', *, run_id: 'str', tenant: 'str', after: 'int | None' = None) -> 'None'}
@@ -183,6 +189,7 @@ tesserix_adk.adapters.checkpoints.PostgresCheckpointStore :: class PostgresCheck
 tesserix_adk.adapters.checkpoints.PostgresLeaseStore :: class PostgresLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
 tesserix_adk.adapters.checkpoints.RedisCheckpointStore :: class RedisCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
 tesserix_adk.adapters.checkpoints.RedisLeaseStore :: class RedisLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
+tesserix_adk.adapters.fingerprint :: def fingerprint(descriptor: 'McpToolDescriptor') -> 'str'
 tesserix_adk.adapters.graft.GraftMcpBackend :: class GraftMcpBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.graft.GraftSubprocessBackend :: class GraftSubprocessBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.grants.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables
@@ -235,6 +242,14 @@ tesserix_adk.adapters.mcp_context.IncomingCall :: class IncomingCall(object) {bo
 tesserix_adk.adapters.mcp_context.TenantAuthority :: class TenantAuthority(object) {authorised(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'AuthorisedCall'; headers_for(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'dict[str, str]'; meta_for(self, *, server: 'str', holding_for: 'float' = 0.0) -> 'dict[str, str]'; secrets_for(self, *, server: 'str') -> 'tuple[str, ...]'}
 tesserix_adk.adapters.mcp_context.arriving_call :: def arriving_call(*, headers: 'Mapping[str, str] | None' = None, meta: 'Mapping[str, str] | None' = None, authenticated: 'str | None' = None) -> 'IncomingCall'
 tesserix_adk.adapters.mcp_context.redacted :: def redacted(result: 'GatewayToolResult', *, secrets: 'Iterable[str]' = ()) -> 'GatewayToolResult'
+tesserix_adk.adapters.mcp_surface.MAX_NAME_LENGTH :: MAX_NAME_LENGTH: int
+tesserix_adk.adapters.mcp_surface.McpSurfaceDriftError :: class McpSurfaceDriftError(AdkError)
+tesserix_adk.adapters.mcp_surface.McpToolConflictError :: class McpToolConflictError(AdkError)
+tesserix_adk.adapters.mcp_surface.SurfaceEntry :: class SurfaceEntry(AdkModel)
+tesserix_adk.adapters.mcp_surface.SurfacePin :: class SurfacePin(AdkModel)
+tesserix_adk.adapters.mcp_surface.ToolSurface :: class ToolSurface(object) {check(self, pin: 'SurfacePin') -> 'None'; names(self) -> 'tuple[str, ...]'; of_server(self, server: 'str') -> 'Self'; pin(self) -> 'SurfacePin'; report(self) -> 'str'}
+tesserix_adk.adapters.mcp_surface.fingerprint :: def fingerprint(descriptor: 'McpToolDescriptor') -> 'str'
+tesserix_adk.adapters.mcp_surface.namespaced :: def namespaced(tool: 'str', *, prefix: 'str' = '', limit: 'int' = 64) -> 'str'
 tesserix_adk.adapters.mcp_transport.HttpTransport :: class HttpTransport(object) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.mcp_transport.McpTransport :: class McpTransport(Protocol) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.mcp_transport.McpTransportError :: class McpTransportError(AdkError)
@@ -253,6 +268,7 @@ tesserix_adk.adapters.memory.PgvectorMemoryStore :: class PgvectorMemoryStore(ob
 tesserix_adk.adapters.memory.PostgresMemoryStore :: class PostgresMemoryStore(object) {belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'tuple[Derivation, ...]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'tuple[MemoryRecord, ...]'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; page(self, scope: 'MemoryScope', query: 'MemoryQuery', *, cursor: 'str | None' = None) -> 'MemoryPage'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.adapters.memory.RedisMemoryStore :: class RedisMemoryStore(object) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; recall(self, scope: 'MemoryScope', keys: 'Sequence[str]') -> 'tuple[MemoryRecord, ...]'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.adapters.memory.RoutedMemoryStore :: class RoutedMemoryStore(object) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'tuple[Derivation, ...]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'tuple[MemoryRecord, ...]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
+tesserix_adk.adapters.namespaced :: def namespaced(tool: 'str', *, prefix: 'str' = '', limit: 'int' = 64) -> 'str'
 tesserix_adk.adapters.open_graphiti :: def open_graphiti(settings: 'GraphSettings', *, factory: 'Callable[[str, str], GraphitiClient] | None' = None) -> 'GraphitiEngine'
 tesserix_adk.adapters.partitioned :: def partitioned(items: 'Iterable[ItemT]', *, tenant_of: 'Callable[[ItemT], str]') -> 'dict[str, list[ItemT]]'
 tesserix_adk.adapters.pgvector.CHUNK_SCHEMA_VERSION :: CHUNK_SCHEMA_VERSION: int
@@ -298,6 +314,7 @@ tesserix_adk.cli.Answering :: Answering: TypeAliasType
 tesserix_adk.cli.Frontiers :: Frontiers: TypeAliasType
 tesserix_adk.cli.Lookup :: Lookup: TypeAliasType
 tesserix_adk.cli.Prompts :: class Prompts(Protocol) {get(self, name: 'str', *, version: 'str' = '', alias: 'str' = '', tenant: 'str' = '') -> 'PromptDefinition'; list_versions(self, name: 'str', *, tenant: 'str' = '') -> 'tuple[str, ...]'}
+tesserix_adk.cli.Resolve :: Resolve: TypeAliasType
 tesserix_adk.cli.Resumes :: class Resumes(Protocol) {resume(self, run_id: 'str', *, tenant: 'str', worker: 'str') -> 'ResumedRun | None'}
 tesserix_adk.cli.Waiting :: class Waiting(Protocol) {pending(self, *, tenant: 'str') -> 'tuple[SuspendedRun, ...]'}
 tesserix_adk.cli.approvals.Answering :: Answering: TypeAliasType
@@ -321,6 +338,9 @@ tesserix_adk.cli.resume.describe :: def describe(checkpoint: 'Checkpoint') -> 's
 tesserix_adk.cli.resume.main :: def main(argv: 'Sequence[str]', *, resumer: 'Resumes', out: 'TextIO | None' = None, worker: 'str' = 'cli') -> 'int'
 tesserix_adk.cli.resume.show :: def show(argv: 'Sequence[str]', *, frontiers: 'Frontiers', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.resume_main :: def resume_main(argv: 'Sequence[str]', *, resumer: 'Resumes', out: 'TextIO | None' = None, worker: 'str' = 'cli') -> 'int'
+tesserix_adk.cli.surface.Resolve :: Resolve: TypeAliasType
+tesserix_adk.cli.surface.main :: def main(argv: 'Sequence[str]', *, resolve: 'Resolve', out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.surface_main :: def surface_main(argv: 'Sequence[str]', *, resolve: 'Resolve', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.trace.MISSING :: MISSING: int
 tesserix_adk.cli.trace.MISUSED :: MISUSED: int
 tesserix_adk.cli.trace.OK :: OK: int

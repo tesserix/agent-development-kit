@@ -97,8 +97,11 @@ async def main() -> None:
             name="handbook",
             transport="stdio",
             command=(sys.executable, "-u", str(script), json.dumps(TOOLS)),
+            allow=("*",),
         )
-        cluster = McpServerConfig(name="handbook", endpoint="http://handbook.internal/mcp")
+        cluster = McpServerConfig(
+            name="handbook", endpoint="http://handbook.internal/mcp", allow=("*",)
+        )
 
         over_stdio = await answered(local, StdioTransport(local))
         over_http = await answered(

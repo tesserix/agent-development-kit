@@ -22,7 +22,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from tesserix_adk.adapters._mcp_schema import (
@@ -30,6 +30,12 @@ from tesserix_adk.adapters._mcp_schema import (
     MAX_SCHEMA_DEPTH,
     SchemaArguments,
     schema_shape,
+)
+from tesserix_adk.adapters.mcp_surface import (
+    SurfaceEntry,
+    ToolSurface,
+    fingerprint,
+    namespaced,
 )
 from tesserix_adk.core import (
     AdkError,
@@ -42,6 +48,7 @@ from tesserix_adk.core import (
     ToolFailure,
     ToolRefusal,
     ToolTimedOutError,
+    screen,
     sealed,
 )
 from tesserix_adk.mcp import GatewayToolResult, McpGatewayError, McpToolDescriptor
@@ -53,6 +60,7 @@ if TYPE_CHECKING:
 
     from pydantic import JsonValue
 
+    from tesserix_adk.adapters.mcp_surface import SurfacePin
     from tesserix_adk.core.config import McpServerConfig
 
 __all__ = [
@@ -66,6 +74,7 @@ __all__ = [
 
 _CODE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _TOOLS_CAPABILITY = "tools"
+_EVERYTHING = "*"
 
 
 class McpServerInfo(AdkModel):
@@ -152,15 +161,14 @@ class McpDiscovery:
         tools: The tools adopted, in the order the allowlist or the server gave them.
         rejected: Every tool not adopted, each with its reason. Discovery reports rather
             than throws: one broken schema does not cost the rest of the server.
-        conflicts: Names already taken locally. The remote tool is withheld rather than
-            allowed to shadow the local one; naming them apart is a policy decision.
+        surface: What was adopted, under both names, with a fingerprint of each schema.
         truncated: Whether the discovery cap held, which is a fact a reader needs.
     """
 
     server: str
     tools: tuple[Tool[..., str], ...] = ()
     rejected: tuple[McpRejection, ...] = ()
-    conflicts: tuple[str, ...] = ()
+    surface: ToolSurface = field(default_factory=ToolSurface)
     truncated: bool = False
 
 
@@ -175,9 +183,12 @@ class McpClient:
         config: The declared server: its name here, its allowlist, and its bounds. It is
             ordinary configuration, so a server can be added by an environment variable.
         arguments: How strictly arguments are read before a call leaves the process.
+        pin: The tool surface this server is expected to have. Given one, a server that
+            has since added, dropped or reshaped a tool fails discovery instead of
+            quietly changing what the model can do.
     """
 
-    __slots__ = ("_arguments", "_closed", "_config", "_discovery", "_info", "_session")
+    __slots__ = ("_arguments", "_closed", "_config", "_discovery", "_info", "_pin", "_session")
 
     def __init__(
         self,
@@ -185,10 +196,12 @@ class McpClient:
         *,
         config: McpServerConfig,
         arguments: ArgumentPolicy = STRICT,
+        pin: SurfacePin | None = None,
     ) -> None:
         self._session = session
         self._config = config
         self._arguments = arguments
+        self._pin = pin
         self._info: McpServerInfo | None = None
         self._discovery: McpDiscovery | None = None
         self._closed = False
@@ -231,13 +244,17 @@ class McpClient:
 
         Args:
             known: Tool names already taken locally. A remote tool answering to one of
-                them is reported as a conflict and withheld.
+                them is a conflict, not something to let shadow the local tool.
 
         Returns:
-            The tools adopted, those rejected and why, and whether the cap held.
+            The tools adopted, those rejected and why, the resolved surface, and whether
+            the cap held.
 
         Raises:
-            ConfigurationError: The client is closed or the server offers no tools.
+            ConfigurationError: The client is closed, the server offers no tools, or the
+                allowlist names a tool this server does not advertise.
+            McpToolConflictError: Two tools would answer to one name.
+            McpSurfaceDriftError: The server's tools are not what the pin says.
         """
         info = await self.connect()
         _ = info
@@ -252,20 +269,41 @@ class McpClient:
             for descriptor in over
         )
         adopted: list[Tool[..., str]] = []
-        conflicts: list[str] = []
+        entries: list[SurfaceEntry] = []
+        spent = 0
         for descriptor in capped:
-            if descriptor.name in known:
-                conflicts.append(descriptor.name)
+            size = self._size(descriptor.input_schema)
+            if spent + size > self._config.max_schema_bytes:
+                rejected.append(
+                    McpRejection(
+                        tool=descriptor.name,
+                        reason=f"over the schema budget of {self._config.max_schema_bytes} bytes",
+                    )
+                )
                 continue
+            name = namespaced(descriptor.name, prefix=self._config.prefix)
             try:
-                adopted.append(self._adapted(descriptor))
+                adopted.append(self._adapted(descriptor, name))
             except McpSchemaError as unrepresentable:
                 rejected.append(McpRejection(tool=descriptor.name, reason=str(unrepresentable)))
+                continue
+            spent += size
+            entries.append(
+                SurfaceEntry(
+                    server=self._config.name,
+                    tool=descriptor.name,
+                    name=name,
+                    fingerprint=fingerprint(descriptor),
+                )
+            )
+        surface = ToolSurface.of(entries, local=known)
+        if self._pin is not None:
+            surface.check(self._pin)
         self._discovery = McpDiscovery(
             server=self._config.name,
             tools=tuple(adopted),
             rejected=tuple(rejected),
-            conflicts=tuple(conflicts),
+            surface=surface,
             truncated=bool(over),
         )
         return self._discovery
@@ -310,21 +348,37 @@ class McpClient:
     def _selected(
         self, advertised: tuple[McpToolDescriptor, ...]
     ) -> tuple[list[McpToolDescriptor], list[McpRejection]]:
-        """The allowlist applied, with a declared tool the server does not offer reported."""
-        if not self._config.allow:
-            return list(advertised), []
+        """Default-deny: the allowlist minus the denylist, in the order it was declared."""
         by_name = {descriptor.name: descriptor for descriptor in advertised}
-        selected = [by_name[name] for name in self._config.allow if name in by_name]
         missing = [
-            McpRejection(
-                tool=name, reason=f"{self._config.name} does not advertise a tool called {name}"
-            )
-            for name in self._config.allow
-            if name not in by_name
+            name for name in self._config.allow if name != _EVERYTHING and name not in by_name
         ]
-        return selected, missing
+        if missing:
+            raise ConfigurationError(
+                f"{self._config.name} does not advertise {', '.join(missing)}, "
+                f"which its allowlist names"
+            )
+        denied = set(self._config.deny)
+        allowed = (
+            [name for name in by_name if name not in denied]
+            if _EVERYTHING in self._config.allow
+            else [name for name in self._config.allow if name not in denied]
+        )
+        rejected = [
+            McpRejection(
+                tool=descriptor.name,
+                reason=(
+                    f"{self._config.name} denies {descriptor.name}"
+                    if descriptor.name in denied
+                    else f"{self._config.name} does not allow {descriptor.name}"
+                ),
+            )
+            for descriptor in advertised
+            if descriptor.name not in allowed
+        ]
+        return [by_name[name] for name in allowed], rejected
 
-    def _adapted(self, descriptor: McpToolDescriptor) -> Tool[..., str]:
+    def _adapted(self, descriptor: McpToolDescriptor, name: str) -> Tool[..., str]:
         """One advertised tool as a native tool, or a typed rejection of its schema."""
         schema = _closed(descriptor.input_schema)
         validator = self._validator(descriptor, schema)
@@ -332,11 +386,11 @@ class McpClient:
 
         async def invoke(**arguments: Any) -> str:  # noqa: ANN401 — whatever the schema declares
             context = cast("ToolContext | None", arguments.pop(context_parameter, None))
-            return await self._call(descriptor, arguments, context)
+            return await self._call(descriptor, arguments, context, name)
 
         return Tool[..., str](
-            name=descriptor.name,
-            description=descriptor.description,
+            name=name,
+            description=self._described(descriptor),
             parameters_schema=dict(schema),
             returns_schema=dict(descriptor.output_schema) if descriptor.output_schema else None,
             is_async=True,
@@ -348,6 +402,22 @@ class McpClient:
             parallel_safe=False,
             idempotency=IdempotencyPolicy(kind=Idempotency.EFFECTFUL),
             returns_type=str,
+        )
+
+    def _described(self, descriptor: McpToolDescriptor) -> str:
+        """A tool description a server wrote, fenced where it reads as an instruction.
+
+        The description sits in the tool list, which is the most privileged place remote
+        text reaches. One that screens as instructions is kept — the operator allowed the
+        tool — but inside the untrusted envelope, where it is data rather than a line.
+        """
+        if not screen(descriptor.description):
+            return descriptor.description
+        return sealed(
+            descriptor.description,
+            source=ContentSource(
+                origin=Origin.MCP_RESULT, name=f"{self._config.name}/{descriptor.name}"
+            ),
         )
 
     def _validator(
@@ -409,8 +479,13 @@ class McpClient:
         descriptor: McpToolDescriptor,
         arguments: Mapping[str, Any],
         context: ToolContext | None,
+        name: str,
     ) -> str:
-        """One bounded call, with the answer fenced as the untrusted data it is."""
+        """One bounded call, with the answer fenced as the untrusted data it is.
+
+        Failures answer to `name`, which is what the model called, while the wire carries
+        the server's own name for the tool.
+        """
         timeout = self._config.timeout_seconds
         try:
             async with asyncio.timeout(timeout):
@@ -421,16 +496,16 @@ class McpClient:
                     timeout_seconds=timeout,
                 )
         except TimeoutError as overran:
-            raise ToolTimedOutError(descriptor.name, timeout) from overran
+            raise ToolTimedOutError(name, timeout) from overran
         except Exception as unreachable:
             raise ToolFailure(
-                descriptor.name,
+                name,
                 "mcp_unavailable",
                 transient=True,
                 detail="the MCP server could not be reached",
             ) from unreachable
         if result.is_error:
-            raise self._error(descriptor.name, result)
+            raise self._error(name, result)
         return sealed(
             self._rendered(result),
             source=ContentSource(
