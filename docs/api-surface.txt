@@ -158,6 +158,10 @@ tesserix_adk.adapters.DEFAULT_STREAM_REQUIREMENT :: DEFAULT_STREAM_REQUIREMENT: 
 tesserix_adk.adapters.DEFAULT_TABLE :: DEFAULT_TABLE: str
 tesserix_adk.adapters.DISTANCE_OPERATORS :: DISTANCE_OPERATORS: dict
 tesserix_adk.adapters.DeadLetter :: class DeadLetter(Protocol) {bury(self, payload: 'bytes', *, reason: 'str', history: 'tuple[str, ...]' = ()) -> 'None'}
+tesserix_adk.adapters.DeadLetterQuery :: class DeadLetterQuery(AdkModel) {matches(self, record: 'DeadLetterRecord') -> 'bool'}
+tesserix_adk.adapters.DeadLetterRecord :: class DeadLetterRecord(AdkModel) {inspected(self) -> 'dict[str, str]'}
+tesserix_adk.adapters.DeadLetterStats :: class DeadLetterStats(object)
+tesserix_adk.adapters.DeadLetterStore :: class DeadLetterStore(Protocol) {bury(self, payload: 'bytes', *, reason: 'str', history: 'tuple[str, ...]' = (), group: 'str' = '') -> 'None'; forget(self, event_ids: 'Sequence[str]') -> 'None'; list(self, query: 'DeadLetterQuery') -> 'Sequence[DeadLetterRecord]'; stats(self, tenant: 'str') -> 'DeadLetterStats'}
 tesserix_adk.adapters.Degraded :: class Degraded(AdkModel)
 tesserix_adk.adapters.DurableConsumer :: class DurableConsumer(object) {consume(self) -> 'int'}
 tesserix_adk.adapters.EXPECTED_AUDIT_SCHEMA :: EXPECTED_AUDIT_SCHEMA: str
@@ -169,6 +173,7 @@ tesserix_adk.adapters.EXPECTED_OUTBOX_SCHEMA :: EXPECTED_OUTBOX_SCHEMA: str
 tesserix_adk.adapters.EXPECTED_SCHEMA :: EXPECTED_SCHEMA: str
 tesserix_adk.adapters.EXTRACTION_INSTRUCTION :: EXTRACTION_INSTRUCTION: str
 tesserix_adk.adapters.EntityExtractor :: class EntityExtractor(object) {extract(self, scope: 'MemoryScope', record: 'MemoryRecord', *, budget: 'BudgetPolicy') -> 'tuple[ExtractedSubgraph, ExtractionCharge]'}
+tesserix_adk.adapters.ErasureCheck :: ErasureCheck: TypeAliasType
 tesserix_adk.adapters.ErasureSweep :: class ErasureSweep(AdkModel)
 tesserix_adk.adapters.ExportedSession :: class ExportedSession(object) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.adapters.ExtractedEdge :: class ExtractedEdge(AdkModel)
@@ -188,7 +193,8 @@ tesserix_adk.adapters.GraphitiEngine :: class GraphitiEngine(object) {commit(sel
 tesserix_adk.adapters.HttpPoster :: class HttpPoster(Protocol) {post(self, url: 'str', *, content: 'bytes', headers: 'Mapping[str, str]') -> 'tuple[int, bytes]'}
 tesserix_adk.adapters.HttpTransport :: class HttpTransport(object) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.IN_FLIGHT :: IN_FLIGHT: str
-tesserix_adk.adapters.IdempotentConsumer :: class IdempotentConsumer(object) {handle(self, event: 'EventEnvelope') -> 'None'}
+tesserix_adk.adapters.IdempotentConsumer :: class IdempotentConsumer(object) {handle(self, event: 'EventEnvelope') -> 'bool'}
+tesserix_adk.adapters.InMemoryDeadLetters :: class InMemoryDeadLetters(object) {bury(self, payload: 'bytes', *, reason: 'str', history: 'tuple[str, ...]' = (), group: 'str' = '') -> 'None'; for_group(self, group: 'str') -> '_GroupBound'; forget(self, event_ids: 'Sequence[str]') -> 'None'; list(self, query: 'DeadLetterQuery') -> 'Sequence[DeadLetterRecord]'; stats(self, tenant: 'str') -> 'DeadLetterStats'; undecodable(self) -> 'int'}
 tesserix_adk.adapters.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.IncomingCall :: class IncomingCall(object) {bound(self) -> 'Iterator[TenantContext]'}
 tesserix_adk.adapters.InspectableRedis :: class InspectableRedis(Protocol) {config_get(self, pattern: 'str') -> 'Mapping[str, str]'; eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
@@ -200,6 +206,7 @@ tesserix_adk.adapters.JetStreamEventPublisher :: class JetStreamEventPublisher(o
 tesserix_adk.adapters.JetStreamMessage :: class JetStreamMessage(Protocol) {ack(self) -> 'None'; nak(self) -> 'None'; term(self) -> 'None'}
 tesserix_adk.adapters.JetStreamPublisher :: class JetStreamPublisher(Protocol) {publish(self, subject: 'str', payload: 'bytes') -> 'None'}
 tesserix_adk.adapters.MAX_NAME_LENGTH :: MAX_NAME_LENGTH: int
+tesserix_adk.adapters.MAX_REPLAY_BATCH :: MAX_REPLAY_BATCH: int
 tesserix_adk.adapters.McpClient :: class McpClient(object) {aclose(self) -> 'None'; connect(self) -> 'McpServerInfo'; discover(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; refresh(self, *, known: 'Collection[str]' = ()) -> 'McpDiscovery'; tools(self) -> 'tuple[Tool[..., str], ...]'}
 tesserix_adk.adapters.McpDiscovery :: class McpDiscovery(object)
 tesserix_adk.adapters.McpExportError :: class McpExportError(AdkError)
@@ -262,6 +269,10 @@ tesserix_adk.adapters.RedisMemoryStore :: class RedisMemoryStore(object) {append
 tesserix_adk.adapters.RedisStateStore :: class RedisStateStore(object) {delete_run(self, key: 'StateKey') -> 'None'; delete_session(self, key: 'StateKey', *, cascade: 'bool' = False) -> 'None'; get_run(self, key: 'StateKey') -> 'RunRecord | None'; get_session(self, key: 'StateKey') -> 'SessionRecord | None'; list_runs(self, query: 'StateQuery') -> 'StatePage'; patch_run(self, key: 'StateKey', delta: 'StateDelta') -> 'RunRecord'; preflight(self) -> 'None'; put_run(self, record: 'RunRecord') -> 'RunRecord'; put_session(self, record: 'SessionRecord') -> 'SessionRecord'}
 tesserix_adk.adapters.RedisStoreSettings :: class RedisStoreSettings(MemoryStoreSettings)
 tesserix_adk.adapters.RedisWorkQueue :: class RedisWorkQueue(object) {adopt(self, *, worker: 'str') -> 'tuple[WorkItem, ...]'; claim(self, *, worker: 'str', queue: 'str' = 'default', lease_seconds: 'float | None' = None) -> 'WorkItem | None'; complete(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; dead_letters(self, *, tenant: 'str', limit: 'int' = 50) -> 'tuple[WorkItem, ...]'; enqueue(self, item: 'WorkItem') -> 'WorkItem'; fail(self, item_id: 'str', *, tenant: 'str', worker: 'str', error: 'str', retryable: 'bool' = True) -> 'WorkItem'; heartbeat(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; preflight(self) -> 'None'; reap(self) -> 'tuple[WorkItem, ...]'; stats(self, *, queue: 'str' = 'default') -> 'QueueStats'}
+tesserix_adk.adapters.ReplayHandler :: ReplayHandler: TypeAliasType
+tesserix_adk.adapters.ReplayPlan :: class ReplayPlan(object)
+tesserix_adk.adapters.ReplayReport :: class ReplayReport(object)
+tesserix_adk.adapters.Replayer :: class Replayer(object) {plan(self, query: 'DeadLetterQuery') -> 'ReplayPlan'; records(self, query: 'DeadLetterQuery') -> 'Sequence[DeadLetterRecord]'; replay(self, query: 'DeadLetterQuery', *, operator: 'str', reason: 'str' = '') -> 'ReplayReport'}
 tesserix_adk.adapters.ResilientSession :: class ResilientSession(object) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.adapters.RoutedMemoryStore :: class RoutedMemoryStore(object) {append(self, scope: 'MemoryScope', key: 'str', value: 'JsonValue') -> 'int'; belief(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'Belief'; derivations(self, scope: 'MemoryScope', *, source_id: 'str | None' = None) -> 'tuple[Derivation, ...]'; derived(self, scope: 'MemoryScope', derivation: 'Derivation') -> 'None'; episodes(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; erase(self, scope: 'MemoryScope', *, kinds: 'tuple[MemoryKind, ...]' = (), dry_run: 'bool' = False) -> 'ErasureReceipt'; expire(self, scope: 'MemoryScope', key: 'str', *, ttl_seconds: 'float') -> 'None'; history(self, scope: 'MemoryScope', key: 'str | None' = None) -> 'tuple[MemoryRecord, ...]'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; log(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; profile(self, scope: 'MemoryScope', key: 'str', *, as_of: 'float | None' = None) -> 'MemoryRecord | None'; read(self, scope: 'MemoryScope', key: 'str') -> 'MemoryRecord | None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; supersede(self, scope: 'MemoryScope', record: 'MemoryRecord', *, expected_version: 'int | None' = None, resolves: 'tuple[str, ...]' = ()) -> 'Supersession'; upsert(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; write(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'}
 tesserix_adk.adapters.RunBroker :: class RunBroker(Generic) {authorise(self, run_id: 'str', *, tenant: 'str') -> 'None'; cancel(self, run_id: 'str', *, tenant: 'str') -> 'None'; register(self, stream: 'RunStream[OutputT]', *, tenant: 'str') -> 'str'; run(self, run_id: 'str', *, tenant: 'str') -> 'Run[OutputT]'; subscribe(self, run_id: 'str', *, tenant: 'str', after: 'int | None' = None) -> 'AsyncGenerator[ProgressEvent]'}
@@ -282,6 +293,8 @@ tesserix_adk.adapters.TenantAuthority :: class TenantAuthority(object) {authoris
 tesserix_adk.adapters.ToolSurface :: class ToolSurface(object) {check(self, pin: 'SurfacePin') -> 'None'; names(self) -> 'tuple[str, ...]'; of_server(self, server: 'str') -> 'Self'; pin(self) -> 'SurfacePin'; report(self) -> 'str'}
 tesserix_adk.adapters.TransportAuthorizationError :: class TransportAuthorizationError(AdkError)
 tesserix_adk.adapters.TransportSession :: class TransportSession(object) {call_tool(self, name: 'str', arguments: 'Mapping[str, JsonValue]', *, meta: 'Mapping[str, str]', timeout_seconds: 'float') -> 'GatewayToolResult'; close(self) -> 'None'; initialize(self) -> 'McpServerInfo'; list_tools(self) -> 'tuple[McpToolDescriptor, ...]'}
+tesserix_adk.adapters.UNDECODABLE :: UNDECODABLE: str
+tesserix_adk.adapters.UNKNOWN_TENANT :: UNKNOWN_TENANT: str
 tesserix_adk.adapters.WebSocketBridge :: class WebSocketBridge(Generic) {serve(self, connection: 'WebSocketLike', *, run_id: 'str', tenant: 'str', after: 'int | None' = None) -> 'None'}
 tesserix_adk.adapters.WebSocketLike :: class WebSocketLike(Protocol) {close(self, code: 'int' = 1000) -> 'None'; receive_text(self) -> 'str'; send_text(self, data: 'str') -> 'None'}
 tesserix_adk.adapters.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
@@ -322,6 +335,19 @@ tesserix_adk.adapters.checkpoints.PostgresCheckpointStore :: class PostgresCheck
 tesserix_adk.adapters.checkpoints.PostgresLeaseStore :: class PostgresLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
 tesserix_adk.adapters.checkpoints.RedisCheckpointStore :: class RedisCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
 tesserix_adk.adapters.checkpoints.RedisLeaseStore :: class RedisLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
+tesserix_adk.adapters.dead_letters.DeadLetterQuery :: class DeadLetterQuery(AdkModel) {matches(self, record: 'DeadLetterRecord') -> 'bool'}
+tesserix_adk.adapters.dead_letters.DeadLetterRecord :: class DeadLetterRecord(AdkModel) {inspected(self) -> 'dict[str, str]'}
+tesserix_adk.adapters.dead_letters.DeadLetterStats :: class DeadLetterStats(object)
+tesserix_adk.adapters.dead_letters.DeadLetterStore :: class DeadLetterStore(Protocol) {bury(self, payload: 'bytes', *, reason: 'str', history: 'tuple[str, ...]' = (), group: 'str' = '') -> 'None'; forget(self, event_ids: 'Sequence[str]') -> 'None'; list(self, query: 'DeadLetterQuery') -> 'Sequence[DeadLetterRecord]'; stats(self, tenant: 'str') -> 'DeadLetterStats'}
+tesserix_adk.adapters.dead_letters.ErasureCheck :: ErasureCheck: TypeAliasType
+tesserix_adk.adapters.dead_letters.InMemoryDeadLetters :: class InMemoryDeadLetters(object) {bury(self, payload: 'bytes', *, reason: 'str', history: 'tuple[str, ...]' = (), group: 'str' = '') -> 'None'; for_group(self, group: 'str') -> '_GroupBound'; forget(self, event_ids: 'Sequence[str]') -> 'None'; list(self, query: 'DeadLetterQuery') -> 'Sequence[DeadLetterRecord]'; stats(self, tenant: 'str') -> 'DeadLetterStats'; undecodable(self) -> 'int'}
+tesserix_adk.adapters.dead_letters.MAX_REPLAY_BATCH :: MAX_REPLAY_BATCH: int
+tesserix_adk.adapters.dead_letters.ReplayHandler :: ReplayHandler: TypeAliasType
+tesserix_adk.adapters.dead_letters.ReplayPlan :: class ReplayPlan(object)
+tesserix_adk.adapters.dead_letters.ReplayReport :: class ReplayReport(object)
+tesserix_adk.adapters.dead_letters.Replayer :: class Replayer(object) {plan(self, query: 'DeadLetterQuery') -> 'ReplayPlan'; records(self, query: 'DeadLetterQuery') -> 'Sequence[DeadLetterRecord]'; replay(self, query: 'DeadLetterQuery', *, operator: 'str', reason: 'str' = '') -> 'ReplayReport'}
+tesserix_adk.adapters.dead_letters.UNDECODABLE :: UNDECODABLE: str
+tesserix_adk.adapters.dead_letters.UNKNOWN_TENANT :: UNKNOWN_TENANT: str
 tesserix_adk.adapters.dedupe_key :: def dedupe_key(*, group: 'str', event: 'EventEnvelope') -> 'str'
 tesserix_adk.adapters.eventing.payload_of :: def payload_of(event: 'ProgressEvent') -> 'EventPayload | None'
 tesserix_adk.adapters.eventing.publishing :: def publishing(stream: 'RunStream[OutputT]', eventing: 'Eventing') -> 'AsyncIterator[ProgressEvent]'
@@ -353,7 +379,7 @@ tesserix_adk.adapters.idempotency.PostgresIdempotencyStore :: class PostgresIdem
 tesserix_adk.adapters.idempotency.RedisIdempotencyStore :: class RedisIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.adapters.idempotent_events.DEFAULT_DEDUPE_TTL_SECONDS :: DEFAULT_DEDUPE_TTL_SECONDS: float
 tesserix_adk.adapters.idempotent_events.DEFAULT_MAX_ATTEMPTS :: DEFAULT_MAX_ATTEMPTS: int
-tesserix_adk.adapters.idempotent_events.IdempotentConsumer :: class IdempotentConsumer(object) {handle(self, event: 'EventEnvelope') -> 'None'}
+tesserix_adk.adapters.idempotent_events.IdempotentConsumer :: class IdempotentConsumer(object) {handle(self, event: 'EventEnvelope') -> 'bool'}
 tesserix_adk.adapters.idempotent_events.dedupe_key :: def dedupe_key(*, group: 'str', event: 'EventEnvelope') -> 'str'
 tesserix_adk.adapters.isolation.ADAPTER_GUARANTEES :: ADAPTER_GUARANTEES: dict
 tesserix_adk.adapters.isolation.ErasureSweep :: class ErasureSweep(AdkModel)
@@ -506,6 +532,8 @@ tesserix_adk.cli.approvals_main :: def approvals_main(argv: 'Sequence[str]', *, 
 tesserix_adk.cli.card.Build :: Build: TypeAliasType
 tesserix_adk.cli.card.main :: def main(argv: 'Sequence[str]', *, build: 'Build', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.card_main :: def card_main(argv: 'Sequence[str]', *, build: 'Build', out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.dead_letters.main :: def main(argv: 'Sequence[str]', *, replayer: 'Replayer', out: 'TextIO | None' = None) -> 'int'
+tesserix_adk.cli.dead_letters_main :: def dead_letters_main(argv: 'Sequence[str]', *, replayer: 'Replayer', out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.describe :: def describe(checkpoint: 'Checkpoint') -> 'str'
 tesserix_adk.cli.evals.main :: def main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'
 tesserix_adk.cli.evals_main :: def evals_main(argv: 'Sequence[str]', *, out: 'TextIO | None' = None) -> 'int'
@@ -699,6 +727,7 @@ tesserix_adk.core.EventSchemaRegistry :: class EventSchemaRegistry(object) {curr
 tesserix_adk.core.EventTooLargeError :: class EventTooLargeError(AdkError)
 tesserix_adk.core.EventType :: class EventType(StrEnum)
 tesserix_adk.core.Eventing :: class Eventing(object) {emit(self, payload: 'EventPayload', *, caused_by: 'EventEnvelope | None' = None) -> 'EventEnvelope | None'; emit_all(self, payloads: 'Iterable[EventPayload]', *, caused_by: 'EventEnvelope | None' = None) -> 'PublishReport'}
+tesserix_adk.core.EventsReplayed :: class EventsReplayed(EventPayload)
 tesserix_adk.core.ExpiringCredential :: class ExpiringCredential(CallCredential, Protocol) {expired(self, now: 'float', *, skew: 'float' = Ellipsis) -> 'bool'}
 tesserix_adk.core.ExpiringCredentialSource :: class ExpiringCredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'ExpiringCredential'}
 tesserix_adk.core.ExtractionError :: class ExtractionError(AdkError)
@@ -900,6 +929,7 @@ tesserix_adk.core.SchemaGenerationError :: class SchemaGenerationError(Configura
 tesserix_adk.core.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.ScopeEscalationError :: class ScopeEscalationError(AdkError)
 tesserix_adk.core.ScopeSet :: class ScopeSet(object) {missing(self, required: 'Iterable[str]') -> 'tuple[str, ...]'; narrowed_to(self, other: 'ScopeSet') -> 'ScopeSet'; permits(self, scope: 'str') -> 'bool'}
+tesserix_adk.core.ScopeViolationError :: class ScopeViolationError(AdkError)
 tesserix_adk.core.ScopedLimits :: class ScopedLimits(AdkModel)
 tesserix_adk.core.SecretProvider :: class SecretProvider(Protocol) {secret(self, name: 'str') -> 'str | None'}
 tesserix_adk.core.SecretRef :: class SecretRef(AdkModel) {describe(self) -> 'str'; for_tenant(self, tenant: 'str') -> 'Self'; resolve(self, secrets: 'SecretProvider') -> 'str'}
@@ -1248,6 +1278,7 @@ tesserix_adk.core.errors.SandboxTimeoutError :: class SandboxTimeoutError(Sandbo
 tesserix_adk.core.errors.SchemaGenerationError :: class SchemaGenerationError(ConfigurationError)
 tesserix_adk.core.errors.SchemaViolationError :: class SchemaViolationError(AdkError)
 tesserix_adk.core.errors.ScopeEscalationError :: class ScopeEscalationError(AdkError)
+tesserix_adk.core.errors.ScopeViolationError :: class ScopeViolationError(AdkError)
 tesserix_adk.core.errors.SecretResolutionError :: class SecretResolutionError(AdkError)
 tesserix_adk.core.errors.StateConflictError :: class StateConflictError(AdkError)
 tesserix_adk.core.errors.StateInUseError :: class StateInUseError(AdkError)
@@ -1302,6 +1333,7 @@ tesserix_adk.core.events.EventPayload :: class EventPayload(AdkModel) {attribute
 tesserix_adk.core.events.EventPublisher :: class EventPublisher(Protocol) {publish(self, event: 'EventEnvelope') -> 'None'; publish_batch(self, events: 'tuple[EventEnvelope, ...]') -> 'None'}
 tesserix_adk.core.events.EventType :: class EventType(StrEnum)
 tesserix_adk.core.events.Eventing :: class Eventing(object) {emit(self, payload: 'EventPayload', *, caused_by: 'EventEnvelope | None' = None) -> 'EventEnvelope | None'; emit_all(self, payloads: 'Iterable[EventPayload]', *, caused_by: 'EventEnvelope | None' = None) -> 'PublishReport'}
+tesserix_adk.core.events.EventsReplayed :: class EventsReplayed(EventPayload)
 tesserix_adk.core.events.MemoryErased :: class MemoryErased(EventPayload)
 tesserix_adk.core.events.NullEventPublisher :: class NullEventPublisher(object) {publish(self, event: 'EventEnvelope') -> 'None'; publish_batch(self, events: 'tuple[EventEnvelope, ...]') -> 'None'}
 tesserix_adk.core.events.PublishReport :: class PublishReport(AdkModel)

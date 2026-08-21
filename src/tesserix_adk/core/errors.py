@@ -120,6 +120,7 @@ __all__ = [
     "SchemaGenerationError",
     "SchemaViolationError",
     "ScopeEscalationError",
+    "ScopeViolationError",
     "SecretResolutionError",
     "StateConflictError",
     "StateInUseError",
@@ -2483,6 +2484,26 @@ class PlanValidationError(AdkError):
                 "reason": reason,
                 "violations": ", ".join(violations),
             },
+        )
+
+
+class ScopeViolationError(AdkError):
+    """Raised when an operator action would reach across a tenant boundary.
+
+    An operator holds authority over a deployment, not over a tenant's data. A replay that
+    spanned two tenants would have one tenant's consumers process the other's events under
+    that authority, which no audit trail afterwards can undo.
+
+    Args:
+        expected: The tenant the action was scoped to.
+        found: The tenants the selection actually touched.
+    """
+
+    def __init__(self, *args: object, expected: str = "", found: tuple[str, ...] = ()) -> None:
+        self.expected = expected
+        self.found = found
+        super().__init__(
+            *args, tenant=expected, details={"expected": expected, "found": ", ".join(found)}
         )
 
 
