@@ -120,8 +120,13 @@ class IdempotentConsumer:
         self.suppressed = 0
         self.buried = 0
 
-    async def handle(self, event: EventEnvelope) -> None:
+    async def handle(self, event: EventEnvelope) -> bool:
         """Handle `event` unless it has already been handled by this group.
+
+        Returns:
+            Whether the handler ran. `False` where this delivery was recognised as one
+            this group has already applied, which is what an operator replay reports as
+            suppressed rather than redelivered.
 
         Raises:
             DuplicateInFlightError: Another worker is handling this event right now, so
@@ -136,8 +141,9 @@ class IdempotentConsumer:
         claim = await self._store.begin(key, tenant=event.tenant, ttl_seconds=self._ttl)
         if claim.outcome is not None:
             self._recognised(event, claim.outcome, identity)
-            self.suppressed += 1
-            return
+            if not _reconsidered(event, claim.outcome):
+                self.suppressed += 1
+                return False
         if claim.in_flight:
             self.suppressed += 1
             raise DuplicateInFlightError(
@@ -149,8 +155,9 @@ class IdempotentConsumer:
             await self._ran(event, key, identity)
         except Exception as failure:
             await self._failed(event, key, identity, failure)
-            return
+            return False
         self.handled += 1
+        return True
 
     async def _ran(self, event: EventEnvelope, key: str, identity: str) -> None:
         """The handler and its marker, inside one transaction where there is one."""
@@ -221,13 +228,29 @@ class IdempotentConsumer:
             )
 
 
+def _reconsidered(event: EventEnvelope, outcome: str) -> bool:
+    """Whether an operator has decided this buried event should be handled after all.
+
+    A marker that says the handler already ran still suppresses, replay or not — that is the
+    double-charge it exists to prevent. A marker that says the event was given up on is a
+    decision, and the replay is an operator overturning it.
+    """
+    return bool(event.replay_id) and outcome.startswith(f"{_POISON}:")
+
+
 def _failures_key(key: str) -> str:
     return f"{key}:failures"
 
 
 def _identity(event: EventEnvelope) -> str:
-    """A digest of everything about the event except the id it claims to be."""
+    """A digest of everything about the event except the id it claims to be.
+
+    The replay marker is dropped with it: a replay is the same event coming round again,
+    and an identity that changed with the marker would read as an id reused for something
+    else, which is exactly the suppression a replay must not lose.
+    """
     body = event.model_dump(mode="json")
     body.pop("event_id", None)
+    body.pop("replay_id", None)
     payload = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(payload.encode()).hexdigest()[:16]

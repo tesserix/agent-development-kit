@@ -108,14 +108,15 @@
           "approval_requested",
           "approval_decided",
           "budget_exceeded",
-          "memory_erased"
+          "memory_erased",
+          "events_replayed"
         ],
         "title": "EventType",
         "type": "string"
       }
     },
     "additionalProperties": false,
-    "description": "One event as it travels.\n\nArgs:\n    event_id: A ULID. Sorts by the moment it was created, so a consumer can order a\n        run's events without trusting a broker to.\n    type: What happened.\n    schema_version: Which version of this contract it speaks.\n    occurred_at: When, by the emitting run's clock.\n    tenant: The isolation boundary the work was under.\n    user: On whose behalf, where the run had a principal.\n    run_id: The run.\n    trace_id: The trace it belongs to, which for kit-emitted events is the run.\n    span_id: The span that was open when it was emitted, where one was.\n    correlation_id: The caller's own identifier for this work.\n    causation_id: The event that caused this one, where one did.\n    attributes: The body, allowlisted and redacted.",
+    "description": "One event as it travels.\n\nArgs:\n    event_id: A ULID. Sorts by the moment it was created, so a consumer can order a\n        run's events without trusting a broker to.\n    type: What happened.\n    schema_version: Which version of this contract it speaks.\n    occurred_at: When, by the emitting run's clock.\n    tenant: The isolation boundary the work was under.\n    user: On whose behalf, where the run had a principal.\n    run_id: The run.\n    trace_id: The trace it belongs to, which for kit-emitted events is the run.\n    span_id: The span that was open when it was emitted, where one was.\n    correlation_id: The caller's own identifier for this work.\n    causation_id: The event that caused this one, where one did.\n    replay_id: Which operator replay redelivered it, empty for live traffic.\n    attributes: The body, allowlisted and redacted.",
     "properties": {
       "attributes": {
         "additionalProperties": {
@@ -142,6 +143,11 @@
       "occurred_at": {
         "title": "Occurred At",
         "type": "number"
+      },
+      "replay_id": {
+        "default": "",
+        "title": "Replay Id",
+        "type": "string"
       },
       "run_id": {
         "default": "",
@@ -185,6 +191,43 @@
       "tenant"
     ],
     "title": "EventEnvelope",
+    "type": "object"
+  },
+  "events_replayed@1": {
+    "additionalProperties": false,
+    "description": "An operator redelivered dead-lettered events. The audit record of a recovery.\n\nArgs:\n    replay_id: The batch, which every redelivered envelope also carries.\n    records: How many were redelivered.\n    source_group: The consumer group they were buried under.\n    approver: Who ran it. Redacted on the way out like every other attribute.\n    reason_code: Why, in a form an audit reader can act on.",
+    "properties": {
+      "approver": {
+        "default": "",
+        "title": "Approver",
+        "type": "string"
+      },
+      "reason_code": {
+        "default": "",
+        "title": "Reason Code",
+        "type": "string"
+      },
+      "records": {
+        "minimum": 0,
+        "title": "Records",
+        "type": "integer"
+      },
+      "replay_id": {
+        "minLength": 1,
+        "title": "Replay Id",
+        "type": "string"
+      },
+      "source_group": {
+        "default": "",
+        "title": "Source Group",
+        "type": "string"
+      }
+    },
+    "required": [
+      "replay_id",
+      "records"
+    ],
+    "title": "EventsReplayed",
     "type": "object"
   },
   "memory_erased@1": {

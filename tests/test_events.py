@@ -18,6 +18,7 @@ from tesserix_adk.core import (
     Eventing,
     EventPublisher,
     EventPublishError,
+    EventsReplayed,
     EventTooLargeError,
     EventType,
     MemoryErased,
@@ -83,6 +84,7 @@ class TestTheSequenceARunEmits:
             ApprovalDecided(run_id=RUN, approval_id="a1", decision="granted"),
             BudgetExceeded(run_id=RUN, scope="run", limit="max_input_tokens"),
             MemoryErased(subject="s-1", records_erased=3),
+            EventsReplayed(replay_id="rp_1", records=2),
         }
         assert {payload.type for payload in emitted} == set(EventType)
 

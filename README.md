@@ -184,6 +184,7 @@ code lands here as the kit is built.
 | Events on JetStream — deduplicated publishes, a stream checked before the first event, and durable consumption with a dead letter | [`docs/jetstream-events.md`](docs/jetstream-events.md) |
 | Idempotent consumption — one effect per event under at-least-once delivery, and what happens to a message nothing can handle | [`docs/idempotent-consumption.md`](docs/idempotent-consumption.md) |
 | Transactional outbox — state and its event committed as one, with a relay that delivers per run and never marks a row it did not publish | [`docs/outbox.md`](docs/outbox.md) |
+| Dead letters — inspect what a consumer gave up on, and replay it through the live path under a tenant scope, a batch cap and an audit record | [`docs/dead-letters.md`](docs/dead-letters.md) |
 | The event contract — what a consumer may rely on, how a schema version changes, and the CI check that blocks a break | [`docs/event-contract.md`](docs/event-contract.md) |
 | Credential refresh — one mint inside the skew window, authority re-derived rather than renewed, a revoked caller that halts | [`docs/credential-refresh.md`](docs/credential-refresh.md) |
 | Store isolation — the partition derived from context rather than passed, a mismatched row withheld, guarantees stated with their limits | [`docs/store-isolation.md`](docs/store-isolation.md) |

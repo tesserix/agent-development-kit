@@ -4,6 +4,7 @@ from tesserix_adk.cli.approvals import Answering, Waiting
 from tesserix_adk.cli.approvals import main as approvals_main
 from tesserix_adk.cli.card import Build
 from tesserix_adk.cli.card import main as card_main
+from tesserix_adk.cli.dead_letters import main as dead_letters_main
 from tesserix_adk.cli.evals import main as evals_main
 from tesserix_adk.cli.inspect import Lookup
 from tesserix_adk.cli.inspect import main as inspect_main
@@ -28,6 +29,7 @@ __all__ = [
     "Waiting",
     "approvals_main",
     "card_main",
+    "dead_letters_main",
     "describe",
     "evals_main",
     "frontier_main",

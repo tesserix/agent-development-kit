@@ -45,6 +45,7 @@ __all__ = [
     "EventPublisher",
     "EventType",
     "Eventing",
+    "EventsReplayed",
     "MemoryErased",
     "NullEventPublisher",
     "PublishReport",
@@ -80,6 +81,7 @@ class EventType(StrEnum):
     APPROVAL_DECIDED = "approval_decided"
     BUDGET_EXCEEDED = "budget_exceeded"
     MEMORY_ERASED = "memory_erased"
+    EVENTS_REPLAYED = "events_replayed"
 
 
 ALLOWED_ATTRIBUTES = frozenset(
@@ -101,10 +103,13 @@ ALLOWED_ATTRIBUTES = frozenset(
         "output_tokens",
         "provider",
         "reason_code",
+        "records",
         "records_erased",
+        "replay_id",
         "run_id",
         "scope",
         "session_id",
+        "source_group",
         "state",
         "subject",
         "tool",
@@ -325,6 +330,25 @@ class MemoryErased(EventPayload):
     run_id: str = ""
 
 
+class EventsReplayed(EventPayload):
+    """An operator redelivered dead-lettered events. The audit record of a recovery.
+
+    Args:
+        replay_id: The batch, which every redelivered envelope also carries.
+        records: How many were redelivered.
+        source_group: The consumer group they were buried under.
+        approver: Who ran it. Redacted on the way out like every other attribute.
+        reason_code: Why, in a form an audit reader can act on.
+    """
+
+    type: ClassVar[EventType] = EventType.EVENTS_REPLAYED
+    replay_id: str = Field(min_length=1)
+    records: int = Field(ge=0)
+    source_group: str = ""
+    approver: str = ""
+    reason_code: str = ""
+
+
 class EventEnvelope(AdkModel):
     """One event as it travels.
 
@@ -341,6 +365,7 @@ class EventEnvelope(AdkModel):
         span_id: The span that was open when it was emitted, where one was.
         correlation_id: The caller's own identifier for this work.
         causation_id: The event that caused this one, where one did.
+        replay_id: Which operator replay redelivered it, empty for live traffic.
         attributes: The body, allowlisted and redacted.
     """
 
@@ -355,6 +380,7 @@ class EventEnvelope(AdkModel):
     span_id: str = ""
     correlation_id: str = ""
     causation_id: str = ""
+    replay_id: str = ""
     attributes: dict[str, str] = Field(default_factory=dict)
 
     def to_json(self) -> str:
