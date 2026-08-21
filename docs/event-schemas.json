@@ -1,0 +1,440 @@
+{
+  "approval_decided@1": {
+    "additionalProperties": false,
+    "description": "A human answered.\n\nArgs:\n    run_id: The run.\n    approval_id: Which request.\n    decision: What they decided, as a code.\n    approver: Who decided, redacted on the way out like every other attribute.",
+    "properties": {
+      "approval_id": {
+        "minLength": 1,
+        "title": "Approval Id",
+        "type": "string"
+      },
+      "approver": {
+        "default": "",
+        "title": "Approver",
+        "type": "string"
+      },
+      "decision": {
+        "minLength": 1,
+        "title": "Decision",
+        "type": "string"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "approval_id",
+      "decision"
+    ],
+    "title": "ApprovalDecided",
+    "type": "object"
+  },
+  "approval_requested@1": {
+    "additionalProperties": false,
+    "description": "A human was asked before something ran.\n\nArgs:\n    run_id: The run.\n    approval_id: The request, so a decision pairs with it.\n    tool: What was waiting on the answer.",
+    "properties": {
+      "approval_id": {
+        "minLength": 1,
+        "title": "Approval Id",
+        "type": "string"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      },
+      "tool": {
+        "minLength": 1,
+        "title": "Tool",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "approval_id",
+      "tool"
+    ],
+    "title": "ApprovalRequested",
+    "type": "object"
+  },
+  "budget_exceeded@1": {
+    "additionalProperties": false,
+    "description": "A ceiling stopped the work.\n\nArgs:\n    run_id: The run.\n    scope: Which ceiling \u2014 the run, the tenant, the window.\n    limit: Which limit within it.\n    cost_micros: What had been spent when it bit.",
+    "properties": {
+      "cost_micros": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Cost Micros",
+        "type": "integer"
+      },
+      "limit": {
+        "minLength": 1,
+        "title": "Limit",
+        "type": "string"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      },
+      "scope": {
+        "minLength": 1,
+        "title": "Scope",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "scope",
+      "limit"
+    ],
+    "title": "BudgetExceeded",
+    "type": "object"
+  },
+  "envelope": {
+    "$defs": {
+      "EventType": {
+        "description": "Everything the kit reports. A consumer switches on this and nothing else.",
+        "enum": [
+          "run_started",
+          "run_completed",
+          "run_failed",
+          "run_cancelled",
+          "tool_call_requested",
+          "tool_call_completed",
+          "approval_requested",
+          "approval_decided",
+          "budget_exceeded",
+          "memory_erased"
+        ],
+        "title": "EventType",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "One event as it travels.\n\nArgs:\n    event_id: A ULID. Sorts by the moment it was created, so a consumer can order a\n        run's events without trusting a broker to.\n    type: What happened.\n    schema_version: Which version of this contract it speaks.\n    occurred_at: When, by the emitting run's clock.\n    tenant: The isolation boundary the work was under.\n    user: On whose behalf, where the run had a principal.\n    run_id: The run.\n    trace_id: The trace it belongs to, which for kit-emitted events is the run.\n    span_id: The span that was open when it was emitted, where one was.\n    correlation_id: The caller's own identifier for this work.\n    causation_id: The event that caused this one, where one did.\n    attributes: The body, allowlisted and redacted.",
+    "properties": {
+      "attributes": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Attributes",
+        "type": "object"
+      },
+      "causation_id": {
+        "default": "",
+        "title": "Causation Id",
+        "type": "string"
+      },
+      "correlation_id": {
+        "default": "",
+        "title": "Correlation Id",
+        "type": "string"
+      },
+      "event_id": {
+        "minLength": 1,
+        "title": "Event Id",
+        "type": "string"
+      },
+      "occurred_at": {
+        "title": "Occurred At",
+        "type": "number"
+      },
+      "run_id": {
+        "default": "",
+        "title": "Run Id",
+        "type": "string"
+      },
+      "schema_version": {
+        "default": 1,
+        "minimum": 1,
+        "title": "Schema Version",
+        "type": "integer"
+      },
+      "span_id": {
+        "default": "",
+        "title": "Span Id",
+        "type": "string"
+      },
+      "tenant": {
+        "minLength": 1,
+        "title": "Tenant",
+        "type": "string"
+      },
+      "trace_id": {
+        "default": "",
+        "title": "Trace Id",
+        "type": "string"
+      },
+      "type": {
+        "$ref": "#/$defs/EventType"
+      },
+      "user": {
+        "default": "",
+        "title": "User",
+        "type": "string"
+      }
+    },
+    "required": [
+      "event_id",
+      "type",
+      "occurred_at",
+      "tenant"
+    ],
+    "title": "EventEnvelope",
+    "type": "object"
+  },
+  "memory_erased@1": {
+    "additionalProperties": false,
+    "description": "A subject's records were erased, which downstream stores have to hear about.\n\nArgs:\n    subject: Whose. Redacted on the way out, so what travels is a pseudonym.\n    records_erased: How many.\n    run_id: The run that asked, where one did.",
+    "properties": {
+      "records_erased": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Records Erased",
+        "type": "integer"
+      },
+      "run_id": {
+        "default": "",
+        "title": "Run Id",
+        "type": "string"
+      },
+      "subject": {
+        "minLength": 1,
+        "title": "Subject",
+        "type": "string"
+      }
+    },
+    "required": [
+      "subject"
+    ],
+    "title": "MemoryErased",
+    "type": "object"
+  },
+  "run_cancelled@1": {
+    "additionalProperties": false,
+    "description": "A run stopped because something asked it to.\n\nArgs:\n    run_id: The run.\n    reason_code: Who or what stopped it, as a code.",
+    "properties": {
+      "reason_code": {
+        "default": "",
+        "title": "Reason Code",
+        "type": "string"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id"
+    ],
+    "title": "RunCancelled",
+    "type": "object"
+  },
+  "run_completed@1": {
+    "additionalProperties": false,
+    "description": "A run finished on its own terms.\n\nArgs:\n    run_id: The run.\n    iterations: How many turns it took.\n    tool_calls: How many tool calls it made.\n    model_calls: How many model calls it made.\n    input_tokens: Prompt tokens consumed.\n    output_tokens: Completion tokens produced.\n    cost_micros: What it cost, in millionths of the accounting currency.\n    duration_ms: How long it took, by the run's clock.",
+    "properties": {
+      "cost_micros": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Cost Micros",
+        "type": "integer"
+      },
+      "duration_ms": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Duration Ms",
+        "type": "integer"
+      },
+      "input_tokens": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Input Tokens",
+        "type": "integer"
+      },
+      "iterations": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Iterations",
+        "type": "integer"
+      },
+      "model_calls": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Model Calls",
+        "type": "integer"
+      },
+      "output_tokens": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Output Tokens",
+        "type": "integer"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      },
+      "tool_calls": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Tool Calls",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "run_id"
+    ],
+    "title": "RunCompleted",
+    "type": "object"
+  },
+  "run_failed@1": {
+    "additionalProperties": false,
+    "description": "A run ended in a failure.\n\nArgs:\n    run_id: The run.\n    error_code: Which failure, as a code a consumer can group by. Never a message: an\n        exception's text is where content leaks into a dashboard.\n    attempt: Which attempt this was.",
+    "properties": {
+      "attempt": {
+        "default": 1,
+        "minimum": 1,
+        "title": "Attempt",
+        "type": "integer"
+      },
+      "error_code": {
+        "minLength": 1,
+        "title": "Error Code",
+        "type": "string"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "error_code"
+    ],
+    "title": "RunFailed",
+    "type": "object"
+  },
+  "run_started@1": {
+    "additionalProperties": false,
+    "description": "A run began.\n\nArgs:\n    run_id: The run.\n    agent: Which agent is running.\n    agent_version: At which version.\n    model: The model it opened with, where one was resolved by then.\n    session_id: The session it belongs to, where it belongs to one.",
+    "properties": {
+      "agent": {
+        "minLength": 1,
+        "title": "Agent",
+        "type": "string"
+      },
+      "agent_version": {
+        "default": "",
+        "title": "Agent Version",
+        "type": "string"
+      },
+      "model": {
+        "default": "",
+        "title": "Model",
+        "type": "string"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      },
+      "session_id": {
+        "default": "",
+        "title": "Session Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "agent"
+    ],
+    "title": "RunStarted",
+    "type": "object"
+  },
+  "tool_call_completed@1": {
+    "additionalProperties": false,
+    "description": "A tool call came back, one way or another.\n\nArgs:\n    run_id: The run.\n    tool: Which tool.\n    tool_call_id: The call this answers.\n    state: How it ended, as a code.\n    duration_ms: How long it took.\n    error_code: Which failure, where it failed.",
+    "properties": {
+      "duration_ms": {
+        "default": 0,
+        "minimum": 0,
+        "title": "Duration Ms",
+        "type": "integer"
+      },
+      "error_code": {
+        "default": "",
+        "title": "Error Code",
+        "type": "string"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      },
+      "state": {
+        "minLength": 1,
+        "title": "State",
+        "type": "string"
+      },
+      "tool": {
+        "minLength": 1,
+        "title": "Tool",
+        "type": "string"
+      },
+      "tool_call_id": {
+        "minLength": 1,
+        "title": "Tool Call Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "tool",
+      "tool_call_id",
+      "state"
+    ],
+    "title": "ToolCallCompleted",
+    "type": "object"
+  },
+  "tool_call_requested@1": {
+    "additionalProperties": false,
+    "description": "A tool call was about to go out.\n\nArgs:\n    run_id: The run.\n    tool: Which tool.\n    tool_call_id: The call, so the request and its completion pair up.\n    attempt: Which try this is.",
+    "properties": {
+      "attempt": {
+        "default": 1,
+        "minimum": 1,
+        "title": "Attempt",
+        "type": "integer"
+      },
+      "run_id": {
+        "minLength": 1,
+        "title": "Run Id",
+        "type": "string"
+      },
+      "tool": {
+        "minLength": 1,
+        "title": "Tool",
+        "type": "string"
+      },
+      "tool_call_id": {
+        "minLength": 1,
+        "title": "Tool Call Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "tool",
+      "tool_call_id"
+    ],
+    "title": "ToolCallRequested",
+    "type": "object"
+  }
+}

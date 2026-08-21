@@ -681,6 +681,7 @@ tesserix_adk.core.Dispatch :: class Dispatch(Generic) {run(self) -> 'DispatchRes
 tesserix_adk.core.DispatchNode :: class DispatchNode(Generic)
 tesserix_adk.core.DispatchResult :: class DispatchResult(Generic) {value(self, name: 'str') -> 'T'}
 tesserix_adk.core.DuplicateInFlightError :: class DuplicateInFlightError(AdkError)
+tesserix_adk.core.EVENT_SCHEMAS :: EVENT_SCHEMAS: EventSchemaRegistry
 tesserix_adk.core.EVENT_SCHEMA_VERSION :: EVENT_SCHEMA_VERSION: int
 tesserix_adk.core.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
@@ -694,6 +695,7 @@ tesserix_adk.core.EventLoopStalledError :: class EventLoopStalledError(AdkError)
 tesserix_adk.core.EventPayload :: class EventPayload(AdkModel) {attributes(self) -> 'dict[str, str]'}
 tesserix_adk.core.EventPublishError :: class EventPublishError(AdkError)
 tesserix_adk.core.EventPublisher :: class EventPublisher(Protocol) {publish(self, event: 'EventEnvelope') -> 'None'; publish_batch(self, events: 'tuple[EventEnvelope, ...]') -> 'None'}
+tesserix_adk.core.EventSchemaRegistry :: class EventSchemaRegistry(object) {current_version(self, event_type: 'EventType') -> 'int'; model_for(self, event_type: 'EventType', version: 'int') -> 'type[EventPayload]'; payload_of(self, envelope: 'EventEnvelope') -> 'EventPayload'; read(self, raw: 'str | bytes') -> 'EventEnvelope'; register(self, model: 'type[EventPayload]') -> 'None'; register_upcaster(self, event_type: 'EventType', *, from_version: 'int', upcast: 'Upcaster') -> 'None'; requires(self, event_type: 'EventType') -> 'int'; schemas(self) -> 'dict[str, dict[str, Any]]'; upcast(self, envelope: 'EventEnvelope') -> 'EventEnvelope'; versions(self, event_type: 'EventType') -> 'tuple[int, ...]'}
 tesserix_adk.core.EventTooLargeError :: class EventTooLargeError(AdkError)
 tesserix_adk.core.EventType :: class EventType(StrEnum)
 tesserix_adk.core.Eventing :: class Eventing(object) {emit(self, payload: 'EventPayload', *, caused_by: 'EventEnvelope | None' = None) -> 'EventEnvelope | None'; emit_all(self, payloads: 'Iterable[EventPayload]', *, caused_by: 'EventEnvelope | None' = None) -> 'PublishReport'}
@@ -983,9 +985,12 @@ tesserix_adk.core.TrustBoundaryError :: class TrustBoundaryError(ConfigurationEr
 tesserix_adk.core.TrustLevel :: class TrustLevel(StrEnum)
 tesserix_adk.core.UncitedClaimError :: class UncitedClaimError(AdkError)
 tesserix_adk.core.UngroundedCitationError :: class UngroundedCitationError(AdkError)
+tesserix_adk.core.UnknownEventTypeError :: class UnknownEventTypeError(AdkError)
 tesserix_adk.core.UnknownTenantError :: class UnknownTenantError(ConfigurationError)
 tesserix_adk.core.UnlimitedBudget :: class UnlimitedBudget(object) {check(self) -> 'BudgetDecision'; child(self) -> 'UnlimitedBudget'; limits(self) -> 'BudgetLimits'; record(self, usage: 'Usage', *, model_calls: 'int' = 0, tool_calls: 'int' = 0, iterations: 'int' = 0, peer_invocations: 'int' = 0) -> 'None'; reserve(self, estimate: 'int') -> 'None'; sliced(self, limits: 'BudgetLimits') -> 'UnlimitedBudget'}
+tesserix_adk.core.UnsupportedEventVersionError :: class UnsupportedEventVersionError(AdkError)
 tesserix_adk.core.UnsupportedStateVersionError :: class UnsupportedStateVersionError(AdkError)
+tesserix_adk.core.Upcaster :: Upcaster: TypeAliasType
 tesserix_adk.core.Usage :: class Usage(AdkModel)
 tesserix_adk.core.UsageDelta :: class UsageDelta(StreamEvent)
 tesserix_adk.core.VERSION :: VERSION: str
@@ -1072,6 +1077,7 @@ tesserix_adk.core.claim_check.ClaimTicket :: class ClaimTicket(object) {rendered
 tesserix_adk.core.claim_check.HANDLE_PREFIX :: HANDLE_PREFIX: str
 tesserix_adk.core.claim_check.claim_handle :: def claim_handle(*, tenant: 'str', run_id: 'str', content: 'str') -> 'str'
 tesserix_adk.core.claim_handle :: def claim_handle(*, tenant: 'str', run_id: 'str', content: 'str') -> 'str'
+tesserix_adk.core.compatibility_breaks :: def compatibility_breaks(previous: 'Mapping[str, Mapping[str, Any]]', current: 'Mapping[str, Mapping[str, Any]]') -> 'tuple[str, ...]'
 tesserix_adk.core.compensation.Applied :: class Applied(AdkModel)
 tesserix_adk.core.compensation.CompensatedFailure :: class CompensatedFailure(AdkModel)
 tesserix_adk.core.compensation.Compensating :: class Compensating(Protocol) {compensate(self, action: 'Applied') -> 'str'}
@@ -1269,12 +1275,21 @@ tesserix_adk.core.errors.ToolTimedOutError :: class ToolTimedOutError(AdkError)
 tesserix_adk.core.errors.TrustBoundaryError :: class TrustBoundaryError(ConfigurationError)
 tesserix_adk.core.errors.UncitedClaimError :: class UncitedClaimError(AdkError)
 tesserix_adk.core.errors.UngroundedCitationError :: class UngroundedCitationError(AdkError)
+tesserix_adk.core.errors.UnknownEventTypeError :: class UnknownEventTypeError(AdkError)
 tesserix_adk.core.errors.UnknownTenantError :: class UnknownTenantError(ConfigurationError)
+tesserix_adk.core.errors.UnsupportedEventVersionError :: class UnsupportedEventVersionError(AdkError)
 tesserix_adk.core.errors.UnsupportedStateVersionError :: class UnsupportedStateVersionError(AdkError)
 tesserix_adk.core.errors.WorkItemNotFoundError :: class WorkItemNotFoundError(AdkError)
 tesserix_adk.core.errors.WorkersBusyError :: class WorkersBusyError(AdkError)
 tesserix_adk.core.errors.WriteQueueFullError :: class WriteQueueFullError(AdkError)
 tesserix_adk.core.evaluate :: def evaluate(result: 'BaseModel', policies: 'Sequence[Policy]') -> 'PolicyReport'
+tesserix_adk.core.event_schema.EVENT_SCHEMAS :: EVENT_SCHEMAS: EventSchemaRegistry
+tesserix_adk.core.event_schema.EventSchemaRegistry :: class EventSchemaRegistry(object) {current_version(self, event_type: 'EventType') -> 'int'; model_for(self, event_type: 'EventType', version: 'int') -> 'type[EventPayload]'; payload_of(self, envelope: 'EventEnvelope') -> 'EventPayload'; read(self, raw: 'str | bytes') -> 'EventEnvelope'; register(self, model: 'type[EventPayload]') -> 'None'; register_upcaster(self, event_type: 'EventType', *, from_version: 'int', upcast: 'Upcaster') -> 'None'; requires(self, event_type: 'EventType') -> 'int'; schemas(self) -> 'dict[str, dict[str, Any]]'; upcast(self, envelope: 'EventEnvelope') -> 'EventEnvelope'; versions(self, event_type: 'EventType') -> 'tuple[int, ...]'}
+tesserix_adk.core.event_schema.Upcaster :: Upcaster: TypeAliasType
+tesserix_adk.core.event_schema.compatibility_breaks :: def compatibility_breaks(previous: 'Mapping[str, Mapping[str, Any]]', current: 'Mapping[str, Mapping[str, Any]]') -> 'tuple[str, ...]'
+tesserix_adk.core.event_schema.event_schemas :: def event_schemas() -> 'dict[str, dict[str, Any]]'
+tesserix_adk.core.event_schema.read_envelope :: def read_envelope(raw: 'str | bytes') -> 'EventEnvelope'
+tesserix_adk.core.event_schemas :: def event_schemas() -> 'dict[str, dict[str, Any]]'
 tesserix_adk.core.events.ALLOWED_ATTRIBUTES :: ALLOWED_ATTRIBUTES: frozenset
 tesserix_adk.core.events.ApprovalDecided :: class ApprovalDecided(EventPayload)
 tesserix_adk.core.events.ApprovalRequested :: class ApprovalRequested(EventPayload)
@@ -1474,6 +1489,7 @@ tesserix_adk.core.queue.WorkPriority :: class WorkPriority(IntEnum)
 tesserix_adk.core.queue.WorkQueue :: class WorkQueue(Protocol) {adopt(self, *, worker: 'str') -> 'tuple[WorkItem, ...]'; claim(self, *, worker: 'str', queue: 'str' = 'default', lease_seconds: 'float | None' = None) -> 'WorkItem | None'; complete(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; dead_letters(self, *, tenant: 'str', limit: 'int' = 50) -> 'tuple[WorkItem, ...]'; enqueue(self, item: 'WorkItem') -> 'WorkItem'; fail(self, item_id: 'str', *, tenant: 'str', worker: 'str', error: 'str', retryable: 'bool' = True) -> 'WorkItem'; heartbeat(self, item_id: 'str', *, tenant: 'str', worker: 'str') -> 'WorkItem'; reap(self) -> 'tuple[WorkItem, ...]'; stats(self, *, queue: 'str' = 'default') -> 'QueueStats'}
 tesserix_adk.core.queue.WorkState :: class WorkState(StrEnum)
 tesserix_adk.core.reach :: def reach(result: 'BaseModel', path: 'str') -> 'object'
+tesserix_adk.core.read_envelope :: def read_envelope(raw: 'str | bytes') -> 'EventEnvelope'
 tesserix_adk.core.redact :: def redact(text: 'str', *, tenant: 'str', detectors: 'Sequence[PIIDetector]' = (PatternDetector('card'), PatternDetector('email'), PatternDetector('iban'), PatternDetector('bearer_token'), PatternDetector('api_key'), PatternDetector('national_id'), PatternDetector('passport'), PatternDetector('phone')), threshold: 'float' = 0.6, allow: 'Iterable[str]' = ()) -> 'Redacted'
 tesserix_adk.core.redaction.MASK :: MASK: str
 tesserix_adk.core.redaction.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple

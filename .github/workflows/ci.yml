@@ -166,6 +166,20 @@ jobs:
       # Prints the added, removed and changed symbols; stays red until the snapshot moves.
       - run: uv run python -m tools.api_surface
 
+  event-schemas:
+    name: event contracts compatible
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      # Names the event, version and field a subscribed consumer could not absorb.
+      - run: uv run python -m tools.event_schemas
+
   typing-gate:
     name: typing escape hatches declared
     runs-on: ubuntu-latest
