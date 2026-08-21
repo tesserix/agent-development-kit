@@ -123,10 +123,12 @@ class EventPayload(AdkModel):
     """What happened, as attributes drawn from the allowlist.
 
     Subclasses declare their own fields; every one of them must be on
-    `ALLOWED_ATTRIBUTES`, which `attributes()` holds them to on the way out.
+    `ALLOWED_ATTRIBUTES`, which `attributes()` holds them to on the way out. A subclass that
+    adds an optional field is the next `version` of the same type — see `event_schema`.
     """
 
     type: ClassVar[EventType]
+    version: ClassVar[int] = 1
 
     def attributes(self) -> dict[str, str]:
         """The body as the envelope carries it: strings, allowlisted, no empties.
@@ -462,6 +464,8 @@ class Eventing:
         Raises:
             ConfigurationError: No tenant is bound, or the payload carries a field the
                 allowlist does not permit.
+            UnknownEventTypeError: The payload's type has no registered schema, so no
+                consumer has been told what it means.
             EventTooLargeError: The event is over the transport's ceiling, under
                 guaranteed delivery.
             EventPublishError: The publisher could not deliver, under guaranteed delivery.
@@ -563,6 +567,7 @@ class Eventing:
         return EventEnvelope(
             event_id=self._identifier(),
             type=payload.type,
+            schema_version=_registered(payload.type),
             occurred_at=self._clock.now(),
             tenant=context.tenant,
             user=context.user or "",
@@ -598,6 +603,17 @@ class Eventing:
             randomness = int.from_bytes(self._entropy(_RANDOM_BITS // 8))
         self._last = (moment, randomness)
         return _base32((moment << _RANDOM_BITS) | randomness)
+
+
+def _registered(event_type: EventType) -> int:
+    """The version to stamp, refusing a type no consumer has a contract for.
+
+    Imported here rather than at module scope because the registry is built from these
+    payload classes.
+    """
+    from tesserix_adk.core.event_schema import EVENT_SCHEMAS
+
+    return EVENT_SCHEMAS.requires(event_type)
 
 
 def _base32(value: int) -> str:

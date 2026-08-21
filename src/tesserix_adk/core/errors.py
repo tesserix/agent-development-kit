@@ -147,7 +147,9 @@ __all__ = [
     "TrustBoundaryError",
     "UncitedClaimError",
     "UngroundedCitationError",
+    "UnknownEventTypeError",
     "UnknownTenantError",
+    "UnsupportedEventVersionError",
     "UnsupportedStateVersionError",
     "WorkItemNotFoundError",
     "WorkersBusyError",
@@ -2951,6 +2953,57 @@ class EventIdReuseError(AdkError):
     Deduplicating on a reissued id would suppress an effect that never happened, which is
     the one failure a dedupe record exists to prevent.
     """
+
+
+class UnknownEventTypeError(AdkError):
+    """Raised when an event names a type this kit has no schema for.
+
+    On the publish side it is a payload nobody registered; on the consume side it is a
+    newer publisher's event type. Either way the message is parked rather than acted on,
+    because a consumer that guesses at an unknown contract is worse than one that stops.
+
+    Args:
+        event_type: What the event called itself.
+    """
+
+    def __init__(self, *args: object, event_type: str = "", tenant: str = "") -> None:
+        self.event_type = event_type
+        super().__init__(*args, tenant=tenant, details={"event_type": event_type})
+
+
+class UnsupportedEventVersionError(AdkError):
+    """Raised when an event's schema version is outside the window this kit can read.
+
+    A version above the window is a newer publisher on the same stream: parking it lets an
+    older consumer keep running instead of crash-looping on every delivery. A version below
+    it is one whose upcaster has been removed at a major.
+
+    Args:
+        event_type: What the event called itself.
+        version: The version it claimed.
+        supported: The versions this kit can read.
+    """
+
+    def __init__(
+        self,
+        *args: object,
+        event_type: str = "",
+        version: int = 0,
+        supported: tuple[int, ...] = (),
+        tenant: str = "",
+    ) -> None:
+        self.event_type = event_type
+        self.version = version
+        self.supported = supported
+        super().__init__(
+            *args,
+            tenant=tenant,
+            details={
+                "event_type": event_type,
+                "version": str(version),
+                "supported": ",".join(str(one) for one in supported),
+            },
+        )
 
 
 class EventTooLargeError(AdkError):

@@ -784,3 +784,32 @@ honester than a stub that would drift from the SDK.
 """
 owner = "@sam123ben"
 review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.core.event_schema.EventSchemaRegistry"
+kind = "json"
+reason = """
+`schemas()` returns JSON Schema documents, whose shape is JSON Schema's rather than this
+kit's. Typing them as a nested structure would be a stub of a spec that already has one.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.core.event_schema.event_schemas"
+kind = "json"
+reason = """
+The generated contracts, as JSON Schema. Same reason as the registry that produces them.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.core.event_schema.compatibility_breaks"
+kind = "json"
+reason = """
+Diffs two JSON Schema documents, one of which was read back from a committed file, so its
+values are whatever JSON holds.
+"""
+owner = "@sam123ben"
+review_by = 2027-08-21
