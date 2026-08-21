@@ -283,10 +283,10 @@ class _Subscription:
 
 @dataclass(slots=True)
 class _DeadLetter:
-    letters: list[tuple[bytes, str]] = field(default_factory=list)
+    letters: list[tuple[bytes, str, tuple[str, ...]]] = field(default_factory=list)
 
-    async def bury(self, payload: bytes, *, reason: str) -> None:
-        self.letters.append((payload, reason))
+    async def bury(self, payload: bytes, *, reason: str, history: tuple[str, ...] = ()) -> None:
+        self.letters.append((payload, reason, history))
 
 
 def _ignored(event: EventEnvelope) -> None:

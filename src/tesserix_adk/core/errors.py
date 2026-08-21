@@ -47,10 +47,12 @@ __all__ = [
     "DelegationError",
     "DelegationLimitError",
     "DependencyCycleError",
+    "DuplicateInFlightError",
     "EmbeddingDimensionError",
     "EmbeddingUnavailableError",
     "EstimateUnavailableError",
     "EvalIncompleteError",
+    "EventIdReuseError",
     "EventLoopStalledError",
     "EventPublishError",
     "EventTooLargeError",
@@ -2933,6 +2935,22 @@ class EventPublishError(AdkError):
     ) -> None:
         self.event_type = event_type
         super().__init__(*args, run_id=run_id, tenant=tenant, details={"event_type": event_type})
+
+
+class DuplicateInFlightError(AdkError):
+    """Raised when another worker of the same consumer group is handling this event now.
+
+    The delivery is left for redelivery rather than acknowledged behind the worker that
+    holds it: acking here would lose the event if that worker then failed.
+    """
+
+
+class EventIdReuseError(AdkError):
+    """Raised when a different event arrives under an id that is already recorded.
+
+    Deduplicating on a reissued id would suppress an effect that never happened, which is
+    the one failure a dedupe record exists to prevent.
+    """
 
 
 class EventTooLargeError(AdkError):
