@@ -71,6 +71,12 @@ from tesserix_adk.adapters.idempotency import (
     PostgresIdempotencyStore,
     RedisIdempotencyStore,
 )
+from tesserix_adk.adapters.idempotent_events import (
+    DEFAULT_DEDUPE_TTL_SECONDS,
+    DEFAULT_MAX_ATTEMPTS,
+    IdempotentConsumer,
+    dedupe_key,
+)
 from tesserix_adk.adapters.isolation import (
     ADAPTER_GUARANTEES,
     ErasureSweep,
@@ -230,10 +236,12 @@ __all__ = [
     "DEFAULT_CHECKPOINT_TABLES",
     "DEFAULT_CHUNK_TABLES",
     "DEFAULT_COLLECTION",
+    "DEFAULT_DEDUPE_TTL_SECONDS",
     "DEFAULT_EVENT_SUBJECT",
     "DEFAULT_GRANT_TABLES",
     "DEFAULT_HEARTBEAT_SECONDS",
     "DEFAULT_LEASE_SECONDS",
+    "DEFAULT_MAX_ATTEMPTS",
     "DEFAULT_NAMESPACE",
     "DEFAULT_PAYLOAD_LIMIT_BYTES",
     "DEFAULT_QUEUE_NAMESPACE",
@@ -287,6 +295,7 @@ __all__ = [
     "GraphitiEngine",
     "HttpPoster",
     "HttpTransport",
+    "IdempotentConsumer",
     "InMemoryLedger",
     "IncomingCall",
     "InspectableRedis",
@@ -376,6 +385,7 @@ __all__ = [
     "agent_gateway_tools",
     "arriving_call",
     "assembled",
+    "dedupe_key",
     "fingerprint",
     "namespaced",
     "open_graphiti",

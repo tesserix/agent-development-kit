@@ -141,10 +141,12 @@ tesserix_adk.adapters.DEFAULT_CHECKPOINT_NAMESPACE :: DEFAULT_CHECKPOINT_NAMESPA
 tesserix_adk.adapters.DEFAULT_CHECKPOINT_TABLES :: DEFAULT_CHECKPOINT_TABLES: CheckpointTables
 tesserix_adk.adapters.DEFAULT_CHUNK_TABLES :: DEFAULT_CHUNK_TABLES: ChunkTables
 tesserix_adk.adapters.DEFAULT_COLLECTION :: DEFAULT_COLLECTION: str
+tesserix_adk.adapters.DEFAULT_DEDUPE_TTL_SECONDS :: DEFAULT_DEDUPE_TTL_SECONDS: float
 tesserix_adk.adapters.DEFAULT_EVENT_SUBJECT :: DEFAULT_EVENT_SUBJECT: str
 tesserix_adk.adapters.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables
 tesserix_adk.adapters.DEFAULT_HEARTBEAT_SECONDS :: DEFAULT_HEARTBEAT_SECONDS: float
 tesserix_adk.adapters.DEFAULT_LEASE_SECONDS :: DEFAULT_LEASE_SECONDS: float
+tesserix_adk.adapters.DEFAULT_MAX_ATTEMPTS :: DEFAULT_MAX_ATTEMPTS: int
 tesserix_adk.adapters.DEFAULT_NAMESPACE :: DEFAULT_NAMESPACE: str
 tesserix_adk.adapters.DEFAULT_PAYLOAD_LIMIT_BYTES :: DEFAULT_PAYLOAD_LIMIT_BYTES: int
 tesserix_adk.adapters.DEFAULT_QUEUE_NAMESPACE :: DEFAULT_QUEUE_NAMESPACE: str
@@ -153,7 +155,7 @@ tesserix_adk.adapters.DEFAULT_STATE_NAMESPACE :: DEFAULT_STATE_NAMESPACE: str
 tesserix_adk.adapters.DEFAULT_STREAM_REQUIREMENT :: DEFAULT_STREAM_REQUIREMENT: StreamRequirement
 tesserix_adk.adapters.DEFAULT_TABLE :: DEFAULT_TABLE: str
 tesserix_adk.adapters.DISTANCE_OPERATORS :: DISTANCE_OPERATORS: dict
-tesserix_adk.adapters.DeadLetter :: class DeadLetter(Protocol) {bury(self, payload: 'bytes', *, reason: 'str') -> 'None'}
+tesserix_adk.adapters.DeadLetter :: class DeadLetter(Protocol) {bury(self, payload: 'bytes', *, reason: 'str', history: 'tuple[str, ...]' = ()) -> 'None'}
 tesserix_adk.adapters.Degraded :: class Degraded(AdkModel)
 tesserix_adk.adapters.DurableConsumer :: class DurableConsumer(object) {consume(self) -> 'int'}
 tesserix_adk.adapters.EXPECTED_AUDIT_SCHEMA :: EXPECTED_AUDIT_SCHEMA: str
@@ -183,6 +185,7 @@ tesserix_adk.adapters.GraphitiEngine :: class GraphitiEngine(object) {commit(sel
 tesserix_adk.adapters.HttpPoster :: class HttpPoster(Protocol) {post(self, url: 'str', *, content: 'bytes', headers: 'Mapping[str, str]') -> 'tuple[int, bytes]'}
 tesserix_adk.adapters.HttpTransport :: class HttpTransport(object) {close(self) -> 'None'; notify(self, method: 'str', params: 'Mapping[str, JsonValue]') -> 'None'; open(self) -> 'None'; request(self, method: 'str', params: 'Mapping[str, JsonValue]', *, timeout_seconds: 'float') -> 'dict[str, JsonValue]'}
 tesserix_adk.adapters.IN_FLIGHT :: IN_FLIGHT: str
+tesserix_adk.adapters.IdempotentConsumer :: class IdempotentConsumer(object) {handle(self, event: 'EventEnvelope') -> 'None'}
 tesserix_adk.adapters.InMemoryLedger :: class InMemoryLedger(object) {break_with(self, failure: 'BudgetUnavailableError') -> 'None'; forget(self, tenant: 'str') -> 'WindowSpend'; read_window(self, key: 'LedgerKey') -> 'WindowSpend'; reconcile(self) -> 'int'; record_progress(self, reservation: 'Reservation', spent: 'Decimal') -> 'None'; release(self, reservation: 'Reservation') -> 'None'; reserve(self, key: 'LedgerKey', amount: 'Decimal', *, ceiling: 'Decimal', lease_seconds: 'float' = 300.0) -> 'Reservation'; settle(self, reservation: 'Reservation', actual: 'Decimal') -> 'None'}
 tesserix_adk.adapters.IncomingCall :: class IncomingCall(object) {bound(self) -> 'Iterator[TenantContext]'}
 tesserix_adk.adapters.InspectableRedis :: class InspectableRedis(Protocol) {config_get(self, pattern: 'str') -> 'Mapping[str, str]'; eval(self, script: 'str', numkeys: 'int', *args: 'str') -> 'Any'}
@@ -310,6 +313,7 @@ tesserix_adk.adapters.checkpoints.PostgresCheckpointStore :: class PostgresCheck
 tesserix_adk.adapters.checkpoints.PostgresLeaseStore :: class PostgresLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
 tesserix_adk.adapters.checkpoints.RedisCheckpointStore :: class RedisCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
 tesserix_adk.adapters.checkpoints.RedisLeaseStore :: class RedisLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
+tesserix_adk.adapters.dedupe_key :: def dedupe_key(*, group: 'str', event: 'EventEnvelope') -> 'str'
 tesserix_adk.adapters.eventing.payload_of :: def payload_of(event: 'ProgressEvent') -> 'EventPayload | None'
 tesserix_adk.adapters.eventing.publishing :: def publishing(stream: 'RunStream[OutputT]', eventing: 'Eventing') -> 'AsyncIterator[ProgressEvent]'
 tesserix_adk.adapters.fingerprint :: def fingerprint(descriptor: 'McpToolDescriptor') -> 'str'
@@ -338,6 +342,10 @@ tesserix_adk.adapters.graph.open_graphiti :: def open_graphiti(settings: 'GraphS
 tesserix_adk.adapters.idempotency.IN_FLIGHT :: IN_FLIGHT: str
 tesserix_adk.adapters.idempotency.PostgresIdempotencyStore :: class PostgresIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; ensure_schema(self) -> 'None'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
 tesserix_adk.adapters.idempotency.RedisIdempotencyStore :: class RedisIdempotencyStore(object) {abandon(self, key: 'str', *, tenant: 'str') -> 'None'; begin(self, key: 'str', *, tenant: 'str', ttl_seconds: 'float') -> 'Claim'; forget(self, *, tenant: 'str') -> 'int'; record(self, key: 'str', *, tenant: 'str', outcome: 'str', ttl_seconds: 'float') -> 'None'}
+tesserix_adk.adapters.idempotent_events.DEFAULT_DEDUPE_TTL_SECONDS :: DEFAULT_DEDUPE_TTL_SECONDS: float
+tesserix_adk.adapters.idempotent_events.DEFAULT_MAX_ATTEMPTS :: DEFAULT_MAX_ATTEMPTS: int
+tesserix_adk.adapters.idempotent_events.IdempotentConsumer :: class IdempotentConsumer(object) {handle(self, event: 'EventEnvelope') -> 'None'}
+tesserix_adk.adapters.idempotent_events.dedupe_key :: def dedupe_key(*, group: 'str', event: 'EventEnvelope') -> 'str'
 tesserix_adk.adapters.isolation.ADAPTER_GUARANTEES :: ADAPTER_GUARANTEES: dict
 tesserix_adk.adapters.isolation.ErasureSweep :: class ErasureSweep(AdkModel)
 tesserix_adk.adapters.isolation.IsolationGuarantee :: class IsolationGuarantee(AdkModel) {statement(self) -> 'str'}
@@ -347,7 +355,7 @@ tesserix_adk.adapters.isolation.PartitionMechanism :: class PartitionMechanism(S
 tesserix_adk.adapters.isolation.partitioned :: def partitioned(items: 'Iterable[ItemT]', *, tenant_of: 'Callable[[ItemT], str]') -> 'dict[str, list[ItemT]]'
 tesserix_adk.adapters.jetstream.DEFAULT_EVENT_SUBJECT :: DEFAULT_EVENT_SUBJECT: str
 tesserix_adk.adapters.jetstream.DEFAULT_STREAM_REQUIREMENT :: DEFAULT_STREAM_REQUIREMENT: StreamRequirement
-tesserix_adk.adapters.jetstream.DeadLetter :: class DeadLetter(Protocol) {bury(self, payload: 'bytes', *, reason: 'str') -> 'None'}
+tesserix_adk.adapters.jetstream.DeadLetter :: class DeadLetter(Protocol) {bury(self, payload: 'bytes', *, reason: 'str', history: 'tuple[str, ...]' = ()) -> 'None'}
 tesserix_adk.adapters.jetstream.DurableConsumer :: class DurableConsumer(object) {consume(self) -> 'int'}
 tesserix_adk.adapters.jetstream.JetStreamContext :: class JetStreamContext(Protocol) {publish(self, subject: 'str', payload: 'bytes', *, headers: 'Mapping[str, str] | None' = None, timeout: 'float | None' = None) -> 'PublishAck'; stream_info(self, name: 'str') -> 'Any'}
 tesserix_adk.adapters.jetstream.JetStreamEventPublisher :: class JetStreamEventPublisher(object) {flush(self) -> 'None'; publish(self, event: 'EventEnvelope') -> 'None'; publish_batch(self, events: 'tuple[EventEnvelope, ...]') -> 'None'; verify(self) -> 'None'}
@@ -654,6 +662,7 @@ tesserix_adk.core.DeprecationPolicyError :: class DeprecationPolicyError(AdkErro
 tesserix_adk.core.Dispatch :: class Dispatch(Generic) {run(self) -> 'DispatchResult[T]'}
 tesserix_adk.core.DispatchNode :: class DispatchNode(Generic)
 tesserix_adk.core.DispatchResult :: class DispatchResult(Generic) {value(self, name: 'str') -> 'T'}
+tesserix_adk.core.DuplicateInFlightError :: class DuplicateInFlightError(AdkError)
 tesserix_adk.core.EVENT_SCHEMA_VERSION :: EVENT_SCHEMA_VERSION: int
 tesserix_adk.core.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
@@ -662,6 +671,7 @@ tesserix_adk.core.EnvironmentSecrets :: class EnvironmentSecrets(object) {resolv
 tesserix_adk.core.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
 tesserix_adk.core.EvalIncompleteError :: class EvalIncompleteError(AdkError)
 tesserix_adk.core.EventEnvelope :: class EventEnvelope(AdkModel) {to_json(self) -> 'str'}
+tesserix_adk.core.EventIdReuseError :: class EventIdReuseError(AdkError)
 tesserix_adk.core.EventLoopStalledError :: class EventLoopStalledError(AdkError)
 tesserix_adk.core.EventPayload :: class EventPayload(AdkModel) {attributes(self) -> 'dict[str, str]'}
 tesserix_adk.core.EventPublishError :: class EventPublishError(AdkError)
@@ -1140,10 +1150,12 @@ tesserix_adk.core.errors.CredentialExpiredError :: class CredentialExpiredError(
 tesserix_adk.core.errors.DelegationError :: class DelegationError(AdkError)
 tesserix_adk.core.errors.DelegationLimitError :: class DelegationLimitError(LoopLimitError)
 tesserix_adk.core.errors.DependencyCycleError :: class DependencyCycleError(ConfigurationError)
+tesserix_adk.core.errors.DuplicateInFlightError :: class DuplicateInFlightError(AdkError)
 tesserix_adk.core.errors.EmbeddingDimensionError :: class EmbeddingDimensionError(AdkError)
 tesserix_adk.core.errors.EmbeddingUnavailableError :: class EmbeddingUnavailableError(AdkError)
 tesserix_adk.core.errors.EstimateUnavailableError :: class EstimateUnavailableError(AdkError)
 tesserix_adk.core.errors.EvalIncompleteError :: class EvalIncompleteError(AdkError)
+tesserix_adk.core.errors.EventIdReuseError :: class EventIdReuseError(AdkError)
 tesserix_adk.core.errors.EventLoopStalledError :: class EventLoopStalledError(AdkError)
 tesserix_adk.core.errors.EventPublishError :: class EventPublishError(AdkError)
 tesserix_adk.core.errors.EventTooLargeError :: class EventTooLargeError(AdkError)

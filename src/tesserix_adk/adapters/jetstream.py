@@ -115,8 +115,8 @@ class PullSubscription(Protocol):
 class DeadLetter(Protocol):
     """Where a message that will never be handled goes, instead of round again."""
 
-    async def bury(self, payload: bytes, *, reason: str) -> None:
-        """Keep `payload` where somebody can look at it."""
+    async def bury(self, payload: bytes, *, reason: str, history: tuple[str, ...] = ()) -> None:
+        """Keep `payload` where somebody can look at it, with what went wrong."""
         ...
 
 

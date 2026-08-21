@@ -182,6 +182,7 @@ code lands here as the kit is built.
 | Versioned persisted state — envelopes, canonical bytes, migrations on read, and what a rolling deploy may not lose | [`docs/state-versioning.md`](docs/state-versioning.md) |
 | Events — one contract for agent activity, an allowlisted body that cannot carry content, and what a broker being down means | [`docs/events.md`](docs/events.md) |
 | Events on JetStream — deduplicated publishes, a stream checked before the first event, and durable consumption with a dead letter | [`docs/jetstream-events.md`](docs/jetstream-events.md) |
+| Idempotent consumption — one effect per event under at-least-once delivery, and what happens to a message nothing can handle | [`docs/idempotent-consumption.md`](docs/idempotent-consumption.md) |
 | Credential refresh — one mint inside the skew window, authority re-derived rather than renewed, a revoked caller that halts | [`docs/credential-refresh.md`](docs/credential-refresh.md) |
 | Store isolation — the partition derived from context rather than passed, a mismatched row withheld, guarantees stated with their limits | [`docs/store-isolation.md`](docs/store-isolation.md) |
 | Proving isolation — two tenants seeded with confusable data, markers that survive summarising, surfaces nobody read counted as a failure | [`docs/isolation-suite.md`](docs/isolation-suite.md) |
