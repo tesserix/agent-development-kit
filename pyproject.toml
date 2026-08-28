@@ -66,7 +66,7 @@ default-groups = ["dev", "test"]
 [dependency-groups]
 dev = [
   "ruff>=0.14,<0.15",
-  "mypy>=1.18,<2",
+  "mypy>=1.18,<3",
   "import-linter>=2.3,<3",
   "pre-commit>=4,<5",
   # tools/downstream.py parses a JUnit report written by another repository's CI.
