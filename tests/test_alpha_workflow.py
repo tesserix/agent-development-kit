@@ -70,6 +70,26 @@ class TestVersioning:
         checkout = next(step for step in steps("build") if "checkout" in str(step.get("uses")))
         assert checkout["with"]["fetch-depth"] == 0
 
+    def test_the_build_rechecks_for_a_release_tag_after_waiting_for_the_gates(self) -> None:
+        build = alpha_jobs()["build"]
+        listed = steps("build")
+        recheck = next(
+            index
+            for index, step in enumerate(listed)
+            if "describe --exact-match" in str(step.get("run", ""))
+        )
+        version = next(
+            index for index, step in enumerate(listed) if "tools.alpha" in str(step.get("run", ""))
+        )
+
+        assert recheck < version
+        assert build["outputs"]["alpha"] == "${{ steps.recheck.outputs.alpha }}"
+        assert all(
+            step.get("if") == "steps.recheck.outputs.alpha == 'true'"
+            for step in listed[recheck + 1 :]
+        )
+        assert "needs.build.outputs.alpha == 'true'" in alpha_jobs()["publish"]["if"]
+
 
 class TestPublishing:
     def test_publishing_uses_a_minted_token_not_a_stored_one(self) -> None:
