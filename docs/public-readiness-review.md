@@ -174,7 +174,7 @@ the requirement, not because both projects share three initials.
 Final verification on 2026-08-28 used Python 3.13.15:
 
 - `make check`: passed all lint, formatting, import-boundary, strict typing, dependency,
-  API, event, replay, release, documentation, and test gates; 9,122 tests passed, 2 were
+  API, event, replay, release, documentation, and test gates; 9,126 tests passed, 2 were
   skipped, 125 were deselected by the coverage profile, and total coverage was 99.07%.
 - `make audit`, `make secrets`, and `make licences`: passed with no locked advisories,
   credential-shaped values, or licence-policy violations.

@@ -15,7 +15,9 @@ closes everything it opened — because a pool nobody closes is the leak this ex
 from __future__ import annotations
 
 import hashlib
+import hmac
 import os
+import secrets
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Self
@@ -33,6 +35,7 @@ if TYPE_CHECKING:
 __all__ = ["ClientKey", "ClientPool", "PoolConfig", "PoolMetrics"]
 
 _DIGEST_CHARACTERS = 16
+_DIGEST_KEY = secrets.token_bytes(32)
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,13 +132,15 @@ class ClientKey:
 
 
 def digest_of(credential: str) -> str:
-    """A short, stable digest of a credential, safe to log and to compare.
+    """A short process-scoped credential fingerprint, safe to log and compare.
 
     Example:
         >>> digest_of("sk-abc") == digest_of("sk-abc")
         True
     """
-    return hashlib.sha256(credential.encode()).hexdigest()[:_DIGEST_CHARACTERS]
+    return hmac.new(_DIGEST_KEY, credential.encode(), hashlib.sha256).hexdigest()[
+        :_DIGEST_CHARACTERS
+    ]
 
 
 @dataclass(frozen=True, slots=True)

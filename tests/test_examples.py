@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from examples.secret_refs import ENVIRONMENT
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "examples"
@@ -34,6 +35,19 @@ def test_the_getting_started_example_needs_no_credentials() -> None:
     """A first run that demands an API key is a first run nobody completes."""
     source = (EXAMPLES / "getting_started.py").read_text(encoding="utf-8")
     assert "api_key" not in source
+
+
+def test_the_secret_reference_example_never_prints_a_resolved_secret() -> None:
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(EXAMPLES / "secret_refs.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=ROOT,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert all(secret not in result.stdout for secret in ENVIRONMENT.values())
 
 
 def test_the_getting_started_example_runs_a_custom_agent_through_the_public_surface() -> None:

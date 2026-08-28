@@ -72,7 +72,11 @@ class TestTheFixtures:
     def test_the_shipped_fixtures_carry_nothing_real(self) -> None:
         for fixture in CONFUSABLE_FIXTURES:
             for document in fixture.documents:
-                assert "@" not in document.body or "example.com" in document.body
+                addresses = [word for word in document.body.split() if "@" in word]
+                for address in addresses:
+                    _, separator, domain = address.strip(".,;:!?()[]{}<>\"'").rpartition("@")
+                    assert separator
+                    assert domain == "example.com"
 
     def test_a_scenario_with_one_tenant_is_refused(self) -> None:
         """One tenant is exactly the suite that misses this class of defect."""
