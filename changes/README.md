@@ -33,4 +33,7 @@ subject is enough for the notes. A fragment is what you write when the subject i
 enough, and it is **required** for anything breaking, because that is where the migration
 note lives.
 
+Write local Markdown links relative to the fragment. The release assembler rebases them
+to the repository root when it folds the fragment into `CHANGELOG.md`.
+
 Full policy: [`docs/releasing.md`](../docs/releasing.md#release-notes).
