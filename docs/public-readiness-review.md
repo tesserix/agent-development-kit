@@ -193,5 +193,5 @@ Final verification for the Google ADK/A2A bridge on 2026-08-28 used Python 3.13.
   route, request handler, task store, Tesserix executor, runner, and final artifact. Google
   ADK 2.8.0 accepted the same official card through its current non-legacy A2A path.
 
-These source and artifact checks do not replace the unchecked PyPI or external clean-room
-actions in the launch checklist.
+These source and artifact checks do not replace the unchecked PyPI trusted-publisher and
+package-ownership actions in the launch checklist.
