@@ -21,6 +21,7 @@ from tesserix_adk.core.models import AdkModel
 
 if TYPE_CHECKING:
     from tesserix_adk.core.definition import AgentDefinition
+    from tesserix_adk.core.models import OutputT
 
 __all__ = [
     "PortableAgentManifest",
@@ -254,7 +255,7 @@ class PortableAgentManifest(AdkModel):
 
 
 def export_tesserix_agent(
-    definition: AgentDefinition[Any],
+    definition: AgentDefinition[OutputT],
     *,
     namespace: str,
     runtime: PortableRuntime,
