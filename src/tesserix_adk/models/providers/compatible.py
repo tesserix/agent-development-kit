@@ -34,7 +34,17 @@ if TYPE_CHECKING:
     from tesserix_adk.core.provider import ModelRequest
     from tesserix_adk.core.streaming import StreamEvent
 
-__all__ = ["OLLAMA", "TGI", "VLLM", "CompatibilityPreset", "OpenAICompatibleProvider"]
+__all__ = [
+    "GROK",
+    "GROQ",
+    "OLLAMA",
+    "OPENROUTER",
+    "TGI",
+    "VLLM",
+    "XAI",
+    "CompatibilityPreset",
+    "OpenAICompatibleProvider",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +61,12 @@ class CompatibilityPreset:
             Servers that do not may reject the whole body over the unknown field.
         mints_tool_call_ids: Whether the server omits ids on tool calls. It has to have
             one to match a result back to, so the adapter supplies what the server did not.
+        completions_path: The provider's Chat Completions endpoint. Hosted compatible
+            APIs commonly add a prefix that an absolute `/v1` path would otherwise drop.
+        base_url: The provider's usual public endpoint. Empty for an operator-run service
+            whose address cannot be guessed.
+        api_key_variable: The provider's usual environment variable. `None` means the
+            endpoint is unauthenticated unless the caller names one.
         timeout: Seconds for one request. Longer than a hosted vendor's, because the
             first token from a cold self-hosted model waits for the weights to load.
     """
@@ -59,6 +75,9 @@ class CompatibilityPreset:
     strict_schemas: bool = False
     stream_usage_option: bool = True
     mints_tool_call_ids: bool = False
+    completions_path: str = COMPLETIONS_PATH
+    base_url: str = ""
+    api_key_variable: str | None = None
     timeout: float = 120.0
 
 
@@ -67,6 +86,27 @@ OLLAMA = CompatibilityPreset(
     name="ollama", stream_usage_option=False, mints_tool_call_ids=True, timeout=300.0
 )
 TGI = CompatibilityPreset(name="tgi", stream_usage_option=False, timeout=120.0)
+GROQ = CompatibilityPreset(
+    name="groq",
+    completions_path="/openai/v1/chat/completions",
+    base_url="https://api.groq.com",
+    api_key_variable="GROQ_API_KEY",
+    timeout=60.0,
+)
+XAI = CompatibilityPreset(
+    name="xai",
+    base_url="https://api.x.ai",
+    api_key_variable="XAI_API_KEY",
+    timeout=60.0,
+)
+GROK = XAI
+OPENROUTER = CompatibilityPreset(
+    name="openrouter",
+    completions_path="/api/v1/chat/completions",
+    base_url="https://openrouter.ai",
+    api_key_variable="OPENROUTER_API_KEY",
+    timeout=60.0,
+)
 
 _DEFAULT = CompatibilityPreset(name="openai-compatible")
 
@@ -76,18 +116,20 @@ class OpenAICompatibleProvider(OpenAIProvider):
 
     Args:
         model: The model id the server was started with.
-        base_url: Where it answers. In-cluster service DNS is the expected form; there
-            is no default, because the kit cannot guess a name only the operator knows.
+        base_url: Where it answers. Hosted presets supply their public endpoint; an
+            operator-run service still requires its in-cluster or gateway address.
         capabilities: What the deployment can do. Required.
         preset: Which server it is, and so which deviations to expect.
         name: Overrides the preset's name, for one of several deployments.
         api_key_variable: The variable holding the key, where the endpoint wants one.
-            `None` sends no `Authorization` header at all, which is the in-cluster case.
+            `None` uses the preset's variable; an empty string disables authentication.
         emulates: Whether the kit may stand in for a capability the endpoint has not
             declared. Off, because asking a small model for JSON in the prompt produces
             a schema enforced by nobody.
         secrets: Where the key comes from. Defaults to the environment.
         timeout: Seconds for one request. Defaults to the preset's.
+        headers: Static gateway or attribution headers. `Authorization` and
+            `Content-Type` remain owned by the adapter and cannot be overridden here.
         transport: An injected `httpx` transport, for tests and for a caller's own proxy.
 
     Raises:
@@ -102,7 +144,7 @@ class OpenAICompatibleProvider(OpenAIProvider):
         self,
         model: str,
         *,
-        base_url: str,
+        base_url: str | None = None,
         capabilities: ModelCapabilities | None,
         preset: CompatibilityPreset = _DEFAULT,
         name: str | None = None,
@@ -110,9 +152,11 @@ class OpenAICompatibleProvider(OpenAIProvider):
         emulates: bool = False,
         secrets: SecretProvider | None = None,
         timeout: float | None = None,
+        headers: Mapping[str, str] | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
-        if not base_url.strip():
+        resolved_base_url = preset.base_url if base_url is None else base_url
+        if not resolved_base_url.strip():
             raise ConfigurationError(
                 "an OpenAI-compatible provider needs a base_url; there is no default host "
                 "for a service only the operator has named"
@@ -126,13 +170,21 @@ class OpenAICompatibleProvider(OpenAIProvider):
         self.provider_name = name or preset.name
         self._preset = preset
         self._emulates = emulates
-        self._authenticated = api_key_variable is not None
+        resolved_key_variable = (
+            preset.api_key_variable if api_key_variable is None else api_key_variable
+        )
+        self._authenticated = bool(resolved_key_variable)
+        self._extra_headers = {
+            key: value
+            for key, value in (headers or {}).items()
+            if key.lower() not in {"authorization", "content-type"}
+        }
         super().__init__(
             model,
             capabilities=capabilities,
             secrets=secrets,
-            api_key_variable=api_key_variable or f"{self.provider_name.upper()}_API_KEY",
-            base_url=base_url,
+            api_key_variable=resolved_key_variable or "",
+            base_url=resolved_base_url,
             timeout=preset.timeout if timeout is None else timeout,
             transport=transport,
         )
@@ -152,7 +204,9 @@ class OpenAICompatibleProvider(OpenAIProvider):
             ModelResponseError: If the body cannot be read as a completion.
         """
         body = await self._post(
-            COMPLETIONS_PATH, self._payload(request), cost=self.count_tokens(request.messages)
+            self._preset.completions_path,
+            self._payload(request),
+            cost=self.count_tokens(request.messages),
         )
         _refuse_an_error_in_the_body(body, self.provider_name)
         answered = self._settled(self._completion(body), request)
@@ -173,7 +227,10 @@ class OpenAICompatibleProvider(OpenAIProvider):
             payload["stream_options"] = {"include_usage": True}
         return self._counted(
             self._streamed(
-                COMPLETIONS_PATH, payload, request=request, state=_Stream(self.provider_name)
+                self._preset.completions_path,
+                payload,
+                request=request,
+                state=_Stream(self.provider_name),
             ),
             request,
         )
@@ -191,7 +248,7 @@ class OpenAICompatibleProvider(OpenAIProvider):
 
     def _headers(self) -> dict[str, str]:
         """Send a key only where one was named: an in-cluster endpoint wants none."""
-        headers = {"content-type": "application/json"}
+        headers = {**self._extra_headers, "content-type": "application/json"}
         if self._authenticated:
             headers["authorization"] = f"Bearer {self._credential.value()}"
         return headers

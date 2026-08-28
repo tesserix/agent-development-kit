@@ -1,0 +1,110 @@
+site_name: Tesserix Agent Development Kit
+site_description: Typed, provider-neutral Python infrastructure for production AI agents.
+site_url: https://tesserix.github.io/agent-development-kit/
+repo_url: https://github.com/tesserix/agent-development-kit
+repo_name: tesserix/agent-development-kit
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 Tesserix
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Use dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Use light mode
+
+nav:
+  - Home: index.md
+  - Start:
+      - Getting started: getting-started.md
+      - Build a custom agent: custom-agent.md
+      - Provider recipes: provider-recipes.md
+      - Integrations and gateways: integrations.md
+      - Official A2A: a2a.md
+      - Testing: testing.md
+      - Keep agents current: keeping-current.md
+  - Understand:
+      - Architecture: architecture.md
+      - Core primitives: primitives.md
+      - Providers and capabilities: providers.md
+      - Tools: tools.md
+      - Run loop: run-loop.md
+      - Tenancy: tenancy.md
+      - Protocols: protocols.md
+  - Connect:
+      - MCP client: mcp-client.md
+      - MCP transports: mcp-transports.md
+      - AgentGateway: agentgateway.md
+      - Tesserix agent cards: agent-cards.md
+      - Peer discovery: peer-discovery.md
+      - Peer invocation: peer-invocation.md
+      - State adapters: state-adapters.md
+      - Durable runs: durable-runs.md
+  - Operate:
+      - Reliability: resilience.md
+      - Idempotency: idempotency.md
+      - Budgets: budget.md
+      - Guardrails: guardrails.md
+      - Threat model: threat-model.md
+      - Observability: auto-instrumentation.md
+      - Evaluation datasets: eval-datasets.md
+      - Release verification: verifying.md
+  - Project:
+      - Public-readiness review: public-readiness-review.md
+      - Repository governance: repository-governance.md
+      - Stability: stability.md
+      - Detailed contribution guide: contributing.md
+      - Releasing: releasing.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+validation:
+  nav:
+    omitted_files: ignore
+    not_found: warn
+  links:
+    # MkDocs cannot resolve links to source/examples outside docs/. The repository-wide
+    # link test resolves those against the checkout, while MkDocs still validates anchors.
+    not_found: info
+    anchors: warn
+    unrecognized_links: warn
+
+strict: true

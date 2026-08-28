@@ -168,7 +168,7 @@ before its first call — resolving twice would make one record describe two run
   it never declared is treated as not supporting it.
 
 See also [`docs/providers.md`](providers.md) for what a candidate declares, and
-[`examples/routing.py`](../examples/routing.py) for a runnable walk-through.
+[`examples/routing.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/routing.py) for a runnable walk-through.
 
 ## Where a model may be used
 

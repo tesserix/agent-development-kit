@@ -142,5 +142,5 @@ No network, no model, nothing that only passes against this implementation.
   an approval-required tool, is a major version. There is no configuration that turns
   either off.
 
-Run [`examples/tool_results.py`](../examples/tool_results.py) for the envelope, the
+Run [`examples/tool_results.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/tool_results.py) for the envelope, the
 heuristics, the policies and the refusal end to end.

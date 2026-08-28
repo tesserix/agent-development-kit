@@ -16,6 +16,7 @@ venv/
 .coverage
 coverage.xml
 htmlcov/
+site/
 .tox/
 .nox/
 
@@ -34,3 +35,6 @@ uv.lock.bak
 
 # Local session history
 .remember/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+graft/

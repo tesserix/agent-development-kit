@@ -41,6 +41,14 @@ def test_the_version_names_a_release() -> None:
     assert parts(__version__) >= (0, 0, 1)
 
 
+def test_the_getting_started_types_are_available_from_one_curated_import() -> None:
+    done = _imports(
+        "from tesserix_adk import Agent, AgentRunner, ToolRegistry, tool; "
+        "assert Agent and AgentRunner and ToolRegistry and tool"
+    )
+    assert done.returncode == 0, done.stderr
+
+
 def test_reaching_for_a_fake_does_not_import_the_test_runner() -> None:
     """`pytest` is a test-time dependency nobody installing the wheel is given, and
     importing it from a package `__init__` makes every fake unreachable without it."""

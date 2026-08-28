@@ -1,0 +1,18 @@
+package = "a2a-sdk"
+profile = "extra:a2a"
+decided = 2026-08-28
+owner = "@sam123ben"
+need = "Emit and consume official A2A 1.x protobuf and JSON wire types without maintaining a divergent protocol implementation."
+alternatives = '''
+Hand-writing the Agent Card and JSON-RPC shapes was considered and rejected. The A2A
+specification evolves independently, and a locally copied schema can look valid while
+being rejected by conforming clients. The reference SDK stays behind an optional extra
+and the adapter returns its native types, so consumers not using A2A inherit none of it.
+'''
+maintenance = "Active reference SDK maintained by the A2A project and released with the protocol."
+licence = "Apache-2.0"
+transitive = 11
+native_build = false
+security_history = "No unfixed advisory was reported by the repository audit at admission time."
+review_by = 2027-02-28
+notes = "The client-only default dependency graph is sizeable and includes Google API/protobuf packages; server, signing, database, and gRPC extras are deliberately not inherited. Re-review in six months because the SDK and 1.x protocol are young."

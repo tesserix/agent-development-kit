@@ -98,4 +98,4 @@ did not know about, which is why it is asked for rather than assumed.
 - **Loading is somebody else's job.** A `Document` is text that has already been extracted.
   PDF, HTML and office loaders are not in the kit.
 
-A runnable walkthrough: [`examples/chunking.py`](../examples/chunking.py).
+A runnable walkthrough: [`examples/chunking.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/chunking.py).

@@ -115,4 +115,4 @@ amount of waiting would make room for it.
 A caller cancelled while waiting spends nothing: a cancelled call never reaches the
 vendor, so it never used the allowance.
 
-Runnable: [`examples/resilience.py`](../examples/resilience.py).
+Runnable: [`examples/resilience.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/resilience.py).

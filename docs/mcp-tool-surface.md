@@ -92,8 +92,8 @@ description is not drift and a new required field is.
 
 ## Reading the surface
 
-`ToolSurface.report()` is one line per tool — server, its own name, our name, fingerprint —
-and `adk surface` prints it for a running deployment:
+`ToolSurface.report()` is one line per tool — server, its own name, our name, fingerprint.
+An embedding product can pass its resolver to `surface_main` and expose `adk surface`:
 
 ```
 $ adk surface

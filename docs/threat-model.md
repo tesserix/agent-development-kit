@@ -103,6 +103,6 @@ Stated plainly, because each of these has been mistaken for a guarantee before:
 ## Reporting
 
 A flaw in one of the guarantees above is in scope for
-[the security policy](../SECURITY.md). Something listed under *does not defend against*
+[the security policy](https://github.com/tesserix/agent-development-kit/blob/main/SECURITY.md). Something listed under *does not defend against*
 is a design boundary rather than a vulnerability — if you think a boundary is drawn in
 the wrong place, that is a discussion worth having in a public issue.

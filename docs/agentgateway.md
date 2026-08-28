@@ -20,11 +20,14 @@ rate limiting, and telemetry.
 
 ## Configure and adopt tools
 
-Install the optional integration first:
+Install the optional integration in a source checkout first:
 
 ```bash
-uv add 'tesserix-adk[mcp]'
+uv sync --frozen --extra mcp
 ```
+
+For an application dependency, add `mcp` to the exact tagged artifact selected through
+[Keep agents current safely](keeping-current.md).
 
 Build configuration from the same deployment source that owns the Agentic Registry and
 AgentGateway declarations. Each description is operator-authored text that may enter a

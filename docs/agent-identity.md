@@ -98,4 +98,4 @@ so a declaration written defensively can be cut back with evidence rather than b
 
 - [`docs/tool-allowlists.md`](tool-allowlists.md) — which tools exist for this run at all
 - [`docs/tenancy.md`](tenancy.md) — the tenant the principal acts within
-- [`examples/agent_identity.py`](../examples/agent_identity.py)
+- [`examples/agent_identity.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/agent_identity.py)

@@ -93,4 +93,4 @@ activities, so `make replay-check` needs no worker, no broker and no network.
 ## Related
 
 - [Durable runs](durable-runs.md) — the workflow and activity split these rules protect.
-- [`examples/replay_guard.py`](../examples/replay_guard.py) — a runnable walk through both halves.
+- [`examples/replay_guard.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/replay_guard.py) — a runnable walk through both halves.

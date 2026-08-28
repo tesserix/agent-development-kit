@@ -130,7 +130,7 @@ For tests that need no provider at all, `ScriptedProvider` declares its capabili
 explicitly — `capabilities=CAPABLE.declaring(structured_output=True)` — so capability
 gating can be proven without a network.
 
-Runnable: [`examples/providers.py`](../examples/providers.py).
+Runnable: [`examples/providers.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/providers.py).
 
 ## The vendor adapters
 
@@ -195,7 +195,40 @@ provider = OpenAIProvider(
 dropped system prompt or a mis-shaped tool result is caught — a provider-level recording
 cannot see any of it, because by then the translation has already happened.
 
-Runnable: [`examples/vendor_providers.py`](../examples/vendor_providers.py).
+Runnable: [`examples/vendor_providers.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/vendor_providers.py).
+
+## Hosted OpenAI-compatible APIs
+
+Groq, xAI/Grok, and OpenRouter use the compatible adapter with reviewed endpoint and
+credential presets:
+
+```python
+from tesserix_adk.core import ModelCapabilities
+from tesserix_adk.models.providers import GROQ, OpenAICompatibleProvider
+
+provider = OpenAICompatibleProvider(
+    "your-groq-model",
+    preset=GROQ,
+    capabilities=ModelCapabilities(
+        tool_calling=True,
+        streaming=True,
+        context_window_tokens=32_000,
+    ),
+)
+```
+
+| Preset | Completion URL | Credential |
+|---|---|---|
+| `GROQ` | `https://api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` |
+| `XAI` / `GROK` | `https://api.x.ai/v1/chat/completions` | `XAI_API_KEY` |
+| `OPENROUTER` | `https://openrouter.ai/api/v1/chat/completions` | `OPENROUTER_API_KEY` |
+
+Capabilities remain per deployed model. A router serving hundreds of models does not have
+one capability record. Static routing/attribution headers are supported, while
+`Authorization` and `Content-Type` remain owned by the adapter.
+
+Copyable recipes, including custom gateway paths, are in
+[Provider recipes](provider-recipes.md).
 
 ## Endpoints you run yourself
 
@@ -267,4 +300,8 @@ What every other vendor failure arrives as, what it carries and what it delibera
 not, and the timeouts and rate limiting in front of the call, are in
 [resilience.md](resilience.md).
 
-Runnable: [`examples/self_hosted_provider.py`](../examples/self_hosted_provider.py).
+Runnable: [`examples/self_hosted_provider.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/self_hosted_provider.py).
+
+Azure OpenAI, Amazon Bedrock, Vertex AI, and other APIs with different authentication,
+paths, payloads, or streaming contracts need dedicated `ModelProvider` adapters.
+Changing `base_url` alone does not make another wire protocol compatible.

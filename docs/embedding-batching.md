@@ -80,4 +80,4 @@ locally with `ContextWindowExceededError` before it can poison a batch at all.
 `requests` against `batches` is the compression the window is buying; `flushed_due`
 dominating `flushed_full` means the window is longer than the work needs.
 
-Runnable version: [`examples/embedding_batching.py`](../examples/embedding_batching.py).
+Runnable version: [`examples/embedding_batching.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/embedding_batching.py).

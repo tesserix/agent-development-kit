@@ -87,17 +87,18 @@ is a kit teams copy snippets out of instead of installing.
 
 | Extra | Installs | Import name |
 |---|---|---|
+| `a2a` | `a2a-sdk` | `a2a` |
 | `mcp` | `mcp` | `mcp` |
 | `temporal` | `temporalio` | `temporalio` |
 | `graphiti` | `graphiti-core` | `graphiti_core` |
 | `redis` | `redis` | `redis` |
 | `postgres` | `psycopg[binary,pool]` | `psycopg` |
-| `all` | the five above, as a self-reference | — |
+| `all` | the six above, as a self-reference | — |
 
 `tests/test_extras.py` enforces the rule from both ends: the base requirement set is
 exactly those three, the locked base graph stays under a transitive package ceiling, and
 importing every module in the kit in a fresh interpreter must leave `sys.modules` free of
-all five SDKs — asserted that way so it holds in the `all` leg too, where the wheels are
+all six SDKs — asserted that way so it holds in the `all` leg too, where the wheels are
 installed but must still go untouched.
 
 Each extra also gets its own CI leg, so an accidental unconditional import of `redis`
@@ -120,7 +121,8 @@ consumer to install something they already have would waste their afternoon.
 
 Two rules the tests hold that are easy to reason past:
 
-- `all` is a pure union (`tesserix-adk[graphiti,mcp,postgres,redis,temporal]`). Listing
+- `all` is a pure union
+  (`tesserix-adk[a2a,graphiti,mcp,postgres,redis,temporal]`). Listing
   the packages directly lets `all` quietly become the only tested combination.
 - Extras gate *integrations*. They may never gate anything the kit promises
   unconditionally — redaction and budget enforcement are not opt-in, so `core`,
@@ -152,15 +154,17 @@ do when the two indexes disagree — the one failure that needs a human.
 
 If your change is consumer-visible, write a change fragment in `changes/` in the same
 pull request — `changes/<issue>.<kind>.md`, described in
-[`changes/README.md`](../changes/README.md). A conventional commit subject is enough on
+[`changes/README.md`](https://github.com/tesserix/agent-development-kit/blob/main/changes/README.md). A conventional commit subject is enough on
 its own for most changes; a fragment is required for anything breaking, because that is
 where the migration note lives. The `release-notes` CI job fails on a change with
 neither, and renders the notes into the run summary so you can read the wording a
 consumer will read.
 
-Your merge to `main` also publishes a pre-release, so a change that lands is installable
-by a consumer within the hour. Nobody gets it by accident — a stable specifier never
-resolves a pre-release — but if your change alters what a subpackage promises, say so in
+Your merge to `main` also builds and attests a pre-release. It is published only when the
+trusted publisher exists and `PUBLISH_ALPHAS=true`; before that, the same build still
+proves that the commit is publishable without making a false public-channel promise.
+Nobody gets a published alpha by accident — a stable specifier never resolves a
+pre-release — but if your change alters what a subpackage promises, say so in
 [stability.md](stability.md) in the same pull request.
 
 The example the smoke job runs is `examples/getting_started.py`. Every example in that

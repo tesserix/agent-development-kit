@@ -114,4 +114,4 @@ refusal reason, similarity — and record it on the run's trace attributes. `met
 hits, semantic hits, misses, refusals, stores, coalesced waits, store failures and the
 usage the cache saved.
 
-Runnable version: [`examples/response_caching.py`](../examples/response_caching.py).
+Runnable version: [`examples/response_caching.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/response_caching.py).

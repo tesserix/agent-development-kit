@@ -126,7 +126,7 @@ change as a failing test instead of as a line in the notes.
 Four sources feed them:
 
 - **Change fragments** in `changes/`, one file per change, written in the pull request
-  that makes it. Format and kinds: [`changes/README.md`](../changes/README.md).
+  that makes it. Format and kinds: [`changes/README.md`](https://github.com/tesserix/agent-development-kit/blob/main/changes/README.md).
 - **Conventional commit subjects** since the last tag. `feat` / `fix` / `refactor` /
   `perf` / `revert` become entries; `docs` / `chore` / `test` / `ci` / `build` / `style`
   are housekeeping and produce none. An unrecognised type is treated as an unreadable
@@ -230,14 +230,16 @@ task: follow the security policy, and expect the version number to stay burned.
 
 ## The alpha channel
 
-Every merge to `main` publishes a pre-release. It exists so the earliest consumer can
-build against the kit while the API can still change — which is the only time their
-feedback can still be acted on. What each subpackage promises is in
+Every untagged merge to `main` builds a pre-release, and publishes it when
+`PUBLISH_ALPHAS=true`. The channel exists so the earliest consumer can build against the
+kit while the API can still change — which is the only time their feedback can still be
+acted on. What each subpackage promises is in
 [`stability.md`](stability.md); this section is the mechanics.
 
 `.github/workflows/alpha.yml` runs the same gates as a release, numbers the version with
-`tools/alpha.py`, tags it locally so `hatch-vcs` derives it, builds, and publishes by the
-same trusted publisher. The tag is never pushed: an alpha is not a release and does not
+`tools/alpha.py`, tags it locally so `hatch-vcs` derives it, and builds it. When
+`PUBLISH_ALPHAS=true`, it publishes through the same trusted publisher. The tag is never
+pushed: an alpha is not a release and does not
 belong in the repository's tag list.
 
 Numbering: the base is the next minor after the last stable release, and the alpha number

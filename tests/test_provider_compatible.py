@@ -31,7 +31,16 @@ from tesserix_adk.core import (
     StreamEnd,
     TextPart,
 )
-from tesserix_adk.models.providers import OLLAMA, VLLM, OpenAICompatibleProvider
+from tesserix_adk.models.providers import (
+    GROK,
+    GROQ,
+    OLLAMA,
+    OPENROUTER,
+    VLLM,
+    XAI,
+    CompatibilityPreset,
+    OpenAICompatibleProvider,
+)
 from tesserix_adk.runtime import AgentRunner
 from tesserix_adk.testing import FakeClock, FakeSecrets, FakeToolRegistry
 
@@ -191,6 +200,91 @@ class TestAnEndpointThatWantsNoKey:
         transport, seen = answering()
         await provider(transport).complete(asked())
         assert str(seen[0].url) == f"{IN_CLUSTER}/v1/chat/completions"
+
+
+class TestHostedCompatibleProviders:
+    def test_grok_is_the_discoverable_name_for_xais_preset(self) -> None:
+        assert GROK is XAI
+
+    @pytest.mark.parametrize(
+        ("preset", "base_url", "expected_url"),
+        [
+            (GROQ, "https://api.groq.com", "https://api.groq.com/openai/v1/chat/completions"),
+            (XAI, "https://api.x.ai", "https://api.x.ai/v1/chat/completions"),
+            (
+                OPENROUTER,
+                "https://openrouter.ai",
+                "https://openrouter.ai/api/v1/chat/completions",
+            ),
+        ],
+        ids=["groq", "xai-grok", "openrouter"],
+    )
+    async def test_each_preset_uses_its_documented_chat_completions_path(
+        self,
+        preset: CompatibilityPreset,
+        base_url: str,
+        expected_url: str,
+    ) -> None:
+        transport, seen = answering()
+        await provider(
+            transport,
+            preset=preset,
+            base_url=base_url,
+            api_key_variable="",
+        ).complete(asked())
+        assert str(seen[0].url) == expected_url
+
+    @pytest.mark.parametrize(
+        ("preset", "key_variable", "expected_url"),
+        [
+            (GROQ, "GROQ_API_KEY", "https://api.groq.com/openai/v1/chat/completions"),
+            (XAI, "XAI_API_KEY", "https://api.x.ai/v1/chat/completions"),
+            (
+                OPENROUTER,
+                "OPENROUTER_API_KEY",
+                "https://openrouter.ai/api/v1/chat/completions",
+            ),
+        ],
+        ids=["groq", "grok", "openrouter"],
+    )
+    async def test_hosted_presets_supply_the_usual_url_and_key_variable(
+        self,
+        preset: CompatibilityPreset,
+        key_variable: str,
+        expected_url: str,
+    ) -> None:
+        transport, seen = answering()
+        model = OpenAICompatibleProvider(
+            MODEL,
+            preset=preset,
+            capabilities=SERVES,
+            secrets=FakeSecrets({key_variable: "hosted-key"}),
+            transport=transport,
+        )
+        await model.complete(asked())
+        assert str(seen[0].url) == expected_url
+        assert seen[0].headers["authorization"] == "Bearer hosted-key"
+
+    async def test_gateway_metadata_headers_are_sent_without_replacing_authentication(
+        self,
+    ) -> None:
+        transport, seen = answering()
+        model = OpenAICompatibleProvider(
+            MODEL,
+            preset=OPENROUTER,
+            capabilities=SERVES,
+            secrets=FakeSecrets({"OPENROUTER_API_KEY": "hosted-key"}),
+            headers={
+                "HTTP-Referer": "https://agents.example.com",
+                "X-OpenRouter-Title": "Acme agents",
+                "Authorization": "Bearer ignored",
+            },
+            transport=transport,
+        )
+        await model.complete(asked())
+        assert seen[0].headers["http-referer"] == "https://agents.example.com"
+        assert seen[0].headers["x-openrouter-title"] == "Acme agents"
+        assert seen[0].headers["authorization"] == "Bearer hosted-key"
 
 
 class TestWhatTheEndpointCannotDoIsRefusedRatherThanEmulated:

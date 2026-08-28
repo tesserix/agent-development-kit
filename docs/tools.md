@@ -180,8 +180,8 @@ outside a run and receives `None`.
 | `timeout` | The ceiling the author declared, where one was declared |
 | `parallel_safe` | Whether two calls to it may overlap |
 
-Run [`examples/tools.py`](../examples/tools.py) for each of these end to end, and
-[`examples/tool_arguments.py`](../examples/tool_arguments.py) for the refusals and the
+Run [`examples/tools.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/tools.py) for each of these end to end, and
+[`examples/tool_arguments.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/tool_arguments.py) for the refusals and the
 feedback that goes back to the model.
 
 ## The registry is what an agent may call
@@ -272,5 +272,5 @@ does not fail a tool call.
 * Any change to default-deny — a view permitting anything it was not given — is a major
   version. There is no configuration that turns it off.
 
-Run [`examples/tool_registry.py`](../examples/tool_registry.py) for allowlists, refusals,
+Run [`examples/tool_registry.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/tool_registry.py) for allowlists, refusals,
 ceilings and spans end to end.

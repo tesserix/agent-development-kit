@@ -117,7 +117,7 @@ Branches still queued behind the concurrency cap when the stop lands never start
 
 - The concurrency cap is per fan-out, not per provider or per tenant. Two fan-outs running
   at once are two caps. Runner-wide lane limits live in
-  [`tesserix_adk.runtime.fanout`](../src/tesserix_adk/runtime/fanout.py) and bound tool
+  [`tesserix_adk.runtime.fanout`](https://github.com/tesserix/agent-development-kit/blob/main/src/tesserix_adk/runtime/fanout.py) and bound tool
   calls, not branches.
 - Nested fan-out is bounded only by `DelegationLimits` (`max_depth`, `max_fan_out`,
   `max_delegations`), which bound breadth × depth for the whole run. There is no separate

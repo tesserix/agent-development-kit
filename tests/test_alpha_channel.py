@@ -1,4 +1,4 @@
-"""Every merge to main publishes an alpha, so early consumers can build against the kit.
+"""Every merge to main builds an alpha; configured channels publish it for early consumers.
 
 An early consumer is the most valuable source of design feedback there is, and it is
 only available before the API freezes. The cost of that is a channel nobody must land in

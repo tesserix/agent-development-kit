@@ -3,7 +3,7 @@
 Iterating locally, the choice is usually between standing up a trace backend and debugging
 by print. The telemetry already exists; what is missing is a way to read it.
 `tesserix_adk.observability.local_view` draws the spans a run emits as a tree, and
-`adk trace` reads one back from a file.
+`python -m tesserix_adk.cli trace` reads one back from a file.
 
 ```python
 from tesserix_adk.observability import assembled, machine_readable, rendered
@@ -13,7 +13,7 @@ document = machine_readable(assembled(spans))   # for a test assertion
 ```
 
 ```console
-$ uv run python -m tesserix_adk.cli.trace trace.json --depth 3
+$ uv run python -m tesserix_adk.cli trace trace.json --depth 3
 ```
 
 ## What a step shows
@@ -65,7 +65,7 @@ Path("trace.json").write_text(TraceFile.of(spans).model_dump_json())
 ```
 
 A file written by a newer format version is refused rather than partially read, and
-`adk trace` reports that with its own exit code (`3`) — a file this build cannot read is a
+`python -m tesserix_adk.cli trace` reports that with exit code `3` — a file this build cannot read is a
 different problem from a path somebody typed wrong (`1`).
 
 ## One source of truth

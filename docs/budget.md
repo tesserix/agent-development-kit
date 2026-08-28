@@ -215,6 +215,6 @@ Pricing is not here — see [`docs/cost.md`](cost.md) for how a `Usage` becomes 
 cross-process ledger implementation is not here either; the protocol is the contract and a
 deployment supplies the store.
 
-Exercised by [`examples/budget.py`](../examples/budget.py) and `tests/test_budget.py`;
-enforcement by [`examples/budget_enforcement.py`](../examples/budget_enforcement.py) and
+Exercised by [`examples/budget.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/budget.py) and `tests/test_budget.py`;
+enforcement by [`examples/budget_enforcement.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/budget_enforcement.py) and
 `tests/test_budget_enforcement.py`.

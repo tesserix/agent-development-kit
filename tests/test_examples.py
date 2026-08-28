@@ -34,3 +34,17 @@ def test_the_getting_started_example_needs_no_credentials() -> None:
     """A first run that demands an API key is a first run nobody completes."""
     source = (EXAMPLES / "getting_started.py").read_text(encoding="utf-8")
     assert "api_key" not in source
+
+
+def test_the_getting_started_example_runs_a_custom_agent_through_the_public_surface() -> None:
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(EXAMPLES / "getting_started.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=ROOT,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "agent: weather-agent" in result.stdout
+    assert "tool: Melbourne is 21°C and clear" in result.stdout
+    assert "answer: Pack a light jacket." in result.stdout

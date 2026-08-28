@@ -200,6 +200,21 @@ class TestOutput:
         assert finished.output == TripPlan(destination="Kyoto", nights=3)
         assert Run[TripPlan].model_validate_json(finished.model_dump_json()) == finished
 
+    def test_free_text_is_available_without_walking_the_message_parts(self) -> None:
+        finished = run(
+            messages=[
+                Message(role="user", content=[TextPart(text="Where?")]),
+                Message(
+                    role="assistant",
+                    content=[TextPart(text="Kyoto"), TextPart(text=", three nights.")],
+                ),
+            ]
+        )
+        assert finished.text == "Kyoto, three nights."
+
+    def test_a_run_with_no_assistant_answer_has_empty_text(self) -> None:
+        assert run(messages=[Message(role="user", content=[TextPart(text="Where?")])]).text == ""
+
 
 class TestContext:
     def test_a_tenant_context_is_frozen(self) -> None:

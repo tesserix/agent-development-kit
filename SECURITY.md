@@ -96,11 +96,10 @@ boundaries as a security control in your own product.
 
 ## Known limitations
 
-- **GitHub private vulnerability reporting only exists while the repository is public.**
-  It is enabled, but this repository toggles to private between CI runs to conserve
-  Actions minutes, and the reporting form is unavailable during those windows. If the
-  link returns a 404, open a public issue asking for a private channel and nothing else,
-  and a maintainer will open the advisory. This goes away when the kit is published.
+- **GitHub private vulnerability reporting depends on repository settings.** Confirm it is
+  enabled as part of the public-launch checklist. If the reporting link returns a 404,
+  open a public issue asking for a private channel and include no vulnerability detail;
+  a maintainer will open the advisory.
 - The gate checks the process against its own records. It cannot tell you a report was
   never recorded — a flaw handled quietly outside `security/advisories/` is invisible to
   it, which is why the rota, not the tool, owns the acknowledgement.

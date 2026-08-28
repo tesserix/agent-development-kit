@@ -115,4 +115,4 @@ These are the honest edges of the mechanism:
 ## See also
 
 - [`docs/tenancy.md`](tenancy.md) — how the tenant gets bound.
-- [`examples/store_isolation.py`](../examples/store_isolation.py).
+- [`examples/store_isolation.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/store_isolation.py).

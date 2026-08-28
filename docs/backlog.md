@@ -8,7 +8,7 @@ template, classified by labels, and tracked on a single org-level project board.
 
 ## Issue template
 
-All issues use [`.github/ISSUE_TEMPLATE/engineering-story.md`](../.github/ISSUE_TEMPLATE/engineering-story.md):
+All issues use [`.github/ISSUE_TEMPLATE/engineering-story.md`](https://github.com/tesserix/agent-development-kit/blob/main/.github/ISSUE_TEMPLATE/engineering-story.md):
 Situation → Task (story + in/out of scope) → Acceptance Criteria (primary, failure, edge
 cases) → Engineering Guardrails → Result → PR Evidence → Definition of Done → Exceptions.
 

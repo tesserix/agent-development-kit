@@ -28,3 +28,31 @@ It is imported unmodified over a published API and never vendored or statically 
 the obligation is to keep it replaceable and to say so. A consumer who cannot take LGPL
 installs the kit without the postgres extra and loses nothing else.
 """
+
+[[acceptance]]
+package = "cffi"
+licence = "MIT-0"
+owner = "@sam123ben"
+reason = """
+cffi is an unmodified transitive dependency of cryptography in the optional A2A and MCP
+profiles. MIT-0 is permissive, but this acceptance remains package-specific so adding a
+different MIT-0 dependency still requires an explicit review.
+"""
+
+[[decision]]
+package = "cryptography"
+licence = "Apache-2.0"
+owner = "@sam123ben"
+reason = """
+cryptography is dual-licensed and arrives transitively through the optional A2A and MCP
+profiles. We take Apache-2.0, which matches this project's licence and is already allowed.
+"""
+
+[[decision]]
+package = "packaging"
+licence = "Apache-2.0"
+owner = "@sam123ben"
+reason = """
+packaging is dual-licensed and is used by the optional A2A profile and repository tooling.
+We take Apache-2.0, which matches this project's licence and is already allowed.
+"""

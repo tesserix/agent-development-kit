@@ -23,7 +23,7 @@ from pydantic import Field
 
 from tesserix_adk.core.budget import ResolvedBudget  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.models import AdkModel, OutputT
-from tesserix_adk.core.primitives import Message, ToolCall, Usage
+from tesserix_adk.core.primitives import Message, TextPart, ToolCall, Usage
 from tesserix_adk.core.prompts import PromptRef  # noqa: TC001
 from tesserix_adk.core.tenancy import TenantContext
 
@@ -295,6 +295,14 @@ class Run(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot 
     def input_tokens_spent(self) -> int:
         """Input tokens consumed so far. A convenience over `usage`, for budget checks."""
         return self.usage.input_tokens
+
+    @property
+    def text(self) -> str:
+        """Visible text in the latest assistant turn, or empty before one exists."""
+        for message in reversed(self.messages):
+            if message.role == "assistant":
+                return "".join(part.text for part in message.content if isinstance(part, TextPart))
+        return ""
 
     def transition_to(self, state: RunState, *, at: float | None = None) -> Self:
         """Return this run in `state`.

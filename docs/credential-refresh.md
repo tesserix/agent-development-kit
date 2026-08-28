@@ -121,4 +121,4 @@ unreachable, and the same call is worth making again.
 
 - [`docs/tool-credentials.md`](tool-credentials.md) — minting and scope derivation.
 - [`docs/agent-identity.md`](agent-identity.md) — how effective scopes are resolved.
-- [`examples/credential_refresh.py`](../examples/credential_refresh.py).
+- [`examples/credential_refresh.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/credential_refresh.py).

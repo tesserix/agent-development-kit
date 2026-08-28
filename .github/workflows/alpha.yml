@@ -27,7 +27,7 @@ jobs:
     outputs:
       alpha: ${{ steps.check.outputs.alpha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
       # The release commit is pushed with its tag, so it already has a version of its
@@ -54,11 +54,11 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         # hatch-vcs derives the version from the tag, so the history has to be there.
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -75,10 +75,10 @@ jobs:
       - run: ls dist | grep -q "tesserix_adk-$VERSION"
         env:
           VERSION: ${{ steps.version.outputs.version }}
-      - uses: actions/attest-build-provenance@v4
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: dist/*
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: alpha-dist
           path: dist/
@@ -94,13 +94,13 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: alpha-dist
           path: dist/
       # Trusted publishing: the token is minted for this run and expires with it, and
       # the PEP 740 attestation goes to the index with the artefact.
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           attestations: true
 
@@ -124,12 +124,12 @@ jobs:
           gh attestation verify downloaded/*.whl --repo "$KIT" \
             --signer-workflow "$KIT/.github/workflows/alpha.yml"
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: ${{ vars.DOWNSTREAM_REPO }}
           token: ${{ secrets.DOWNSTREAM_TOKEN }}
           path: consumer
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -141,7 +141,7 @@ jobs:
           uv run --directory consumer --with "tesserix-adk==$VERSION" \
             pytest --junitxml=../candidate.xml
         continue-on-error: true
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: kit
       - run: |
@@ -155,8 +155,8 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true

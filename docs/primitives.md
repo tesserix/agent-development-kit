@@ -10,7 +10,7 @@ The module is semver-governed. Every name below appears in
 diff of a pull request and follows [the deprecation policy](versioning.md).
 
 A runnable version of everything here is
-[`examples/typed_primitives.py`](../examples/typed_primitives.py), which needs no
+[`examples/typed_primitives.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/typed_primitives.py), which needs no
 network and no credentials and is executed in CI.
 
 ## The types
@@ -103,17 +103,15 @@ credentials, and never message content.
 
 ## Known limitations
 
-- **A run carries messages and tool calls, not an event log.** Replay and lifecycle
-  hooks need an ordered event stream; that is the run loop's shape to define, in #26 and
-  #31, and adding a placeholder now would fix it before the consumer exists.
-- **`Usage.cost` is a `float`.** Totalling many small costs accumulates binary
-  floating-point error. It is a reported figure, not a ledger; billing reconciliation
-  (#64) should sum from the audit records, not from a rehydrated run.
 - **`Usage.extras` holds integers only.** A provider reporting a non-integer usage field
   would need it modelled properly or dropped; nothing in the kit reads `extras`, so
   widening it to `Any` would only make it harder to trust.
 - **`Agent.output_type` is excluded from serialisation.** A Python type has no
   serialised form that can be read back safely, so a serialised `Agent` round-trips
-  without it. Typed results are #36.
-- **`Agent.tools` and `Agent.guardrails` are names, not implementations.** Nothing here
-  resolves them; the registry (Tools epic) and the guardrail chain (#30) do.
+  without executable code. `AgentDefinition` records the derived JSON Schema so the
+  reviewed contract survives.
+- **Unknown cost stays unknown.** `Usage.cost` uses decimal money when a price is known,
+  but a self-hosted or unpriced call carries `None`; it is never reported as free.
+- **Tool and guardrail fields are names.** `AgentRunner` resolves them against the
+  registries supplied by the application. The names remain serializable while concrete
+  clients and callables stay outside the declaration.

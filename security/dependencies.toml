@@ -37,6 +37,15 @@ Removable rather than permanent: when the Python floor reaches 3.13 the import m
 """
 
 [[floor]]
+package = "a2a-sdk"
+floor = "1.1.2"
+reason = """
+First reference-SDK release tested against the A2A 1.0 card, custom-transport, and
+registry adapter in this repository. Earlier SDK lines expose the legacy 0.3/Pydantic
+surface rather than the protobuf-backed 1.x types used by the adapter.
+"""
+
+[[floor]]
 package = "mcp"
 floor = "1.9"
 reason = "Oldest release with the 1.x server and client surface the mcp extra targets."

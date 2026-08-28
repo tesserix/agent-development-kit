@@ -93,4 +93,4 @@ quotes back can be cited. An unreadable file is a refusal — `unreadable_docume
 
 - [`docs/citations.md`](citations.md) — what a reference has to resolve to
 - [`docs/claim-check.md`](claim-check.md) — the same windowing argument, for tool results
-- [`examples/document_intake.py`](../examples/document_intake.py)
+- [`examples/document_intake.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/document_intake.py)

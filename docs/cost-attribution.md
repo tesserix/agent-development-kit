@@ -168,7 +168,7 @@ prompt content never reaches them in the first place.
 - The hit ratio is only as good as what the vendor reports. A provider that sends no cache
   fields reads as a total miss, which is why `estimated` travels with every group.
 
-Exercised by [`examples/cost_attribution.py`](../examples/cost_attribution.py) and
+Exercised by [`examples/cost_attribution.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/cost_attribution.py) and
 `tests/test_cost_attribution.py`.
 
 ## The definition dimension

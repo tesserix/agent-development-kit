@@ -116,5 +116,5 @@ a word. Neither carries the raw exception message.
 * Removing a code, or repurposing an existing one to mean something else, is a major
   version. A code that quietly changes meaning breaks a policy nobody edited.
 
-Run [`examples/tool_errors.py`](../examples/tool_errors.py) for the taxonomy, the map and the
+Run [`examples/tool_errors.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/tool_errors.py) for the taxonomy, the map and the
 retry decisions end to end.

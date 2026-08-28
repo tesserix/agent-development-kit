@@ -97,4 +97,4 @@ have emitted the payload.
 - [`docs/guardrails.md`](guardrails.md) — the chain these two sit in
 - [`docs/prompt-injection.md`](prompt-injection.md) — the other thing content is screened for
 - [`docs/erasure.md`](erasure.md) — getting out what should not have been stored
-- [`examples/pii_redaction.py`](../examples/pii_redaction.py)
+- [`examples/pii_redaction.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/pii_redaction.py)

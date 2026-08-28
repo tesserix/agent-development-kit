@@ -94,4 +94,4 @@ marked.
 - [`docs/structured-output.md`](structured-output.md) — the schema half, and how a provider
   is asked
 - [`docs/guardrails.md`](guardrails.md) — the chain these guards sit in
-- [`examples/output_validation.py`](../examples/output_validation.py)
+- [`examples/output_validation.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/output_validation.py)

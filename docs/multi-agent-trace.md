@@ -140,4 +140,4 @@ participants from anywhere. Peer figures are taken on trust — a peer that unde
 under-reported here, and the tree records what was claimed, not what was verified. `Rate` is
 supplied, never looked up.
 
-Runnable: [`examples/multi_agent_trace.py`](../examples/multi_agent_trace.py).
+Runnable: [`examples/multi_agent_trace.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/multi_agent_trace.py).

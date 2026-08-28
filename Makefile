@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov api-snapshot api-check event-schemas event-schema-check typing-gate replay-check deprecations deprecations-check release-check notes notes-check release-plan release alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
+.PHONY: help sync lock hooks lint format typecheck test cov docs docs-check api-snapshot api-check event-schemas event-schema-check typing-gate replay-check deprecations deprecations-check release-check notes notes-check release-plan release alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -30,6 +30,13 @@ test: ## Run the test suite
 
 cov: ## Run the test suite with coverage enforcement
 	uv run pytest --cov --cov-report=term-missing
+
+docs: ## Serve the documentation locally
+	uv run --group docs mkdocs serve
+
+docs-check: ## Validate links and build the documentation strictly
+	uv run pytest -q tests/test_documentation.py
+	uv run --group docs mkdocs build --strict
 
 bench: ## Measure the benchmark suite against the committed baseline
 	uv run python -m tools.benchmark
@@ -116,7 +123,7 @@ admissions: ## Regenerate security/inventory.toml from the lock
 admissions-check: ## Fail if a dependency a consumer inherits has no decision record
 	uv run python -m tools.admissions
 
-check: lint typecheck deps admissions-check disclosure-check api-check event-schema-check typing-gate replay-check deprecations-check release-check notes-check cov ## Everything CI runs
+check: lint typecheck deps admissions-check disclosure-check api-check event-schema-check typing-gate replay-check deprecations-check release-check notes-check docs-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov

@@ -1,5 +1,16 @@
 """Concrete backing stores and transports."""
 
+from tesserix_adk.adapters.a2a import (
+    A2ABearerSecurity,
+    A2ACardError,
+    A2AInterface,
+    A2ARegistry,
+    A2ARegistryError,
+    A2ASkill,
+    a2a_card_for,
+    a2a_client_factory,
+    a2a_client_from_registry,
+)
 from tesserix_adk.adapters.agentgateway import McpStreamableHttpTransport, agent_gateway_tools
 from tesserix_adk.adapters.approvals import (
     DEFAULT_APPROVAL_SUBJECT,
@@ -296,6 +307,12 @@ __all__ = [
     "SSE_HEADERS",
     "UNDECODABLE",
     "UNKNOWN_TENANT",
+    "A2ABearerSecurity",
+    "A2ACardError",
+    "A2AInterface",
+    "A2ARegistry",
+    "A2ARegistryError",
+    "A2ASkill",
     "ApprovalInbox",
     "AuditTables",
     "AuthorisingSession",
@@ -430,6 +447,9 @@ __all__ = [
     "WebSocketBridge",
     "WebSocketLike",
     "WebhookApprovals",
+    "a2a_card_for",
+    "a2a_client_factory",
+    "a2a_client_from_registry",
     "agent_gateway_tools",
     "arriving_call",
     "assembled",

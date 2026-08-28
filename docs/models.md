@@ -6,7 +6,7 @@ a field decides what it means, and a typo in a tool argument becomes an `Attribu
 deep inside a tool body, several steps after the mistake. Every boundary in this kit is a
 model instead, so the failure happens at the crossing and names the field.
 
-A runnable version of everything here is [`examples/models.py`](../examples/models.py),
+A runnable version of everything here is [`examples/models.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/models.py),
 which needs no network and no credentials and is executed in CI.
 
 ## `AdkModel`

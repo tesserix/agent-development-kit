@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import io
 import json
+import subprocess
+import sys
 from typing import TYPE_CHECKING
 
 from tesserix_adk.cli.trace import MISSING, MISUSED, OK, UNREADABLE, main
@@ -13,6 +15,19 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest
+
+
+def test_the_trace_module_is_a_real_command_line_entry_point(tmp_path: Path) -> None:
+    missing = tmp_path / "absent.json"
+    # The executable and every argument are constructed by the test.
+    completed = subprocess.run(  # noqa: S603
+        [sys.executable, "-m", "tesserix_adk.cli", "trace", str(missing)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == MISSING
+    assert "no trace file" in completed.stdout
 
 
 def _file() -> TraceFile:

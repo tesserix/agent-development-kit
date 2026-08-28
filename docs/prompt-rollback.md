@@ -5,8 +5,8 @@ second is how to put it back. Today that means reading a code diff across reposi
 no view of the rendered result, and undoing it means an emergency deploy.
 
 A prompt is versioned data. Moving an alias back to a version that already exists is not a
-code change, and `adk prompt` is the surface for doing it during the incident rather than
-after it.
+code change. `prompts_main` is the callable an embedding product can expose as
+`adk prompt` during an incident.
 
 ```python
 from tesserix_adk.cli import prompts_main

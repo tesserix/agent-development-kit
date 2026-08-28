@@ -120,7 +120,7 @@ through.
 A consuming product inherits every licence in the graph, and inherits it silently: the
 extra someone added on a Tuesday is in a legal review two years later. `make licences`
 reads the declared licence of every shipped distribution and checks it against
-[`security/licences.toml`](../security/licences.toml). It runs on every pull request and
+[`security/licences.toml`](https://github.com/tesserix/agent-development-kit/blob/main/security/licences.toml). It runs on every pull request and
 again in the release, before anything irreversible happens.
 
 The check syncs every extra, because a licence that only arrives through `[postgres]` is
@@ -165,7 +165,7 @@ uv run python -m tools.sbom --diff previous.cdx.json sbom.cdx.json
 ## Reporting a flaw in the kit itself
 
 The scanners on this page cover the dependency graph and the tree. A flaw in something
-the kit itself guarantees goes through [`../SECURITY.md`](../SECURITY.md): a private
+the kit itself guarantees goes through [`SECURITY.md`](https://github.com/tesserix/agent-development-kit/blob/main/SECURITY.md): a private
 channel, a stated acknowledgement target, a patched release for every supported minor,
 and an advisory published with the releases rather than after them. What those guarantees
 are, and what they are not, is in [`threat-model.md`](threat-model.md).

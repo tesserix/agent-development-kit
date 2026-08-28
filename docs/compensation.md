@@ -115,5 +115,5 @@ One reversal is tried `attempts` times (three by default) before it is called `F
 supplier being down is never a reason to stop the walk — the other three bookings still come
 off, and the failed one is named in `outstanding`.
 
-See [`examples/compensation.py`](../examples/compensation.py) for a runnable version of all
+See [`examples/compensation.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/compensation.py) for a runnable version of all
 of this.

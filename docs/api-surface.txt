@@ -1,3 +1,6 @@
+tesserix_adk.Agent :: class Agent(AdkModel, Generic)
+tesserix_adk.AgentRunner :: class AgentRunner(object) {reload(self, router: 'ModelRouter') -> 'None'; resume(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; resume_with_decision(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', run_id: 'str', *, tenant: 'str', token: 'str', granted: 'bool', decided_by: 'str', reason: 'str' = '', user: 'str | None' = None, cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, budget: 'BudgetPolicy | None' = None, allow_model_drift: 'bool' = False) -> 'Run[OutputT]'; run(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; run_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None) -> 'Run[OutputT]'; stream(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'RunStream[OutputT]'; stream_sync(self, agent: 'Agent[OutputT] | AgentDefinition[OutputT]', user_input: 'str', *, tenant: 'str', user: 'str | None' = None, run_id: 'str | None' = None, history: 'Iterable[Message]' = (), memory: 'Iterable[str]' = (), cancellation: 'CancellationToken | None' = None, deadline: 'Deadline | None' = None, parent: 'RunContext | None' = None, budget: 'BudgetPolicy | None' = None, backpressure: 'Backpressure | None' = None) -> 'tuple[ProgressEvent, ...]'}
+tesserix_adk.ToolRegistry :: class ToolRegistry(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; observe(self, observer: 'Callable[[ToolCallSpan], None]') -> 'None'; register(self, tool: 'Tool[Any, Any]', *, origin: 'str' = '') -> 'None'; resolve(self, name: 'str') -> 'Tool[Any, Any]'; timeout_for(self, name: 'str') -> 'float | None'; view(self, *, allow: 'Sequence[str]', agent: 'str' = '') -> 'AgentToolView'}
 tesserix_adk.__version__ :: __version__: str
 tesserix_adk.a2a.AgentCard :: class AgentCard(AdkModel) {rendered(self) -> 'bytes'}
 tesserix_adk.a2a.AgentCardError :: class AgentCardError(AdkError)
@@ -114,6 +117,12 @@ tesserix_adk.a2a.invocation.TraceCarrier :: class TraceCarrier(Protocol) {carrie
 tesserix_adk.a2a.invocation.UnsupportedSchemaError :: class UnsupportedSchemaError(AdkError)
 tesserix_adk.a2a.invocation.checkable :: def checkable(schema: 'Mapping[str, Any]', *, path: 'str' = '') -> 'None'
 tesserix_adk.a2a.invocation.conforms :: def conforms(value: 'object', schema: 'Mapping[str, Any]') -> 'str'
+tesserix_adk.adapters.A2ABearerSecurity :: class A2ABearerSecurity(AdkModel)
+tesserix_adk.adapters.A2ACardError :: class A2ACardError(AdkError)
+tesserix_adk.adapters.A2AInterface :: class A2AInterface(AdkModel)
+tesserix_adk.adapters.A2ARegistry :: class A2ARegistry(Protocol) {resolve(self, name: 'str') -> 'AgentCard'}
+tesserix_adk.adapters.A2ARegistryError :: class A2ARegistryError(AdkError)
+tesserix_adk.adapters.A2ASkill :: class A2ASkill(AdkModel)
 tesserix_adk.adapters.ADAPTER_GUARANTEES :: ADAPTER_GUARANTEES: dict
 tesserix_adk.adapters.APPROVAL_REQUIRED :: APPROVAL_REQUIRED: str
 tesserix_adk.adapters.AUDIT_SCHEMA_VERSION :: AUDIT_SCHEMA_VERSION: int
@@ -298,6 +307,18 @@ tesserix_adk.adapters.UNKNOWN_TENANT :: UNKNOWN_TENANT: str
 tesserix_adk.adapters.WebSocketBridge :: class WebSocketBridge(Generic) {serve(self, connection: 'WebSocketLike', *, run_id: 'str', tenant: 'str', after: 'int | None' = None) -> 'None'}
 tesserix_adk.adapters.WebSocketLike :: class WebSocketLike(Protocol) {close(self, code: 'int' = 1000) -> 'None'; receive_text(self) -> 'str'; send_text(self, data: 'str') -> 'None'}
 tesserix_adk.adapters.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
+tesserix_adk.adapters.a2a.A2ABearerSecurity :: class A2ABearerSecurity(AdkModel)
+tesserix_adk.adapters.a2a.A2ACardError :: class A2ACardError(AdkError)
+tesserix_adk.adapters.a2a.A2AInterface :: class A2AInterface(AdkModel)
+tesserix_adk.adapters.a2a.A2ARegistry :: class A2ARegistry(Protocol) {resolve(self, name: 'str') -> 'AgentCard'}
+tesserix_adk.adapters.a2a.A2ARegistryError :: class A2ARegistryError(AdkError)
+tesserix_adk.adapters.a2a.A2ASkill :: class A2ASkill(AdkModel)
+tesserix_adk.adapters.a2a.a2a_card_for :: def a2a_card_for(definition: 'AgentDefinition[OutputT]', *, description: 'str', provider_url: 'str', interfaces: 'Iterable[A2AInterface]', skills: 'Iterable[A2ASkill]', documentation_url: 'str' = '', default_input_modes: 'Sequence[str]' = ('text/plain',), default_output_modes: 'Sequence[str]' = ('text/plain',), streaming: 'bool' = False, push_notifications: 'bool' = False, extended_agent_card: 'bool' = False, security: 'A2ABearerSecurity | None' = None) -> 'AgentCard'
+tesserix_adk.adapters.a2a.a2a_client_factory :: def a2a_client_factory(*, protocol_bindings: 'Iterable[str]' = ('JSONRPC',), transports: 'Mapping[str, TransportProducer] | None' = None, streaming: 'bool' = True, polling: 'bool' = False, accepted_output_modes: 'Iterable[str]' = (), use_client_preference: 'bool' = False) -> 'ClientFactory'
+tesserix_adk.adapters.a2a.a2a_client_from_registry :: def a2a_client_from_registry(registry: 'A2ARegistry', name: 'str', *, factory: 'ClientFactory', interceptors: 'Sequence[ClientCallInterceptor]' = (), verify: 'Callable[[AgentCard], None] | None' = None) -> 'Client'
+tesserix_adk.adapters.a2a_card_for :: def a2a_card_for(definition: 'AgentDefinition[OutputT]', *, description: 'str', provider_url: 'str', interfaces: 'Iterable[A2AInterface]', skills: 'Iterable[A2ASkill]', documentation_url: 'str' = '', default_input_modes: 'Sequence[str]' = ('text/plain',), default_output_modes: 'Sequence[str]' = ('text/plain',), streaming: 'bool' = False, push_notifications: 'bool' = False, extended_agent_card: 'bool' = False, security: 'A2ABearerSecurity | None' = None) -> 'AgentCard'
+tesserix_adk.adapters.a2a_client_factory :: def a2a_client_factory(*, protocol_bindings: 'Iterable[str]' = ('JSONRPC',), transports: 'Mapping[str, TransportProducer] | None' = None, streaming: 'bool' = True, polling: 'bool' = False, accepted_output_modes: 'Iterable[str]' = (), use_client_preference: 'bool' = False) -> 'ClientFactory'
+tesserix_adk.adapters.a2a_client_from_registry :: def a2a_client_from_registry(registry: 'A2ARegistry', name: 'str', *, factory: 'ClientFactory', interceptors: 'Sequence[ClientCallInterceptor]' = (), verify: 'Callable[[AgentCard], None] | None' = None) -> 'Client'
 tesserix_adk.adapters.agent_gateway_tools :: def agent_gateway_tools(routed: 'AgentGatewayTools') -> 'tuple[Tool[..., JsonValue], ...]'
 tesserix_adk.adapters.agentgateway.McpStreamableHttpTransport :: class McpStreamableHttpTransport(object) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
 tesserix_adk.adapters.agentgateway.agent_gateway_tools :: def agent_gateway_tools(routed: 'AgentGatewayTools') -> 'tuple[Tool[..., JsonValue], ...]'
@@ -2131,23 +2152,31 @@ tesserix_adk.models.pricing.pricing_at :: def pricing_at(at: 'date', *, prices: 
 tesserix_adk.models.provider_effort :: def provider_effort(effort: 'Effort', *, provider: 'str') -> 'dict[str, str]'
 tesserix_adk.models.providers.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.CompatibilityPreset :: class CompatibilityPreset(object)
+tesserix_adk.models.providers.GROK :: GROK: CompatibilityPreset
+tesserix_adk.models.providers.GROQ :: GROQ: CompatibilityPreset
 tesserix_adk.models.providers.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.LLAMA_CPP :: LLAMA_CPP: CompatibilityPreset
 tesserix_adk.models.providers.LlamaCppProvider :: class LlamaCppProvider(OpenAICompatibleProvider)
 tesserix_adk.models.providers.LlamaCppTuning :: class LlamaCppTuning(AdkModel) {server_arguments(self) -> 'tuple[str, ...]'}
 tesserix_adk.models.providers.OLLAMA :: OLLAMA: CompatibilityPreset
+tesserix_adk.models.providers.OPENROUTER :: OPENROUTER: CompatibilityPreset
 tesserix_adk.models.providers.OpenAICompatibleProvider :: class OpenAICompatibleProvider(OpenAIProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.OpenAIProvider :: class OpenAIProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.PHASE_DEFAULTS :: PHASE_DEFAULTS: PhaseTimeouts
 tesserix_adk.models.providers.PhaseTimeouts :: class PhaseTimeouts(object)
 tesserix_adk.models.providers.TGI :: TGI: CompatibilityPreset
 tesserix_adk.models.providers.VLLM :: VLLM: CompatibilityPreset
+tesserix_adk.models.providers.XAI :: XAI: CompatibilityPreset
 tesserix_adk.models.providers.anthropic.AnthropicProvider :: class AnthropicProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.compatible.CompatibilityPreset :: class CompatibilityPreset(object)
+tesserix_adk.models.providers.compatible.GROK :: GROK: CompatibilityPreset
+tesserix_adk.models.providers.compatible.GROQ :: GROQ: CompatibilityPreset
 tesserix_adk.models.providers.compatible.OLLAMA :: OLLAMA: CompatibilityPreset
+tesserix_adk.models.providers.compatible.OPENROUTER :: OPENROUTER: CompatibilityPreset
 tesserix_adk.models.providers.compatible.OpenAICompatibleProvider :: class OpenAICompatibleProvider(OpenAIProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.compatible.TGI :: TGI: CompatibilityPreset
 tesserix_adk.models.providers.compatible.VLLM :: VLLM: CompatibilityPreset
+tesserix_adk.models.providers.compatible.XAI :: XAI: CompatibilityPreset
 tesserix_adk.models.providers.gemini.GeminiProvider :: class GeminiProvider(HttpProvider) {complete(self, request: 'ModelRequest') -> 'ModelResponse'; stream(self, request: 'ModelRequest') -> 'AsyncIterator[StreamEvent]'}
 tesserix_adk.models.providers.llama_cpp.LLAMA_CPP :: LLAMA_CPP: CompatibilityPreset
 tesserix_adk.models.providers.llama_cpp.LlamaCppProvider :: class LlamaCppProvider(OpenAICompatibleProvider)
@@ -3091,6 +3120,7 @@ tesserix_adk.testing.spy.failing_tool :: def failing_tool(error: 'BaseException'
 tesserix_adk.testing.spy.peak_concurrency :: def peak_concurrency() -> 'ConcurrencyProbe'
 tesserix_adk.testing.spy.scoped_run :: def scoped_run(*, tenant: 'str', user: 'str | None' = None, run_id: 'str' = 'run-1', idempotency_key: 'str | None' = None, scopes: 'Sequence[str] | None' = None, declares: 'Sequence[str] | None' = None) -> 'Iterator[ScopedRun]'
 tesserix_adk.testing.spy.slow_tool :: def slow_tool(*, seconds: 'float') -> 'Callable[..., Any]'
+tesserix_adk.tool :: def tool(function: 'Callable[..., Any] | None' = None, /, *, name: 'str | None' = None, description: 'str | None' = None, dialect: 'SchemaDialect' = InlineRefs(max_depth=8, name='inline-refs', forbidden=frozenset({'$ref'})), arguments: 'ArgumentPolicy' = ArgumentPolicy(strict=True, max_bytes=65536), timeout: 'float | None' = None, parallel_safe: 'bool' = True, requires_approval: 'bool | ApprovalPredicate | ApprovalPolicy' = False, idempotency: 'Idempotency | str | IdempotencyPolicy | None' = None) -> 'Tool[Any, Any] | _Decorator'
 tesserix_adk.tools.AgentToolView :: class AgentToolView(object) {declarations(self) -> 'tuple[ToolDeclaration, ...]'; invoke(self, name: 'str', arguments: 'Any') -> 'Any'; resolve(self, name: 'str') -> 'Tool[Any, Any]'}
 tesserix_adk.tools.ArgumentPolicy :: class ArgumentPolicy(object)
 tesserix_adk.tools.ArgumentValidator :: class ArgumentValidator(Protocol) {arguments(self, arguments: 'object') -> 'Mapping[str, object]'}

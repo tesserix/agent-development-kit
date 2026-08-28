@@ -8,6 +8,49 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+### Added
+
+- Hosted OpenAI-compatible presets for Groq, xAI/Grok, and OpenRouter, including their
+  provider-specific completion paths and credential-variable defaults. Compatible
+  providers also accept protected custom gateway/attribution headers.
+- An optional `tesserix-adk[a2a]` adapter for official A2A 1.x Agent Cards and clients,
+  vendor-neutral registry resolution, card verification, and custom gateway protocol
+  bindings. The existing `tesserix_adk.a2a` typed peer protocol remains separate.
+- Root imports for `Agent`, `AgentRunner`, `ToolRegistry`, and `tool`, plus
+  `Run.text` and a runnable `python -m tesserix_adk.cli {evals,trace}` entry point.
+- Public onboarding, provider/A2A/integration/testing documentation, Apache-2.0 licence,
+  contribution templates, strict documentation gates, and a GitHub Pages workflow.
+
+### Changed
+
+- GitHub Actions are pinned to reviewed commit SHAs while Dependabot remains configured
+  to propose updates.
+- The getting-started example now executes a real offline agent/tool loop through the
+  root public API.
+
+### Public API surface
+
+- Added: `tesserix_adk.Agent`
+- Added: `tesserix_adk.AgentRunner`
+- Added: `tesserix_adk.ToolRegistry`
+- Added: `tesserix_adk.tool`
+- Added: `tesserix_adk.adapters.A2ABearerSecurity`
+- Added: `tesserix_adk.adapters.A2ACardError`
+- Added: `tesserix_adk.adapters.A2AInterface`
+- Added: `tesserix_adk.adapters.A2ARegistry`
+- Added: `tesserix_adk.adapters.A2ARegistryError`
+- Added: `tesserix_adk.adapters.A2ASkill`
+- Added: `tesserix_adk.adapters.a2a_card_for`
+- Added: `tesserix_adk.adapters.a2a_client_factory`
+- Added: `tesserix_adk.adapters.a2a_client_from_registry`
+- Added: `tesserix_adk.models.providers.GROK`
+- Added: `tesserix_adk.models.providers.GROQ`
+- Added: `tesserix_adk.models.providers.OPENROUTER`
+- Added: `tesserix_adk.models.providers.XAI`
+
+The root convenience imports retain the underlying subpackages' declared stability.
+Provider presets and official A2A adapter surfaces are alpha before 1.0.
+
 ## 0.51.0
 
 ### Added
@@ -785,7 +828,7 @@ across rows, embeddings, summaries and cache keys; a sweep that counted nothing 
 because verifying nothing is not evidence that nothing remains.
 
 Mechanisms, guarantees and their honest edges:
-[`docs/store-isolation.md`](../docs/store-isolation.md).
+[`docs/store-isolation.md`](docs/store-isolation.md).
 
 ### Public API surface
 
@@ -842,7 +885,7 @@ run.
 
 `ExpiringCredential` and `ExpiringCredentialSource` join `tesserix_adk.core` as new
 protocols; `tesserix_adk.tools.CredentialBroker` already satisfies both. Full
-behaviour and its limits: [`docs/credential-refresh.md`](../docs/credential-refresh.md).
+behaviour and its limits: [`docs/credential-refresh.md`](docs/credential-refresh.md).
 
 ### Public API surface
 
@@ -904,7 +947,7 @@ the integration packages sit beside `tesserix_adk.tools` in the layering rather 
 it. `tesserix_adk.mcp.auth` re-exports the same objects, so nothing moved for a consumer.
 
 A peer's output stays untrusted input however well the peer authenticated, and the kit
-signs nothing: see the limitations in [`docs/peer-delegation.md`](../docs/peer-delegation.md).
+signs nothing: see the limitations in [`docs/peer-delegation.md`](docs/peer-delegation.md).
 
 ### Public API surface
 
@@ -969,7 +1012,7 @@ reuse or retry against.
 The kit ships no MCP transport, and this package declares the structural protocols it
 needs (`CredentialSource`, `CallCredential`) rather than importing them: `mcp` and `tools`
 are siblings in the layering. `tesserix_adk.tools.CredentialBroker` satisfies both. See
-[`docs/mcp-credentials.md`](../docs/mcp-credentials.md).
+[`docs/mcp-credentials.md`](docs/mcp-credentials.md).
 
 ### Public API surface
 
@@ -1030,7 +1073,7 @@ accept long-lived keys are the documented exception — `StaticCredentials` reso
 per-audience, per-tenant `SecretRef`, refuses any audience with no documented key, and
 flags what it mints `long_lived` so the remaining exceptions can be counted.
 
-See [`docs/tool-credentials.md`](../docs/tool-credentials.md).
+See [`docs/tool-credentials.md`](docs/tool-credentials.md).
 
 ### Public API surface
 
@@ -1096,7 +1139,7 @@ values are plain strings, for a deployment that wants to refuse to boot on one. 
 and `SecretRef` both pass.
 
 The kit ships no cloud secret-manager client — the protocol is one method, so that binding
-lives where the vendor choice already lives. See [`docs/secrets.md`](../docs/secrets.md).
+lives where the vendor choice already lives. See [`docs/secrets.md`](docs/secrets.md).
 
 ### Public API surface
 
@@ -1148,7 +1191,7 @@ and a durable continuation runs on a recorded delegation whose expiry is require
 than inherited. `AgentIdentity.unused` names declared scopes nothing reached for, so a
 defensive declaration can be trimmed with evidence.
 
-See [`docs/agent-identity.md`](../docs/agent-identity.md).
+See [`docs/agent-identity.md`](docs/agent-identity.md).
 
 ### Public API surface
 
@@ -1203,7 +1246,7 @@ carries a matchable code and never quotes the payload it refused.
 The bars for the kit's own three guards are measured, not asserted, and live in
 `tests/test_guard_harness.py` as a ratchet.
 
-See [`docs/guard-testing.md`](../docs/guard-testing.md).
+See [`docs/guard-testing.md`](docs/guard-testing.md).
 
 ### Public API surface
 
@@ -1269,7 +1312,7 @@ declared names that collapse to the same form are refused at resolution. Delegat
 peer agent can only narrow, so a peer with a broader declaration cannot proxy around the
 layer that refused.
 
-See [`docs/tool-allowlists.md`](../docs/tool-allowlists.md).
+See [`docs/tool-allowlists.md`](docs/tool-allowlists.md).
 
 ### Public API surface
 

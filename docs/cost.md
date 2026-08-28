@@ -123,4 +123,4 @@ filter.
 Ceilings are not enforced here — that is the budget policy's job, and this module only
 supplies the number it enforces against. Chargeback attribution is not here either.
 
-Exercised by [`examples/cost.py`](../examples/cost.py) and `tests/test_cost.py`.
+Exercised by [`examples/cost.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/cost.py) and `tests/test_cost.py`.

@@ -107,4 +107,4 @@ Scoring is synchronous because the reranker already runs it off the event loop.
 
 - [`docs/embedding-batching.md`](embedding-batching.md) — batching, limits and the provider protocol
 - [`docs/reranking.md`](reranking.md) — where a cross-encoder sits in retrieval
-- [`examples/local_embeddings.py`](../examples/local_embeddings.py)
+- [`examples/local_embeddings.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/local_embeddings.py)

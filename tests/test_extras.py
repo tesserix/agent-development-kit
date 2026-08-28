@@ -26,11 +26,12 @@ SRC = ROOT / "src" / "tesserix_adk"
 # floor reaches 3.13 — see security/admissions/typing-extensions.toml.
 BASE_REQUIREMENTS = {"pydantic", "httpx", "opentelemetry-api", "typing-extensions"}
 
-INTEGRATION_EXTRAS = {"mcp", "temporal", "graphiti", "redis", "postgres"}
+INTEGRATION_EXTRAS = {"a2a", "mcp", "temporal", "graphiti", "redis", "postgres"}
 
 # The importable name each extra provides, so the footprint test can prove that a base
 # install of the kit reaches none of them.
 EXTRA_TOP_LEVEL_MODULES = {
+    "a2a": "a2a",
     "mcp": "mcp",
     "temporal": "temporalio",
     "graphiti": "graphiti_core",

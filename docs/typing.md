@@ -28,7 +28,7 @@ deliberate:
 
 Defaults on type parameters are PEP 696. The inline syntax is 3.13 and the supported floor
 is 3.12, so `OutputT` comes from `typing_extensions` — see
-[`security/admissions/typing-extensions.toml`](../security/admissions/typing-extensions.toml).
+[`security/admissions/typing-extensions.toml`](https://github.com/tesserix/agent-development-kit/blob/main/security/admissions/typing-extensions.toml).
 When the floor moves to 3.13 the import moves to `typing` and the dependency is dropped;
 that is an implementation change, not an API one.
 
@@ -62,7 +62,7 @@ are the ones a consumer's checker sees.
 symbol is annotated at all, that an `Any` in a public signature was a decision, or that a
 `# type: ignore` was reviewed. Those three are how a typing guarantee erodes — one
 plausible exception per release — so each one is written down in
-[`typing-policy.toml`](../typing-policy.toml) and `make typing-gate` fails without it.
+[`typing-policy.toml`](https://github.com/tesserix/agent-development-kit/blob/main/typing-policy.toml) and `make typing-gate` fails without it.
 
 The gate fails in both directions: an escape the policy does not list, **and** an entry the
 code no longer contains. A record that outlives its code is how an inventory stops
@@ -120,14 +120,14 @@ other, with the old shape kept working for one minor release.
 
 ## What the tests check
 
-[`tests/test_typed_results.py`](../tests/test_typed_results.py) asserts inference two ways.
+[`tests/test_typed_results.py`](https://github.com/tesserix/agent-development-kit/blob/main/tests/test_typed_results.py) asserts inference two ways.
 `assert_type` states what the checker must infer and does nothing at runtime. A
 `# type: ignore[code]` on a line of deliberate misuse states that the checker must keep
 rejecting it — `warn_unused_ignores` fails the build if it stops. Both run under
 `mypy --strict` in `make check`, so a widened signature fails in CI rather than in a
 consumer's editor.
 
-[`tests/test_typing_gate.py`](../tests/test_typing_gate.py) covers the gate itself: that
+[`tests/test_typing_gate.py`](https://github.com/tesserix/agent-development-kit/blob/main/tests/test_typing_gate.py) covers the gate itself: that
 every hatch in the tree is declared, that a planted undeclared one fails, that a declared
 one the code lost fails, and that an unowned or overdue entry is flagged for reassignment
 rather than inherited.

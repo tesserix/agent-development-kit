@@ -21,11 +21,14 @@ adopting a server therefore says nothing about how that server is reached.
 
 ## Declare a server
 
-Install the optional integration first:
+Install the optional integration in a source checkout first:
 
 ```bash
-uv add 'tesserix-adk[mcp]'
+uv sync --frozen --extra mcp
 ```
+
+For an application dependency, add `mcp` to the exact tagged artifact selected through
+[Keep agents current safely](keeping-current.md).
 
 A server is configuration, resolved through the kit's normal precedence — code over
 environment over file over default:

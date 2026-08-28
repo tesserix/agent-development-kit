@@ -4,9 +4,13 @@ from tesserix_adk.models.providers._http import PHASE_DEFAULTS, PhaseTimeouts
 from tesserix_adk.models.providers._normalise import normalised_tool_calls
 from tesserix_adk.models.providers.anthropic import AnthropicProvider
 from tesserix_adk.models.providers.compatible import (
+    GROK,
+    GROQ,
     OLLAMA,
+    OPENROUTER,
     TGI,
     VLLM,
+    XAI,
     CompatibilityPreset,
     OpenAICompatibleProvider,
 )
@@ -19,11 +23,15 @@ from tesserix_adk.models.providers.llama_cpp import (
 from tesserix_adk.models.providers.openai import OpenAIProvider
 
 __all__ = [
+    "GROK",
+    "GROQ",
     "LLAMA_CPP",
     "OLLAMA",
+    "OPENROUTER",
     "PHASE_DEFAULTS",
     "TGI",
     "VLLM",
+    "XAI",
     "AnthropicProvider",
     "CompatibilityPreset",
     "GeminiProvider",

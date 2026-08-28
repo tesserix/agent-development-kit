@@ -7,6 +7,7 @@ secrets, so it runs on a pull request from a fork instead of silently skipping.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +68,15 @@ class TestSecrets:
 
     def test_the_history_itself_is_scanned_not_only_the_working_tree(self) -> None:
         assert any("gitleaks" in step for step in run_steps("secrets"))
+
+    def test_the_downloaded_scanner_is_verified_before_execution(self) -> None:
+        workflow = load_yaml(SECURITY)
+        checksum = workflow["env"]["GITLEAKS_SHA256"]
+        commands = "\n".join(run_steps("secrets"))
+
+        assert re.fullmatch(r"[0-9a-f]{64}", checksum)
+        assert "GITLEAKS_SHA256" in commands
+        assert "sha256sum -c -" in commands
 
 
 class TestInjection:

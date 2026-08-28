@@ -1,12 +1,13 @@
 # Code owners — auto-requested for review on every pull request.
-# The main-branch ruleset requires code-owner approval before merging;
-# only the owners below may bypass the PR requirement and push directly.
+# The main-branch ruleset requires code-owner approval before merging and has no bypass
+# actors. Ownership grants review responsibility, not permission to push to main.
 
 * @sam123ben @mahesh-sangawar
 
 # Dependency changes have a named reviewer, or the weekly update pull requests
 # accumulate until somebody merges the pile. See docs/dependencies.md.
-/pyproject.toml @sam123ben
-/uv.lock @sam123ben
-/security/ @sam123ben
-/.github/dependabot.yml @sam123ben
+/pyproject.toml @sam123ben @mahesh-sangawar
+/uv.lock @sam123ben @mahesh-sangawar
+/security/ @sam123ben @mahesh-sangawar
+/.github/ @sam123ben @mahesh-sangawar
+/SECURITY.md @sam123ben @mahesh-sangawar

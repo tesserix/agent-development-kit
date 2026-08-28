@@ -60,9 +60,10 @@ not a JSON object, more than `MAX_SKILLS` skills, or a card over `MAX_CARD_BYTES
 at generation means a deployment fails to start rather than serving a card that peers then
 call incorrectly.
 
-`adk card` renders the card, and `adk card --lint` reports what a peer would receive —
-skills, scopes, approval gates and the size against the ceiling — so publishing is
-checkable from a terminal before it is checkable from production.
+`tesserix_adk.cli.card.main` renders or lints the card when the application supplies its
+`Build` callback. A product may expose that callable as `adk card`; this distribution
+does not install a global `adk` executable. The lint report shows skills, scopes,
+approval gates and size before publication.
 
 ## Serving it
 
@@ -92,9 +93,11 @@ what your agent does. What it is for is building a request and checking a schema
 
 ## Known limitations
 
-- Discovery is out of scope here: publishing the card to a registry is
-  [#83](https://github.com/tesserix/agent-development-kit/issues/83), and calling a peer
-  from its card is [#81](https://github.com/tesserix/agent-development-kit/issues/81).
+- This page describes the Tesserix peer card. Official A2A Agent Cards use the separate
+  [official A2A adapter](a2a.md); the two types are not wire-compatible.
+- Registry-backed discovery and peer invocation exist in
+  [peer discovery](peer-discovery.md) and [peer invocation](peer-invocation.md). A
+  deployment still owns registry publication and authenticated transport wiring.
 - `MAX_CARD_BYTES` is a ceiling, not pagination. An agent with more than `MAX_SKILLS`
   skills is refused rather than trimmed, because a silently trimmed card is a card that
   lies about what an agent can do.

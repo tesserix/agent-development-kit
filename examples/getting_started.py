@@ -1,91 +1,53 @@
-"""Assemble the kit against a fake provider, with no network and no credentials.
+"""Create and run one custom agent without network access or credentials.
 
-This is what the post-publish smoke job runs against the wheel it just installed from
-the index, once per extra: an installable artefact that cannot be assembled is not a
-release. Run it with `python examples/getting_started.py`.
+The scripted provider keeps the first run deterministic. Replace it with any provider
+from ``tesserix_adk.models.providers`` when connecting a real model.
 """
 
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any
 
-from tesserix_adk import __version__
-from tesserix_adk.core import (
-    BudgetPolicy,
-    KeyValueStore,
-    Message,
-    ModelCapabilities,
-    ModelProvider,
-    Tracer,
-    Usage,
-    resolve_config,
-    verify_conformance,
-)
-from tesserix_adk.testing import FakeBudgetPolicy, FakeKeyValueStore, FakeTracer, estimate_tokens
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
+from tesserix_adk import Agent, AgentRunner, ToolRegistry, __version__, tool
+from tesserix_adk.testing import FakeModelProvider, ScriptedTurn
 
 
-class EchoProvider:
-    """A provider that answers from memory, so the example needs no endpoint."""
+@tool(idempotency="read_only")
+def current_weather(city: str) -> str:
+    """Return the current weather for a city.
 
-    @property
-    def name(self) -> str:
-        """Identify the provider in traces and audit records."""
-        return "echo"
-
-    @property
-    def capabilities(self) -> ModelCapabilities:
-        """What it declares it can do. Nothing here, which is what silence should mean."""
-        return ModelCapabilities()
-
-    def count_tokens(self, messages: Sequence[Message]) -> int:
-        """Estimated, since this example has no tokeniser to call."""
-        return estimate_tokens(messages)
-
-    async def complete(self, request: Any) -> str:  # noqa: ANN401 — mirrors the protocol
-        """Answer a request without leaving the process."""
-        return f"echo: {request}"
-
-    async def stream(self, request: Any) -> str:  # noqa: ANN401 — mirrors the protocol
-        """Stream the same answer; the example does not exercise chunking."""
-        return await self.complete(request)
+    Args:
+        city: City whose weather should be returned.
+    """
+    result = f"{city} is 21°C and clear"
+    print(f"tool: {result}")  # noqa: T201 — visible proof that the agent called its tool
+    return result
 
 
 async def main() -> None:
-    """Resolve configuration, check the seams, and run one budgeted exchange."""
-    resolution = resolve_config({"provider.endpoint": "http://localhost:0/unused"})
-    config = resolution.config
-    provider, memory, budget, tracer = (
-        EchoProvider(),
-        FakeKeyValueStore(),
-        FakeBudgetPolicy(limit=config.budget.max_input_tokens),
-        FakeTracer(),
+    """Run the same declaration and registry used with a real model provider."""
+    agent = Agent(
+        name="weather-agent",
+        instructions="Use current_weather, then give one concise packing suggestion.",
+        model="demo-model",
+        free_text=True,
+        tools=("current_weather",),
+        idempotent_tools=("current_weather",),
+    )
+    provider = FakeModelProvider(
+        ScriptedTurn.calling("current_weather", {"city": "Melbourne"}),
+        ScriptedTurn.saying("Pack a light jacket."),
+    )
+    runner = AgentRunner(
+        provider=provider,
+        tools=ToolRegistry((current_weather,)),
     )
 
-    # Every seam is checked at construction: a missing member should not surface halfway
-    # through a run, when it has already cost a provider call.
-    for implementation, protocol in (
-        (provider, ModelProvider),
-        (memory, KeyValueStore),
-        (budget, BudgetPolicy),
-        (tracer, Tracer),
-    ):
-        verify_conformance(implementation, protocol)
+    run = await runner.run(agent, "What should I pack for Melbourne?", tenant="demo")
 
-    with tracer.span("exchange", provider=provider.name):
-        await budget.reserve(estimate=16)
-        answer = await provider.complete("what is this kit for?")
-        await budget.record(Usage(input_tokens=len(answer) // 4, output_tokens=0))
-        await memory.put("last-answer", answer)
-
-    print(f"tesserix-adk {__version__}")  # noqa: T201 — the example's output is the point
-    print(resolution.explain())  # noqa: T201
-    print(f"provider: {provider.name}")  # noqa: T201
-    print(f"answer: {await memory.get('last-answer')}")  # noqa: T201
-    print(f"spans: {tracer.names()}")  # noqa: T201
+    print(f"tesserix-adk {__version__}")  # noqa: T201
+    print(f"agent: {run.agent_name}")  # noqa: T201
+    print(f"answer: {run.text}")  # noqa: T201
 
 
 if __name__ == "__main__":

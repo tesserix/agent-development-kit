@@ -114,11 +114,11 @@ connection do not bleed into each other.
 
 ## Known limitations
 
-- **Only the carriers that exist are wired.** `tesserix_adk.mcp`, `tesserix_adk.a2a` and
-  `tesserix_adk.workflows` are still placeholder modules, so there is no MCP metadata
-  wrapper, no A2A client middleware and no Temporal interceptor yet. The contract, the
-  payload carrier and the conformance suite are here; each integration adopts them when
-  that module lands, which is why the encoding is transport-agnostic.
+- **Propagation is not universally automatic.** MCP, the Tesserix peer protocol, and
+  durable workflow primitives now exist and carry their own typed authority/context
+  records. A custom transport must still adopt this carrier or an equivalent authenticated
+  mapping. The official A2A card/client adapter does not inject tenant headers by itself;
+  bind tenant in the authenticated gateway or official client/server interceptor.
 - **Egress is explicit.** `carried(current_tenant())` is a call the producer makes. A
   transport that forgets it produces a message the consumer refuses — loudly, at the far
   end, rather than quietly at the near one.

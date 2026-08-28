@@ -81,4 +81,4 @@ provider entirely:
 PoolConfig(per_provider={"anthropic": PoolConfig(max_connections=8, max_keepalive=4)})
 ```
 
-Runnable version: [`examples/connection_pooling.py`](../examples/connection_pooling.py).
+Runnable version: [`examples/connection_pooling.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/connection_pooling.py).

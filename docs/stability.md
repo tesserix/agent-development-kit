@@ -22,7 +22,7 @@ between them needs to know which they are taking on.
 |---|---|---|
 | `core` | `beta` | Protocols, errors, config, extras. The one surface everything else is built on; shape is settled, names are not all final. |
 | `testing` | `beta` | Conformance suites, fakes, pytest plugin. Moves with `core`. |
-| `models` | `alpha` | Provider abstraction still being validated against a second provider. |
+| `models` | `alpha` | Native and compatible provider adapters are implemented; catalogue and adapter surfaces may still change before 1.0. |
 | `runtime` | `alpha` | Execution loop and step semantics under active design. |
 | `tools` | `alpha` | Tool declaration and dispatch. |
 | `code_intelligence` | `alpha` | Source context contracts and backend mappings are new. |
@@ -32,7 +32,7 @@ between them needs to know which they are taking on.
 | `observability` | `alpha` | Tracing surface follows OpenTelemetry; the kit-side helpers may change. |
 | `adapters` | `alpha` | One adapter per integration; each moves with its upstream SDK. |
 | `mcp` | `alpha` | Tracks the MCP specification, which is itself moving. |
-| `a2a` | `alpha` | Tracks the A2A specification, which is itself moving. |
+| `a2a` | `alpha` | Tesserix peer protocol. The separate official adapter in `adapters.a2a` tracks official A2A 1.x. |
 | `workflows` | `alpha` | Durable-execution surface provisional. |
 | `evals` | `alpha` | Evaluation harness surface provisional. |
 | `cli` | `alpha` | Command names and flags may change; the commands themselves are covered by tests. |
@@ -40,12 +40,17 @@ between them needs to know which they are taking on.
 
 ## The alpha channel
 
-Every merge to `main` publishes a pre-release (`0.2.0a3`, `0.2.0a4`, …). It carries the
-level stated above for each subpackage and *no additional promise*: an alpha build is not
-a release, it is `main` made installable.
+Every untagged merge to `main` builds and attests a pre-release (`0.2.0a3`, `0.2.0a4`,
+…). Publication occurs only after trusted publishing is configured and the repository
+variable `PUBLISH_ALPHAS=true` is set. Until then, the workflow proves that `main` is
+publishable without claiming an installable public channel.
 
-Getting one is opt-in, by PEP 440's own rule — a stable specifier never resolves a
-pre-release, so there is no way to land on an alpha by accident:
+A published alpha carries the level stated above for each subpackage and *no additional
+promise*: it is `main` made installable for a canary, not a stable release.
+
+After the channel is enabled, getting one is opt-in by PEP 440's own rule — a stable
+specifier never resolves a pre-release, so there is no way to land on an alpha by
+accident:
 
 ```bash
 # Never resolves an alpha

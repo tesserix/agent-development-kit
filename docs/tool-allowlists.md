@@ -75,4 +75,4 @@ only shrink.
 
 - [`docs/tools.md`](tools.md) — declaring and registering tools
 - [`docs/tenancy.md`](tenancy.md) — where tenant limits come from
-- [`examples/tool_allowlist.py`](../examples/tool_allowlist.py)
+- [`examples/tool_allowlist.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/tool_allowlist.py)

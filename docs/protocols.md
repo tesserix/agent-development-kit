@@ -8,19 +8,20 @@ logic with no network by using the fake.
 
 | Protocol | Remit | Shipped implementations | Fake | Conformance suite |
 |---|---|---|---|---|
-| `Clock` | Time, injected so timeouts are testable | *(pending — `adapters`)* | `FakeClock` | `ClockConformance` |
-| `ModelProvider` | Completions and streaming from one provider | `models` | `ScriptedProvider` | `ModelProviderConformance` |
-| `ToolRegistry` | Declared tools and their invocation | *(pending — `tools`)* | *(pending)* | *(pending)* |
-| `KeyValueStore` | Durable key-scoped value storage | *(pending — `adapters`)* | `FakeKeyValueStore` | `KeyValueStoreConformance` |
+| `Clock` | Time, injected so timeouts are testable | `SystemClock` | `FakeClock` | `ClockConformance` |
+| `ModelProvider` | Completions and streaming from one provider | Native and compatible providers in `models.providers` | `FakeModelProvider` | `ModelProviderConformance` |
+| `ToolRegistry` | Declared tools and their invocation | `tesserix_adk.tools.ToolRegistry` | `FakeToolRegistry` | Runtime and registry tests |
+| `KeyValueStore` | Durable key-scoped value storage | Consumer adapters | `FakeKeyValueStore` | `KeyValueStoreConformance` |
 | `MemoryStore` | Working, profile, episodic and semantic memory under a scope — see [memory.md](memory.md) | `InMemoryMemoryStore` | `InMemoryMemoryStore` | `MemoryStoreConformance` |
 | `ContradictionPolicy` | What an incoming profile record does to the live one — see [beliefs.md](beliefs.md) | `SupersedeMatching` | `SupersedeMatching` | *(covered by `MemoryStoreConformance`)* |
 | `DecayPolicy` | How much of a record survives its age or its own uncertainty | `HalfLife`, `ConfidenceFloor` | `HalfLife` | *(covered by `MemoryStoreConformance`)* |
-| `Guardrail` | An inline check on the call path | *(pending — `guardrails`)* | *(pending)* | *(pending)* |
+| `Guardrail` | An inline check on the call path | `Guard`, PII, injection, content, and output guards | `FakeGuardrail` | `GuardrailConformance` |
 | `BudgetPolicy` | Spend and usage limits around metered calls | `RunBudget`, `UnlimitedBudget` | `FakeBudgetPolicy` | `BudgetPolicyConformance` |
-| `Tracer` | Sideband spans and events | *(pending — `observability`)* | `FakeTracer` | `TracerConformance` |
+| `Tracer` | Sideband spans and events | Consumer/OpenTelemetry bridge | `FakeTracer` | `TracerConformance` |
 
-Rows marked pending are owned by the epic named in the cell. A story that adds an
-implementation adds its row in the same change.
+The wider package also defines focused protocols for secrets, idempotency, memory, state,
+checkpoints, leases, work queues, events, peer transports, registries, and gateway
+sessions. Use the protocol closest to the boundary rather than a generic plugin object.
 
 ## Three checks, three different things
 
@@ -68,3 +69,14 @@ in `.importlinter`.
 **Adding a member is a breaking change.** Every existing implementation stops
 conforming. It follows the deprecation policy, and the conformance suite gains the
 new case in the same change.
+
+## Known limitations
+
+- Runtime conformance checks verify member presence, not signatures. Keep
+  `mypy --strict` and the behavioral suite in the adapter project.
+- Protocol implementations are wired explicitly; the base package does not auto-import
+  third-party plugins. This keeps startup and the dependency graph deterministic.
+- A Python `Agent.output_type` is not serialized as executable code.
+  `AgentDefinition` stores its JSON Schema so the reviewed artifact keeps the contract.
+- Adding a required member affects every external implementation and must follow the
+  versioning policy.

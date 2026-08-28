@@ -104,4 +104,4 @@ obligation that a refusal carries a matchable code and never quotes the payload 
 
 - [`docs/guardrails.md`](guardrails.md) — the pipeline these guards run in
 - [`docs/prompt-injection.md`](prompt-injection.md) — what the injection cases are testing
-- [`examples/guard_testing.py`](../examples/guard_testing.py)
+- [`examples/guard_testing.py`](https://github.com/tesserix/agent-development-kit/blob/main/examples/guard_testing.py)

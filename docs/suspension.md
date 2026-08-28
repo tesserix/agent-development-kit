@@ -126,7 +126,9 @@ code = await approvals_main(
 )
 ```
 
-```
+An embedding product may expose that callback wiring as:
+
+```console
 adk approvals list --tenant acme
 adk approvals approve --token <token> --by ada --reason "invoice checked"
 adk approvals deny --token <token> --by ada

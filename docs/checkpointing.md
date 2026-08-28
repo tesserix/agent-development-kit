@@ -166,7 +166,9 @@ because the new execution would otherwise carry on unapproved.
 
 ## From a terminal
 
-The run waiting on an approval since Friday is usually resumed by an on-call engineer:
+A run waiting on an approval since Friday is usually resumed by an on-call engineer. The
+kit supplies `frontier_main` and `resume_main` callables; an embedding product may wire
+its stores and expose them as:
 
 ```console
 $ adk inspect run_1 --tenant acme          # takes no lease
