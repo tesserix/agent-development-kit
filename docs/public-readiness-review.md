@@ -162,9 +162,9 @@ the requirement, not because both projects share three initials.
 - [x] Strict local documentation build and link test
 - [x] GitHub Pages workflow in source
 - [x] GitHub Actions pinned to reviewed commit SHAs
-- [ ] Repository made public
-- [ ] Pages source enabled and deployed
-- [ ] Public security settings verified
+- [x] Repository made public
+- [x] Pages source enabled and deployed
+- [x] Public security settings verified
 - [ ] Organization-owned conduct-report contact chosen
 - [ ] PyPI/trusted-publisher ownership verified
 - [ ] First external clean-room onboarding completed
@@ -174,7 +174,7 @@ the requirement, not because both projects share three initials.
 Final verification on 2026-08-28 used Python 3.13.15:
 
 - `make check`: passed all lint, formatting, import-boundary, strict typing, dependency,
-  API, event, replay, release, documentation, and test gates; 9,121 tests passed, 2 were
+  API, event, replay, release, documentation, and test gates; 9,122 tests passed, 2 were
   skipped, 125 were deselected by the coverage profile, and total coverage was 99.07%.
 - `make audit`, `make secrets`, and `make licences`: passed with no locked advisories,
   credential-shaped values, or licence-policy violations.
@@ -188,5 +188,17 @@ Final verification on 2026-08-28 used Python 3.13.15:
   registry verification, and custom gateway-binding selection all passed without network
   credentials.
 
-These source and artifact checks do not replace the unchecked GitHub, Pages, organization,
+Hosted verification on 2026-08-28 confirmed:
+
+- the repository is public with its documentation URL, description, and discovery topics;
+- the GitHub Pages workflow deployed successfully and the HTTPS page returned HTTP 200;
+- Security, CodeQL Python, CodeQL Actions, dependency graph, and documentation checks
+  completed successfully on the public commit;
+- secret scanning, push protection, Dependabot security updates, private vulnerability
+  reporting, read-only default workflow tokens, full-SHA action pinning, and the action
+  publisher allowlist are enabled; and
+- active branch and tag rulesets require reviewed, code-owned pull requests for `main`
+  with no direct-push bypass and restrict release-tag creation to repository admins.
+
+These source, artifact, and hosted checks do not replace the unchecked organization,
 PyPI, or external clean-room actions in the launch checklist.

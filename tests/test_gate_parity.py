@@ -13,6 +13,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 CI = ROOT / ".github" / "workflows" / "ci.yml"
+MAKEFILE = ROOT / "Makefile"
 PRE_COMMIT = ROOT / ".pre-commit-config.yaml"
 
 
@@ -49,6 +50,11 @@ def test_ci_lint_checks_formatting_as_well_as_rules() -> None:
 
 def test_ci_typecheck_is_strict() -> None:
     assert any("mypy" in step and "--strict" in step for step in _ci_run_steps("typecheck"))
+
+
+def test_local_and_ci_typecheck_install_every_optional_sdk_they_analyse() -> None:
+    assert "uv sync --frozen --all-groups --all-extras" in MAKEFILE.read_text(encoding="utf-8")
+    assert any("uv sync" in step and "--all-extras" in step for step in _ci_run_steps("typecheck"))
 
 
 def test_ci_reports_annotation_coverage_of_the_public_surface() -> None:
