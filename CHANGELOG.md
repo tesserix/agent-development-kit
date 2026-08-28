@@ -8,48 +8,668 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.52.0
+
 ### Added
 
-- Hosted OpenAI-compatible presets for Groq, xAI/Grok, and OpenRouter, including their
-  provider-specific completion paths and credential-variable defaults. Compatible
-  providers also accept protected custom gateway/attribution headers.
-- An optional `tesserix-adk[a2a]` adapter for official A2A 1.x Agent Cards and clients,
-  vendor-neutral registry resolution, card verification, and custom gateway protocol
-  bindings. The existing `tesserix_adk.a2a` typed peer protocol remains separate.
-- Root imports for `Agent`, `AgentRunner`, `ToolRegistry`, and `tool`, plus
-  `Run.text` and a runnable `python -m tesserix_adk.cli {evals,trace}` entry point.
-- Public onboarding, provider/A2A/integration/testing documentation, Apache-2.0 licence,
-  contribution templates, strict documentation gates, and a GitHub Pages workflow.
+- **tesserix_adk.adapters.McpClient**: `McpClient` adopts one MCP server's tools as native kit tools: arguments validated in
+this process against the server's own schema, the kit's timeout and error taxonomy, and
+every result sealed in the untrusted-data envelope. A tool whose schema the kit cannot
+validate a call against is refused as an `McpSchemaError` naming the server, the tool and
+the construct, and the server's remaining tools still load. Servers are declared as
+configuration through the new `McpConfig` and `McpServerConfig`, so adding one is an
+environment variable rather than code.
+- **tesserix_adk.adapters.McpTransport**: `McpTransport` is the one seam between an MCP server run as a subprocess and the same
+server run as an HTTP endpoint: `StdioTransport`, `HttpTransport` and `RecordingTransport`
+implement it, `transport_for` builds the one a declaration asks for, and `TransportSession`
+speaks MCP over any of them. Moving a server between the two is now `transport` in
+`McpServerConfig` and nothing else. Both transports keep the same message-size, read-timeout
+and in-flight ceilings; a child inherits only the variables in `env_allow` and is terminated
+on close, cancellation and failure; a redirect or an HTML error page is a typed
+`McpTransportError` rather than something parsed as protocol.
+- **tesserix_adk.adapters.TenantAuthority**: An MCP call now carries the caller rather than the platform. `TenantAuthority` assembles
+one call's authority from the run — the bound tenant, the resolved identity, the trace —
+mints a credential per tenant, subject and server through the configured
+`CredentialProvider`, and replaces it ahead of expiry rather than after. `CallerContext`
+reads the bound tenant instead of taking one as an argument, so no tool states a tenant
+other than the one its run executes under. `AuthorisingSession` puts the context in
+`_meta` on every transport and `HttpTransport` takes an `authority=` that is resolved
+before a message is built, so a call that cannot be attributed or authorised sends
+nothing. `arriving_call` is the server half, refusing a call that names no tenant instead
+of running it under the server's own, and `redacted` masks credential material out of a
+result before it can reach a transcript, a span or a memory.
+- **tesserix_adk.adapters.ResilientSession**: An MCP server that is slow, unavailable or wrong now degrades one capability rather than a
+run. `ResilientSession` wraps any session and applies the policy declared on
+`McpServerConfig`: a connect and a discovery deadline, a call bounded by both its own
+ceiling and whatever is left of the run's, bounded retries with jittered backoff for
+transport faults only — never for a refusal, a validation failure or an effectful call
+without an idempotency key — and a per-session circuit breaker that opens on consecutive
+faults, refuses calls with a typed `McpServerUnavailableError` rather than substituting
+anything, and half-opens for a single probe. `McpServerConfig` gains `required`,
+`connect_timeout_seconds`, `discovery_timeout_seconds`, `retry`, `breaker_failures` and
+`breaker_reset_seconds`. `assembled` adopts a fleet of servers, raising for a required
+server that cannot be reached and returning the absence of an optional one as `Degraded`,
+which `McpFleet.notice()` states to the model inside the untrusted-data envelope. A result
+is now held to the tool's own result schema: structured content that violates it, or a
+promise of structured content the server did not keep, raises `McpProtocolError` carrying
+the raw payload rather than reaching a model as a partial answer. `ServerHealth` and a
+per-operation span carry the outcome class, breaker state, retries and latency, and
+`FaultyMcpServer` in the testing package injects unreachable, slow, flapping, malformed and
+truncated servers with no network.
+- **tesserix_adk.adapters.McpServer**: Kit tools can now be published over MCP without being reimplemented. `McpServer` takes a
+registry view plus an explicit export allowlist and serves `initialize`, `tools/list` and
+`tools/call`; `McpServer.connect()` returns an `ExportedSession`, which implements the same
+session protocol the kit's MCP client consumes, so the published server can be driven in
+process by the client that would otherwise reach it over a socket. Descriptors are
+generated from the `@tool` definitions by `published()`, so a published schema cannot drift
+from the body behind it. A remote caller cannot obtain weaker guarantees than a local one:
+an unexported name is refused as not found in wording identical to a name nobody
+registered, a call naming no tenant raises `McpAuthError` before the body is entered,
+arguments are validated against the published schema and refused scrubbed, the registry's
+own ceiling applies rather than the ceiling the request asked for, results are redacted
+before serialisation, and per-tenant lanes stop one caller taking the process. An
+approval-required tool answers with an error result whose refusal code is
+`approval_required`, carrying an `ApprovalRecord` digest rather than the arguments, instead
+of running because the caller is remote. A protocol revision the server does not speak is
+refused at `initialize`, and `reload()` publishes a new allowlist to later sessions without
+widening an open one.
+- **tesserix_adk.a2a.card_for**: An agent now publishes a machine-readable card describing what a peer may call on it.
+`card_for` generates an `AgentCard` from the `AgentDefinition` and the tools deliberately
+handed to it — identity and version, provider, one `AgentSkill` per export with its input
+and output schemas, required scopes, idempotence and approval gate, and `AgentLimits` taken
+from the agent's own declared concurrency and deadlines. Nothing on a card is hand
+maintained, so a card cannot describe an agent that no longer exists. Export is
+default-deny: a tool that is not handed in is neither published nor named, including in a
+refusal. A card that could not be published honestly — an export the agent may not call, a
+skill with no description, arguments that are not a JSON object, more skills than
+`MAX_SKILLS`, or a rendering over `MAX_CARD_BYTES` — raises `AgentCardError` naming the
+skill at generation, so a deployment fails to start rather than serving a card peers then
+call incorrectly. `CardEndpoint` serves it at `/.well-known/agent-card.json` on any ASGI
+application, with an ETag, a cache lifetime, `304` for an unchanged card, `405` for a write
+and `404` elsewhere; `serve()` republishes, which is how a degraded agent reports
+`available=False` rather than advertising capability that will fail. `adk card` renders the
+card and `adk card --lint` reports what a peer would receive. `AgentCard` gains its
+identity, provider, skills, limits, task-class and availability fields; its delegation
+fields are unchanged and it now lives in `tesserix_adk.a2a.card`, re-exported from
+`tesserix_adk.a2a` and `tesserix_adk.a2a.delegation` as before.
+- **tesserix_adk.a2a.RegistryPeers**: An agent can now find a peer by capability instead of by hard-coded endpoint. `PeerDiscovery`
+is the protocol, `RegistryPeers` resolves through whatever registry the org runs, and
+`StaticPeers` resolves the same needs from configuration with the same matching rules, so
+discovery is substitutable and a test never needs a registry. A `PeerNeed` names an agent or
+a skill, an optional version constraint (`""`, `"2"`, `"2.1"`, `"2.1.0"`, `">=2.1.0"`) and
+the tenant the work belongs to; where several peers satisfy it the newest wins with ties
+broken by name, so the choice is reproducible, and `PeerResolution.attributes()` records
+peer, version, source, digest and staleness for attribution. Every registry entry is
+validated whole before it is used and rejected whole where it does not validate, with the
+refusal kept in `rejections`. A peer outside the calling tenant's allowlist is never
+returned and is not named in the refusal, and a pinned peer whose card has moved raises
+`fingerprint_mismatch` rather than being followed. Answers are cached with a TTL and keyed
+by tenant, an unmatched need is negatively cached, and an unreachable registry serves a
+recent answer as stale rather than failing the call — but nothing beyond `stale_seconds` is
+served, a registry that hangs raises `timed_out` at discovery's own ceiling rather than
+spending the run's deadline, and every other failure raises a typed `PeerDiscoveryError`
+instead of guessing an endpoint. `invalidate(need)` drops an entry after a call to a
+withdrawn peer fails.
+- **tesserix_adk.a2a.PeerClient**: Calling another agent is now a typed operation rather than a prompt over HTTP.
+`PeerClient.invoke(skill, payload)` holds the payload to the input schema the peer
+published before anything is sent and the answer to the output schema before anything is
+returned, so a schema violation is a `PeerInvocationError` naming peer, skill, reason and
+the raw payload rather than a coerced result. The delegation carries the original tenant
+and subject with the caller's scope narrowed to what the skill declares — attenuation only,
+never widening — and the hop joins the caller's trace as a child span, so both agents appear
+in one trace. What the peer reports spending is charged to the calling run, a call the
+remaining budget cannot cover is refused before it is made, and usage that is missing or
+implausible is bounded at `max_reported_tokens` and flagged `usage_trusted=False` while the
+run's own ceiling still bites. `stream()` yields `PeerProgress` while the peer works;
+cancellation and deadlines reach the peer through `PeerTransport.cancel`, and a late answer
+to a cancelled call is discarded rather than injected into the run. A cycle across agents is
+refused with the path before the call is made, an idempotency key travels with retried
+effectful calls, and `PeerResult.redacted()` is what reaches telemetry or memory.
+`adapters.peer_tool(client, skill)` offers a permitted peer skill to a model as an ordinary
+kit tool, taking its schemas, idempotency, approval gate and timeout from the card, and
+fencing a peer-written description that screens as an instruction.
+- `PeerBoundary` treats a peer's answer as untrusted input: sealed as data, screened field by
+field, stripped of forged structure and redacted before anything records it, under a
+per-peer trust policy. `permitted` refuses an approval-gated, money-moving or further
+delegating action whose only justification is what a peer said, and `PEER_CORPUS` is the
+offline conformance set of hostile answers.
+- Persisted state is written as a versioned envelope: `packed` and `unpacked` carry a
+`schema_version` on every session, run, checkpoint and queue item, `StateRegistry` applies
+registered migrations on read within a two-version window, and `canonical_json` gives stable
+bytes with exact decimals and integers. A record from a newer build raises
+`UnsupportedStateVersionError` and is left untouched, and fields this build does not declare
+survive a round-trip so a rolling deploy does not lose them.
+- `EventPublisher` gives agent activity one contract: a typed catalogue from `RunStarted` to
+`MemoryErased`, an envelope carrying a ULID event id, schema version, tenant and user scope,
+trace, span and causation, and `Eventing` to build and publish it. Scope comes from the
+ambient tenant context rather than each publish site, every attribute is redacted before the
+publisher sees it, and `ALLOWED_ATTRIBUTES` leaves no field message content could travel in.
+`Delivery` says in one place whether a broker being down stops the run. `publishing` bridges
+a watched run's progress to events, and `InMemoryEventPublisher` with `assert_events` makes
+a sequence assertable with no broker.
+- `JetStreamEventPublisher` and `DurableConsumer` put the event spine on the NATS JetStream
+the org already runs. Publishes carry the event id as the `Nats-Msg-Id` dedupe header, so a
+retry after an ambiguous ack is one message on the stream and not two, and the ambiguity is
+counted rather than hidden. `StreamRequirement` is checked at construction: a missing
+stream, a retention this adapter was not written for, a stream that forgets sooner than the
+deployment documented, or one whose messages are smaller than the events being published all
+raise `ConfigurationError` instead of publishing into a void that reports success. Under
+best-effort delivery an unreachable broker fills a bounded buffer and drops the oldest with a
+count, never memory without a limit. `DurableConsumer` acks only after its handler returns,
+leaves a failure for redelivery, and buries the last attempt — or anything that is not an
+envelope — through a dead letter rather than replaying it for ever. `subject_for` keeps the
+tenant a plain token, so no subject this kit builds can reach another tenant's events.
+- `IdempotentConsumer` makes an at-least-once event stream safe to act on. It records a
+processed marker keyed on the consumer group and the event id — in the same transaction as
+the handler's state change where one is given — so a redelivery after an ack timeout, a
+reaper requeue or a rolling deploy suppresses the second execution rather than double
+charging a budget or sending a second notification. Two workers racing the same redelivery
+are separated by the store's in-flight guard: one runs, the other is told to let the broker
+redeliver rather than acking behind it. A dedupe window shorter than the broker's redelivery
+horizon is refused at construction, an id a publisher reissued for a different event is
+rejected instead of silently deduplicating an unrelated effect, and an event that has failed
+`max_attempts` times is buried with its failure history — exception types only, never a
+message — instead of being redelivered for ever.
+- `PostgresOutbox` and `OutboxRelay` make an event exactly as reliable as the transaction that
+caused it. The outbox is an `EventPublisher` that inserts into a table on the caller's own
+session, so a run result and its event commit together or roll back together — no phantom
+completion downstream, and no completed run nothing hears about. The relay claims a whole run
+at a time under a transaction-scoped advisory lock, so several replicas can run without two of
+them holding the same run's events and without those events overtaking each other; it
+publishes before it marks, so a crash in between republishes rather than loses, and the
+duplicate is collapsed by publish-side dedupe on the event id. A transport outage accumulates
+rows instead of dropping them, `lag()` reports the unpublished count and the oldest waiting
+age for alerting, `prune()` clears published history without ever touching unpublished work,
+and a row that is undecodable or larger than the transport will carry is dead-lettered rather
+than stalling the head of its run. The absence of global ordering and of a Redis-backed outbox
+are documented rather than implied.
+- Events now carry a versioned, published contract. `EventSchemaRegistry` maps an event type
+and version to the model that validates it, `Eventing` stamps the current version and refuses
+a type nothing registered a schema for, and `read_envelope` decodes what another publisher
+wrote — dropping envelope fields this version has never heard of, keeping unknown attributes,
+and upcasting an older event one registered step at a time. A version above the readable
+window or a type this kit has never heard of raises `UnsupportedEventVersionError` or
+`UnknownEventTypeError` so a consumer parks the message rather than crash-looping on every
+redelivery. The contracts are generated as JSON Schema into `docs/event-schemas.json`,
+published as a release asset, and diffed by `make event-schema-check` in CI: a removed or
+renamed field, a changed type, a newly required field or a removed enum member fails the
+build naming the event, the version and the field, while an added optional field, a new enum
+member and a new version of a type pass. What is stable and what is not, and the parallel
+emission that deprecates a version, are documented in `docs/event-contract.md`.
+- Dead-letter inspection and safe replay: `InMemoryDeadLetters`, `DeadLetterQuery`,
+`Replayer` and `adk dead-letters` (list/show/replay, with `--dry-run`). Replay goes
+through the live consumer path, is scoped to one tenant, capped to a batch, marked on every
+envelope with `replay_id`, and audited as one `EventsReplayed` event. See
+[`docs/dead-letters.md`](docs/dead-letters.md).
+- Tesserix ADK can connect Groq, xAI/Grok, and OpenRouter through hosted
+OpenAI-compatible presets, generate and consume official A2A 1.x Agent Cards through the
+optional `a2a` extra, and onboard consumers through a public quickstart, provider recipes,
+integration guidance, and strict GitHub Pages documentation.
+
+Public adoption now includes lockfile-driven stable and canary update guidance, accurate
+PyPI/alpha channel status, and a CODEOWNERS-backed pull-request-only governance contract
+for `main`.
+- Tesserix agents can now run behind the official A2A 1.x task contract and be consumed by
+Google ADK 2.8 through optional, fail-closed bridges. The server bridge preserves verified
+tenant and subject attribution, bounded text input and final artifacts, cancellation, and
+generic terminal errors while the official request handler and task store retain lifecycle
+ownership.
+
+The repository now also adopts Contributor Covenant 2.1 with private conduct reporting to
+the organization-owned `support@tesserix.app` address.
+- prepare ADK for public adoption
 
 ### Changed
 
-- GitHub Actions are pinned to reviewed commit SHAs while Dependabot remains configured
-  to propose updates.
-- The getting-started example now executes a real offline agent/tool loop through the
-  root public API.
+- **tesserix_adk.adapters.ToolSurface**: An agent's MCP tool surface is now declared rather than discovered. `McpServerConfig.allow`
+is default-deny — empty adopts nothing, `*` adopts what is advertised — with a `deny` that
+wins over it, a `prefix` that namespaces a server's tools apart, and a `max_schema_bytes`
+budget beside the existing tool-count cap. A tool that is not adopted is never registered
+and never described to a model. `namespaced` is the whole naming rule, sanitising and
+truncating deterministically so two tools cannot become one name, and `ToolSurface`
+resolves what each server contributed: server, its own name, the model-facing name and a
+fingerprint of its schemas, printable as a report or through the new `adk surface` command.
+Two tools that would answer to one name now raise `McpToolConflictError` naming both
+origins, including a remote tool answering to a local one, where discovery previously
+withheld it and reported it on `McpDiscovery.conflicts`; an allowlist naming a tool a
+server does not advertise is now a `ConfigurationError` rather than a rejection line. A
+resolved surface can be pinned with `SurfacePin`, and a later discovery that added, dropped
+or reshaped a tool raises `McpSurfaceDriftError`. A tool description that screens as
+instructions is carried inside the untrusted-data envelope rather than as a line in the
+tool list.
 
 ### Public API surface
 
 - Added: `tesserix_adk.Agent`
 - Added: `tesserix_adk.AgentRunner`
 - Added: `tesserix_adk.ToolRegistry`
-- Added: `tesserix_adk.tool`
+- Added: `tesserix_adk.a2a.AgentCardError`
+- Added: `tesserix_adk.a2a.AgentLimits`
+- Added: `tesserix_adk.a2a.AgentProvider`
+- Added: `tesserix_adk.a2a.AgentSkill`
+- Added: `tesserix_adk.a2a.CardEndpoint`
+- Added: `tesserix_adk.a2a.DEFAULT_DISCOVERY_TIMEOUT_SECONDS`
+- Added: `tesserix_adk.a2a.DEFAULT_KEPT_BYTES`
+- Added: `tesserix_adk.a2a.DEFAULT_MAX_CONTENT_BYTES`
+- Added: `tesserix_adk.a2a.DEFAULT_MAX_REPORTED_TOKENS`
+- Added: `tesserix_adk.a2a.DEFAULT_NEGATIVE_TTL_SECONDS`
+- Added: `tesserix_adk.a2a.DEFAULT_PEER_TIMEOUT_SECONDS`
+- Added: `tesserix_adk.a2a.DEFAULT_PEER_TTL_SECONDS`
+- Added: `tesserix_adk.a2a.DEFAULT_STALE_SECONDS`
+- Added: `tesserix_adk.a2a.MAX_CARD_BYTES`
+- Added: `tesserix_adk.a2a.MAX_SKILLS`
+- Added: `tesserix_adk.a2a.PeerActionError`
+- Added: `tesserix_adk.a2a.PeerBoundary`
+- Added: `tesserix_adk.a2a.PeerCall`
+- Added: `tesserix_adk.a2a.PeerClient`
+- Added: `tesserix_adk.a2a.PeerContent`
+- Added: `tesserix_adk.a2a.PeerDiscovery`
+- Added: `tesserix_adk.a2a.PeerDiscoveryError`
+- Added: `tesserix_adk.a2a.PeerDiscoveryReason`
+- Added: `tesserix_adk.a2a.PeerInvocationError`
+- Added: `tesserix_adk.a2a.PeerInvocationReason`
+- Added: `tesserix_adk.a2a.PeerNeed`
+- Added: `tesserix_adk.a2a.PeerProgress`
+- Added: `tesserix_adk.a2a.PeerRejection`
+- Added: `tesserix_adk.a2a.PeerReply`
+- Added: `tesserix_adk.a2a.PeerResolution`
+- Added: `tesserix_adk.a2a.PeerResult`
+- Added: `tesserix_adk.a2a.PeerSuspicionError`
+- Added: `tesserix_adk.a2a.PeerTransport`
+- Added: `tesserix_adk.a2a.PeerTrustPolicy`
+- Added: `tesserix_adk.a2a.ProposedAction`
+- Added: `tesserix_adk.a2a.RegistryFetch`
+- Added: `tesserix_adk.a2a.RegistryPeers`
+- Added: `tesserix_adk.a2a.SkillSource`
+- Added: `tesserix_adk.a2a.StaticPeers`
+- Added: `tesserix_adk.a2a.StreamingPeerTransport`
+- Added: `tesserix_adk.a2a.TraceCarrier`
+- Added: `tesserix_adk.a2a.TrustDecision`
+- Added: `tesserix_adk.a2a.UnsupportedSchemaError`
+- Added: `tesserix_adk.a2a.WELL_KNOWN_PATH`
+- Added: `tesserix_adk.a2a.boundary.DEFAULT_KEPT_BYTES`
+- Added: `tesserix_adk.a2a.boundary.DEFAULT_MAX_CONTENT_BYTES`
+- Added: `tesserix_adk.a2a.boundary.PeerActionError`
+- Added: `tesserix_adk.a2a.boundary.PeerBoundary`
+- Added: `tesserix_adk.a2a.boundary.PeerContent`
+- Added: `tesserix_adk.a2a.boundary.PeerSuspicionError`
+- Added: `tesserix_adk.a2a.boundary.PeerTrustPolicy`
+- Added: `tesserix_adk.a2a.boundary.ProposedAction`
+- Added: `tesserix_adk.a2a.boundary.TrustDecision`
+- Added: `tesserix_adk.a2a.card.AgentCard`
+- Added: `tesserix_adk.a2a.card.AgentCardError`
+- Added: `tesserix_adk.a2a.card.AgentLimits`
+- Added: `tesserix_adk.a2a.card.AgentProvider`
+- Added: `tesserix_adk.a2a.card.AgentSkill`
+- Added: `tesserix_adk.a2a.card.CardEndpoint`
+- Added: `tesserix_adk.a2a.card.MAX_CARD_BYTES`
+- Added: `tesserix_adk.a2a.card.MAX_SKILLS`
+- Added: `tesserix_adk.a2a.card.SkillSource`
+- Added: `tesserix_adk.a2a.card.WELL_KNOWN_PATH`
+- Added: `tesserix_adk.a2a.card.card_for`
+- Added: `tesserix_adk.a2a.card_for`
+- Added: `tesserix_adk.a2a.checkable`
+- Added: `tesserix_adk.a2a.conforms`
+- Added: `tesserix_adk.a2a.discovery.DEFAULT_DISCOVERY_TIMEOUT_SECONDS`
+- Added: `tesserix_adk.a2a.discovery.DEFAULT_NEGATIVE_TTL_SECONDS`
+- Added: `tesserix_adk.a2a.discovery.DEFAULT_PEER_TTL_SECONDS`
+- Added: `tesserix_adk.a2a.discovery.DEFAULT_STALE_SECONDS`
+- Added: `tesserix_adk.a2a.discovery.PeerDiscovery`
+- Added: `tesserix_adk.a2a.discovery.PeerDiscoveryError`
+- Added: `tesserix_adk.a2a.discovery.PeerDiscoveryReason`
+- Added: `tesserix_adk.a2a.discovery.PeerNeed`
+- Added: `tesserix_adk.a2a.discovery.PeerRejection`
+- Added: `tesserix_adk.a2a.discovery.PeerResolution`
+- Added: `tesserix_adk.a2a.discovery.RegistryFetch`
+- Added: `tesserix_adk.a2a.discovery.RegistryPeers`
+- Added: `tesserix_adk.a2a.discovery.StaticPeers`
+- Added: `tesserix_adk.a2a.discovery.fingerprint`
+- Added: `tesserix_adk.a2a.fingerprint`
+- Added: `tesserix_adk.a2a.invocation.DEFAULT_MAX_REPORTED_TOKENS`
+- Added: `tesserix_adk.a2a.invocation.DEFAULT_PEER_TIMEOUT_SECONDS`
+- Added: `tesserix_adk.a2a.invocation.PeerCall`
+- Added: `tesserix_adk.a2a.invocation.PeerClient`
+- Added: `tesserix_adk.a2a.invocation.PeerInvocationError`
+- Added: `tesserix_adk.a2a.invocation.PeerInvocationReason`
+- Added: `tesserix_adk.a2a.invocation.PeerProgress`
+- Added: `tesserix_adk.a2a.invocation.PeerReply`
+- Added: `tesserix_adk.a2a.invocation.PeerResult`
+- Added: `tesserix_adk.a2a.invocation.PeerTransport`
+- Added: `tesserix_adk.a2a.invocation.StreamingPeerTransport`
+- Added: `tesserix_adk.a2a.invocation.TraceCarrier`
+- Added: `tesserix_adk.a2a.invocation.UnsupportedSchemaError`
+- Added: `tesserix_adk.a2a.invocation.checkable`
+- Added: `tesserix_adk.a2a.invocation.conforms`
 - Added: `tesserix_adk.adapters.A2ABearerSecurity`
 - Added: `tesserix_adk.adapters.A2ACardError`
+- Added: `tesserix_adk.adapters.A2AExecutionError`
 - Added: `tesserix_adk.adapters.A2AInterface`
+- Added: `tesserix_adk.adapters.A2APrincipalResolver`
 - Added: `tesserix_adk.adapters.A2ARegistry`
 - Added: `tesserix_adk.adapters.A2ARegistryError`
 - Added: `tesserix_adk.adapters.A2ASkill`
+- Added: `tesserix_adk.adapters.APPROVAL_REQUIRED`
+- Added: `tesserix_adk.adapters.AuthorisingSession`
+- Added: `tesserix_adk.adapters.BreakerState`
+- Added: `tesserix_adk.adapters.CallAuthority`
+- Added: `tesserix_adk.adapters.CallerContext`
+- Added: `tesserix_adk.adapters.DEFAULT_DEDUPE_TTL_SECONDS`
+- Added: `tesserix_adk.adapters.DEFAULT_EVENT_SUBJECT`
+- Added: `tesserix_adk.adapters.DEFAULT_MAX_ATTEMPTS`
+- Added: `tesserix_adk.adapters.DEFAULT_OUTBOX_TABLES`
+- Added: `tesserix_adk.adapters.DEFAULT_RETENTION_SECONDS`
+- Added: `tesserix_adk.adapters.DEFAULT_STREAM_REQUIREMENT`
+- Added: `tesserix_adk.adapters.DeadLetter`
+- Added: `tesserix_adk.adapters.DeadLetterQuery`
+- Added: `tesserix_adk.adapters.DeadLetterRecord`
+- Added: `tesserix_adk.adapters.DeadLetterStats`
+- Added: `tesserix_adk.adapters.DeadLetterStore`
+- Added: `tesserix_adk.adapters.Degraded`
+- Added: `tesserix_adk.adapters.DurableConsumer`
+- Added: `tesserix_adk.adapters.EXPECTED_OUTBOX_SCHEMA`
+- Added: `tesserix_adk.adapters.ErasureCheck`
+- Added: `tesserix_adk.adapters.ExportedSession`
+- Added: `tesserix_adk.adapters.HttpTransport`
+- Added: `tesserix_adk.adapters.IdempotentConsumer`
+- Added: `tesserix_adk.adapters.InMemoryDeadLetters`
+- Added: `tesserix_adk.adapters.IncomingCall`
+- Added: `tesserix_adk.adapters.JetStreamContext`
+- Added: `tesserix_adk.adapters.JetStreamEventPublisher`
+- Added: `tesserix_adk.adapters.JetStreamMessage`
+- Added: `tesserix_adk.adapters.MAX_NAME_LENGTH`
+- Added: `tesserix_adk.adapters.MAX_REPLAY_BATCH`
+- Added: `tesserix_adk.adapters.McpClient`
+- Added: `tesserix_adk.adapters.McpDiscovery`
+- Added: `tesserix_adk.adapters.McpExportError`
+- Added: `tesserix_adk.adapters.McpExportReason`
+- Added: `tesserix_adk.adapters.McpFleet`
+- Added: `tesserix_adk.adapters.McpProtocolError`
+- Added: `tesserix_adk.adapters.McpRejection`
+- Added: `tesserix_adk.adapters.McpSchemaError`
+- Added: `tesserix_adk.adapters.McpServer`
+- Added: `tesserix_adk.adapters.McpServerInfo`
+- Added: `tesserix_adk.adapters.McpServerUnavailableError`
+- Added: `tesserix_adk.adapters.McpSession`
+- Added: `tesserix_adk.adapters.McpSurfaceDriftError`
+- Added: `tesserix_adk.adapters.McpToolConflictError`
+- Added: `tesserix_adk.adapters.McpTransport`
+- Added: `tesserix_adk.adapters.McpTransportError`
+- Added: `tesserix_adk.adapters.McpTransportReason`
+- Added: `tesserix_adk.adapters.OUTBOX_SCHEMA_VERSION`
+- Added: `tesserix_adk.adapters.OutboxLag`
+- Added: `tesserix_adk.adapters.OutboxRelay`
+- Added: `tesserix_adk.adapters.OutboxTables`
+- Added: `tesserix_adk.adapters.PROTOCOL_VERSION`
+- Added: `tesserix_adk.adapters.PeerArguments`
+- Added: `tesserix_adk.adapters.PostgresOutbox`
+- Added: `tesserix_adk.adapters.PostgresOutboxSettings`
+- Added: `tesserix_adk.adapters.PublishAck`
+- Added: `tesserix_adk.adapters.RecordingTransport`
+- Added: `tesserix_adk.adapters.ReplayHandler`
+- Added: `tesserix_adk.adapters.ReplayPlan`
+- Added: `tesserix_adk.adapters.ReplayReport`
+- Added: `tesserix_adk.adapters.Replayer`
+- Added: `tesserix_adk.adapters.ResilientSession`
+- Added: `tesserix_adk.adapters.ServerBreaker`
+- Added: `tesserix_adk.adapters.ServerHealth`
+- Added: `tesserix_adk.adapters.StdioTransport`
+- Added: `tesserix_adk.adapters.StreamRequirement`
+- Added: `tesserix_adk.adapters.SurfaceEntry`
+- Added: `tesserix_adk.adapters.SurfacePin`
+- Added: `tesserix_adk.adapters.TenantAuthority`
+- Added: `tesserix_adk.adapters.ToolSurface`
+- Added: `tesserix_adk.adapters.TransportSession`
+- Added: `tesserix_adk.adapters.UNDECODABLE`
+- Added: `tesserix_adk.adapters.UNKNOWN_TENANT`
+- Added: `tesserix_adk.adapters.a2a.A2ABearerSecurity`
+- Added: `tesserix_adk.adapters.a2a.A2ACardError`
+- Added: `tesserix_adk.adapters.a2a.A2AExecutionError`
+- Added: `tesserix_adk.adapters.a2a.A2AInterface`
+- Added: `tesserix_adk.adapters.a2a.A2APrincipalResolver`
+- Added: `tesserix_adk.adapters.a2a.A2ARegistry`
+- Added: `tesserix_adk.adapters.a2a.A2ARegistryError`
+- Added: `tesserix_adk.adapters.a2a.A2ASkill`
+- Added: `tesserix_adk.adapters.a2a.a2a_agent_executor`
+- Added: `tesserix_adk.adapters.a2a.a2a_card_for`
+- Added: `tesserix_adk.adapters.a2a.a2a_client_factory`
+- Added: `tesserix_adk.adapters.a2a.a2a_client_from_registry`
+- Added: `tesserix_adk.adapters.a2a_agent_executor`
 - Added: `tesserix_adk.adapters.a2a_card_for`
 - Added: `tesserix_adk.adapters.a2a_client_factory`
 - Added: `tesserix_adk.adapters.a2a_client_from_registry`
+- Added: `tesserix_adk.adapters.arriving_call`
+- Added: `tesserix_adk.adapters.assembled`
+- Added: `tesserix_adk.adapters.dead_letters.DeadLetterQuery`
+- Added: `tesserix_adk.adapters.dead_letters.DeadLetterRecord`
+- Added: `tesserix_adk.adapters.dead_letters.DeadLetterStats`
+- Added: `tesserix_adk.adapters.dead_letters.DeadLetterStore`
+- Added: `tesserix_adk.adapters.dead_letters.ErasureCheck`
+- Added: `tesserix_adk.adapters.dead_letters.InMemoryDeadLetters`
+- Added: `tesserix_adk.adapters.dead_letters.MAX_REPLAY_BATCH`
+- Added: `tesserix_adk.adapters.dead_letters.ReplayHandler`
+- Added: `tesserix_adk.adapters.dead_letters.ReplayPlan`
+- Added: `tesserix_adk.adapters.dead_letters.ReplayReport`
+- Added: `tesserix_adk.adapters.dead_letters.Replayer`
+- Added: `tesserix_adk.adapters.dead_letters.UNDECODABLE`
+- Added: `tesserix_adk.adapters.dead_letters.UNKNOWN_TENANT`
+- Added: `tesserix_adk.adapters.dedupe_key`
+- Added: `tesserix_adk.adapters.eventing.payload_of`
+- Added: `tesserix_adk.adapters.eventing.publishing`
+- Added: `tesserix_adk.adapters.fingerprint`
+- Added: `tesserix_adk.adapters.google_adk.google_adk_remote_agent`
+- Added: `tesserix_adk.adapters.google_adk_remote_agent`
+- Added: `tesserix_adk.adapters.idempotent_events.DEFAULT_DEDUPE_TTL_SECONDS`
+- Added: `tesserix_adk.adapters.idempotent_events.DEFAULT_MAX_ATTEMPTS`
+- Added: `tesserix_adk.adapters.idempotent_events.IdempotentConsumer`
+- Added: `tesserix_adk.adapters.idempotent_events.dedupe_key`
+- Added: `tesserix_adk.adapters.jetstream.DEFAULT_EVENT_SUBJECT`
+- Added: `tesserix_adk.adapters.jetstream.DEFAULT_STREAM_REQUIREMENT`
+- Added: `tesserix_adk.adapters.jetstream.DeadLetter`
+- Added: `tesserix_adk.adapters.jetstream.DurableConsumer`
+- Added: `tesserix_adk.adapters.jetstream.JetStreamContext`
+- Added: `tesserix_adk.adapters.jetstream.JetStreamEventPublisher`
+- Added: `tesserix_adk.adapters.jetstream.JetStreamMessage`
+- Added: `tesserix_adk.adapters.jetstream.PublishAck`
+- Added: `tesserix_adk.adapters.jetstream.StreamRequirement`
+- Added: `tesserix_adk.adapters.jetstream.subject_for`
+- Added: `tesserix_adk.adapters.mcp.McpClient`
+- Added: `tesserix_adk.adapters.mcp.McpDiscovery`
+- Added: `tesserix_adk.adapters.mcp.McpProtocolError`
+- Added: `tesserix_adk.adapters.mcp.McpRejection`
+- Added: `tesserix_adk.adapters.mcp.McpSchemaError`
+- Added: `tesserix_adk.adapters.mcp.McpServerInfo`
+- Added: `tesserix_adk.adapters.mcp.McpSession`
+- Added: `tesserix_adk.adapters.mcp_context.AuthorisingSession`
+- Added: `tesserix_adk.adapters.mcp_context.CallAuthority`
+- Added: `tesserix_adk.adapters.mcp_context.CallerContext`
+- Added: `tesserix_adk.adapters.mcp_context.IncomingCall`
+- Added: `tesserix_adk.adapters.mcp_context.TenantAuthority`
+- Added: `tesserix_adk.adapters.mcp_context.arriving_call`
+- Added: `tesserix_adk.adapters.mcp_context.redacted`
+- Added: `tesserix_adk.adapters.mcp_resilience.BreakerState`
+- Added: `tesserix_adk.adapters.mcp_resilience.Degraded`
+- Added: `tesserix_adk.adapters.mcp_resilience.McpFleet`
+- Added: `tesserix_adk.adapters.mcp_resilience.McpServerUnavailableError`
+- Added: `tesserix_adk.adapters.mcp_resilience.ResilientSession`
+- Added: `tesserix_adk.adapters.mcp_resilience.ServerBreaker`
+- Added: `tesserix_adk.adapters.mcp_resilience.ServerHealth`
+- Added: `tesserix_adk.adapters.mcp_resilience.assembled`
+- Added: `tesserix_adk.adapters.mcp_server.APPROVAL_REQUIRED`
+- Added: `tesserix_adk.adapters.mcp_server.ExportedSession`
+- Added: `tesserix_adk.adapters.mcp_server.McpExportError`
+- Added: `tesserix_adk.adapters.mcp_server.McpExportReason`
+- Added: `tesserix_adk.adapters.mcp_server.McpServer`
+- Added: `tesserix_adk.adapters.mcp_server.published`
+- Added: `tesserix_adk.adapters.mcp_surface.MAX_NAME_LENGTH`
+- Added: `tesserix_adk.adapters.mcp_surface.McpSurfaceDriftError`
+- Added: `tesserix_adk.adapters.mcp_surface.McpToolConflictError`
+- Added: `tesserix_adk.adapters.mcp_surface.SurfaceEntry`
+- Added: `tesserix_adk.adapters.mcp_surface.SurfacePin`
+- Added: `tesserix_adk.adapters.mcp_surface.ToolSurface`
+- Added: `tesserix_adk.adapters.mcp_surface.fingerprint`
+- Added: `tesserix_adk.adapters.mcp_surface.namespaced`
+- Added: `tesserix_adk.adapters.mcp_transport.HttpTransport`
+- Added: `tesserix_adk.adapters.mcp_transport.McpTransport`
+- Added: `tesserix_adk.adapters.mcp_transport.McpTransportError`
+- Added: `tesserix_adk.adapters.mcp_transport.McpTransportReason`
+- Added: `tesserix_adk.adapters.mcp_transport.RecordingTransport`
+- Added: `tesserix_adk.adapters.mcp_transport.StdioTransport`
+- Added: `tesserix_adk.adapters.mcp_transport.TransportSession`
+- Added: `tesserix_adk.adapters.mcp_transport.transport_for`
+- Added: `tesserix_adk.adapters.namespaced`
+- Added: `tesserix_adk.adapters.outbox.DEFAULT_OUTBOX_TABLES`
+- Added: `tesserix_adk.adapters.outbox.DEFAULT_RETENTION_SECONDS`
+- Added: `tesserix_adk.adapters.outbox.EXPECTED_OUTBOX_SCHEMA`
+- Added: `tesserix_adk.adapters.outbox.OUTBOX_SCHEMA_VERSION`
+- Added: `tesserix_adk.adapters.outbox.OutboxLag`
+- Added: `tesserix_adk.adapters.outbox.OutboxRelay`
+- Added: `tesserix_adk.adapters.outbox.OutboxTables`
+- Added: `tesserix_adk.adapters.outbox.PostgresOutbox`
+- Added: `tesserix_adk.adapters.outbox.PostgresOutboxSettings`
+- Added: `tesserix_adk.adapters.payload_of`
+- Added: `tesserix_adk.adapters.peer_tool`
+- Added: `tesserix_adk.adapters.peer_tools.PeerArguments`
+- Added: `tesserix_adk.adapters.peer_tools.peer_tool`
+- Added: `tesserix_adk.adapters.published`
+- Added: `tesserix_adk.adapters.publishing`
+- Added: `tesserix_adk.adapters.redacted`
+- Added: `tesserix_adk.adapters.subject_for`
+- Added: `tesserix_adk.adapters.transport_for`
+- Added: `tesserix_adk.cli.Build`
+- Added: `tesserix_adk.cli.Resolve`
+- Added: `tesserix_adk.cli.card.Build`
+- Added: `tesserix_adk.cli.card.main`
+- Added: `tesserix_adk.cli.card_main`
+- Added: `tesserix_adk.cli.dead_letters.main`
+- Added: `tesserix_adk.cli.dead_letters_main`
+- Added: `tesserix_adk.cli.surface.Resolve`
+- Added: `tesserix_adk.cli.surface.main`
+- Added: `tesserix_adk.cli.surface_main`
+- Added: `tesserix_adk.core.ALLOWED_ATTRIBUTES`
+- Added: `tesserix_adk.core.ApprovalDecided`
+- Added: `tesserix_adk.core.ApprovalRequested`
+- Added: `tesserix_adk.core.BudgetExceeded`
+- Added: `tesserix_adk.core.CURRENT_VERSIONS`
+- Added: `tesserix_adk.core.DEFAULT_MAX_EVENT_BYTES`
+- Added: `tesserix_adk.core.Delivery`
+- Added: `tesserix_adk.core.DuplicateInFlightError`
+- Added: `tesserix_adk.core.EVENT_SCHEMAS`
+- Added: `tesserix_adk.core.EVENT_SCHEMA_VERSION`
+- Added: `tesserix_adk.core.Envelope`
+- Added: `tesserix_adk.core.EventEnvelope`
+- Added: `tesserix_adk.core.EventIdReuseError`
+- Added: `tesserix_adk.core.EventPayload`
+- Added: `tesserix_adk.core.EventPublishError`
+- Added: `tesserix_adk.core.EventPublisher`
+- Added: `tesserix_adk.core.EventSchemaRegistry`
+- Added: `tesserix_adk.core.EventTooLargeError`
+- Added: `tesserix_adk.core.EventType`
+- Added: `tesserix_adk.core.Eventing`
+- Added: `tesserix_adk.core.EventsReplayed`
+- Added: `tesserix_adk.core.MemoryErased`
+- Added: `tesserix_adk.core.NullEventPublisher`
+- Added: `tesserix_adk.core.PublishReport`
+- Added: `tesserix_adk.core.RunCancelled`
+- Added: `tesserix_adk.core.RunCompleted`
+- Added: `tesserix_adk.core.RunFailed`
+- Added: `tesserix_adk.core.RunStarted`
+- Added: `tesserix_adk.core.STATE_REGISTRY`
+- Added: `tesserix_adk.core.SUPPORTED_WINDOW`
+- Added: `tesserix_adk.core.ScopeViolationError`
+- Added: `tesserix_adk.core.StateKind`
+- Added: `tesserix_adk.core.StateMigration`
+- Added: `tesserix_adk.core.StateMigrationError`
+- Added: `tesserix_adk.core.StateRegistry`
+- Added: `tesserix_adk.core.ToolCallCompleted`
+- Added: `tesserix_adk.core.ToolCallRequested`
+- Added: `tesserix_adk.core.UnknownEventTypeError`
+- Added: `tesserix_adk.core.UnsupportedEventVersionError`
+- Added: `tesserix_adk.core.UnsupportedStateVersionError`
+- Added: `tesserix_adk.core.Upcaster`
+- Added: `tesserix_adk.core.canonical_json`
+- Added: `tesserix_adk.core.compatibility_breaks`
+- Added: `tesserix_adk.core.config.McpConfig`
+- Added: `tesserix_adk.core.config.McpServerConfig`
+- Added: `tesserix_adk.core.errors.DuplicateInFlightError`
+- Added: `tesserix_adk.core.errors.EventIdReuseError`
+- Added: `tesserix_adk.core.errors.EventPublishError`
+- Added: `tesserix_adk.core.errors.EventTooLargeError`
+- Added: `tesserix_adk.core.errors.ScopeViolationError`
+- Added: `tesserix_adk.core.errors.StateMigrationError`
+- Added: `tesserix_adk.core.errors.UnknownEventTypeError`
+- Added: `tesserix_adk.core.errors.UnsupportedEventVersionError`
+- Added: `tesserix_adk.core.errors.UnsupportedStateVersionError`
+- Added: `tesserix_adk.core.event_schema.EVENT_SCHEMAS`
+- Added: `tesserix_adk.core.event_schema.EventSchemaRegistry`
+- Added: `tesserix_adk.core.event_schema.Upcaster`
+- Added: `tesserix_adk.core.event_schema.compatibility_breaks`
+- Added: `tesserix_adk.core.event_schema.event_schemas`
+- Added: `tesserix_adk.core.event_schema.read_envelope`
+- Added: `tesserix_adk.core.event_schemas`
+- Added: `tesserix_adk.core.events.ALLOWED_ATTRIBUTES`
+- Added: `tesserix_adk.core.events.ApprovalDecided`
+- Added: `tesserix_adk.core.events.ApprovalRequested`
+- Added: `tesserix_adk.core.events.BudgetExceeded`
+- Added: `tesserix_adk.core.events.DEFAULT_MAX_EVENT_BYTES`
+- Added: `tesserix_adk.core.events.Delivery`
+- Added: `tesserix_adk.core.events.EVENT_SCHEMA_VERSION`
+- Added: `tesserix_adk.core.events.EventEnvelope`
+- Added: `tesserix_adk.core.events.EventPayload`
+- Added: `tesserix_adk.core.events.EventPublisher`
+- Added: `tesserix_adk.core.events.EventType`
+- Added: `tesserix_adk.core.events.Eventing`
+- Added: `tesserix_adk.core.events.EventsReplayed`
+- Added: `tesserix_adk.core.events.MemoryErased`
+- Added: `tesserix_adk.core.events.NullEventPublisher`
+- Added: `tesserix_adk.core.events.PublishReport`
+- Added: `tesserix_adk.core.events.RunCancelled`
+- Added: `tesserix_adk.core.events.RunCompleted`
+- Added: `tesserix_adk.core.events.RunFailed`
+- Added: `tesserix_adk.core.events.RunStarted`
+- Added: `tesserix_adk.core.events.ToolCallCompleted`
+- Added: `tesserix_adk.core.events.ToolCallRequested`
+- Added: `tesserix_adk.core.instrumentation.span_here`
+- Added: `tesserix_adk.core.packed`
+- Added: `tesserix_adk.core.persistence.CURRENT_VERSIONS`
+- Added: `tesserix_adk.core.persistence.Envelope`
+- Added: `tesserix_adk.core.persistence.STATE_REGISTRY`
+- Added: `tesserix_adk.core.persistence.SUPPORTED_WINDOW`
+- Added: `tesserix_adk.core.persistence.StateKind`
+- Added: `tesserix_adk.core.persistence.StateMigration`
+- Added: `tesserix_adk.core.persistence.StateRegistry`
+- Added: `tesserix_adk.core.persistence.canonical_json`
+- Added: `tesserix_adk.core.persistence.packed`
+- Added: `tesserix_adk.core.persistence.revived`
+- Added: `tesserix_adk.core.persistence.unpacked`
+- Added: `tesserix_adk.core.read_envelope`
+- Added: `tesserix_adk.core.revived`
+- Added: `tesserix_adk.core.span_here`
+- Added: `tesserix_adk.core.unpacked`
 - Added: `tesserix_adk.models.providers.GROK`
 - Added: `tesserix_adk.models.providers.GROQ`
 - Added: `tesserix_adk.models.providers.OPENROUTER`
 - Added: `tesserix_adk.models.providers.XAI`
-
-The root convenience imports retain the underlying subpackages' declared stability.
-Provider presets and official A2A adapter surfaces are alpha before 1.0.
+- Added: `tesserix_adk.models.providers.compatible.GROK`
+- Added: `tesserix_adk.models.providers.compatible.GROQ`
+- Added: `tesserix_adk.models.providers.compatible.OPENROUTER`
+- Added: `tesserix_adk.models.providers.compatible.XAI`
+- Added: `tesserix_adk.testing.FaultyMcpServer`
+- Added: `tesserix_adk.testing.InMemoryEventPublisher`
+- Added: `tesserix_adk.testing.McpFault`
+- Added: `tesserix_adk.testing.PEER_CORPUS`
+- Added: `tesserix_adk.testing.PEER_CORPUS_VERSION`
+- Added: `tesserix_adk.testing.PeerCase`
+- Added: `tesserix_adk.testing.assert_events`
+- Added: `tesserix_adk.testing.events.InMemoryEventPublisher`
+- Added: `tesserix_adk.testing.events.assert_events`
+- Added: `tesserix_adk.testing.mcp.FaultyMcpServer`
+- Added: `tesserix_adk.testing.mcp.McpFault`
+- Added: `tesserix_adk.testing.peers.PEER_CORPUS`
+- Added: `tesserix_adk.testing.peers.PEER_CORPUS_VERSION`
+- Added: `tesserix_adk.testing.peers.PeerCase`
+- Added: `tesserix_adk.tool`
+- Changed: `tesserix_adk.a2a.AgentCard`
+- Changed: `tesserix_adk.a2a.delegation.AgentCard`
 
 ## 0.51.0
 
