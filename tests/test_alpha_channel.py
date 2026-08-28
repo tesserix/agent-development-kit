@@ -120,6 +120,19 @@ class TestRetention:
 
 
 class TestCommandLine:
+    @pytest.fixture(autouse=True)
+    def no_repository_versions(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(alpha, "tagged_versions", lambda: ())
+
+    def test_a_repository_release_advances_the_alpha_when_pypi_is_empty(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        monkeypatch.setattr(alpha, "released_versions", lambda: ())
+        monkeypatch.setattr(alpha, "tagged_versions", lambda: ("0.52.0",))
+
+        assert alpha.main([]) == 0
+        assert capsys.readouterr().out.strip() == "0.53.0a1"
+
     def test_the_next_alpha_is_printed_for_the_workflow_to_tag(
         self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
