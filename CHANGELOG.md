@@ -8,6 +8,14 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+### Added
+
+- **Portable Agent Definition v1 exporters**: `tesserix_adk.adapters` can now emit an
+  immutable Agent Registry artifact from a native Tesserix definition, an A2A card, a
+  digest-pinned OCI runtime, LangGraph, Google ADK, or the OpenAI Agents SDK without
+  importing third-party frameworks. The additive public surface is stable within v1;
+  exporters reject floating images, dependency versions, and inline secret material.
+
 ## 0.52.0
 
 ### Added
