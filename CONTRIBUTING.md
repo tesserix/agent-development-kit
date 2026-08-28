@@ -2,6 +2,8 @@
 
 Thank you for improving Tesserix ADK. Changes should preserve its typed boundaries,
 provider neutrality, tenant isolation, offline testability, and lean base installation.
+Participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md); conduct reports
+go privately to the organization-owned address named there, never to a public issue.
 
 ## Before opening a change
 
@@ -71,6 +73,7 @@ infrastructure belongs in the integration lane; the default suite must remain of
 - Do not include credentials, customer content, production endpoints, or generated
   environment dumps.
 
-Contributions are accepted under the [Apache License 2.0](LICENSE).
+Contributions are accepted under the [Apache License 2.0](LICENSE) and the community
+operates under the [Contributor Covenant](CODE_OF_CONDUCT.md).
 Repository ownership and enforced settings are documented in
 [Repository governance](docs/repository-governance.md).

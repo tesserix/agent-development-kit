@@ -56,7 +56,9 @@ OPTIONAL = ("native_build", "notes")
 
 # Provider and store SDKs. Behind an extra and behind a protocol, never in the base
 # install: a consumer who wants none of them should install none of them.
-INTEGRATIONS = frozenset({"a2a-sdk", "mcp", "temporalio", "graphiti-core", "redis", "psycopg"})
+INTEGRATIONS = frozenset(
+    {"a2a-sdk", "google-adk", "mcp", "temporalio", "graphiti-core", "redis", "psycopg"}
+)
 
 PREAMBLE = """# The resolved runtime graph, committed so it can be reviewed.
 # Regenerate with `make admissions`. Every line a change adds is a package every

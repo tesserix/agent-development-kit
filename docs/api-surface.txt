@@ -119,7 +119,9 @@ tesserix_adk.a2a.invocation.checkable :: def checkable(schema: 'Mapping[str, Any
 tesserix_adk.a2a.invocation.conforms :: def conforms(value: 'object', schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.adapters.A2ABearerSecurity :: class A2ABearerSecurity(AdkModel)
 tesserix_adk.adapters.A2ACardError :: class A2ACardError(AdkError)
+tesserix_adk.adapters.A2AExecutionError :: class A2AExecutionError(AdkError)
 tesserix_adk.adapters.A2AInterface :: class A2AInterface(AdkModel)
+tesserix_adk.adapters.A2APrincipalResolver :: class A2APrincipalResolver(Protocol)
 tesserix_adk.adapters.A2ARegistry :: class A2ARegistry(Protocol) {resolve(self, name: 'str') -> 'AgentCard'}
 tesserix_adk.adapters.A2ARegistryError :: class A2ARegistryError(AdkError)
 tesserix_adk.adapters.A2ASkill :: class A2ASkill(AdkModel)
@@ -309,13 +311,17 @@ tesserix_adk.adapters.WebSocketLike :: class WebSocketLike(Protocol) {close(self
 tesserix_adk.adapters.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
 tesserix_adk.adapters.a2a.A2ABearerSecurity :: class A2ABearerSecurity(AdkModel)
 tesserix_adk.adapters.a2a.A2ACardError :: class A2ACardError(AdkError)
+tesserix_adk.adapters.a2a.A2AExecutionError :: class A2AExecutionError(AdkError)
 tesserix_adk.adapters.a2a.A2AInterface :: class A2AInterface(AdkModel)
+tesserix_adk.adapters.a2a.A2APrincipalResolver :: class A2APrincipalResolver(Protocol)
 tesserix_adk.adapters.a2a.A2ARegistry :: class A2ARegistry(Protocol) {resolve(self, name: 'str') -> 'AgentCard'}
 tesserix_adk.adapters.a2a.A2ARegistryError :: class A2ARegistryError(AdkError)
 tesserix_adk.adapters.a2a.A2ASkill :: class A2ASkill(AdkModel)
+tesserix_adk.adapters.a2a.a2a_agent_executor :: def a2a_agent_executor(runner: 'AgentRunner', definition: 'AgentDefinition[OutputT]', *, resolve: 'A2APrincipalResolver', max_input_bytes: 'int' = 65536, max_output_bytes: 'int' = 1048576) -> 'AgentExecutor'
 tesserix_adk.adapters.a2a.a2a_card_for :: def a2a_card_for(definition: 'AgentDefinition[OutputT]', *, description: 'str', provider_url: 'str', interfaces: 'Iterable[A2AInterface]', skills: 'Iterable[A2ASkill]', documentation_url: 'str' = '', default_input_modes: 'Sequence[str]' = ('text/plain',), default_output_modes: 'Sequence[str]' = ('text/plain',), streaming: 'bool' = False, push_notifications: 'bool' = False, extended_agent_card: 'bool' = False, security: 'A2ABearerSecurity | None' = None) -> 'AgentCard'
 tesserix_adk.adapters.a2a.a2a_client_factory :: def a2a_client_factory(*, protocol_bindings: 'Iterable[str]' = ('JSONRPC',), transports: 'Mapping[str, TransportProducer] | None' = None, streaming: 'bool' = True, polling: 'bool' = False, accepted_output_modes: 'Iterable[str]' = (), use_client_preference: 'bool' = False) -> 'ClientFactory'
 tesserix_adk.adapters.a2a.a2a_client_from_registry :: def a2a_client_from_registry(registry: 'A2ARegistry', name: 'str', *, factory: 'ClientFactory', interceptors: 'Sequence[ClientCallInterceptor]' = (), verify: 'Callable[[AgentCard], None] | None' = None) -> 'Client'
+tesserix_adk.adapters.a2a_agent_executor :: def a2a_agent_executor(runner: 'AgentRunner', definition: 'AgentDefinition[OutputT]', *, resolve: 'A2APrincipalResolver', max_input_bytes: 'int' = 65536, max_output_bytes: 'int' = 1048576) -> 'AgentExecutor'
 tesserix_adk.adapters.a2a_card_for :: def a2a_card_for(definition: 'AgentDefinition[OutputT]', *, description: 'str', provider_url: 'str', interfaces: 'Iterable[A2AInterface]', skills: 'Iterable[A2ASkill]', documentation_url: 'str' = '', default_input_modes: 'Sequence[str]' = ('text/plain',), default_output_modes: 'Sequence[str]' = ('text/plain',), streaming: 'bool' = False, push_notifications: 'bool' = False, extended_agent_card: 'bool' = False, security: 'A2ABearerSecurity | None' = None) -> 'AgentCard'
 tesserix_adk.adapters.a2a_client_factory :: def a2a_client_factory(*, protocol_bindings: 'Iterable[str]' = ('JSONRPC',), transports: 'Mapping[str, TransportProducer] | None' = None, streaming: 'bool' = True, polling: 'bool' = False, accepted_output_modes: 'Iterable[str]' = (), use_client_preference: 'bool' = False) -> 'ClientFactory'
 tesserix_adk.adapters.a2a_client_from_registry :: def a2a_client_from_registry(registry: 'A2ARegistry', name: 'str', *, factory: 'ClientFactory', interceptors: 'Sequence[ClientCallInterceptor]' = (), verify: 'Callable[[AgentCard], None] | None' = None) -> 'Client'
@@ -373,6 +379,8 @@ tesserix_adk.adapters.dedupe_key :: def dedupe_key(*, group: 'str', event: 'Even
 tesserix_adk.adapters.eventing.payload_of :: def payload_of(event: 'ProgressEvent') -> 'EventPayload | None'
 tesserix_adk.adapters.eventing.publishing :: def publishing(stream: 'RunStream[OutputT]', eventing: 'Eventing') -> 'AsyncIterator[ProgressEvent]'
 tesserix_adk.adapters.fingerprint :: def fingerprint(descriptor: 'McpToolDescriptor') -> 'str'
+tesserix_adk.adapters.google_adk.google_adk_remote_agent :: def google_adk_remote_agent(*, name: 'str', agent_card: 'AgentCard | str', description: 'str' = '', timeout_seconds: 'float' = 60.0) -> 'RemoteA2aAgent'
+tesserix_adk.adapters.google_adk_remote_agent :: def google_adk_remote_agent(*, name: 'str', agent_card: 'AgentCard | str', description: 'str' = '', timeout_seconds: 'float' = 60.0) -> 'RemoteA2aAgent'
 tesserix_adk.adapters.graft.GraftMcpBackend :: class GraftMcpBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.graft.GraftSubprocessBackend :: class GraftSubprocessBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.grants.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables

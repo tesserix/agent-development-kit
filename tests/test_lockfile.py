@@ -16,12 +16,21 @@ LOCK = {
             "name": "tesserix-adk",
             "version": "0.1.0",
             "dependencies": [{"name": "httpx"}],
-            "optional-dependencies": {"redis": [{"name": "redis"}]},
+            "optional-dependencies": {
+                "redis": [{"name": "redis"}],
+                "server": [{"name": "server-sdk", "extra": ["http"]}],
+            },
             "dev-dependencies": {"test": [{"name": "pytest"}]},
         },
         {"name": "httpx", "version": "0.28.1", "dependencies": [{"name": "idna"}]},
         {"name": "idna", "version": "3.10"},
         {"name": "redis", "version": "6.0.0", "dependencies": [{"name": "idna"}]},
+        {
+            "name": "server-sdk",
+            "version": "1.0.0",
+            "optional-dependencies": {"http": [{"name": "starlette"}]},
+        },
+        {"name": "starlette", "version": "1.0.0"},
         {"name": "pytest", "version": "8.3.4"},
     ]
 }
@@ -55,6 +64,11 @@ class TestReach:
         self, graph: lockfile.Graph
     ) -> None:
         assert graph.reach["redis"] == frozenset({"extra:redis"})
+
+    def test_a_selected_dependency_extra_reaches_its_optional_dependencies(
+        self, graph: lockfile.Graph
+    ) -> None:
+        assert graph.reach["starlette"] == frozenset({"extra:server"})
 
     def test_a_package_reached_two_ways_carries_both_labels(self, graph: lockfile.Graph) -> None:
         """idna arrives through the base set and through the redis extra."""

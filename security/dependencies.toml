@@ -46,6 +46,15 @@ surface rather than the protobuf-backed 1.x types used by the adapter.
 """
 
 [[floor]]
+package = "google-adk"
+floor = "2.8"
+reason = """
+First Google Agent Development Kit release tested by the bidirectional official A2A
+bridge. The lockfile pins the exact tested build while the published extra leaves later
+compatible releases installable and lets CI reveal an upstream break.
+"""
+
+[[floor]]
 package = "mcp"
 floor = "1.9"
 reason = "Oldest release with the 1.x server and client surface the mcp extra targets."
