@@ -89,15 +89,27 @@ def _walk(
     label: str,
     reach: dict[str, set[str]],
 ) -> None:
-    queue = [edge["name"] for edge in edges]
+    queue = list(edges)
+    expanded_extras: dict[str, set[str]] = {}
     while queue:
-        name = queue.pop()
+        edge = queue.pop()
+        name = str(edge["name"])
         if name not in packages:
             raise LockfileError(f"{name} is depended on but not in the lock")
-        if label in reach.setdefault(name, set()):
-            continue
-        reach[name].add(label)
-        queue.extend(edge["name"] for edge in packages[name].get("dependencies", []))
+        package = packages[name]
+        first_visit = label not in reach.setdefault(name, set())
+        if first_visit:
+            reach[name].add(label)
+            queue.extend(package.get("dependencies", []))
+
+        requested = {str(extra) for extra in edge.get("extra", [])}
+        new_extras = requested - expanded_extras.setdefault(name, set())
+        for extra in new_extras:
+            optional = package.get("optional-dependencies", {})
+            if extra not in optional:
+                raise LockfileError(f"{name}[{extra}] is selected but absent from the lock")
+            queue.extend(optional[extra])
+        expanded_extras[name].update(new_extras)
 
 
 def project_graph() -> Graph:

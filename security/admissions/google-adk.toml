@@ -1,0 +1,19 @@
+package = "google-adk"
+profile = "extra:google-adk"
+decided = 2026-08-28
+owner = "@sam123ben"
+need = "Let Google Agent Development Kit orchestrators consume guarded Tesserix agents through the official A2A 1.x boundary."
+alternatives = '''
+Documentation-only interoperability was rejected because it would not prove that Google
+ADK accepts the generated card or that the non-legacy A2A client path still constructs.
+Reimplementing Google ADK's remote-agent lifecycle was rejected because it would couple
+this project to private framework state. The SDK remains behind an optional extra and the
+bridge exposes only its public RemoteA2aAgent constructor.
+'''
+maintenance = "Actively maintained by Google with frequent releases; the RemoteA2aAgent surface is explicitly experimental and therefore tested in its own CI extra."
+licence = "Apache-2.0"
+transitive = 20
+native_build = false
+security_history = "No unfixed advisory was reported by the repository audit at admission time."
+review_by = 2027-02-28
+notes = "This is a heavy opt-in dependency and includes the official A2A HTTP server stack. Re-review in six months or immediately when Google marks RemoteA2aAgent stable."

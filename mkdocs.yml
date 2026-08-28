@@ -40,6 +40,7 @@ nav:
       - Provider recipes: provider-recipes.md
       - Integrations and gateways: integrations.md
       - Official A2A: a2a.md
+      - Google ADK bridge: google-adk.md
       - Testing: testing.md
       - Keep agents current: keeping-current.md
   - Understand:
@@ -73,6 +74,7 @@ nav:
       - Repository governance: repository-governance.md
       - Stability: stability.md
       - Detailed contribution guide: contributing.md
+      - Code of Conduct: https://github.com/tesserix/agent-development-kit/blob/main/CODE_OF_CONDUCT.md
       - Releasing: releasing.md
 
 plugins:

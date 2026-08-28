@@ -13,10 +13,12 @@ application owns its process and deployment; the kit supplies composable primiti
 | Connect OpenAI, Anthropic, Gemini, Groq, Grok, OpenRouter, or a local model | [Provider recipes](provider-recipes.md) |
 | Connect a gateway, MCP server, store, or workflow engine | [Integrations and gateways](integrations.md) |
 | Publish or consume an official A2A Agent Card | [Official A2A interoperability](a2a.md) |
+| Connect a Tesserix agent to Google ADK | [Google ADK bridge](google-adk.md) |
 | Test an agent without spending money | [Testing](testing.md) |
 | Keep a deployed agent on a current reviewed ADK | [Keep agents current safely](keeping-current.md) |
 | Understand contribution and branch protections | [Repository governance](repository-governance.md) |
 | Decide whether the project is ready for a public or production rollout | [Public-readiness review](public-readiness-review.md) |
+| Read the community standards or report conduct privately | [Code of Conduct](https://github.com/tesserix/agent-development-kit/blob/main/CODE_OF_CONDUCT.md) |
 | Contribute a change | [Contributing](https://github.com/tesserix/agent-development-kit/blob/main/CONTRIBUTING.md) |
 
 ## Mental model
@@ -50,6 +52,7 @@ objects.
 - [Retrieval](retrieval.md)
 - [MCP client](mcp-client.md)
 - [AgentGateway](agentgateway.md)
+- [Google ADK bridge](google-adk.md)
 - [Tesserix peer discovery](peer-discovery.md)
 - [Durable runs](durable-runs.md)
 - [Evaluations](eval-datasets.md)
@@ -64,6 +67,7 @@ objects.
 Google also has an Agent Development Kit. This project's distribution is
 `tesserix-adk`, its import namespace is `tesserix_adk`, and its interoperability
 adapter targets the independent Agent2Agent protocol through the official `a2a-sdk`.
+The two projects can [work together through that boundary](google-adk.md).
 
 The project is pre-1.0. Consult [Stability](stability.md) before adopting an alpha
 subpackage in a long-lived integration.

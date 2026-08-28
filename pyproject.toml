@@ -28,14 +28,15 @@ dependencies = [
 # a small agent must stay a small dependency. `all` is a pure union of the others so it
 # cannot become the only tested path. See docs/contributing.md.
 [project.optional-dependencies]
-a2a = ["a2a-sdk>=1.1.2"]
+a2a = ["a2a-sdk[http-server]>=1.1.2"]
+google-adk = ["google-adk[a2a]>=2.8"]
 mcp = ["mcp>=1.9", "jsonschema>=4.23"]
 temporal = ["temporalio>=1.9"]
 # The one recorded cap: below 1.0 the version number promises nothing.
 graphiti = ["graphiti-core>=0.14,<1"]
 redis = ["redis>=5.2"]
 postgres = ["psycopg[binary,pool]>=3.2"]
-all = ["tesserix-adk[a2a,graphiti,mcp,postgres,redis,temporal]"]
+all = ["tesserix-adk[a2a,google-adk,graphiti,mcp,postgres,redis,temporal]"]
 
 [project.urls]
 Homepage = "https://github.com/tesserix/agent-development-kit"

@@ -3,10 +3,13 @@
 from tesserix_adk.adapters.a2a import (
     A2ABearerSecurity,
     A2ACardError,
+    A2AExecutionError,
     A2AInterface,
+    A2APrincipalResolver,
     A2ARegistry,
     A2ARegistryError,
     A2ASkill,
+    a2a_agent_executor,
     a2a_card_for,
     a2a_client_factory,
     a2a_client_from_registry,
@@ -67,6 +70,7 @@ from tesserix_adk.adapters.dead_letters import (
     ReplayReport,
 )
 from tesserix_adk.adapters.eventing import payload_of, publishing
+from tesserix_adk.adapters.google_adk import google_adk_remote_agent
 from tesserix_adk.adapters.graft import GraftMcpBackend, GraftSubprocessBackend
 from tesserix_adk.adapters.grants import (
     DEFAULT_GRANT_TABLES,
@@ -309,7 +313,9 @@ __all__ = [
     "UNKNOWN_TENANT",
     "A2ABearerSecurity",
     "A2ACardError",
+    "A2AExecutionError",
     "A2AInterface",
+    "A2APrincipalResolver",
     "A2ARegistry",
     "A2ARegistryError",
     "A2ASkill",
@@ -447,6 +453,7 @@ __all__ = [
     "WebSocketBridge",
     "WebSocketLike",
     "WebhookApprovals",
+    "a2a_agent_executor",
     "a2a_card_for",
     "a2a_client_factory",
     "a2a_client_from_registry",
@@ -455,6 +462,7 @@ __all__ = [
     "assembled",
     "dedupe_key",
     "fingerprint",
+    "google_adk_remote_agent",
     "namespaced",
     "open_graphiti",
     "partitioned",

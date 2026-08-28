@@ -17,21 +17,27 @@ from tesserix_adk.core.extras import require_extra
 from tesserix_adk.core.models import AdkModel
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 
     from a2a.client import Client, ClientCallInterceptor, ClientFactory
     from a2a.client.client_factory import TransportProducer
+    from a2a.server.agent_execution import AgentExecutor, RequestContext
     from a2a.types import AgentCard
 
     from tesserix_adk.core.definition import AgentDefinition
+    from tesserix_adk.core.identity import Principal
+    from tesserix_adk.runtime import AgentRunner
 
 __all__ = [
     "A2ABearerSecurity",
     "A2ACardError",
+    "A2AExecutionError",
     "A2AInterface",
+    "A2APrincipalResolver",
     "A2ARegistry",
     "A2ARegistryError",
     "A2ASkill",
+    "a2a_agent_executor",
     "a2a_card_for",
     "a2a_client_factory",
     "a2a_client_from_registry",
@@ -47,6 +53,24 @@ class A2ARegistryError(AdkError):
 
 class A2ACardError(AdkError):
     """Raised when required official Agent Card metadata is incomplete or ambiguous."""
+
+
+class A2AExecutionError(AdkError):
+    """Raised when an official A2A request cannot be mapped to a Tesserix run."""
+
+
+@runtime_checkable
+class A2APrincipalResolver(Protocol):
+    """Authenticate and authorise one A2A request at the server trust boundary.
+
+    The resolver must derive the principal from verified server or gateway context. It
+    must reject expired authority on the same clock domain used by the runner and never
+    trust a tenant, subject, or scope copied from the A2A message body. The runner checks
+    principal liveness again before executing model or tool work.
+    """
+
+    def __call__(self, context: RequestContext, /) -> Awaitable[Principal]:
+        """Return the verified principal allowed to invoke this agent."""
 
 
 class A2AInterface(AdkModel):
@@ -234,6 +258,58 @@ def a2a_card_for[OutputT: BaseModel](
             )
             for skill in public_skills
         ],
+    )
+
+
+def a2a_agent_executor[OutputT: BaseModel](
+    runner: AgentRunner,
+    definition: AgentDefinition[OutputT],
+    *,
+    resolve: A2APrincipalResolver,
+    max_input_bytes: int = 64 * 1024,
+    max_output_bytes: int = 1024 * 1024,
+) -> AgentExecutor:
+    """Expose one reviewed Tesserix agent through the official A2A server contract.
+
+    The official request handler and ``TaskStore`` retain ownership of transport,
+    persistence, duplicate delivery, and resubscription. This executor validates text
+    input, resolves a verified principal, binds its tenant and scopes to the normal
+    Tesserix runner, and maps the terminal run to an A2A task artifact and status.
+
+    Args:
+        runner: Fully configured runner whose budgets, guardrails, tools, and telemetry
+            remain in force.
+        definition: Reviewed agent definition to execute.
+        resolve: Authentication and per-agent authorisation at the serving boundary.
+        max_input_bytes: Maximum UTF-8 request text accepted after joining text parts.
+        max_output_bytes: Maximum UTF-8 answer artifact returned to the peer.
+
+    Returns:
+        An official SDK ``AgentExecutor`` for ``DefaultRequestHandler`` or a custom
+        gateway handler.
+
+    Raises:
+        A2AExecutionError: If either byte limit is not positive.
+        MissingExtraError: If ``tesserix-adk[a2a]`` is not installed.
+    """
+    require_extra("a2a", "a2a")
+    if max_input_bytes < 1 or max_output_bytes < 1:
+        raise A2AExecutionError(
+            "A2A input and output byte limits must be positive",
+            details={
+                "max_input_bytes": str(max_input_bytes),
+                "max_output_bytes": str(max_output_bytes),
+            },
+        )
+
+    from tesserix_adk.adapters._a2a_server import make_executor
+
+    return make_executor(
+        runner,
+        definition,
+        resolve=resolve,
+        max_input_bytes=max_input_bytes,
+        max_output_bytes=max_output_bytes,
     )
 
 
