@@ -14,7 +14,7 @@ from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING, Any, Literal, Required, Self, TypedDict, Unpack
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from tesserix_adk.core.errors import ConfigurationError
 from tesserix_adk.core.models import AdkModel
@@ -254,7 +254,7 @@ class PortableAgentManifest(AdkModel):
 
 
 def export_tesserix_agent(
-    definition: AgentDefinition[BaseModel],
+    definition: AgentDefinition[Any],
     *,
     namespace: str,
     runtime: PortableRuntime,

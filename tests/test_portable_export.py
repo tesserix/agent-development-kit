@@ -66,22 +66,23 @@ def test_tesserix_export_is_a_registry_portable_agent() -> None:
             "registry.tesserix.dev/owner-service": "support-agent",
         },
     }
-    assert manifest["spec"]["definitionVersion"] == "v1"
-    assert manifest["spec"]["framework"] == "tesserix-adk"
-    assert manifest["spec"]["runtime"]["image"].endswith(DIGEST)
-    assert manifest["spec"]["tools"] == [{"ref": "ticket-search", "version": "2.1.0"}]
-    assert manifest["spec"]["skills"] == [{"ref": "triage", "version": "1.0.0"}]
-    assert "systemPrompt" not in manifest["spec"]
+    spec = object_dict(manifest["spec"])
+    assert spec["definitionVersion"] == "v1"
+    assert spec["framework"] == "tesserix-adk"
+    assert str(object_dict(spec["runtime"])["image"]).endswith(DIGEST)
+    assert spec["tools"] == [{"ref": "ticket-search", "version": "2.1.0"}]
+    assert spec["skills"] == [{"ref": "triage", "version": "1.0.0"}]
+    assert "systemPrompt" not in spec
 
 
 def test_tesserix_export_refuses_moving_or_missing_dependencies() -> None:
-    kwargs = {
-        "namespace": "acme-ai",
-        "runtime": container_runtime(image=f"ghcr.io/acme/support@sha256:{DIGEST}"),
-        "model_provider": "openai",
-    }
     with pytest.raises(PortableExportError, match="ticket-search"):
-        export_tesserix_agent(definition(), **kwargs)
+        export_tesserix_agent(
+            definition(),
+            namespace="acme-ai",
+            runtime=container_runtime(image=f"ghcr.io/acme/support@sha256:{DIGEST}"),
+            model_provider="openai",
+        )
     with pytest.raises(ValueError, match="immutable"):
         PortableReference(ref="ticket-search", version="latest")
 
@@ -100,29 +101,35 @@ def test_runtime_contract_rejects_mutable_images_and_inline_remote_tokens() -> N
 
 
 def test_generic_a2a_export_keeps_public_card_and_authenticated_runtime() -> None:
+    runtime_url = "https://agents.example.com/support/a2a"
     card = {
         "name": "remote-support",
         "version": "3.0.0",
         "description": "Resolves incidents",
-        "url": "https://agents.example.com/support/a2a",
+        "url": runtime_url,
         "skills": [{"id": "triage", "name": "Triage", "description": "Triage an alert"}],
     }
     manifest = export_a2a_agent(
         card,
         namespace="acme-ai",
         runtime=remote_runtime(
-            url=card["url"], credential_ref="openbao://agent-runtime/acme-support"
+            url=runtime_url, credential_ref="openbao://agent-runtime/acme-support"
         ),
     ).to_dict()
 
-    assert manifest["metadata"]["name"] == "remote-support"
-    assert manifest["spec"]["framework"] == "a2a"
-    assert manifest["spec"]["a2a"]["url"] == card["url"]
-    assert manifest["spec"]["runtime"]["auth"] == {
+    metadata = object_dict(manifest["metadata"])
+    spec = object_dict(manifest["spec"])
+    runtime = object_dict(spec["runtime"])
+    skills = spec["skills"]
+    assert isinstance(skills, list)
+    assert metadata["name"] == "remote-support"
+    assert spec["framework"] == "a2a"
+    assert object_dict(spec["a2a"])["url"] == runtime_url
+    assert runtime["auth"] == {
         "type": "bearer",
         "credentialRef": "openbao://agent-runtime/acme-support",
     }
-    assert manifest["spec"]["skills"][0]["id"] == "triage"
+    assert object_dict(skills[0])["id"] == "triage"
 
 
 @dataclass
@@ -132,6 +139,12 @@ class ForeignAgent:
     instruction: str = ""
     instructions: str = ""
     model: str = ""
+
+
+def object_dict(value: object) -> dict[str, object]:
+    assert isinstance(value, dict)
+    assert all(isinstance(key, str) for key in value)
+    return value
 
 
 @pytest.mark.parametrize(
