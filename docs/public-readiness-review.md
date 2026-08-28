@@ -167,7 +167,7 @@ the requirement, not because both projects share three initials.
 - [x] Public security settings verified
 - [x] Organization-owned conduct-report contact chosen and published privately
 - [ ] PyPI/trusted-publisher ownership verified
-- [ ] First external clean-room onboarding completed
+- [x] First external clean-room onboarding completed
 
 ## Verification record
 
@@ -186,6 +186,9 @@ Final verification for the Google ADK/A2A bridge on 2026-08-28 used Python 3.13.
 - `uv build` produced the source archive and universal Python wheel. The wheel contains
   the typed-package marker, A2A executor, and Google ADK helper; the source archive also
   contains the Code of Conduct.
+- A fresh public clone of commit `0ae26f0` passed `uv sync --frozen --extra google-adk`,
+  the offline Google ADK/A2A example, all 11 focused bridge tests, and `uv build` without
+  relying on the development worktree.
 - The offline official HTTP round trip passed through the official client, Starlette
   route, request handler, task store, Tesserix executor, runner, and final artifact. Google
   ADK 2.8.0 accepted the same official card through its current non-legacy A2A path.
