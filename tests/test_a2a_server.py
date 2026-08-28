@@ -8,8 +8,6 @@ from typing import Any
 
 import httpx
 import pytest
-from google.protobuf.json_format import MessageToDict
-from google.protobuf.struct_pb2 import Value
 
 pytest.importorskip("a2a")
 
@@ -31,6 +29,8 @@ from a2a.types import (
     TaskStatusUpdateEvent,
 )
 from a2a.utils.errors import TaskNotFoundError
+from google.protobuf.json_format import MessageToDict
+from google.protobuf.struct_pb2 import Value
 from starlette.applications import Starlette
 
 from tesserix_adk.adapters import (

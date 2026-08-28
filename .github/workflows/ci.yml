@@ -72,7 +72,7 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-      - run: uv sync --frozen --all-groups
+      - run: uv sync --frozen --all-groups --all-extras
       - run: uv run mypy --strict src tests tools
       # Annotation coverage of the public surface: an `Any` count nobody measures only grows.
       - run: uv run mypy --strict --any-exprs-report .mypy-any-report src
