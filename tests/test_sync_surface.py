@@ -254,7 +254,7 @@ class TestSyncBodiesOnABoundedPool:
 
         with WorkerPool(Workers(size=1)) as pool:
             spinner = asyncio.create_task(counting())
-            await pool.call("lookup", lambda: time.sleep(0.05))  # noqa: ASYNC251 — off the loop, which is the point
+            await pool.call("lookup", lambda: time.sleep(0.05))
             release.set()
             await spinner
 

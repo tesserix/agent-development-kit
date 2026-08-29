@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -70,3 +72,15 @@ def test_alpha_guidance_distinguishes_build_from_publication() -> None:
     assert [
         path.name for path in pages if "Every merge to `main` publishes" in path.read_text()
     ] == []
+
+
+def test_public_issue_forms_route_bugs_features_and_security_reports() -> None:
+    templates = ROOT / ".github" / "ISSUE_TEMPLATE"
+    bug = yaml.safe_load((templates / "bug.yml").read_text(encoding="utf-8"))
+    feature = yaml.safe_load((templates / "feature.yml").read_text(encoding="utf-8"))
+    config = yaml.safe_load((templates / "config.yml").read_text(encoding="utf-8"))
+
+    assert bug["name"] == "Bug report"
+    assert feature["name"] == "Feature request"
+    assert config["blank_issues_enabled"] is False
+    assert any("security/advisories/new" in link["url"] for link in config["contact_links"])

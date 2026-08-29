@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import sys
 import time
@@ -59,7 +60,7 @@ async def main(
     except SystemExit:
         return MISUSED
     path = Path(parsed.artefact)
-    if not path.is_file():
+    if not await asyncio.to_thread(path.is_file):
         writer.write(f"no run artefact at {path}\n")
         return MISSING
     summary = _validated(path, writer)
@@ -67,7 +68,7 @@ async def main(
         return UNREADABLE
     if parsed.diff:
         other_path = Path(parsed.diff)
-        if not other_path.is_file():
+        if not await asyncio.to_thread(other_path.is_file):
             writer.write(f"no comparison artefact at {other_path}\n")
             return MISSING
         other = _validated(other_path, writer)

@@ -19,7 +19,7 @@ go privately to the organization-owned address named there, never to a public is
 ```bash
 git clone https://github.com/tesserix/agent-development-kit.git
 cd agent-development-kit
-uv sync --frozen --all-groups
+uv sync --frozen --all-groups --all-extras
 uv run python examples/getting_started.py
 ```
 

@@ -10,7 +10,7 @@ owners = ["@sam123ben"]
 
 # The checker this policy speaks for. A new mypy tightens rules and reclassifies ignores,
 # so the version moves on a deliberate upgrade that re-runs the gate — never on a float.
-checker = "mypy>=1.18,<2"
+checker = "mypy>=1.18,<3"
 
 # ---------------------------------------------------------------------------------------
 # `# type: ignore[code]` in src/. Each is a place the checker is wrong or cannot see, not

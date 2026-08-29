@@ -129,7 +129,7 @@ async def main(
         writer.write("--live-ceiling cannot be negative\n")
         return CONFIGURATION_ERROR
     path = Path(parsed.suite)
-    if not path.is_file():
+    if not await asyncio.to_thread(path.is_file):
         writer.write(f"suite path not found: {path}\n")
         return CONFIGURATION_ERROR
     try:

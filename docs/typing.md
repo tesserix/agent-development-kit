@@ -123,7 +123,7 @@ Entries are keyed by where a symbol is *defined*, not where it is exported. `Gua
 reachable as both `core.Guardrail` and `core.protocols.Guardrail`; that is one decision to
 review, and two records for it would eventually disagree.
 
-The checker itself is pinned — `mypy>=1.18,<2` in both the dev group and the policy's
+The checker itself is pinned — `mypy>=1.18,<3` in both the dev group and the policy's
 `checker` field, asserted equal by the tests. A new mypy tightens rules and reclassifies
 ignores, which is a deliberate upgrade that re-runs the gate, never a float.
 

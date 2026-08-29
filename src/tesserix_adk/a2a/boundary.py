@@ -16,7 +16,6 @@ convention and becomes a call the caller has to make deliberately.
 from __future__ import annotations
 
 import json
-import re
 import unicodedata
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
@@ -61,9 +60,13 @@ _INVISIBLE = dict.fromkeys(
     for codepoint in (*range(0x20), 0x7F, 0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF)
     if codepoint not in _KEPT_CONTROL
 )
-_ROLE_LINE = re.compile(
-    r"^\s*(?:[#>*\-]+\s*)*(?:system|assistant|developer|user)\s*[::]", re.IGNORECASE
-)
+_ROLE_NAMES = frozenset(("system", "assistant", "developer", "user"))
+
+
+def _is_role_line(line: str) -> bool:
+    """Recognise a role-shaped Markdown line in linear time."""
+    role, separator, _ = line.lstrip(" \t#>*-").partition(":")
+    return bool(separator) and role.rstrip().casefold() in _ROLE_NAMES
 
 
 class TrustDecision(StrEnum):
@@ -393,8 +396,6 @@ def _folded(text: str) -> str:
 def _quoted(text: str) -> str:
     """A line wearing a role marker, marked as the quotation it is."""
     return (
-        "\n".join(
-            f"(quoted) {line}" if _ROLE_LINE.match(line) else line for line in text.splitlines()
-        )
+        "\n".join(f"(quoted) {line}" if _is_role_line(line) else line for line in text.splitlines())
         or text
     )

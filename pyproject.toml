@@ -69,8 +69,8 @@ default-groups = ["dev", "test"]
 
 [dependency-groups]
 dev = [
-  "ruff>=0.14,<0.15",
-  "mypy>=1.18,<2",
+  "ruff>=0.14,<0.17",
+  "mypy>=1.18,<3",
   "pyright>=1.1.408,<2",
   "import-linter>=2.3,<3",
   "pre-commit>=4,<5",
@@ -101,6 +101,9 @@ docs = [
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+
+[tool.ruff.format]
+exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = [

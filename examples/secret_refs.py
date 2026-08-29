@@ -55,7 +55,9 @@ async def main() -> None:
     for tenant in ("acme", "globex"):
         held = await secrets.resolve(settings.api_key_ref.for_tenant(tenant))
         print(f"{tenant} resolves to: {held}")  # noqa: T201
-        print(f"  revealed only where asked: {held.get_secret_value()}")  # noqa: T201
+        expected = ENVIRONMENT[f"{tenant.upper()}_OPENAI_KEY"]
+        delivered = held.get_secret_value() == expected
+        print(f"  delivered only at provider boundary: {delivered}")  # noqa: T201
 
     print(f"cached references: {secrets.cached}")  # noqa: T201
 
@@ -71,8 +73,14 @@ async def main() -> None:
         print(f"rebinding a bound reference: {refused}")  # noqa: T201
 
     leaky = Leaky(endpoint="https://api.example.invalid", api_key="sk-test-oops")
-    print(f"the linter finds: {literal_credentials(leaky)}")  # noqa: T201
-    print(f"a SecretStr renders as: {SecretStr('sk-test-oops')}")  # noqa: T201
+    if literal_credentials(leaky) != ("api_key",):
+        raise RuntimeError("literal credential detection contract failed")
+    print("the linter finds the literal credential field: api_key")  # noqa: T201
+
+    masked = SecretStr("sk-test-oops")
+    if str(masked) == masked.get_secret_value():
+        raise RuntimeError("SecretStr rendering contract failed")
+    print("a SecretStr masks its value when rendered")  # noqa: T201
 
 
 if __name__ == "__main__":
