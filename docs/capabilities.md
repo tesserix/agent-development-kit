@@ -86,4 +86,3 @@ design record reachable without knowing its name in advance. For exact signature
 - [ADR 0001: token-optimizer routing](adr/0001-token-optimizer-routing.md).
 - [ADR 0002: AgentGateway as the MCP data-plane boundary](adr/0002-agentgateway-mcp-router.md).
 - [RFC 0001: package layout and boundaries](rfcs/0001-package-layout.md).
-

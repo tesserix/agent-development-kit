@@ -8,6 +8,10 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.53.1
+
+No consumer-visible changes.
+
 ## 0.53.0
 
 ### Added

@@ -38,13 +38,13 @@ networking, identity, and data.
 Python 3.12 or newer is required. Development and release verification use CPython 3.14,
 while CI keeps every declared minor from 3.12 through 3.14 compatible.
 PyPI trusted publishing is not enabled yet, so install the exact wheel from the public
-v0.53.0 release. Standard `pip` and `uv` install the same distribution.
+v0.53.1 release. Standard `pip` and `uv` install the same distribution.
 
 With `pip`, create an isolated environment and import the underscore-named Python package:
 
 ```bash
 python -m venv .venv
-.venv/bin/python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.0/tesserix_adk-0.53.0-py3-none-any.whl"
+.venv/bin/python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.1/tesserix_adk-0.53.1-py3-none-any.whl"
 .venv/bin/python -c "import tesserix_adk; print(tesserix_adk.__version__)"
 ```
 
@@ -52,7 +52,7 @@ With `uv`, add the same immutable wheel to an application project and commit the
 lockfile:
 
 ```bash
-uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.0/tesserix_adk-0.53.0-py3-none-any.whl"
+uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.1/tesserix_adk-0.53.1-py3-none-any.whl"
 uv run python -c "import tesserix_adk; print(tesserix_adk.__version__)"
 ```
 

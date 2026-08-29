@@ -203,14 +203,14 @@ Final verification used Python 3.13.15:
   distinct external links exposed by the site and README resolved successfully.
 - Ruff, formatting, import-boundary checks, strict mypy across 557 source files, strict
   Pyright, the repository policy/contract gates, and `uv build` passed. The complete
-  default test run passed 9,407 tests with 6 optional cases skipped and 125 intentionally
-  deselected; the all-extras A2A and Google ADK set separately passed all 51 tests.
+  all-extras test run passed 9,428 tests with 2 platform/runtime cases skipped, 125
+  intentionally deselected, and 96.55% total coverage.
 - The public Pages root redirects to `stable/`, whose `0.53.0` sitemap contained 189 URLs;
   every URL returned HTTP 200. The tagged release workflow completed both documentation
   jobs and published the exact `tesserix_adk-0.53.0-py3-none-any.whl` release asset.
 - Pages is deliberately release-tagged rather than deployed from the moving `main`
-  branch. These source updates become public with the next reviewed release tag; until
-  then the live canonical documentation remains `0.53.0`. PyPI publication remains
+  branch. At review time the live canonical documentation remained `0.53.0`; the
+  reviewed `0.53.1` release publishes these source updates. PyPI publication remains
   disabled, so GitHub Release assets are the supported distribution channel.
 
 These source and artifact checks do not replace the unchecked PyPI trusted-publisher and
