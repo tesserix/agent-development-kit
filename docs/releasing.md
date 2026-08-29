@@ -107,6 +107,9 @@ path nobody has tested by the time it matters.
 - PyPI: a trusted publisher for `tesserix/agent-development-kit`, workflow
   `release.yml`, environment `pypi`. A second one for `alpha.yml`, same environment.
 - GitHub: a `pypi` environment with the reviewers who are allowed to approve a publish.
+- GitHub Pages: the generated `github-pages` environment must use custom deployment
+  policies allowing branch `main` and tag pattern `v*`. Versioned documentation deploys
+  from the immutable release tag; do not allow a broader tag pattern.
 - GitHub: repository variable `PUBLISH_TO_PYPI=true`, once the publisher exists. Until it
   is set, a tag builds, attests, mirrors and smoke-tests the release without uploading to
   the index.
