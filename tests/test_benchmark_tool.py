@@ -60,7 +60,7 @@ class TestChecking:
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         where = tmp_path / "baseline.json"
-        recorded(where, allocations=0.0)
+        recorded(where, throughput=1e20)
 
         code = main(["--suite", SUITE, "--baseline", str(where)])
 
@@ -94,7 +94,7 @@ class TestRecording:
 
     def test_a_check_never_writes_the_baseline_even_when_it_fails(self, tmp_path: Path) -> None:
         where = tmp_path / "baseline.json"
-        recorded(where, allocations=0.0)
+        recorded(where, throughput=1e20)
         before = where.read_text()
 
         assert main(["--suite", SUITE, "--baseline", str(where)]) == 1
