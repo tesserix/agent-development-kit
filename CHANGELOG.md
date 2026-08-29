@@ -8,49 +8,172 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.53.0
+
 ### Added
 
-- **Portable Agent Definition v1 exporters**: `tesserix_adk.adapters` can now emit an
-  immutable Agent Registry artifact from a native Tesserix definition, an A2A card, a
-  digest-pinned OCI runtime, LangGraph, Google ADK, or the OpenAI Agents SDK without
-  importing third-party frameworks. The additive public surface is stable within v1;
-  exporters reject floating images, dependency versions, and inline secret material.
-- Structured application inputs are additive through `TypedAgent[InputT, OutputT]`,
-  `TypedAgentDefinition`, `run_typed`/`stream_typed` and their sync variants, with strict
-  Pydantic validation and serializable input schemas. Released `Agent[OutputT]`,
-  `AgentDefinition[OutputT]` and string-input runner contracts remain unchanged and are
-  checked by strict mypy, strict Pyright and the release compatibility gate.
-- Framework-neutral interoperability can import foreign tools/toolsets with JSON Schema
-  admission and policy, wrap foreign agents as typed tools or supervisor specialists, and
-  export Tesserix agents as OpenAI-compatible functions, authenticated MCP tools or
-  official A2A executors. Tenant/user/scopes, W3C trace context, cancellation, lineage and
-  shared budgets remain explicit at every crossing.
-- Google Agent Development Kit 2.x interop imports real `FunctionTool` definitions through
-  the generic registry boundary, wraps `BaseAgent` instances through an application-owned
-  invoker, and retains the existing non-legacy official A2A bridge. The optional dependency
-  is tested in the reviewed `>=2.8,<3` range and fails with the exact missing-extra command.
-- Self-contained `tesserix-adk` commands now scaffold agents/tools, validate configuration,
-  diagnose provider setup, run local agents, execute evaluation gates and inspect redacted
-  artifacts. Reference research, booking and durable agents are executable in CI.
-- GitHub Pages now includes a source-to-production lifecycle with control, execution and
-  tool planes; evaluation and security gates; registry/canary/release flow; MCP/A2A and
-  gateway boundaries; warm-pool, ephemeral Job, Temporal and generated-code sandbox
-  responsibilities; and a five-stage reversible migration guide with explicit escape
-  hatches and ADR 0004.
+- promote Python 3.14 to the default runtime
+- complete public ADK adoption workflows
+- add portable agent export contract (#297)
 
-### Changed
+### Fixed
 
-- Stable CPython 3.14 is now a required compatibility target and the default development
-  and release-smoke interpreter. The public floor remains Python 3.12, and free-threaded
-  3.14t stays advisory until the dependency graph and runtime concurrency contracts support
-  it fully.
-- The installed command and public interop prose use the unambiguous Tesserix Agent
-  Development Kit and Google Agent Development Kit names. The ambiguous global `adk`
-  command is not installed.
-- API reference, runnable-recipe coverage and public-surface snapshots now include the new
-  typed config, CLI, interop, wrapped-agent, export and addressable-subagent contracts. All
-  remain alpha except the additive core configuration/type contracts, which follow the
-  existing beta compatibility policy.
+- harden public launch boundaries (#291)
+- keep generated agent templates Ruff-clean
+- align policy with mypy 2
+- complete scaffold template contracts
+- **release**: prevent release-tag alpha races (#296)
+- harden public security and reporting
+- install extras before strict typecheck
+
+### Public API surface
+
+- Added: `tesserix_adk.TypedAgent`
+- Added: `tesserix_adk.adapters.ExportDescriptorDriftError`
+- Added: `tesserix_adk.adapters.ExportErrorCode`
+- Added: `tesserix_adk.adapters.ExportErrorEnvelope`
+- Added: `tesserix_adk.adapters.ExportInvocation`
+- Added: `tesserix_adk.adapters.ExportedA2AAgent`
+- Added: `tesserix_adk.adapters.ExportedAgentResult`
+- Added: `tesserix_adk.adapters.ExportedAgentTool`
+- Added: `tesserix_adk.adapters.ForeignAgentContext`
+- Added: `tesserix_adk.adapters.ForeignAgentReply`
+- Added: `tesserix_adk.adapters.ForeignTool`
+- Added: `tesserix_adk.adapters.GOOGLE_ADK_CONTEXT_KEY`
+- Added: `tesserix_adk.adapters.GoogleAdkAgentInvoker`
+- Added: `tesserix_adk.adapters.PortableAgentManifest`
+- Added: `tesserix_adk.adapters.PortableExportError`
+- Added: `tesserix_adk.adapters.PortableExportOptions`
+- Added: `tesserix_adk.adapters.PortableReference`
+- Added: `tesserix_adk.adapters.PortableRuntime`
+- Added: `tesserix_adk.adapters.ToolImportPolicy`
+- Added: `tesserix_adk.adapters.ToolTranslationError`
+- Added: `tesserix_adk.adapters.WrappedAgentPolicy`
+- Added: `tesserix_adk.adapters.WrappedSubagent`
+- Added: `tesserix_adk.adapters.agent_exports.ExportDescriptorDriftError`
+- Added: `tesserix_adk.adapters.agent_exports.ExportErrorCode`
+- Added: `tesserix_adk.adapters.agent_exports.ExportErrorEnvelope`
+- Added: `tesserix_adk.adapters.agent_exports.ExportInvocation`
+- Added: `tesserix_adk.adapters.agent_exports.ExportedA2AAgent`
+- Added: `tesserix_adk.adapters.agent_exports.ExportedAgentResult`
+- Added: `tesserix_adk.adapters.agent_exports.ExportedAgentTool`
+- Added: `tesserix_adk.adapters.agent_exports.export_as_a2a`
+- Added: `tesserix_adk.adapters.agent_exports.export_as_mcp_tool`
+- Added: `tesserix_adk.adapters.agent_exports.export_as_tool`
+- Added: `tesserix_adk.adapters.container_runtime`
+- Added: `tesserix_adk.adapters.export_a2a_agent`
+- Added: `tesserix_adk.adapters.export_as_a2a`
+- Added: `tesserix_adk.adapters.export_as_mcp_tool`
+- Added: `tesserix_adk.adapters.export_as_tool`
+- Added: `tesserix_adk.adapters.export_google_adk_agent`
+- Added: `tesserix_adk.adapters.export_langgraph_agent`
+- Added: `tesserix_adk.adapters.export_oci_agent`
+- Added: `tesserix_adk.adapters.export_openai_agent`
+- Added: `tesserix_adk.adapters.export_tesserix_agent`
+- Added: `tesserix_adk.adapters.foreign_agents.ForeignAgentContext`
+- Added: `tesserix_adk.adapters.foreign_agents.ForeignAgentReply`
+- Added: `tesserix_adk.adapters.foreign_agents.WrappedAgentPolicy`
+- Added: `tesserix_adk.adapters.foreign_agents.WrappedSubagent`
+- Added: `tesserix_adk.adapters.foreign_agents.wrap_agent_as_subagent`
+- Added: `tesserix_adk.adapters.foreign_agents.wrap_agent_as_tool`
+- Added: `tesserix_adk.adapters.google_adk.GOOGLE_ADK_CONTEXT_KEY`
+- Added: `tesserix_adk.adapters.google_adk.GoogleAdkAgentInvoker`
+- Added: `tesserix_adk.adapters.google_adk.import_google_adk_tool`
+- Added: `tesserix_adk.adapters.google_adk.import_google_adk_toolset`
+- Added: `tesserix_adk.adapters.google_adk.wrap_google_adk_agent`
+- Added: `tesserix_adk.adapters.import_google_adk_tool`
+- Added: `tesserix_adk.adapters.import_google_adk_toolset`
+- Added: `tesserix_adk.adapters.import_tool`
+- Added: `tesserix_adk.adapters.import_toolset`
+- Added: `tesserix_adk.adapters.interop.ForeignTool`
+- Added: `tesserix_adk.adapters.interop.ToolImportPolicy`
+- Added: `tesserix_adk.adapters.interop.ToolTranslationError`
+- Added: `tesserix_adk.adapters.interop.import_tool`
+- Added: `tesserix_adk.adapters.interop.import_toolset`
+- Added: `tesserix_adk.adapters.portable.PortableAgentManifest`
+- Added: `tesserix_adk.adapters.portable.PortableExportError`
+- Added: `tesserix_adk.adapters.portable.PortableExportOptions`
+- Added: `tesserix_adk.adapters.portable.PortableReference`
+- Added: `tesserix_adk.adapters.portable.PortableRuntime`
+- Added: `tesserix_adk.adapters.portable.container_runtime`
+- Added: `tesserix_adk.adapters.portable.export_a2a_agent`
+- Added: `tesserix_adk.adapters.portable.export_google_adk_agent`
+- Added: `tesserix_adk.adapters.portable.export_langgraph_agent`
+- Added: `tesserix_adk.adapters.portable.export_oci_agent`
+- Added: `tesserix_adk.adapters.portable.export_openai_agent`
+- Added: `tesserix_adk.adapters.portable.export_tesserix_agent`
+- Added: `tesserix_adk.adapters.portable.remote_runtime`
+- Added: `tesserix_adk.adapters.remote_runtime`
+- Added: `tesserix_adk.adapters.wrap_agent_as_subagent`
+- Added: `tesserix_adk.adapters.wrap_agent_as_tool`
+- Added: `tesserix_adk.adapters.wrap_google_adk_agent`
+- Added: `tesserix_adk.cli.LocalAgent`
+- Added: `tesserix_adk.cli.artifact_inspect.Resolve`
+- Added: `tesserix_adk.cli.artifact_inspect.main`
+- Added: `tesserix_adk.cli.artifact_inspect_main`
+- Added: `tesserix_adk.cli.artifacts.ARTIFACT_VERSION`
+- Added: `tesserix_adk.cli.artifacts.ArtifactHeader`
+- Added: `tesserix_adk.cli.artifacts.ArtifactSummary`
+- Added: `tesserix_adk.cli.artifacts.ArtifactTruncatedError`
+- Added: `tesserix_adk.cli.artifacts.ArtifactVersionError`
+- Added: `tesserix_adk.cli.artifacts.ArtifactWriter`
+- Added: `tesserix_adk.cli.artifacts.redacted_json`
+- Added: `tesserix_adk.cli.artifacts.scan_artifact`
+- Added: `tesserix_adk.cli.config_command.main`
+- Added: `tesserix_adk.cli.config_main`
+- Added: `tesserix_adk.cli.doctor.CheckRegistry`
+- Added: `tesserix_adk.cli.doctor.CheckResult`
+- Added: `tesserix_adk.cli.doctor.CheckStatus`
+- Added: `tesserix_adk.cli.doctor.CredentialPresenceCheck`
+- Added: `tesserix_adk.cli.doctor.DiagnosticCheck`
+- Added: `tesserix_adk.cli.doctor.DoctorCheck`
+- Added: `tesserix_adk.cli.doctor.DoctorContext`
+- Added: `tesserix_adk.cli.doctor.ExtraPresenceCheck`
+- Added: `tesserix_adk.cli.doctor.ProbeObservation`
+- Added: `tesserix_adk.cli.doctor.PythonVersionCheck`
+- Added: `tesserix_adk.cli.doctor.main`
+- Added: `tesserix_adk.cli.doctor_main`
+- Added: `tesserix_adk.cli.eval_run.CASE_ERROR`
+- Added: `tesserix_adk.cli.eval_run.CONFIGURATION_ERROR`
+- Added: `tesserix_adk.cli.eval_run.EvalTarget`
+- Added: `tesserix_adk.cli.eval_run.GATE_FAILED`
+- Added: `tesserix_adk.cli.eval_run.Resolve`
+- Added: `tesserix_adk.cli.eval_run.load_target`
+- Added: `tesserix_adk.cli.eval_run.main`
+- Added: `tesserix_adk.cli.eval_run_main`
+- Added: `tesserix_adk.cli.run_agent.LocalAgent`
+- Added: `tesserix_adk.cli.run_agent.Resolve`
+- Added: `tesserix_adk.cli.run_agent.TargetLoadError`
+- Added: `tesserix_adk.cli.run_agent.load_target`
+- Added: `tesserix_adk.cli.run_agent.main`
+- Added: `tesserix_adk.cli.run_main`
+- Added: `tesserix_adk.cli.scaffold.main`
+- Added: `tesserix_adk.cli.scaffold_main`
+- Added: `tesserix_adk.core.ConfigOverrides`
+- Added: `tesserix_adk.core.InputT`
+- Added: `tesserix_adk.core.KnownTaskClass`
+- Added: `tesserix_adk.core.ProviderName`
+- Added: `tesserix_adk.core.TypedAgent`
+- Added: `tesserix_adk.core.TypedAgentDefinition`
+- Added: `tesserix_adk.core.agent.TypedAgent`
+- Added: `tesserix_adk.core.config.ConfigOverrides`
+- Added: `tesserix_adk.core.config.load_typed_config`
+- Added: `tesserix_adk.core.config.resolve_typed_config`
+- Added: `tesserix_adk.core.definition.TypedAgentDefinition`
+- Added: `tesserix_adk.core.load_typed_config`
+- Added: `tesserix_adk.core.models.InputT`
+- Added: `tesserix_adk.core.provider.ProviderName`
+- Added: `tesserix_adk.core.resolve_typed_config`
+- Added: `tesserix_adk.core.routing.KnownTaskClass`
+- Added: `tesserix_adk.runtime.AddressableSubagent`
+- Added: `tesserix_adk.runtime.estimate.estimate_run_typed`
+- Added: `tesserix_adk.runtime.estimate_run_typed`
+- Added: `tesserix_adk.runtime.supervisor.AddressableSubagent`
+- Changed: `tesserix_adk.AgentRunner`
+- Changed: `tesserix_adk.core.PromptDefinition`
+- Changed: `tesserix_adk.core.prompts.PromptDefinition`
+- Changed: `tesserix_adk.runtime.AgentRunner`
+- Changed: `tesserix_adk.runtime.loop.AgentRunner`
 
 ## 0.52.0
 
