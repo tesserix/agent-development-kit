@@ -1,11 +1,11 @@
-"""`adk card` — the card this agent would publish, checked before a peer depends on it.
+"""`tesserix-adk card` — validate the card this agent would publish.
 
 A card is generated, so the way it goes wrong is at generation: a skill exported that the
 agent may not call, arguments that are not an object, a card over the published ceiling.
 Every one of those is a startup failure in the deployment, which is a slow place to find
 out. Rendering and linting it here makes publishing checkable from a terminal.
 
-No third-party argument parser and no console-script entry point, as with `adk surface`:
+No third-party argument parser is used, as with `tesserix-adk surface`:
 where the definition and its exports come from is the deployment's business, so it supplies
 the build and this supplies the rendering and the exit codes.
 """
@@ -78,7 +78,8 @@ def _report(card: AgentCard) -> str:
 def _parser() -> argparse.ArgumentParser:
     """The `card` command line."""
     parser = argparse.ArgumentParser(
-        prog="adk card", description="render or lint the agent card this deployment publishes"
+        prog="tesserix-adk card",
+        description="render or lint the agent card this deployment publishes",
     )
     parser.add_argument(
         "--lint", action="store_true", help="report what a peer would receive, rather than the card"

@@ -100,6 +100,10 @@ class Tool[**P, R]:
         returns_type: What the function annotated its result as, awaited, or `None` where
             it annotated nothing. The schema is what a model reads; this is what a result
             can actually be held to before it enters a conversation.
+        origin: Stable import provenance for a translated tool. Native tools leave this
+            empty and the registry derives their module and qualified name.
+        max_concurrency: A tighter per-tool lane declared by an import boundary. The
+            registry applies it automatically; `None` uses its configured policy.
     """
 
     name: str
@@ -116,6 +120,8 @@ class Tool[**P, R]:
     approval: ApprovalPolicy = field(default_factory=ApprovalPolicy)
     idempotency: IdempotencyPolicy | None = None
     returns_type: Any = None
+    origin: str = ""
+    max_concurrency: int | None = None
 
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """Call the function with its own signature, awaiting it either way.

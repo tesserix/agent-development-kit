@@ -19,7 +19,8 @@ The active GitHub ruleset for the default branch requires:
 - at least one code-owner approval, with stale approvals dismissed after a push;
 - approval from someone other than the person who made the latest push;
 - the pull request branch to be current with `main`;
-- all named CI, documentation, security, and CodeQL checks to succeed;
+- all named, unconditional CI and security checks to succeed;
+- the separate CodeQL code-scanning rule to report no high-or-higher alert;
 - every review conversation to be resolved;
 - squash merging and linear history; and
 - deletion and force-push prevention.
@@ -56,3 +57,10 @@ using the tag-driven process in [Releasing](releasing.md).
 Ruleset drift should be checked after ownership, plan, or workflow changes. The source
 files establish intended ownership and checks; the GitHub API is the evidence that the
 hosted enforcement remains active.
+
+Only checks that run for every pull-request shape belong in the named required-status
+list. CodeQL stays enforced by the code-scanning rule, which understands when a language
+configuration applies. The unconditional CI documentation job runs `make docs-check` and
+is the documentation gate; the path-filtered Pages workflow publishes the site and is not
+a second required status. Requiring a conditional or duplicate context can strand a safe
+workflow-only or lockfile-only update even though its applicable gates passed.

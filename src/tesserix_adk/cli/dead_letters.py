@@ -1,12 +1,12 @@
-"""`adk dead-letters` — see what failed, and put it back through the path that handles it.
+"""`tesserix-adk dead-letters` — inspect and replay failed work.
 
 The recovery at three in the morning is where the second incident comes from, so this
 command makes the safe thing the easy one: a listing that prints identifiers rather than
 payloads, a dry run that is one flag away, and a replay that will not run without a name to
 put in the audit record.
 
-No third-party argument parser and no console-script entry point: a kit that installs a
-global `adk` binary fights with whatever the consumer already ships.
+This application-wired command is not part of the self-contained dispatcher. Applications
+may expose it under the project-qualified command.
 """
 
 from __future__ import annotations
@@ -131,7 +131,9 @@ def _refusals(refusals: tuple[tuple[str, str], ...], writer: TextIO) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     """The `dead-letters` command line."""
-    parser = argparse.ArgumentParser(prog="adk dead-letters", description="inspect and replay")
+    parser = argparse.ArgumentParser(
+        prog="tesserix-adk dead-letters", description="inspect and replay"
+    )
     commands = parser.add_subparsers(dest="command", required=True)
 
     for name, what in (("list", "show the backlog"), ("replay", "redeliver the selection")):

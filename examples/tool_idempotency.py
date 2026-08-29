@@ -15,6 +15,7 @@ from tesserix_adk.core import (
     Idempotency,
     IdempotencyPolicy,
     ModelCapabilities,
+    NoOutput,
     RunEventKind,
     ToolCall,
     Usage,
@@ -91,7 +92,7 @@ def runner(store: MemoryIdempotencyStore) -> AgentRunner:
     )
 
 
-def planner() -> Agent[str]:
+def planner() -> Agent[NoOutput]:
     """The agent doing the booking."""
     return Agent(
         name="planner",

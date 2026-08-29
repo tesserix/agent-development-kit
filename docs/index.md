@@ -1,6 +1,6 @@
-# Tesserix ADK documentation
+# Tesserix Agent Development Kit documentation
 
-Tesserix ADK is the reusable Python runtime and integration layer for agents that need
+Tesserix Agent Development Kit is the reusable Python runtime and integration layer for agents that need
 typed contracts, provider portability, production controls, and network-free tests. The
 application owns its process and deployment; the kit supplies composable primitives.
 
@@ -10,12 +10,14 @@ application owns its process and deployment; the kit supplies composable primiti
 |---|---|
 | Run the offline example | [Getting started](getting-started.md) |
 | Build a new custom agent | [Build a custom agent](custom-agent.md) |
+| Design the full path from source to monitored production | [Agent lifecycle and platform architecture](agent-lifecycle.md) |
 | Connect OpenAI, Anthropic, Gemini, Groq, Grok, OpenRouter, or a local model | [Provider recipes](provider-recipes.md) |
 | Connect a gateway, MCP server, store, or workflow engine | [Integrations and gateways](integrations.md) |
+| Reuse a tool or agent from another framework | [Framework interoperability](framework-interop.md) |
 | Publish or consume an official A2A Agent Card | [Official A2A interoperability](a2a.md) |
-| Connect a Tesserix agent to Google ADK | [Google ADK bridge](google-adk.md) |
+| Connect a Tesserix agent to Google Agent Development Kit | [Google Agent Development Kit bridge](google-adk.md) |
 | Test an agent without spending money | [Testing](testing.md) |
-| Keep a deployed agent on a current reviewed ADK | [Keep agents current safely](keeping-current.md) |
+| Keep a deployed agent on a current reviewed kit release | [Keep agents current safely](keeping-current.md) |
 | Understand contribution and branch protections | [Repository governance](repository-governance.md) |
 | Decide whether the project is ready for a public or production rollout | [Public-readiness review](public-readiness-review.md) |
 | Read the community standards or report conduct privately | [Code of Conduct](https://github.com/tesserix/agent-development-kit/blob/main/CODE_OF_CONDUCT.md) |
@@ -37,9 +39,14 @@ That separation is the portability mechanism. A provider, model gateway, store, 
 server, or A2A registry can be replaced at its boundary without giving the agent vendor
 objects.
 
+For the production sequence—evaluation gates, approved registry versions, canary,
+execution planes, sandboxes, recovery and feedback—read [Agent lifecycle and platform
+architecture](agent-lifecycle.md).
+
 ## Main references
 
 - [Architecture](architecture.md)
+- [Agent lifecycle and platform architecture](agent-lifecycle.md)
 - [Core primitives](primitives.md)
 - [Providers and capabilities](providers.md)
 - [Tools](tools.md)
@@ -52,7 +59,8 @@ objects.
 - [Retrieval](retrieval.md)
 - [MCP client](mcp-client.md)
 - [AgentGateway](agentgateway.md)
-- [Google ADK bridge](google-adk.md)
+- [Google Agent Development Kit bridge](google-adk.md)
+- [Framework interoperability](framework-interop.md)
 - [Tesserix peer discovery](peer-discovery.md)
 - [Durable runs](durable-runs.md)
 - [Evaluations](eval-datasets.md)

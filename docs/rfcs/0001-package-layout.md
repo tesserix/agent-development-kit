@@ -114,7 +114,7 @@ are extras and an unimported module is a few kilobytes. Revisit only if an extra
 dependency footprint becomes unavoidable for consumers who do not use it.
 
 **Flat package, not a namespace package.** A namespace package would let a separate
-repository contribute `tesserix_adk.something`, which sounds like extensibility and
+repository contribute `tesserix_adk.<extension>`, which sounds like extensibility and
 is in practice a way for an import path to resolve differently depending on what
 else is installed. Third-party extensions register through an entry point instead,
 which is explicit and inspectable.

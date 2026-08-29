@@ -20,6 +20,7 @@ from tesserix_adk.runtime.blocking import current_ambient
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from tesserix_adk.core.protocols import BudgetPolicy
     from tesserix_adk.runtime.cancellation import CancellationToken
 
 __all__ = ["ToolContext"]
@@ -43,6 +44,9 @@ class ToolContext:
         idempotency_key: The key identifying this side effect, where the tool declared one
             is needed. Pass it to whatever downstream API accepts one, so the guarantee
             reaches past the kit into the system that actually books the seat.
+        scopes: Effective delegated authority, already intersected with the agent's
+            declaration. A foreign boundary may narrow it again and must never widen it.
+        budget: The run ledger a nested foreign call must share. `None` outside a run.
 
     Example:
         >>> ToolContext(run_id="run-1", tenant="acme").tenant
@@ -55,6 +59,8 @@ class ToolContext:
     trace: Mapping[str, str] = field(default_factory=dict)
     cancellation: CancellationToken | None = None
     idempotency_key: str | None = None
+    scopes: tuple[str, ...] = ()
+    budget: BudgetPolicy | None = None
 
     @classmethod
     def current(cls) -> ToolContext | None:
@@ -73,6 +79,9 @@ class ToolContext:
             user=ambient.user,
             cancellation=ambient.cancellation,
             idempotency_key=ambient.idempotency_key,
+            scopes=ambient.scopes,
+            trace=ambient.trace,
+            budget=ambient.budget,
         )
 
     def raise_if_cancelled(self) -> None:

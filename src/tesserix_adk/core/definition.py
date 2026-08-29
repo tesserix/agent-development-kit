@@ -17,13 +17,13 @@ import hashlib
 import re
 from typing import Any, Generic, Self
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, TypeAdapter, field_validator, model_validator
 
-from tesserix_adk.core.agent import Agent  # noqa: TC001 — pydantic needs it at runtime
+from tesserix_adk.core.agent import Agent, TypedAgent  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.errors import ConfigurationError
-from tesserix_adk.core.models import AdkModel, OutputT
+from tesserix_adk.core.models import AdkModel, InputT, OutputT
 
-__all__ = ["AgentDefinition", "Owner"]
+__all__ = ["AgentDefinition", "Owner", "TypedAgentDefinition"]
 
 _REVISION_LENGTH = 12
 
@@ -181,3 +181,55 @@ class AgentDefinition(AdkModel, Generic[OutputT]):  # noqa: UP046 — the parame
         """
         rendered = self.model_dump_json(exclude_none=False)
         return hashlib.sha256(rendered.encode()).hexdigest()[:_REVISION_LENGTH]
+
+
+class TypedAgentDefinition(
+    AgentDefinition[OutputT],
+    Generic[InputT, OutputT],  # noqa: UP046
+):
+    """A reviewed definition for a `TypedAgent` input and output contract."""
+
+    agent: TypedAgent[InputT, OutputT]
+    input_schema: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def _record_the_input_shape(self) -> Self:
+        if self.input_schema is None:
+            object.__setattr__(
+                self, "input_schema", TypeAdapter(self.agent.input_type).json_schema()
+            )
+        return self
+
+    @classmethod
+    def declared_typed(
+        cls,
+        *,
+        agent: TypedAgent[InputT, OutputT],
+        owner: Owner,
+        evaluation_suite: str,
+        known_tools: frozenset[str] | tuple[str, ...] | None = None,
+        output_schema: dict[str, Any] | None = None,
+        input_schema: dict[str, Any] | None = None,
+        instructions_ref: str | None = None,
+        memory_policy: str | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> Self:
+        """Build a typed definition and validate its tool allowlist."""
+        definition = cls(
+            agent=agent,
+            owner=owner,
+            evaluation_suite=evaluation_suite,
+            output_schema=output_schema,
+            input_schema=input_schema,
+            instructions_ref=instructions_ref,
+            memory_policy=memory_policy,
+            metadata=metadata or {},
+        )
+        if known_tools is not None:
+            stray = sorted(set(agent.tools) - set(known_tools))
+            if stray:
+                raise ConfigurationError(
+                    f"agent.tools names tools that are not registered: {', '.join(stray)}; "
+                    f"available: {', '.join(sorted(known_tools)) or 'none'}"
+                )
+        return definition

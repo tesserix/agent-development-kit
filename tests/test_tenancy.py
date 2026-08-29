@@ -191,11 +191,13 @@ class TestItSurvivesTheWaysWorkIsSpawned:
 
     @pytest.mark.asyncio
     async def test_an_executor_that_copies_no_context_is_given_one(self) -> None:
-        """`run_in_executor` drops contextvars; `bound` is what carries them across."""
+        """`bound` carries context into a worker that was created without it."""
         loop = asyncio.get_running_loop()
-        with ThreadPoolExecutor(max_workers=1) as pool, tenant_scope("acme"):
-            unbound = await loop.run_in_executor(pool, tenant_here)
-            carried = await loop.run_in_executor(pool, bound(lambda: current_tenant().tenant))
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            assert await loop.run_in_executor(pool, tenant_here) is None
+            with tenant_scope("acme"):
+                unbound = await loop.run_in_executor(pool, tenant_here)
+                carried = await loop.run_in_executor(pool, bound(lambda: current_tenant().tenant))
         assert unbound is None
         assert carried == "acme"
 

@@ -10,6 +10,10 @@ permissions:
 env:
   UV_VERSION: "0.12.1"
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   guard:
     name: tag is releasable
@@ -200,6 +204,58 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+  docs-publish:
+    name: publish versioned documentation
+    needs: [build, mirror]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --group docs
+      - name: publish the tagged version without replacing earlier versions
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if uv run python -c 'import sys; from packaging.version import Version; sys.exit(0 if Version(sys.argv[1]).is_prerelease else 1)' "$VERSION"; then
+            uv run mike deploy --push --title "$VERSION (unstable)" "$VERSION"
+          else
+            uv run mike deploy --push --update-aliases "$VERSION" stable
+            uv run mike set-default --push stable
+          fi
+      - name: materialise the complete version history for GitHub Pages
+        run: |
+          git fetch origin gh-pages
+          mkdir -p published-docs
+          git archive --format=tar --output=published-docs.tar origin/gh-pages
+          tar -xf published-docs.tar -C published-docs
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: published-docs
+
+  docs-deploy:
+    name: deploy versioned documentation
+    needs: docs-publish
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: deploy
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
   divergence:
     name: indexes agree
     needs: [publish, mirror]
@@ -232,7 +288,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       # A clean environment: nothing from this repository is installed, so the run
       # proves the published artefact resolves on its own.
       - run: |
@@ -278,7 +334,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       # The mirror is the path consumers actually use while PyPI publishing is off, so it
       # is exercised the way they use it: assets in, nothing from this working tree.
       - run: |

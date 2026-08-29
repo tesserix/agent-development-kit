@@ -13,6 +13,43 @@ if run.output is not None:
     print(run.output.nights)     # int, not object, and no cast
 ```
 
+## Structured application input is additive
+
+The released `Agent[OutputT]` and `AgentRunner.run(..., user_input: str)` meanings do not
+change when an application wants a Pydantic request. Use the separately named surface:
+
+```python
+from pydantic import BaseModel
+
+from tesserix_adk import TypedAgent
+
+
+class TripRequest(BaseModel):
+    destination: str
+    nights: int
+
+
+agent: TypedAgent[TripRequest, TripPlan] = TypedAgent(
+    name="planner",
+    instructions="Plan trips.",
+    model="claude-sonnet-5",
+    input_type=TripRequest,
+    output_type=TripPlan,
+)
+request = TripRequest(destination="Kyoto", nights=4)
+run = await runner.run_typed(agent, request, tenant="acme")
+```
+
+`run_typed_sync`, `stream_typed`, and `stream_typed_sync` are the corresponding surfaces.
+`TypedAgentDefinition[InputT, OutputT]` records the request JSON Schema as part of the
+reviewed revision. `estimate_run_typed`, `PromptDefinition.instruct_typed`,
+`load_typed_config`, and `resolve_typed_config` provide the same additive rule where a
+released parameter could not be narrowed safely.
+
+The two public paths share the same private execution loop. Structured input is validated
+and rendered as canonical JSON before input hooks, guardrails, context retrieval, token
+counting, recording, or a provider sees it. A mismatch fails before any provider call.
+
 ## The parameter has a default
 
 `OutputT` defaults to `NoOutput`, a model with no fields. Three consequences, all
@@ -53,8 +90,8 @@ Python type is a payload that decides what to import.
 Inside the run loop the internal helpers are annotated `Run[Any]` and `Agent[Any]`. The
 answer type is not established until validation, so threading the parameter through forty
 private signatures would state a guarantee the loop cannot make at that point. The public
-signatures — `AgentRunner.run`, `run_sync`, `Run.with_output` — are parameterised, and they
-are the ones a consumer's checker sees.
+signatures — `AgentRunner.run`, `run_sync`, `run_typed`, `run_typed_sync`, and
+`Run.with_output` — are parameterised, and they are the ones a consumer's checker sees.
 
 ## Every escape hatch is declared
 
@@ -110,17 +147,22 @@ The generic signatures are part of the public API surface: they appear in
 | Change | Treated as |
 |---|---|
 | Adding a type parameter with a default | Additive |
+| Adding a separately named typed-input contract | Additive |
+| Reinterpreting `Agent[OutputT]` as `Agent[InputT, OutputT]` | Breaking |
 | Removing the `NoOutput` default | Breaking — every unannotated use becomes an error |
 | Changing the `BaseModel` bound | Breaking |
 | Narrowing a public return from `Run[OutputT]` to a concrete type | Breaking |
 | Replacing `Any` with the parameter in a *private* signature | Not part of the surface |
 
-A change in the breaking rows ships with a deprecation period under the same policy as any
-other, with the old shape kept working for one minor release.
+A change in the breaking rows ships only after the documented deprecation period, with the
+old shape kept working for the promised window. Issue #161 remains open for that staged
+decision; the release gate is not weakened to make a new static meaning look compatible.
 
 ## What the tests check
 
-[`tests/test_typed_results.py`](https://github.com/tesserix/agent-development-kit/blob/main/tests/test_typed_results.py) asserts inference two ways.
+[`tests/typing_conformance.py`](https://github.com/tesserix/agent-development-kit/blob/main/tests/typing_conformance.py) and
+[`tests/test_typed_results.py`](https://github.com/tesserix/agent-development-kit/blob/main/tests/test_typed_results.py) assert inference for both
+the stable and additive surfaces under strict mypy and strict Pyright.
 `assert_type` states what the checker must infer and does nothing at runtime. A
 `# type: ignore[code]` on a line of deliberate misuse states that the checker must keep
 rejecting it — `warn_unused_ignores` fails the build if it stops. Both run under

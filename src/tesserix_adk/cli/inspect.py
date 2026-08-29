@@ -1,12 +1,12 @@
-"""`adk inspect` — one multi-agent run drawn as a tree, with the money on every node.
+"""`tesserix-adk inspect` — draw a multi-agent run with cost on every node.
 
 The question after a run that spanned a supervisor, three workers and a peer is always the
 same: which agent spent it and where did the time go. Answering it from a trace UI means
 having kept the trace and having sampled it; answering it here means having the tree, which
 the kit builds whether or not anything was exported.
 
-No third-party argument parser and no console-script entry point: a kit that installs a
-global `adk` binary fights with whatever the consumer already ships. Where the trees are
+This application-wired command is not part of the self-contained dispatcher. Applications
+may expose it under the project-qualified command. Where the trees are
 kept is the deployment's business, so it supplies the lookup and this supplies the
 rendering and the exit codes.
 """
@@ -70,7 +70,9 @@ async def main(argv: Sequence[str], *, lookup: Lookup, out: TextIO | None = None
 
 def _parser() -> argparse.ArgumentParser:
     """The `inspect` command line."""
-    parser = argparse.ArgumentParser(prog="adk inspect", description="draw one run as a tree")
+    parser = argparse.ArgumentParser(
+        prog="tesserix-adk inspect", description="draw one run as a tree"
+    )
     parser.add_argument("run_id", help="the root run to draw")
     parser.add_argument(
         "--by",

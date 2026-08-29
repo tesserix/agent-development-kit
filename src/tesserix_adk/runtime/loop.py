@@ -115,6 +115,8 @@ from tesserix_adk.core import (
     ToolRefusal,
     ToolTimedOutError,
     TrustBoundaryError,
+    TypedAgent,
+    TypedAgentDefinition,
     Usage,
     current_principal,
     deduplicate,
@@ -132,7 +134,7 @@ from tesserix_adk.core.streaming import StreamAccumulator, StreamEnd
 from tesserix_adk.core.streaming import TextDelta as _StreamedText
 from tesserix_adk.core.tenancy import tenant_scope
 from tesserix_adk.runtime.approvals import TIMEOUT_IDENTITY, ApprovalLedger, self_granted
-from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, drive
+from tesserix_adk.runtime.blocking import Ambient, LoopMonitor, carrying, current_ambient, drive
 from tesserix_adk.runtime.cancellation import CancellationToken, Deadline
 from tesserix_adk.runtime.checkpoint import (
     Checkpointer,
@@ -214,6 +216,23 @@ _WATCHING = LoopMonitor()
 _UNWIND_TURNS = 3
 
 _T = TypeVar("_T")
+
+
+def _render_input(agent: Agent[Any], value: object) -> str:
+    """Render either stable text input or an additive typed boundary."""
+    if isinstance(agent, TypedAgent):
+        return agent.render_input(value)
+    if isinstance(value, str):
+        return value
+    actual = type(value).__name__
+    problem = f"expected str, got {actual}"
+    raise SchemaViolationError(
+        f"str rejected the agent input — {problem}",
+        model="str",
+        paths=("",),
+        problems={"": problem},
+        payload=value,
+    )
 
 
 def _random_id() -> str:
@@ -579,6 +598,40 @@ class AgentRunner:
             async_name="AgentRunner.run",
         )
 
+    def run_typed_sync[InputT: str | BaseModel, OutputT: BaseModel](
+        self,
+        agent: TypedAgent[InputT, OutputT] | TypedAgentDefinition[InputT, OutputT],
+        user_input: InputT,
+        *,
+        tenant: str,
+        user: str | None = None,
+        run_id: str | None = None,
+        history: Iterable[Message] = (),
+        memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
+    ) -> Run[OutputT]:
+        """Run a structured-input agent from a synchronous caller."""
+        return drive(
+            lambda: self.run_typed(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=run_id,
+                history=history,
+                memory=memory,
+                cancellation=cancellation,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+            ),
+            sync_name="run_typed_sync",
+            async_name="AgentRunner.run_typed",
+        )
+
     def stream_sync[OutputT: BaseModel](
         self,
         agent: Agent[OutputT] | AgentDefinition[OutputT],
@@ -625,6 +678,47 @@ class AgentRunner:
 
         return drive(collected, sync_name="stream_sync", async_name="AgentRunner.stream")
 
+    def stream_typed_sync[InputT: str | BaseModel, OutputT: BaseModel](
+        self,
+        agent: TypedAgent[InputT, OutputT] | TypedAgentDefinition[InputT, OutputT],
+        user_input: InputT,
+        *,
+        tenant: str,
+        user: str | None = None,
+        run_id: str | None = None,
+        history: Iterable[Message] = (),
+        memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
+        backpressure: Backpressure | None = None,
+    ) -> tuple[ProgressEvent, ...]:
+        """Collect a structured-input agent's progress from a synchronous caller."""
+
+        async def collected() -> tuple[ProgressEvent, ...]:
+            stream = self.stream_typed(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=run_id,
+                history=history,
+                memory=memory,
+                cancellation=cancellation,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+                backpressure=backpressure,
+            )
+            return tuple([event async for event in stream])
+
+        return drive(
+            collected,
+            sync_name="stream_typed_sync",
+            async_name="AgentRunner.stream_typed",
+        )
+
     def stream[OutputT: BaseModel](
         self,
         agent: Agent[OutputT] | AgentDefinition[OutputT],
@@ -663,6 +757,43 @@ class AgentRunner:
 
         async def drive() -> Run[OutputT]:
             return await self.run(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=identity,
+                history=history,
+                memory=memory,
+                cancellation=token,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+            )
+
+        return RunStream(identity, self._clock, drive, token.cancel, backpressure)
+
+    def stream_typed[InputT: str | BaseModel, OutputT: BaseModel](
+        self,
+        agent: TypedAgent[InputT, OutputT] | TypedAgentDefinition[InputT, OutputT],
+        user_input: InputT,
+        *,
+        tenant: str,
+        user: str | None = None,
+        run_id: str | None = None,
+        history: Iterable[Message] = (),
+        memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
+        backpressure: Backpressure | None = None,
+    ) -> RunStream[OutputT]:
+        """Watch a structured-input agent run through the shared execution loop."""
+        identity = run_id or self._ids()
+        token = cancellation or CancellationToken()
+
+        async def drive() -> Run[OutputT]:
+            return await self.run_typed(
                 agent,
                 user_input,
                 tenant=tenant,
@@ -748,10 +879,41 @@ class AgentRunner:
                 budget=budget,
             )
 
+    async def run_typed[InputT: str | BaseModel, OutputT: BaseModel](
+        self,
+        agent: TypedAgent[InputT, OutputT] | TypedAgentDefinition[InputT, OutputT],
+        user_input: InputT,
+        *,
+        tenant: str,
+        user: str | None = None,
+        run_id: str | None = None,
+        history: Iterable[Message] = (),
+        memory: Iterable[str] = (),
+        cancellation: CancellationToken | None = None,
+        deadline: Deadline | None = None,
+        parent: RunContext | None = None,
+        budget: BudgetPolicy | None = None,
+    ) -> Run[OutputT]:
+        """Drive a structured-input agent through the same guarded execution loop."""
+        with tenant_scope(tenant, user=user):
+            return await self._driven(
+                agent,
+                user_input,
+                tenant=tenant,
+                user=user,
+                run_id=run_id,
+                history=history,
+                memory=memory,
+                cancellation=cancellation,
+                deadline=deadline,
+                parent=parent,
+                budget=budget,
+            )
+
     async def _driven[OutputT: BaseModel](
         self,
         agent: Agent[OutputT] | AgentDefinition[OutputT],
-        user_input: str,
+        user_input: object,
         *,
         tenant: str,
         user: str | None = None,
@@ -767,6 +929,7 @@ class AgentRunner:
         revision = agent.revision if isinstance(agent, AgentDefinition) else None
         if isinstance(agent, AgentDefinition):
             agent = agent.agent
+        rendered_input = _render_input(agent, user_input)
         self._refuse_an_unrouted_class(agent)
         decision = self._route(agent, tenant)
         bounds = self._bounds_for(agent, cancellation, deadline, self._vendor_for(decision), budget)
@@ -818,7 +981,7 @@ class AgentRunner:
             )
 
         try:
-            run, asked = await self._asked(run, agent, user_input, bounds)
+            run, asked = await self._asked(run, agent, rendered_input, bounds)
             run, retrieved = await self._context_for(run, agent, asked, memory, bounds)
             contract = self._contract_for(agent, bounds.provider)
             prompt = assemble_prompt(
@@ -1011,7 +1174,11 @@ class AgentRunner:
         )
 
     def _refuse_a_moved_model(
-        self, agent: Agent[Any] | AgentDefinition[Any], held: SuspendedRun, *, drifting: bool
+        self,
+        agent: Agent[Any] | AgentDefinition[Any],
+        held: SuspendedRun,
+        *,
+        drifting: bool,
     ) -> None:
         """Stop a decision about one model's proposal being executed under another's.
 
@@ -1729,7 +1896,12 @@ class AgentRunner:
         return RunEvent(kind=kind, at=self._clock.now(), name=name, detail=detail, usage=usage)
 
     async def _terminate(
-        self, run: Run[Any], agent: Agent[Any], state: RunState, detail: str | None, bounds: _Bounds
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        state: RunState,
+        detail: str | None,
+        bounds: _Bounds,
     ) -> Run[Any]:
         bounds.approvals.void()
         run = await self._notify(run, agent, state, bounds)
@@ -2131,7 +2303,13 @@ class AgentRunner:
         return run, response.model_copy(update={"content": checked})
 
     async def _guarded(
-        self, run: Run[Any], agent: Agent[Any], content: str, bounds: _Bounds, *, stage: GuardStage
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        content: str,
+        bounds: _Bounds,
+        *,
+        stage: GuardStage,
     ) -> tuple[Run[Any], str]:
         """Guardrails fail closed: a check that did not run is not a check that passed."""
         if not agent.guardrails:
@@ -3014,12 +3192,16 @@ class AgentRunner:
         """
         assert self._tools is not None  # noqa: S101 — guarded by _refuse_incomplete_wiring
         registry = self._tools
+        inherited = current_ambient()
         ambient = Ambient(
             run_id=run.id,
             tenant=run.tenant,
             user=run.user,
             cancellation=bounds.token,
             idempotency_key=bounds.keys.get(call.id),
+            scopes=tuple(bounds.identity.effective) if bounds.identity is not None else (),
+            trace=inherited.trace if inherited is not None else {},
+            budget=bounds.budget,
         )
         with carrying(ambient):
             if self._monitor is None:
@@ -3416,7 +3598,12 @@ class AgentRunner:
         return run, detail, "tool_refusal", None
 
     def _tool_failed(
-        self, run: Run[Any], agent: Agent[Any], call: ToolCall, failure: Exception, bounds: _Bounds
+        self,
+        run: Run[Any],
+        agent: Agent[Any],
+        call: ToolCall,
+        failure: Exception,
+        bounds: _Bounds,
     ) -> tuple[Run[Any], str, str, ToolResult | None]:
         wrapped = ToolExecutionError(
             f"tool {call.name!r} failed: {scrub(str(failure))}", run_id=run.id, tenant=run.tenant

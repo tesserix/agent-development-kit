@@ -2,11 +2,11 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-from tesserix_adk.core import Agent
+from tesserix_adk.core import Agent, TypedAgent
 from tesserix_adk.runtime import AgentRunner
 from tesserix_adk.tools import ToolRegistry, tool
 
-__all__ = ["Agent", "AgentRunner", "ToolRegistry", "__version__", "tool"]
+__all__ = ["Agent", "AgentRunner", "ToolRegistry", "TypedAgent", "__version__", "tool"]
 
 try:
     __version__ = version("tesserix-adk")

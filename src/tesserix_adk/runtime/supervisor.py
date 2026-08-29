@@ -38,6 +38,7 @@ from pydantic import BaseModel
 from tesserix_adk.core.errors import ConfigurationError, DelegationError, GuardrailError
 from tesserix_adk.core.primitives import Usage
 from tesserix_adk.core.run import Run, RunEvent, RunEventKind, RunGrant, RunState
+from tesserix_adk.runtime.blocking import current_ambient
 from tesserix_adk.runtime.cancellation import CancellationToken
 from tesserix_adk.runtime.delegation import handed_back, narrowed_to
 
@@ -48,10 +49,11 @@ if TYPE_CHECKING:
     from tesserix_adk.core.budget import BudgetLimits
     from tesserix_adk.core.guards import GuardrailPipeline
     from tesserix_adk.core.protocols import BudgetPolicy
+    from tesserix_adk.core.run import RunContext
     from tesserix_adk.runtime.delegation import Delegation
     from tesserix_adk.runtime.loop import AgentRunner
 
-__all__ = ["DelegationResult", "Roster", "Specialist", "Supervisor"]
+__all__ = ["AddressableSubagent", "DelegationResult", "Roster", "Specialist", "Supervisor"]
 
 _NOT_AN_ANSWER = {RunState.BUDGET_EXHAUSTED: "budget", RunState.CANCELLED: "cancelled"}
 _NOTHING = Usage(input_tokens=0, output_tokens=0)
@@ -63,6 +65,36 @@ class _Sliceable(Protocol):
 
     def sliced(self, limits: BudgetLimits) -> BudgetPolicy:
         """The allocation, deducted from this ledger."""
+        ...
+
+
+@runtime_checkable
+class AddressableSubagent[AddressableOutputT: BaseModel](Protocol):
+    """A non-native agent that a supervisor can address under the same run bounds.
+
+    Implementations receive only the caller's explicit identity, narrowed tools, ambient
+    scopes and trace, cancellation, lineage and shared budget. They return a normal kit
+    :class:`Run`, so attribution and guarded hand-back remain identical to native workers.
+    """
+
+    name: str
+    tools: tuple[str, ...]
+
+    async def run(
+        self,
+        user_input: str,
+        *,
+        tenant: str,
+        budget: BudgetPolicy,
+        user: str | None = None,
+        run_id: str | None = None,
+        cancellation: CancellationToken | None = None,
+        parent: RunContext | None = None,
+        scopes: Collection[str] = (),
+        trace: Mapping[str, str] | None = None,
+        tools: Collection[str] | None = None,
+    ) -> Run[AddressableOutputT]:
+        """Execute one delegated run or raise a typed boundary refusal."""
         ...
 
 
@@ -88,7 +120,7 @@ class Specialist:
         'researcher'
     """
 
-    agent: Agent[Any]
+    agent: Agent[Any] | AddressableSubagent[Any]
     capabilities: frozenset[str]
     budget: BudgetLimits | None = None
 
@@ -151,7 +183,7 @@ class Roster:
     @property
     def capabilities(self) -> frozenset[str]:
         """Everything the roster can do between them."""
-        return frozenset().union(*(one.capabilities for one in self._specialists))
+        return frozenset[str]().union(*(one.capabilities for one in self._specialists))
 
     def matching(self, needs: Collection[str]) -> Specialist | None:
         """Who a task that needs `needs` goes to, or `None` where nobody declared it.
@@ -367,16 +399,33 @@ class Supervisor:
             self._claim(writes, specialist.name)
             self._delegation.to(specialist.name, tools=held)  # enforces the caller's fan-out limits
         caller = self._delegation.context
-        run = await self._runner.run(
-            narrowed_to(specialist.agent, held),
-            task,
-            tenant=caller.tenant.tenant,
-            user=caller.tenant.user,
-            run_id=run_id,
-            cancellation=self._token,
-            parent=caller.model_copy(update={"grant": self._grant()}),
-            budget=self._allowance(specialist, budget),
-        )
+        parent = caller.model_copy(update={"grant": self._grant()})
+        allowance = self._allowance(specialist, budget)
+        if isinstance(specialist.agent, AddressableSubagent):
+            ambient = current_ambient()
+            run = await specialist.agent.run(
+                task,
+                tenant=caller.tenant.tenant,
+                user=caller.tenant.user,
+                run_id=run_id,
+                cancellation=self._token,
+                parent=parent,
+                budget=allowance,
+                scopes=ambient.scopes if ambient is not None else (),
+                trace=ambient.trace if ambient is not None else {},
+                tools=held,
+            )
+        else:
+            run = await self._runner.run(
+                narrowed_to(specialist.agent, held),
+                task,
+                tenant=caller.tenant.tenant,
+                user=caller.tenant.user,
+                run_id=run_id,
+                cancellation=self._token,
+                parent=parent,
+                budget=allowance,
+            )
         return await self._returned(specialist, run, fatal=fatal)
 
     async def _returned(

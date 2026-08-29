@@ -12,8 +12,8 @@ from typing import Any
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from tesserix_adk.core import Agent, BudgetLimits, LoopConfig, ModelCapabilities
-from tesserix_adk.core.definition import AgentDefinition, Owner
+from tesserix_adk.core import Agent, BudgetLimits, LoopConfig, ModelCapabilities, TypedAgent
+from tesserix_adk.core.definition import AgentDefinition, Owner, TypedAgentDefinition
 from tesserix_adk.core.errors import ConfigurationError
 from tesserix_adk.observability import attributes_of, spend_of
 from tesserix_adk.runtime import AgentRunner, ModelResponse
@@ -33,6 +33,12 @@ class Bare(BaseModel):
     """The same answer with the citation dropped."""
 
     answer: str
+
+
+class Query(BaseModel):
+    """The application input included in the reviewed definition."""
+
+    question: str
 
 
 OWNER = Owner(team="search-platform", contact="search@example.gov", service="aequitas-search")
@@ -74,6 +80,28 @@ class TestWhatADefinitionMustSay:
     def test_declaring_no_tools_means_no_tools(self) -> None:
         """The empty allowlist is the safe reading; 'all of them' is never inferred."""
         assert define().agent.tools == ()
+
+    def test_the_input_schema_is_recorded_and_changes_the_revision(self) -> None:
+        fields: dict[str, Any] = {
+            "name": "clerk",
+            "instructions": "Answer from the file. Cite the page.",
+            "model": "llama-3.1-8b",
+            "free_text": True,
+        }
+        prose = TypedAgentDefinition(
+            agent=TypedAgent(input_type=str, **fields),
+            owner=OWNER,
+            evaluation_suite="suites/clerk.yaml",
+        )
+        typed = TypedAgentDefinition(
+            agent=TypedAgent(input_type=Query, **fields),
+            owner=OWNER,
+            evaluation_suite="suites/clerk.yaml",
+        )
+
+        assert typed.input_schema == Query.model_json_schema()
+        assert prose.input_schema == {"type": "string"}
+        assert typed.revision != prose.revision
 
     def test_a_zero_execution_limit_is_refused_rather_than_silently_disabling_the_agent(
         self,

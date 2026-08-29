@@ -12,7 +12,7 @@ consumer that meters `transcription` separately says so.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
 from pydantic import Field
 from pydantic_core import core_schema
@@ -28,12 +28,15 @@ __all__ = [
     "CHEAP",
     "REASONING",
     "SMART",
+    "KnownTaskClass",
     "ModelRequirements",
     "ModelRouter",
     "RejectedCandidate",
     "RoutingDecision",
     "TaskClass",
 ]
+
+KnownTaskClass = Literal["cheap", "smart", "reasoning"]
 
 
 class TaskClass(str):

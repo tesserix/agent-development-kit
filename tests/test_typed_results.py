@@ -10,12 +10,21 @@ rather than in a consumer's editor.
 
 from __future__ import annotations
 
-from typing import assert_type
+from typing import Any, assert_type, cast
 
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from tesserix_adk.core import Agent, NoOutput, Run, RunState, Usage
+from tesserix_adk.core import (
+    Agent,
+    NoOutput,
+    Run,
+    RunState,
+    SchemaViolationError,
+    TextPart,
+    TypedAgent,
+    Usage,
+)
 from tesserix_adk.runtime import AgentRunner, ModelResponse
 from tesserix_adk.testing import CAPABLE, FakeClock, ScriptedProvider
 
@@ -34,6 +43,13 @@ class TripPlan(BaseModel):
 
     destination: str
     nights: int
+
+
+class TripRequest(BaseModel):
+    """Typed application input whose field declaration order is intentionally unsorted."""
+
+    nights: int
+    destination: str
 
 
 class Invoice(BaseModel):
@@ -93,6 +109,54 @@ class TestTheDeclaredTypeSurvivesTheRun:
         run = await go(planner(), '{"destination": "Kyoto", "nights": 4}')
         restored = Run[TripPlan].model_validate_json(run.model_dump_json())
         assert restored.output == TripPlan(destination="Kyoto", nights=4)
+
+
+class TestTheDeclaredInputSurvivesTheBoundary:
+    async def test_a_model_input_is_rendered_as_canonical_json(self) -> None:
+        provider = ScriptedProvider(
+            ModelResponse(
+                content='{"destination": "Kyoto", "nights": 4}',
+                usage=Usage(input_tokens=10, output_tokens=5),
+            ),
+            capabilities=NATIVE,
+        )
+        agent: TypedAgent[TripRequest, TripPlan] = TypedAgent(
+            name="planner",
+            instructions="Plan trips.",
+            model="claude-sonnet-5",
+            input_type=TripRequest,
+            output_type=TripPlan,
+        )
+
+        await AgentRunner(provider=provider, clock=FakeClock()).run_typed(
+            agent,
+            TripRequest(nights=4, destination="Kyoto"),
+            tenant="acme",
+        )
+
+        part = provider.requests[0].messages[-1].content[0]
+        assert isinstance(part, TextPart)
+        assert part.text == '{"destination":"Kyoto","nights":4}'
+
+    async def test_a_runtime_mismatch_is_refused_before_the_provider(self) -> None:
+        provider = ScriptedProvider(
+            ModelResponse(content='{"destination": "unused", "nights": 1}'),
+            capabilities=NATIVE,
+        )
+        agent: TypedAgent[TripRequest, TripPlan] = TypedAgent(
+            name="planner",
+            instructions="Plan trips.",
+            model="claude-sonnet-5",
+            input_type=TripRequest,
+            output_type=TripPlan,
+        )
+
+        with pytest.raises(SchemaViolationError, match="expected TripRequest"):
+            await AgentRunner(provider=provider, clock=FakeClock()).run_typed(
+                agent, cast("Any", "not a TripRequest"), tenant="acme"
+            )
+
+        assert provider.requests == []
 
 
 class TestMisuseIsRejectedBeforeItRuns:

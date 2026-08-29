@@ -24,7 +24,7 @@ import asyncio
 import json
 from collections.abc import Mapping
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel
 
@@ -32,7 +32,7 @@ from tesserix_adk.adapters.mcp import McpServerInfo
 from tesserix_adk.adapters.mcp_context import arriving_call, redacted
 from tesserix_adk.adapters.mcp_surface import namespaced
 from tesserix_adk.adapters.mcp_transport import PROTOCOL_VERSION
-from tesserix_adk.core import AdkError
+from tesserix_adk.core import AdkError, McpAuthError, McpAuthReason
 from tesserix_adk.core.errors import ToolTimedOutError
 from tesserix_adk.core.hooks import ApprovalRecord
 from tesserix_adk.core.redaction import scrub
@@ -133,6 +133,9 @@ class McpServer:
             bounds the process; this bounds one caller's share of it.
         secrets: Exact values to mask out of every result, beside the shapes always masked.
         protocol_versions: The MCP revisions this server serves.
+        require_authenticated_tenant: Whether every session must carry a tenant identity
+            established by the transport. Agent exports enable this; general local MCP
+            servers retain the backward-compatible metadata-only option.
 
     Raises:
         McpExportError: If `exports` names something the view cannot call.
@@ -149,7 +152,16 @@ class McpServer:
         ('fare_for',)
     """
 
-    __slots__ = ("_exports", "_lanes", "_name", "_secrets", "_version", "_versions", "_view")
+    __slots__ = (
+        "_exports",
+        "_lanes",
+        "_name",
+        "_require_authentication",
+        "_secrets",
+        "_version",
+        "_versions",
+        "_view",
+    )
 
     def __init__(
         self,
@@ -161,12 +173,14 @@ class McpServer:
         per_tenant_calls: int = 8,
         secrets: Sequence[str] = (),
         protocol_versions: Collection[str] = (PROTOCOL_VERSION,),
+        require_authenticated_tenant: bool = False,
     ) -> None:
         self._view = view
         self._name = name
         self._version = version
         self._secrets = tuple(secrets)
         self._versions = frozenset(protocol_versions)
+        self._require_authentication = require_authenticated_tenant
         self._lanes = _TenantLanes(per_tenant_calls)
         self._exports = self._checked(exports)
 
@@ -201,7 +215,16 @@ class McpServer:
             authenticated: The tenant the edge proved the caller to be. A call claiming
                 another is refused rather than believed.
             protocol_version: The revision the client asked for, checked on `initialize`.
+
+        Raises:
+            McpAuthError: If this server requires transport authentication and none was
+                supplied. Tenant metadata alone is a claim, not proof.
         """
+        if self._require_authentication and not authenticated:
+            raise McpAuthError(
+                "this MCP server requires a transport-authenticated tenant",
+                reason=McpAuthReason.UNAUTHENTICATED,
+            )
         return ExportedSession(
             self._view,
             exports=self._exports,
@@ -443,6 +466,8 @@ def _ambient(
             run_id=incoming.run_id or f"mcp-{name}",
             tenant=incoming.tenant.tenant,
             user=incoming.subject or None,
+            scopes=tuple(sorted(incoming.scopes)),
+            trace=incoming.trace.carried(),
             idempotency_key=next(
                 (stated[key] for key in _IDEMPOTENCY_KEYS if stated.get(key)), None
             ),
@@ -455,7 +480,10 @@ def _rendered(produced: object) -> GatewayToolResult:
     if isinstance(produced, BaseModel):
         produced = produced.model_dump(mode="json")
     if isinstance(produced, Mapping):
-        structured = {str(key): value for key, value in produced.items()}
+        structured = cast(
+            "dict[str, JsonValue]",
+            {str(key): value for key, value in cast("Mapping[object, object]", produced).items()},
+        )
         text = json.dumps(structured, ensure_ascii=False, sort_keys=True, default=str)
         return GatewayToolResult(
             content=({"type": "text", "text": text},), structured_content=structured

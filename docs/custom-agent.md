@@ -156,6 +156,41 @@ finished = await stream
 The stream is bounded and leaving its async context cancels work nobody is reading. Model
 streaming must be declared by the selected provider.
 
+## Optional: accept a structured application request
+
+Keep `Agent[OutputT]` and `runner.run(..., text)` for text input. If the application
+already has a Pydantic request, opt into the additive typed boundary:
+
+```python
+class SupportRequest(BaseModel):
+    ticket_id: str
+    question: str
+
+
+from tesserix_adk import TypedAgent
+
+typed_agent: TypedAgent[SupportRequest, SupportAnswer] = TypedAgent(
+    name="support-agent",
+    instructions="Look up the ticket and answer the question.",
+    model=MODEL,
+    input_type=SupportRequest,
+    output_type=SupportAnswer,
+    tools=("lookup_ticket",),
+    idempotent_tools=("lookup_ticket",),
+)
+typed_run = await runner.run_typed(
+    typed_agent,
+    SupportRequest(ticket_id="SUP-1042", question="What happens next?"),
+    tenant="acme",
+    user="user-42",
+)
+```
+
+The request is validated and rendered as canonical JSON before guardrails or a provider
+sees it. The typed and text surfaces use the same tools, budgets, identity, tracing,
+cancellation and output validation. See [Typing](typing.md) for sync, streaming,
+definition, prompt and estimation variants.
+
 ## 7. Promote the declaration to a reviewed artifact
 
 For an agent that will be registered, delegated to, or operated by another team, wrap it

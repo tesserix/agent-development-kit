@@ -1,6 +1,6 @@
 # Integrations and gateways
 
-Tesserix ADK integrates at typed boundaries. The application chooses concrete
+Tesserix Agent Development Kit integrates at typed boundaries. The application chooses concrete
 implementations at startup; an agent declaration does not import a database client,
 gateway SDK, or vendor model object.
 
@@ -9,7 +9,7 @@ gateway SDK, or vendor model object.
 | Extra | Adds | Use it for |
 |---|---|---|
 | `a2a` | Official `a2a-sdk[http-server]` | Official A2A Agent Cards, clients, and server bridge |
-| `google-adk` | Google ADK with A2A support | Consume Tesserix A2A agents from Google ADK |
+| `google-adk` | Google Agent Development Kit with A2A support | Import Google tools/agents or connect either runtime through official A2A |
 | `mcp` | MCP SDK and JSON Schema validation | MCP clients, servers, and gateway routing |
 | `temporal` | Temporal Python SDK | Durable workflow-engine integration |
 | `graphiti` | Graphiti core | Temporal graph memory |
@@ -27,6 +27,10 @@ names to the exact tagged artifact selected through
 
 Importing the base package does not eagerly import any optional SDK. Reaching an
 uninstalled integration raises `MissingExtraError` with the install command.
+
+Use [Framework interoperability](framework-interop.md) to decide whether an existing
+asset should be imported as a tool, wrapped as a tool or sub-agent, exported as a direct
+callable or MCP capability, or connected through official A2A task delegation.
 
 ## Model gateways
 
@@ -85,17 +89,25 @@ The application mounts the official request handler and routes and injects the o
 [Official A2A interoperability](a2a.md) for the exact support matrix and security
 responsibilities.
 
-## Google ADK
+## Google Agent Development Kit
 
-Install `tesserix-adk[google-adk]` to create Google ADK 2.8's current non-legacy
-`RemoteA2aAgent` from a Tesserix official card or card URL. This is an A2A boundary, not a
-model-provider coupling: the served Tesserix runner can continue using Groq, xAI/Grok,
-OpenRouter, Gemini, OpenAI, Anthropic, a local model, or any other conforming provider.
+Install `tesserix-adk[google-adk]` for the tested Google Agent Development Kit 2.x
+integration. Import same-process `FunctionTool` definitions through
+`import_google_adk_toolset`, wrap a `BaseAgent` through `wrap_google_adk_agent` and an
+application-owned invoker, or create a non-legacy Google `RemoteA2aAgent` from a Tesserix
+official card or card URL.
+
+These are framework boundaries, not model-provider coupling: the served Tesserix runner
+can continue using Groq, xAI/Grok, OpenRouter, Gemini, OpenAI, Anthropic, a local model, or
+any other conforming provider.
 
 The helper stores no token. Configure Google-side credentials and request interceptors in
-Google ADK, authenticate the server or gateway independently, and resolve only a verified
-core `Principal` into the Tesserix runner. Follow the [Google ADK bridge](google-adk.md)
+Google Agent Development Kit, authenticate the server or gateway independently, and resolve only a verified
+core `Principal` into the Tesserix runner. Follow the [Google Agent Development Kit bridge](google-adk.md)
 for the complete server and client sequence, limitations, and failure behavior.
+The framework-neutral [interoperability guide](framework-interop.md) also covers generic
+tool and agent adapters, export descriptors, authenticated MCP export, and official A2A
+export.
 
 ## Tesserix typed peer protocol
 

@@ -8,7 +8,7 @@ from tesserix_adk.core.activities import (
     Backoff,
     Heartbeat,
 )
-from tesserix_adk.core.agent import Agent, ToolFailurePolicy
+from tesserix_adk.core.agent import Agent, ToolFailurePolicy, TypedAgent
 from tesserix_adk.core.audit import (
     AuditDecision,
     AuditEvent,
@@ -94,6 +94,7 @@ from tesserix_adk.core.config import (
     AdkConfig,
     ConcurrencyConfig,
     ConfigError,
+    ConfigOverrides,
     ConfigProblem,
     ConfigResolution,
     DeadlineConfig,
@@ -106,7 +107,9 @@ from tesserix_adk.core.config import (
     StoreConfig,
     TelemetryConfig,
     load_config,
+    load_typed_config,
     resolve_config,
+    resolve_typed_config,
 )
 from tesserix_adk.core.content_policy import (
     Classification,
@@ -123,7 +126,7 @@ from tesserix_adk.core.credentials import (
     ExpiringCredential,
     ExpiringCredentialSource,
 )
-from tesserix_adk.core.definition import AgentDefinition, Owner
+from tesserix_adk.core.definition import AgentDefinition, Owner, TypedAgentDefinition
 from tesserix_adk.core.deprecation import (
     AdkDeprecationWarning,
     Deprecation,
@@ -377,6 +380,7 @@ from tesserix_adk.core.ledger import (
 )
 from tesserix_adk.core.models import (
     AdkModel,
+    InputT,
     NoOutput,
     Sensitive,
     parsed_from_strings,
@@ -482,6 +486,7 @@ from tesserix_adk.core.provenance import (
 from tesserix_adk.core.provider import (
     ModelRequest,
     ModelResponse,
+    ProviderName,
     StopReason,
     ToolDeclaration,
 )
@@ -509,6 +514,7 @@ from tesserix_adk.core.routing import (
     CHEAP,
     REASONING,
     SMART,
+    KnownTaskClass,
     ModelRequirements,
     ModelRouter,
     RejectedCandidate,
@@ -715,6 +721,7 @@ __all__ = [
     "CompensationLedger",
     "ConcurrencyConfig",
     "ConfigError",
+    "ConfigOverrides",
     "ConfigProblem",
     "ConfigResolution",
     "ConfigurationError",
@@ -815,12 +822,14 @@ __all__ = [
     "InjectionSignal",
     "InjectionSuspectedError",
     "InlineRefs",
+    "InputT",
     "Instrumentation",
     "InvalidRequestError",
     "Invariant",
     "IrreversibleActionError",
     "JsonSchema",
     "KeyValueStore",
+    "KnownTaskClass",
     "LeaseLostError",
     "LeasePolicy",
     "LeaseStore",
@@ -893,6 +902,7 @@ __all__ = [
     "ProvidedSecrets",
     "ProviderConfig",
     "ProviderError",
+    "ProviderName",
     "ProviderTimeoutError",
     "ProviderUnavailableError",
     "PublishReport",
@@ -1030,6 +1040,8 @@ __all__ = [
     "TrustBoundary",
     "TrustBoundaryError",
     "TrustLevel",
+    "TypedAgent",
+    "TypedAgentDefinition",
     "UncitedClaimError",
     "UngroundedCitationError",
     "UnknownEventTypeError",
@@ -1079,6 +1091,7 @@ __all__ = [
     "lint_prompt",
     "literal_credentials",
     "load_config",
+    "load_typed_config",
     "looks_sensitive",
     "members_of",
     "mint_token",
@@ -1099,6 +1112,7 @@ __all__ = [
     "resolve_config",
     "resolve_hooks",
     "resolve_tenant_policy",
+    "resolve_typed_config",
     "restored",
     "revived",
     "schema_for",

@@ -11,7 +11,15 @@ from typing import Any
 
 import pytest
 
-from tests.ci_config import RELEASE, load_yaml, pyproject, release_jobs, release_run_steps, triggers
+from tests.ci_config import (
+    RELEASE,
+    load_yaml,
+    pyproject,
+    release_jobs,
+    release_run_steps,
+    supported_minors,
+    triggers,
+)
 
 GUARD = "guard"
 GATES = "gates"
@@ -173,6 +181,16 @@ def test_the_smoke_job_runs_the_getting_started_example(job: str) -> None:
 @pytest.mark.parametrize("job", SMOKE_JOBS)
 def test_the_smoke_job_does_not_stop_at_the_first_failing_extra(job: str) -> None:
     assert release_jobs()[job]["strategy"]["fail-fast"] is False
+
+
+@pytest.mark.parametrize("job", SMOKE_JOBS)
+def test_release_smoke_uses_the_newest_supported_python(job: str) -> None:
+    setup = next(
+        step
+        for step in release_jobs()[job]["steps"]
+        if str(step.get("uses", "")).startswith("actions/setup-python@")
+    )
+    assert setup["with"]["python-version"] == supported_minors()[-1]
 
 
 def test_the_workflow_reads_no_more_than_it_needs_by_default() -> None:

@@ -113,8 +113,10 @@ class TestWhatTheAdapterSends:
     async def test_a_missing_key_is_refused_before_the_request(self) -> None:
         replay = HttpReplay(answered())
         model = OpenAIProvider(MODEL, secrets=Secrets(None), transport=replay.transport)
-        with pytest.raises(ConfigurationError, match="OPENAI_API_KEY"):
+        with pytest.raises(ConfigurationError, match="OPENAI_API_KEY") as refused:
             await model.complete(asked())
+        assert "FakeModelProvider" in str(refused.value)
+        assert "offline" in str(refused.value)
         assert replay.sent == []
 
     async def test_a_system_prompt_stays_a_turn_of_its_own(self) -> None:

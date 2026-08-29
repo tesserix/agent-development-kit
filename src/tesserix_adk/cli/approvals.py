@@ -1,4 +1,4 @@
-"""`adk approvals` — see what is waiting on a person, and answer it from a terminal.
+"""`tesserix-adk approvals` — inspect and answer pending approvals.
 
 An approval that stops a run for three days has to be answerable without the process that
 asked still being alive, and a terminal is the one channel every operator already has. This
@@ -6,8 +6,8 @@ is the command surface for that; the kit cannot know where a deployment keeps it
 suspensions or which agent to carry on, so the consumer supplies both and this supplies the
 parsing, the rendering and the exit codes.
 
-No third-party argument parser and no console-script entry point: a kit that installs a
-global `adk` binary fights with whatever the consumer already ships.
+This application-wired command is not part of the self-contained dispatcher. Applications
+may expose it under the project-qualified command.
 """
 
 from __future__ import annotations
@@ -108,7 +108,7 @@ async def _decide(parsed: argparse.Namespace, *, answering: Answering, writer: T
 
 def _parser() -> argparse.ArgumentParser:
     """The `approvals` command line."""
-    parser = argparse.ArgumentParser(prog="adk approvals", description=__doc__)
+    parser = argparse.ArgumentParser(prog="tesserix-adk approvals", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
     listing = commands.add_parser("list", help="show the runs waiting on somebody")

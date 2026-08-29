@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
 from tesserix_adk.core.config import ConcurrencyConfig
@@ -67,6 +67,7 @@ class ToolCallSpan:
         duration_seconds: How long it took on the injected clock.
         failure: The exception class where one was raised, never its message.
         abandoned: Whether the call ignored cancellation and was left running.
+        origin: Stable definition or import provenance, never caller-controlled content.
     """
 
     tool: str
@@ -77,6 +78,7 @@ class ToolCallSpan:
     failure: str = ""
     code: str = ""
     abandoned: bool = False
+    origin: str = ""
 
 
 class ToolRegistry:
@@ -157,6 +159,11 @@ class ToolRegistry:
             ToolDefinitionError: If a different tool is already registered under the name.
         """
         came_from = origin or _origin_of(tool)
+        if tool.max_concurrency is not None and tool.max_concurrency < 1:
+            raise ToolDefinitionError(
+                f"{tool.name} declares a concurrency cap below one, so it could never run",
+                tool=tool.name,
+            )
         held = self._tools.get(tool.name)
         if held is tool:
             return
@@ -169,6 +176,8 @@ class ToolRegistry:
             )
         self._tools[tool.name] = tool
         self._origins[tool.name] = came_from
+        if tool.max_concurrency is not None:
+            self._lanes.limit(tool.name, tool.max_concurrency)
         if not tool.parallel_safe:
             self._lanes.serialise(tool.name)
 
@@ -314,6 +323,8 @@ class ToolRegistry:
 
     def _record(self, span: ToolCallSpan) -> None:
         """Hand the span to every observer. One that fails does not fail the call."""
+        if not span.origin:
+            span = replace(span, origin=self._origins.get(span.tool, ""))
         for observer in self._observers:
             with contextlib.suppress(Exception):
                 observer(span)
@@ -390,6 +401,19 @@ class _Lanes:
         self._serial.add(tool)
         self._loop = None
 
+    def limit(self, tool: str, width: int) -> None:
+        """Apply a translated tool's tighter lane without widening registry policy."""
+        configured = self._config.per_tool.get(tool)
+        self._config = self._config.model_copy(
+            update={
+                "per_tool": {
+                    **self._config.per_tool,
+                    tool: min(width, configured) if configured is not None else width,
+                }
+            }
+        )
+        self._loop = None
+
     @contextlib.asynccontextmanager
     async def held(self, tool: str) -> AsyncIterator[None]:
         """Hold the registry's lane and the tool's, taken in that order by every call."""
@@ -438,6 +462,8 @@ def _declared(tool: Tool[Any, Any]) -> ToolDeclaration:
 
 def _origin_of(tool: Tool[Any, Any]) -> str:
     """Where a tool was defined, for naming both sides of a conflict."""
+    if tool.origin:
+        return tool.origin
     function = tool.function
     module = getattr(function, "__module__", "?")
     return f"{module}.{getattr(function, '__qualname__', tool.name)}"

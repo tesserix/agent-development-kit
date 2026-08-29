@@ -9,6 +9,7 @@ caused it rather than folding the whole batch into one.
 from __future__ import annotations
 
 import asyncio
+import threading
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
     from tesserix_adk.core.provider import ModelRequest
     from tesserix_adk.core.run import Run
 
-GUARD = 2.0
+GUARD = 10.0
 """Seconds a rendezvous waits before failing, so a serial regression fails rather than hangs."""
 
 
@@ -91,15 +92,18 @@ class Overlap:
     """How many tool bodies were in flight at once."""
 
     def __init__(self) -> None:
+        self._lock = threading.Lock()
         self.live = 0
         self.peak = 0
 
     def entered(self) -> None:
-        self.live += 1
-        self.peak = max(self.peak, self.live)
+        with self._lock:
+            self.live += 1
+            self.peak = max(self.peak, self.live)
 
     def left(self) -> None:
-        self.live -= 1
+        with self._lock:
+            self.live -= 1
 
 
 def meeting(overlap: Overlap, rendezvous: asyncio.Barrier, name: str) -> Callable[..., Any]:

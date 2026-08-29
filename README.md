@@ -14,7 +14,7 @@ The kit is deliberately a library, not a hosted control plane and not a process-
 framework. An application imports the pieces it needs and keeps ownership of deployment,
 networking, identity, and data.
 
-## Why this ADK is different
+## Why the Tesserix Agent Development Kit is different
 
 - **Provider truth instead of provider guesses.** Every deployment declares tool calling,
   structured output, vision, streaming, and context limits. Unsupported work fails before
@@ -35,8 +35,10 @@ networking, identity, and data.
 
 ## Five-minute start
 
-Python 3.12 or newer is required. PyPI trusted publishing is not enabled yet, so use the
-public source checkout for the current API rather than an unresolved package-index name:
+Python 3.12 or newer is required. Development and release verification use CPython 3.14,
+while CI keeps every declared minor from 3.12 through 3.14 compatible.
+PyPI trusted publishing is not enabled yet, so use the public source checkout for the
+current API rather than an unresolved package-index name:
 
 ```bash
 git clone https://github.com/tesserix/agent-development-kit.git
@@ -99,7 +101,14 @@ uv run python examples/getting_started.py
 ```
 
 Continue with [Getting started](docs/getting-started.md) and [Build a custom
-agent](docs/custom-agent.md).
+agent](docs/custom-agent.md). If code already exists in another framework, use the
+[framework interoperability guide](docs/framework-interop.md) to choose import, wrap,
+MCP, or official A2A without losing identity or task lifecycle.
+
+`Agent[OutputT]` is the stable text-input contract. Applications that already have a
+Pydantic request model use `TypedAgent[InputT, OutputT]` with `runner.run_typed(...)` or
+`runner.stream_typed(...)`; both surfaces enter the same budgets, guardrails, tools,
+identity, tracing and provider-neutral execution loop. See [Typing](docs/typing.md).
 
 ## Providers
 
@@ -143,7 +152,7 @@ moving `main` branch.
 | Model gateway | Base URL, endpoint-path presets, protected auth headers, custom metadata headers, and injectable HTTP transport |
 | MCP | Client/server surfaces, stdio and HTTP transports, scoped credentials, resilience, and AgentGateway routing |
 | Official A2A 1.x | Official Agent Cards, clients, registries, custom gateway bindings, and an `AgentRunner` server bridge through `tesserix-adk[a2a]` |
-| Google ADK | A non-legacy Google `RemoteA2aAgent` for a Tesserix official A2A endpoint through `tesserix-adk[google-adk]` |
+| Google Agent Development Kit | Imports `FunctionTool`, wraps `BaseAgent`, and connects either runtime through official A2A via `tesserix-adk[google-adk]` |
 | Tesserix peer protocol | Typed discovery, delegation, invocation, trust containment, and peer tools under `tesserix_adk.a2a` |
 | State and durability | Redis, PostgreSQL, pgvector, Temporal-facing workflow primitives, NATS JetStream patterns, checkpoints, leases, outbox, and replay controls |
 
@@ -152,7 +161,9 @@ artifacts, and cancellation. The application still mounts the official request h
 and routes, injects a tenant-scoped `TaskStore`, and owns authentication, persistence,
 subscriptions, crash recovery, and push delivery. Agent Card security metadata describes
 a contract; it does not enforce one. See [Official A2A interoperability](docs/a2a.md) and
-the [Google ADK bridge](docs/google-adk.md).
+the [Google Agent Development Kit bridge](docs/google-adk.md).
+The [framework interoperability guide](docs/framework-interop.md) provides one decision
+path for importing tools, wrapping agents, and exporting Tesserix agents to any runtime.
 
 ## Reliability model
 
@@ -170,16 +181,20 @@ The defaults are intentionally conservative:
 
 Read [Architecture](docs/architecture.md), [Security](SECURITY.md), and the
 [public-readiness review](docs/public-readiness-review.md) before a production rollout.
+The [end-to-end agent lifecycle](docs/agent-lifecycle.md) shows how authoring, evaluations,
+registry approval, canary execution, runtime controls, recovery and feedback fit together.
 
 ## Documentation
 
 - [Documentation home](docs/index.md)
 - [Getting started](docs/getting-started.md)
 - [Build a custom agent](docs/custom-agent.md)
+- [End-to-end agent lifecycle](docs/agent-lifecycle.md)
 - [Provider recipes](docs/provider-recipes.md)
 - [Integrations and gateways](docs/integrations.md)
+- [Framework interoperability](docs/framework-interop.md)
 - [Official A2A interoperability](docs/a2a.md)
-- [Google ADK bridge](docs/google-adk.md)
+- [Google Agent Development Kit bridge](docs/google-adk.md)
 - [Agent architecture escalation ladder](docs/escalation-ladder.md)
 - [Testing](docs/testing.md)
 - [Keep agents current safely](docs/keeping-current.md)
@@ -188,15 +203,16 @@ Read [Architecture](docs/architecture.md), [Security](SECURITY.md), and the
 - [Contributing](CONTRIBUTING.md)
 
 The package is currently pre-1.0. Stability is declared per subpackage in
-[Stability](docs/stability.md). The repository does not install a global `adk` executable;
-the Python APIs and self-contained commands such as
-`python -m tesserix_adk.cli evals` are the supported entry points today.
+[Stability](docs/stability.md). The package installs the project-qualified
+`tesserix-adk` command for self-contained operations and never claims the ambiguous
+`adk` executable. `python -m tesserix_adk.cli ...` remains equivalent.
 
 ## Name and license
 
 Google also publishes an Agent Development Kit. The distinct distribution name is
-`tesserix-adk` and the import namespace is `tesserix_adk`; references to “Tesserix ADK” in
-this repository mean this project, not Google's ADK. They can interoperate through the
+`tesserix-adk` and the import namespace is `tesserix_adk`. In prose, “Tesserix Agent
+Development Kit” means this project and “Google Agent Development Kit” means Google's
+independent project. They can interoperate through the
 [official A2A bridge](docs/google-adk.md).
 
 Licensed under [Apache License 2.0](LICENSE).

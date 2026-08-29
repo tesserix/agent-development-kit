@@ -30,8 +30,9 @@ from typing import TYPE_CHECKING
 from tesserix_adk.core.errors import EventLoopStalledError, RunningLoopError, WorkersBusyError
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Iterator
+    from collections.abc import Awaitable, Callable, Iterator, Mapping
 
+    from tesserix_adk.core.protocols import BudgetPolicy
     from tesserix_adk.runtime.cancellation import CancellationToken
 
 __all__ = [
@@ -64,6 +65,9 @@ class Ambient:
         cancellation: The caller's switch, where the work can cooperate with it. A thread
             cannot be interrupted, so a long body is told and decides.
         idempotency_key: The key identifying the side effect in hand, where one was derived.
+        scopes: Effective delegated authority. It has already been narrowed to the agent.
+        trace: W3C propagation fields carried from the caller, never credentials.
+        budget: The parent ledger shared with nested foreign work, never a fresh ceiling.
     """
 
     run_id: str
@@ -71,6 +75,9 @@ class Ambient:
     user: str | None = None
     cancellation: CancellationToken | None = None
     idempotency_key: str | None = None
+    scopes: tuple[str, ...] = ()
+    trace: Mapping[str, str] = field(default_factory=dict)
+    budget: BudgetPolicy | None = None
 
     def raise_if_cancelled(self) -> None:
         """Raise if the run has been cancelled, otherwise do nothing.

@@ -1575,6 +1575,23 @@ wheels = [
 ]
 
 [[package]]
+name = "mike"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "mkdocs" },
+    { name = "pyparsing" },
+    { name = "pyyaml" },
+    { name = "pyyaml-env-tag" },
+    { name = "verspec" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b4/47/fa87e9d56bef16cdfe34b059a437e8c6f7ec6f1b9c378871c3cf95ebea9c/mike-2.2.0.tar.gz", hash = "sha256:1e3858e32c0f125aac14432fc7848434358f9ae0962c5c5cde387ad47f6ad25e", size = 38450, upload-time = "2026-04-14T04:59:03.944Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/76/8e/56ccb09c7232a55403a7637caa21922f3b65901a37f5e8bdb405d0de0946/mike-2.2.0-py3-none-any.whl", hash = "sha256:e1f4981c1152eec7c2490a3401142292cc47d686194188416db2648fdfe1d040", size = 34026, upload-time = "2026-04-14T04:59:02.602Z" },
+]
+
+[[package]]
 name = "mkdocs"
 version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2511,6 +2528,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pyright"
+version = "1.1.411"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nodeenv" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7e/ab/265f7dc69d28113ebba19092e57b075f41543b2ed048429c5f56e2b88eac/pyright-1.1.411.tar.gz", hash = "sha256:d885a0551f2e763b089a02702174e7f4ba77548cddabc972ab86d1f7f1b0f998", size = 4112861, upload-time = "2026-06-25T02:14:06.37Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/49/385be530a6a5b78d1cbcd5c2e38debc8959a2fc6bdb716f4e581002979fc/pyright-1.1.411-py3-none-any.whl", hash = "sha256:dc7c72a8e2700c55baa127554040e067041ea53ccfd50bf96308cc4291c7d5d9", size = 6181526, upload-time = "2026-06-25T02:14:04.691Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2999,10 +3029,12 @@ dev = [
     { name = "mypy" },
     { name = "pip-audit" },
     { name = "pre-commit" },
+    { name = "pyright" },
     { name = "ruff" },
     { name = "types-defusedxml" },
 ]
 docs = [
+    { name = "mike" },
     { name = "mkdocs-material" },
 ]
 test = [
@@ -3022,8 +3054,8 @@ test = [
 requires-dist = [
     { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'a2a'", specifier = ">=1.1.2" },
     { name = "a2a-sdk", extras = ["http-server"], marker = "extra == 'all'", specifier = ">=1.1.2" },
-    { name = "google-adk", extras = ["a2a"], marker = "extra == 'all'", specifier = ">=2.8" },
-    { name = "google-adk", extras = ["a2a"], marker = "extra == 'google-adk'", specifier = ">=2.8" },
+    { name = "google-adk", extras = ["a2a"], marker = "extra == 'all'", specifier = ">=2.8,<3" },
+    { name = "google-adk", extras = ["a2a"], marker = "extra == 'google-adk'", specifier = ">=2.8,<3" },
     { name = "graphiti-core", marker = "extra == 'all'", specifier = ">=0.14,<1" },
     { name = "graphiti-core", marker = "extra == 'graphiti'", specifier = ">=0.14,<1" },
     { name = "httpx", specifier = ">=0.27" },
@@ -3050,10 +3082,14 @@ dev = [
     { name = "mypy", specifier = ">=1.18,<3" },
     { name = "pip-audit", specifier = ">=2.7,<3" },
     { name = "pre-commit", specifier = ">=4,<5" },
+    { name = "pyright", specifier = ">=1.1.408,<2" },
     { name = "ruff", specifier = ">=0.14,<0.17" },
     { name = "types-defusedxml", specifier = ">=0.7,<0.8" },
 ]
-docs = [{ name = "mkdocs-material", specifier = ">=9.5,<10" }]
+docs = [
+    { name = "mike", specifier = ">=2.1,<3" },
+    { name = "mkdocs-material", specifier = ">=9.5,<10" },
+]
 test = [
     { name = "hypothesis", specifier = ">=6.112,<7" },
     { name = "jsonschema", specifier = ">=4.23,<5" },
@@ -3243,6 +3279,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/03/18/ccce41535dee1be77735592bd19965f3972c82e07ee703d324709496b716/uvicorn-0.52.1.tar.gz", hash = "sha256:112ec661814189acbccd3f7b86460147cc065fc92c0821afa78918780e4354dd", size = 100571, upload-time = "2026-08-01T18:19:30.732Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/d5/68e6e9bca63c0badf67002890a46d3784c958de45b65e1275ec583ca1f06/uvicorn-0.52.1-py3-none-any.whl", hash = "sha256:e4403f9d93188cf9d1088e9f40e3acd12630e2df8675316704379a7fc20fff6a", size = 79859, upload-time = "2026-08-01T18:19:29.294Z" },
+]
+
+[[package]]
+name = "verspec"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/44/8126f9f0c44319b2efc65feaad589cadef4d77ece200ae3c9133d58464d0/verspec-0.1.0.tar.gz", hash = "sha256:c4504ca697b2056cdb4bfa7121461f5a0e81809255b41c03dda4ba823637c01e", size = 27123, upload-time = "2020-11-30T02:24:09.646Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/ce/3b6fee91c85626eaf769d617f1be9d2e15c1cca027bbdeb2e0d751469355/verspec-0.1.0-py3-none-any.whl", hash = "sha256:741877d5633cc9464c45a469ae2a31e801e6dbbaa85b9675d481cda100f11c31", size = 19640, upload-time = "2020-11-30T02:24:08.387Z" },
 ]
 
 [[package]]

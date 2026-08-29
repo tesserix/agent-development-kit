@@ -17,7 +17,7 @@ import tomllib
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypedDict, get_args
 
 from pydantic import (
     BaseModel,
@@ -35,12 +35,16 @@ from tesserix_adk.core.errors import ConfigurationError, SchemaViolationError
 from tesserix_adk.core.models import AdkModel, parsed_from_strings
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from decimal import Decimal
+
     from pydantic.fields import FieldInfo
 
 __all__ = [
     "ENV_PREFIX",
     "AdkConfig",
     "ConfigError",
+    "ConfigOverrides",
     "ConfigProblem",
     "ConfigResolution",
     "DeadlineConfig",
@@ -57,7 +61,9 @@ __all__ = [
     "TelemetryConfig",
     "leaf_keys",
     "load_config",
+    "load_typed_config",
     "resolve_config",
+    "resolve_typed_config",
     "secret_keys",
 ]
 
@@ -68,6 +74,106 @@ FILE_NAME = "adk.toml"
 MASK = "**********"
 
 Layer = Literal["code", "env", "file", "default"]
+
+
+class _ProviderOverrides(TypedDict, total=False):
+    endpoint: str
+    api_key: SecretStr | None
+    request_timeout: timedelta
+
+
+class _BudgetOverrides(TypedDict, total=False):
+    max_cost: Decimal | None
+    currency: str
+    max_input_tokens: int | None
+    max_output_tokens: int | None
+    max_model_calls: int | None
+    max_tool_calls: int | None
+    max_iterations: int | None
+    max_seconds: float | None
+    max_peer_invocations: int | None
+    max_parallel_tool_calls: int | None
+    max_delegation_depth: int | None
+    unlimited: bool
+
+
+class _DeadlineOverrides(TypedDict, total=False):
+    run_seconds: float | None
+    model_call_seconds: float | None
+    tool_call_seconds: float | None
+    hook_seconds: float | None
+    grace_seconds: float
+
+
+class _LoopOverrides(TypedDict, total=False):
+    max_repeated_calls: int
+
+
+class _RetryOverrides(TypedDict, total=False):
+    max_attempts: int
+    base_delay_seconds: float
+    multiplier: float
+    max_delay_seconds: float
+    max_retry_after_seconds: float
+
+
+class _TelemetryOverrides(TypedDict, total=False):
+    enabled: bool
+    endpoint: str | None
+    sample_ratio: float
+
+
+class _RedactionOverrides(TypedDict, total=False):
+    enabled: bool
+    extra_patterns: tuple[str, ...]
+
+
+class _StoreOverrides(TypedDict, total=False):
+    redis_url: str | None
+    postgres_dsn: SecretStr | None
+
+
+class _McpServerOverrides(TypedDict, total=False):
+    name: str
+    endpoint: str
+    allow: tuple[str, ...]
+    deny: tuple[str, ...]
+    prefix: str
+    timeout_seconds: float
+    max_tools: int
+    max_schema_bytes: int
+    max_result_bytes: int
+    transport: Literal["stdio", "http"]
+    command: tuple[str, ...]
+    env_allow: tuple[str, ...]
+    max_message_bytes: int
+    read_timeout_seconds: float
+    max_in_flight: int
+    required: bool
+    connect_timeout_seconds: float
+    discovery_timeout_seconds: float
+    retry: _RetryOverrides
+    breaker_failures: int
+    breaker_reset_seconds: float
+
+
+class _McpOverrides(TypedDict, total=False):
+    servers: tuple[_McpServerOverrides, ...]
+
+
+class ConfigOverrides(TypedDict, total=False):
+    """Typed code-layer configuration; unknown or misspelled keys fail static checks."""
+
+    provider: _ProviderOverrides
+    budget: _BudgetOverrides
+    deadlines: _DeadlineOverrides
+    loop: _LoopOverrides
+    retry: _RetryOverrides
+    telemetry: _TelemetryOverrides
+    redaction: _RedactionOverrides
+    stores: _StoreOverrides
+    mcp: _McpOverrides
+
 
 # Highest precedence first. The order is the contract; everything else derives from it.
 PRECEDENCE: tuple[Layer, ...] = ("code", "env", "file")
@@ -640,7 +746,7 @@ def _nested_prefixes(model: type[BaseModel], prefix: str = "") -> list[str]:
     return prefixes
 
 
-def _flatten(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
+def _flatten(data: Mapping[str, object], prefix: str = "") -> dict[str, Any]:
     flat: dict[str, Any] = {}
     for name, value in data.items():
         dotted = f"{prefix}{name}"
@@ -771,6 +877,13 @@ def resolve_config(
     except ValidationError as err:
         for detail in err.errors():
             key = ".".join(str(part) for part in detail["loc"])
+            nested = [
+                candidate
+                for candidate in merged
+                if candidate.startswith(f"{key}.") and candidate.rpartition(".")[2] in detail["msg"]
+            ]
+            if len(nested) == 1:
+                key = nested[0]
             layer_of = merged.get(key, (None, None))[0]
             literal = _display(key, merged[key][1], secrets) if key in merged else None
             problems.append(ConfigProblem(key, layer_of, detail["msg"], literal))
@@ -780,6 +893,18 @@ def resolve_config(
         raise ConfigError(tuple(problems))
 
     return ConfigResolution(config, _provenance(config, layers, merged, secrets))
+
+
+def resolve_typed_config(
+    overrides: ConfigOverrides | None = None,
+    *,
+    env: dict[str, str] | None = None,
+    path: Path | str | None = None,
+    start: Path | str | None = _CWD,
+) -> ConfigResolution:
+    """Resolve statically checked code overrides through the stable config loader."""
+    values = dict(overrides) if overrides is not None else None
+    return resolve_config(values, env=env, path=path, start=start)
 
 
 def _provenance(
@@ -833,3 +958,14 @@ def load_config(
         ConfigError: As `resolve_config`.
     """
     return resolve_config(overrides, env=env, path=path, start=start).config
+
+
+def load_typed_config(
+    overrides: ConfigOverrides | None = None,
+    *,
+    env: dict[str, str] | None = None,
+    path: Path | str | None = None,
+    start: Path | str | None = _CWD,
+) -> AdkConfig:
+    """Load statically checked code overrides without narrowing `load_config`."""
+    return resolve_typed_config(overrides, env=env, path=path, start=start).config

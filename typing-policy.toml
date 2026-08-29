@@ -136,8 +136,8 @@ review_by = 2027-08-07
 symbol = "tesserix_adk.core.config.resolve_config"
 kind = "json"
 reason = """
-Overrides arrive as a nested mapping from a file or a caller's own config layer. Typing it
-as the config model would refuse a partial override, which is the only kind there is.
+The compatibility surface accepts an arbitrary nested partial mapping. New code can use
+resolve_typed_config; narrowing this signature remains tracked by issue #161.
 """
 owner = "@sam123ben"
 review_by = 2027-08-07
@@ -145,7 +145,10 @@ review_by = 2027-08-07
 [[any]]
 symbol = "tesserix_adk.core.config.load_config"
 kind = "json"
-reason = "Takes the same override mapping as resolve_config."
+reason = """
+The compatibility surface mirrors resolve_config. New code can use load_typed_config;
+narrowing this signature remains tracked by issue #161.
+"""
 owner = "@sam123ben"
 review_by = 2027-08-07
 

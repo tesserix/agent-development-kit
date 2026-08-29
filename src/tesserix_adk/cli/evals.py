@@ -1,4 +1,4 @@
-"""`adk evals` — compare a change against the baseline, bootstrap one, promote one.
+"""`tesserix-adk evals` — compare, bootstrap, or promote an evaluation baseline.
 
 This is the part of the eval gate that CI runs. The consumer's own harness measures the
 suite and writes a baseline artefact; this reads two of them, applies the project's policy
@@ -8,8 +8,7 @@ It fails closed by design. A missing baseline, one recorded on another dataset v
 a declared metric nobody measured each exit non-zero with the command that fixes them,
 because a gate that clears itself when the comparison is impossible is not a gate.
 
-No third-party argument parser and no console-script entry point: a kit that installs a
-global `adk` binary fights with whatever the consumer already ships. `python -m
+This application-wired command is not part of the self-contained dispatcher. `python -m
 tesserix_adk.cli.evals` is what the reusable workflow calls.
 """
 
@@ -127,7 +126,7 @@ def _override(parsed: argparse.Namespace) -> Bypass | None:
 
 def _parser() -> argparse.ArgumentParser:
     """The command line, one subcommand per thing CI does with a baseline."""
-    parser = argparse.ArgumentParser(prog="adk evals", description=__doc__)
+    parser = argparse.ArgumentParser(prog="tesserix-adk evals", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
 
     judge = commands.add_parser("compare", help="judge a candidate against the baseline")

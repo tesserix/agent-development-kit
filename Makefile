@@ -1,10 +1,10 @@
 .DEFAULT_GOAL := help
-.PHONY: help sync lock hooks lint format typecheck test cov docs docs-check api-snapshot api-check event-schemas event-schema-check typing-gate replay-check deprecations deprecations-check release-check notes notes-check release-plan release alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
+.PHONY: help sync lock hooks lint format typecheck typecheck-pyright test cov docs docs-check policy-pages policy-pages-check api-snapshot api-check api-reference api-reference-check recipe-coverage recipe-coverage-check event-schemas event-schema-check typing-gate replay-check deprecations deprecations-check release-check notes notes-check release-plan release alpha alpha-retention audit secrets licences sbom deps admissions admissions-check disclosure disclosure-check check clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
 
-sync: ## Install the frozen contributor dependency set
+sync: ## Install the frozen contributor dependency set, including integrations
 	uv sync --frozen --all-groups --all-extras
 
 lock: ## Regenerate uv.lock after editing pyproject.toml
@@ -25,6 +25,9 @@ format: ## Apply formatting and safe lint fixes
 typecheck: ## Run mypy in strict mode
 	uv run mypy --strict src tests tools
 
+typecheck-pyright: ## Check consumer inference with strict Pyright
+	uv run pyright tests/typing_conformance.py
+
 test: ## Run the test suite
 	uv run pytest
 
@@ -36,7 +39,15 @@ docs: ## Serve the documentation locally
 
 docs-check: ## Validate links and build the documentation strictly
 	uv run pytest -q tests/test_documentation.py
+	uv run python -m tools.policy_pages
+	uv run python -m tools.docs_symbols
 	uv run --group docs mkdocs build --strict
+
+policy-pages: ## Regenerate versioned pages from canonical repository policies
+	uv run python -m tools.policy_pages --write
+
+policy-pages-check: ## Fail if a versioned policy page diverges from its source
+	uv run python -m tools.policy_pages
 
 bench: ## Measure the benchmark suite against the committed baseline
 	uv run python -m tools.benchmark
@@ -52,6 +63,18 @@ api-snapshot: ## Regenerate docs/api-surface.txt after a deliberate surface chan
 
 api-check: ## Fail if the public surface differs from the committed snapshot
 	uv run python -m tools.api_surface
+
+api-reference: ## Regenerate typed public API reference pages
+	uv run python -m tools.api_reference --write
+
+api-reference-check: ## Fail if typed API reference pages or docstrings drift
+	uv run python -m tools.api_reference
+
+recipe-coverage: ## Regenerate the public-symbol to runnable-recipe mapping
+	uv run python -m tools.recipe_coverage --write
+
+recipe-coverage-check: ## Fail when a public symbol has no reviewed runnable recipe
+	uv run python -m tools.recipe_coverage
 
 event-schemas: ## Regenerate docs/event-schemas.json after a deliberate contract change
 	uv run python -m tools.event_schemas --write
@@ -123,7 +146,7 @@ admissions: ## Regenerate security/inventory.toml from the lock
 admissions-check: ## Fail if a dependency a consumer inherits has no decision record
 	uv run python -m tools.admissions
 
-check: lint typecheck deps admissions-check disclosure-check api-check event-schema-check typing-gate replay-check deprecations-check release-check notes-check docs-check cov ## Everything CI runs
+check: lint typecheck typecheck-pyright deps admissions-check disclosure-check policy-pages-check api-check api-reference-check recipe-coverage-check event-schema-check typing-gate replay-check deprecations-check release-check notes-check docs-check cov ## Everything CI runs
 
 clean: ## Remove build and cache artefacts
 	rm -rf dist build .pytest_cache .mypy_cache .ruff_cache .coverage htmlcov
