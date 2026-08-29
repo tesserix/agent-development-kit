@@ -120,6 +120,8 @@ def main(argv: Sequence[str], *, cwd: Path | None = None, out: TextIO | None = N
         return FAILED
     writer.write(f"created {len(files)} files from template version {__version__}\n")
     writer.write(_dependency_hint(root) + "\n")
+    if parsed.kind == "agent":
+        writer.write(_test_hint(root, f"test_{name.module}_agent.py") + "\n")
     return OK
 
 
@@ -251,9 +253,75 @@ def _dependency_hint(root: Path) -> str:
     return f"next: python -m pip install '{pin}' (or use your project dependency manager)"
 
 
+def _test_hint(root: Path, test: str) -> str:
+    """Name the first generated command without guessing a dependency manager."""
+    if (root / "uv.lock").exists():
+        return f"next: uv run pytest -q {test}"
+    return f"next: python -m pytest -q {test}"
+
+
 def _agent_files(name: _Name, template: str) -> dict[str, str]:
     """Render one typed, traced, budgeted agent and its offline test."""
     tool_name = f"{name.module}_lookup"
+
+    root_imports = ["TypedAgent"]
+    if template == "tool-using":
+        root_imports.insert(0, "ToolRegistry")
+    core_imports = ["AdkConfig", "BudgetLimits", "Instrumentation"]
+    core_imports.append("load_typed_config")
+    runtime_imports = ["SystemClock"]
+    if template == "multi-agent":
+        runtime_imports[:0] = ["Roster", "Specialist"]
+
+    adapter_import = (
+        "from tesserix_adk.adapters import McpClient, McpSession\n"
+        if template == "mcp-client"
+        else ""
+    )
+    config_import = (
+        "from tesserix_adk.core.config import McpServerConfig\n" if template == "mcp-client" else ""
+    )
+    tool_import = (
+        f"from {name.module}_tools import {tool_name}\n" if template == "tool-using" else ""
+    )
+    tool_configuration = f'''
+        tools=("{tool_name}",),
+        idempotent_tools=("{tool_name}",),'''
+    tool_budget = "            max_tool_calls=1,\n"
+    instructions = f'"Use {tool_name}, then answer the caller with grounded context."'
+    composition = ""
+    if template == "tool-using":
+        composition = f'''
+
+def build_registry() -> ToolRegistry:
+    """Register the local tools this generated agent is allowed to call."""
+    return ToolRegistry(({tool_name},))
+'''
+    elif template == "multi-agent":
+        composition = '''
+
+def build_roster() -> Roster:
+    """Declare the specialist boundary used by an application-owned supervisor."""
+    return Roster(
+        (
+            Specialist(
+                agent=build_agent(),
+                capabilities=frozenset({"planning", "local-lookup"}),
+            ),
+        )
+    )
+'''
+    elif template == "mcp-client":
+        composition = f'''
+
+def build_mcp_client(session: McpSession) -> McpClient:
+    """Adopt a transport-owned MCP session without performing network work here."""
+    return McpClient(
+        session,
+        config=McpServerConfig(name="{name.module}-mcp", allow=("*",)),
+    )
+'''
+
     module = f'''"""A generated {template} agent pinned to Tesserix ADK {__version__}.
 
 Example:
@@ -263,16 +331,22 @@ Example:
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Final
 
 from pydantic import BaseModel
 
-from tesserix_adk import Agent, tool
-from tesserix_adk.core import AdkConfig, BudgetLimits, Instrumentation, load_config
-from tesserix_adk.runtime import SystemClock
+from tesserix_adk import {", ".join(root_imports)}
+{adapter_import}from tesserix_adk.core import (
+{chr(10).join(f"    {item}," for item in core_imports)}
+)
+{config_import}from tesserix_adk.runtime import {", ".join(runtime_imports)}
+
+{tool_import}
 
 ADK_TEMPLATE_VERSION: Final[str] = "{__version__}"
 TEMPLATE_KIND: Final[str] = "{template}"
+CONFIG_FILE: Final[Path] = Path(__file__).with_name("{name.module}.adk.toml")
 
 
 class {name.class_name}Input(BaseModel):
@@ -295,6 +369,117 @@ class {name.class_name}Output(BaseModel):
     answer: str
 
 
+def resolved_config() -> AdkConfig:
+    """Resolve configuration through the same typed path used in deployment."""
+    return load_typed_config(path=CONFIG_FILE)
+
+
+def instrumentation() -> Instrumentation:
+    """Build run-rooted, content-safe instrumentation for this agent."""
+    return Instrumentation(clock=SystemClock())
+
+
+def build_agent() -> TypedAgent[{name.class_name}Input, {name.class_name}Output]:
+    """Build the declaration; provider and credentials stay deployment concerns."""
+    config = resolved_config()
+    return TypedAgent(
+        name="{name.display}",
+        instructions={instructions},
+        model="replace-with-a-configured-model",
+        input_type={name.class_name}Input,
+        output_type={name.class_name}Output,
+{tool_configuration}
+        budget=BudgetLimits(
+            max_model_calls=2,
+{tool_budget}            max_input_tokens=min(config.budget.max_input_tokens or 8_000, 8_000),
+            max_output_tokens=min(config.budget.max_output_tokens or 1_000, 1_000),
+        ),
+    )
+{composition}
+'''
+    generated_imports = [
+        f"{name.class_name}Input",
+        f"{name.class_name}Output",
+        "build_agent",
+        "instrumentation",
+    ]
+    if template == "multi-agent":
+        generated_imports.append("build_roster")
+    if template == "mcp-client":
+        generated_imports.append("build_mcp_client")
+    if template == "tool-using":
+        generated_imports.append("build_registry")
+
+    provider_turns = f'''ScriptedTurn.calling("{tool_name}", {{"query": request.request}}),
+        ScriptedTurn.returning({{"answer": "A grounded local answer."}}),'''
+    runner_tools = (
+        "build_registry()" if template == "tool-using" else f"ToolRegistry(({tool_name},))"
+    )
+    runner_import = "AgentRunner" if template == "tool-using" else "AgentRunner, ToolRegistry"
+    typing_import = "from typing import cast\n\n" if template == "mcp-client" else ""
+    mcp_import = (
+        "from tesserix_adk.adapters import McpSession\n" if template == "mcp-client" else ""
+    )
+    composition_assertion = ""
+    if template == "multi-agent":
+        composition_assertion = """
+    specialist = build_roster().matching({"planning"})
+    assert specialist is not None
+    assert specialist.name == build_agent().name
+"""
+    elif template == "mcp-client":
+        composition_assertion = f'''
+    client = build_mcp_client(cast(McpSession, object()))
+    assert client.server == "{name.module}-mcp"
+'''
+
+    test = f'''"""Offline contract test for the generated {name.display} agent."""
+
+{typing_import}from tesserix_adk import {runner_import}
+{mcp_import}from tesserix_adk.testing import FakeClock, FakeModelProvider, ScriptedTurn
+
+from {name.module}_agent import (
+{chr(10).join(f"    {item}," for item in generated_imports)}
+)
+from {name.module}_tools import {tool_name}
+
+
+def test_{name.module}_agent_runs_offline() -> None:
+    """The generated declaration, tool schema, budget and output work together."""
+    request = {name.class_name}Input(request="find a safe starting point")
+    provider = FakeModelProvider(
+        {provider_turns}
+    )
+    runner = AgentRunner(
+        provider=provider,
+        clock=FakeClock(),
+        tools={runner_tools},
+    )
+    with instrumentation().run("generated-test", agent=build_agent().name):
+        run = runner.run_typed_sync(
+            build_agent(),
+            request,
+            tenant="local-test",
+            user="developer",
+            run_id="generated-test",
+        )
+
+    assert run.output == {name.class_name}Output(answer="A grounded local answer.")
+    assert {tool_name}.parameters_schema["required"] == ["query"]
+{composition_assertion}
+'''
+    tool_module = f'''"""Local tools generated for {name.display}.
+
+Tesserix ADK template version: {__version__}.
+"""
+
+from typing import Final
+
+from tesserix_adk import tool
+
+ADK_TEMPLATE_VERSION: Final[str] = "{__version__}"
+
+
 @tool(idempotency="read_only")
 def {tool_name}(query: str) -> str:
     """Look up deterministic local context for a request.
@@ -303,68 +488,17 @@ def {tool_name}(query: str) -> str:
         query: The caller's search phrase.
     """
     return f"local context for {{query}}"
-
-
-def resolved_config() -> AdkConfig:
-    """Resolve configuration through the same typed path used in deployment."""
-    return load_config(
-        {{"provider": {{"endpoint": "http://127.0.0.1:1"}}}}, env={{}}, start=None
-    )
-
-
-def instrumentation() -> Instrumentation:
-    """Build run-rooted, content-safe instrumentation for this agent."""
-    return Instrumentation(clock=SystemClock())
-
-
-def build_agent() -> Agent[{name.class_name}Output]:
-    """Build the declaration; provider and credentials stay deployment concerns."""
-    config = resolved_config()
-    return Agent(
-        name="{name.display}",
-        instructions="Use {tool_name}, then answer the caller with grounded context.",
-        model="replace-with-a-configured-model",
-        output_type={name.class_name}Output,
-        tools=("{tool_name}",),
-        idempotent_tools=("{tool_name}",),
-        budget=BudgetLimits(
-            max_model_calls=2,
-            max_tool_calls=1,
-            max_input_tokens=min(config.budget.max_input_tokens or 8_000, 8_000),
-            max_output_tokens=min(config.budget.max_output_tokens or 1_000, 1_000),
-        ),
-    )
 '''
-    test = f'''"""Offline contract test for the generated {name.display} agent."""
-
-from tesserix_adk import AgentRunner, ToolRegistry
-from tesserix_adk.testing import FakeClock, FakeModelProvider, ScriptedTurn
-
-from {name.module}_agent import (
-    {name.class_name}Input,
-    {name.class_name}Output,
-    build_agent,
-    {tool_name},
-)
-
-
-def test_{name.module}_agent_runs_offline() -> None:
-    """The generated declaration, tool schema, budget and output work together."""
-    request = {name.class_name}Input(request="find a safe starting point")
-    provider = FakeModelProvider(
-        ScriptedTurn.calling("{tool_name}", {{"query": request.request}}),
-        ScriptedTurn.returning({{"answer": "A grounded local answer."}}),
-    )
-    run = AgentRunner(
-        provider=provider,
-        tools=ToolRegistry(({tool_name},)),
-        clock=FakeClock(),
-    ).run_sync(build_agent(), request.request, tenant="local-test", user="developer")
-
-    assert run.output == {name.class_name}Output(answer="A grounded local answer.")
-    assert {tool_name}.parameters_schema["required"] == ["query"]
-'''
-    return {f"{name.module}_agent.py": module, f"test_{name.module}_agent.py": test}
+    config = f"""# Tesserix ADK template version {__version__}; never put credentials here.
+[provider]
+endpoint = "http://127.0.0.1:1"
+"""
+    return {
+        f"{name.module}.adk.toml": config,
+        f"{name.module}_agent.py": module,
+        f"{name.module}_tools.py": tool_module,
+        f"test_{name.module}_agent.py": test,
+    }
 
 
 def _tool_files(name: _Name) -> dict[str, str]:

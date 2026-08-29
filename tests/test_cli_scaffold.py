@@ -7,6 +7,7 @@ import subprocess
 import sys
 from typing import TYPE_CHECKING
 
+from tesserix_adk import __version__
 from tesserix_adk.cli.scaffold import main
 
 if TYPE_CHECKING:
@@ -29,6 +30,87 @@ def test_templates_are_discoverable_without_writing(tmp_path: Path) -> None:
     assert sorted(path.name for path in tmp_path.iterdir()) == ["pyproject.toml"]
 
 
+def test_each_agent_template_generates_its_advertised_composition(tmp_path: Path) -> None:
+    expected = {
+        "single": ("TypedAgent",),
+        "tool-using": ("TypedAgent", "@tool"),
+        "multi-agent": ("TypedAgent", "Roster", "Specialist", "build_roster"),
+        "mcp-client": ("TypedAgent", "McpClient", "McpServerConfig", "build_mcp_client"),
+    }
+
+    for template, markers in expected.items():
+        root = tmp_path / template
+        root.mkdir()
+        assert (
+            main(
+                ["new", "agent", "trip-planner", "--template", template],
+                cwd=project(root),
+                out=io.StringIO(),
+            )
+            == 0
+        )
+        source = (root / "trip_planner_agent.py").read_text(encoding="utf-8")
+        tools = (root / "trip_planner_tools.py").read_text(encoding="utf-8")
+        assert f'TEMPLATE_KIND: Final[str] = "{template}"' in source
+        assert all(marker in source + tools for marker in markers)
+        assert source.count("from tesserix_adk import") == 1
+
+
+def test_default_agent_creates_complete_file_set_and_next_command(tmp_path: Path) -> None:
+    root = project(tmp_path)
+    output = io.StringIO()
+
+    assert main(["new", "agent", "order-reviewer"], cwd=root, out=output) == 0
+
+    assert sorted(path.name for path in root.iterdir()) == [
+        "order_reviewer.adk.toml",
+        "order_reviewer_agent.py",
+        "order_reviewer_tools.py",
+        "pyproject.toml",
+        "test_order_reviewer_agent.py",
+    ]
+    assert "next: python -m pytest -q test_order_reviewer_agent.py" in output.getvalue()
+    config = (root / "order_reviewer.adk.toml").read_text(encoding="utf-8")
+    assert f"Tesserix ADK template version {__version__}" in config
+    assert "api_key" not in config
+
+
+def test_every_agent_template_is_offline_typed_and_linted(tmp_path: Path) -> None:
+    for template in ("single", "tool-using", "multi-agent", "mcp-client"):
+        root = tmp_path / template
+        root.mkdir()
+        assert (
+            main(
+                ["new", "agent", "trip-planner", "--template", template],
+                cwd=project(root),
+                out=io.StringIO(),
+            )
+            == 0
+        )
+        files = (
+            "trip_planner_agent.py",
+            "trip_planner_tools.py",
+            "test_trip_planner_agent.py",
+        )
+        commands = (
+            [sys.executable, "-m", "pytest", "-q", files[2]],
+            [sys.executable, "-m", "mypy", "--strict", *files],
+            [sys.executable, "-m", "ruff", "check", *files],
+        )
+        for command in commands:
+            checked = subprocess.run(  # noqa: S603
+                command,
+                capture_output=True,
+                text=True,
+                check=False,
+                cwd=root,
+                timeout=30,
+            )
+            assert checked.returncode == 0, (
+                f"{template}: {' '.join(command)}\n{checked.stdout}{checked.stderr}"
+            )
+
+
 def test_tool_using_agent_is_generated_and_works_without_network(tmp_path: Path) -> None:
     root = project(tmp_path)
     output = io.StringIO()
@@ -41,17 +123,20 @@ def test_tool_using_agent_is_generated_and_works_without_network(tmp_path: Path)
         == 0
     )
     module = root / "trip_planner_agent.py"
+    tools = root / "trip_planner_tools.py"
     test = root / "test_trip_planner_agent.py"
     assert module.exists()
+    assert tools.exists()
     assert test.exists()
     source = module.read_text(encoding="utf-8")
     assert "class TripPlannerInput" in source
     assert "class TripPlannerOutput" in source
-    assert "@tool" in source
+    assert "@tool" in tools.read_text(encoding="utf-8")
     assert "BudgetLimits" in source
-    assert "load_config" in source
+    assert "load_typed_config" in source
     assert "Instrumentation" in source
     assert "ADK_TEMPLATE_VERSION" in source
+    assert "run_typed_sync" in test.read_text(encoding="utf-8")
 
     checked = subprocess.run(  # noqa: S603
         [sys.executable, "-m", "pytest", "-q", test.name],
@@ -63,7 +148,7 @@ def test_tool_using_agent_is_generated_and_works_without_network(tmp_path: Path)
     )
     assert checked.returncode == 0, checked.stderr
     typed = subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "mypy", "--strict", module.name, test.name],
+        [sys.executable, "-m", "mypy", "--strict", module.name, tools.name, test.name],
         capture_output=True,
         text=True,
         check=False,
@@ -72,7 +157,7 @@ def test_tool_using_agent_is_generated_and_works_without_network(tmp_path: Path)
     )
     assert typed.returncode == 0, typed.stdout + typed.stderr
     linted = subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "ruff", "check", module.name, test.name],
+        [sys.executable, "-m", "ruff", "check", module.name, tools.name, test.name],
         capture_output=True,
         text=True,
         check=False,

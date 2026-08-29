@@ -144,6 +144,34 @@ primitives introduced here. The repository's
 readiness findings and remaining protocol gaps are in the
 [public-readiness review](public-readiness-review.md).
 
+## Optional: generate the first typed files
+
+Inside an existing Python project with `pyproject.toml`, list the templates and generate
+one agent without changing the project's layout or dependency manager:
+
+```bash
+tesserix-adk new --list
+tesserix-adk new agent support-agent --template tool-using
+uv run pytest -q test_support_agent.py
+uv run mypy --strict support_agent.py support_tools.py test_support_agent.py
+```
+
+Every agent template uses `TypedAgent[Input, Output]`, a bounded budget, resolved typed
+configuration, run-rooted instrumentation, and an offline fake-provider test:
+
+| Template | Added composition |
+|---|---|
+| `single` | One structured agent plus a separate schema-derived, read-only local tool |
+| `tool-using` | The same safe baseline plus an explicit reusable `ToolRegistry` factory |
+| `multi-agent` | A typed specialist plus an explicit `Roster` boundary for a supervisor |
+| `mcp-client` | A local fallback tool and transport-neutral `McpClient` factory |
+
+`tesserix-adk new tool NAME` generates a typed standalone tool and contract test. The
+command validates every target before writing anything; an existing path aborts the whole
+operation unless `--force` is explicit, and a failed replacement restores the prior bytes.
+The generated dependency hint pins the installed kit version so a template never mixes API
+eras with the runtime that created it.
+
 ## CLI note
 
 The package installs the project-qualified `tesserix-adk` command for self-contained
