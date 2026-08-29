@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 
+import anyio
 import pytest
 
 from tesserix_adk.core import ConfigurationError, SandboxMemoryError, SandboxTimeoutError
@@ -146,7 +147,7 @@ class TestWhatTheCodeCanReach:
 
         result = await sandbox.run("import os\nprint(os.getcwd())")
 
-        assert not os.path.exists(result.stdout.strip())
+        assert not await anyio.Path(result.stdout.strip()).exists()
 
     async def test_the_kits_own_modules_are_not_importable_from_inside(self) -> None:
         sandbox = SubprocessSandbox(limits=_fast())
