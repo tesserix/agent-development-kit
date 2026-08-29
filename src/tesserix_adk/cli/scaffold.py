@@ -282,7 +282,7 @@ def _agent_files(name: _Name, template: str) -> dict[str, str]:
         "from tesserix_adk.core.config import McpServerConfig\n" if template == "mcp-client" else ""
     )
     tool_import = (
-        f"from {name.module}_tools import {tool_name}\n" if template == "tool-using" else ""
+        f"\nfrom {name.module}_tools import {tool_name}\n" if template == "tool-using" else ""
     )
     tool_configuration = f'''
         tools=("{tool_name}",),
@@ -335,15 +335,12 @@ from pathlib import Path
 from typing import Final
 
 from pydantic import BaseModel
-
 from tesserix_adk import {", ".join(root_imports)}
 {adapter_import}from tesserix_adk.core import (
 {chr(10).join(f"    {item}," for item in core_imports)}
 )
 {config_import}from tesserix_adk.runtime import {", ".join(runtime_imports)}
-
 {tool_import}
-
 ADK_TEMPLATE_VERSION: Final[str] = "{__version__}"
 TEMPLATE_KIND: Final[str] = "{template}"
 CONFIG_FILE: Final[Path] = Path(__file__).with_name("{name.module}.adk.toml")
@@ -409,6 +406,7 @@ def build_agent() -> TypedAgent[{name.class_name}Input, {name.class_name}Output]
         generated_imports.append("build_mcp_client")
     if template == "tool-using":
         generated_imports.append("build_registry")
+    generated_imports.sort()
 
     provider_turns = f'''ScriptedTurn.calling("{tool_name}", {{"query": request.request}}),
         ScriptedTurn.returning({{"answer": "A grounded local answer."}}),'''
