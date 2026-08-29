@@ -63,6 +63,14 @@ def test_no_public_signature_leaks_a_vendor_or_concrete_type() -> None:
     assert find_leaks(collect_surface()) == []
 
 
+def test_a_framework_name_does_not_count_as_a_vendor_type_leak() -> None:
+    surface = {
+        "example.export_openai_agent": ("def export_openai_agent(agent: 'object') -> 'object'")
+    }
+
+    assert find_leaks(surface) == []
+
+
 def test_a_leaked_vendor_type_is_reported_with_its_symbol() -> None:
     surface = {"tesserix_adk.memory.open_store": "def open_store() -> redis.Redis"}
     leaks = find_leaks(surface)

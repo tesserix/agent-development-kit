@@ -122,7 +122,9 @@ def find_leaks(surface: dict[str, str]) -> list[str]:
     for key, description in sorted(surface.items()):
         in_testing = key.startswith("tesserix_adk.testing")
         markers = VENDOR_MARKERS if in_testing else VENDOR_MARKERS + CONCRETE_MARKERS
-        found = [m for m in markers if m in description]
+        symbol_name = key.rpartition(".")[2]
+        signature = description.replace(symbol_name, "", 1)
+        found = [m for m in markers if m in signature]
         if found:
             leaks.append(f"{key} exposes {', '.join(found)} in: {description}")
     return leaks

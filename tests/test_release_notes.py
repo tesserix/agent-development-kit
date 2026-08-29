@@ -357,6 +357,28 @@ class TestCommandLine:
         assert release_notes.main(["--version", "0.3.0", "--output", str(output)]) == 0
         assert "A new thing." in output.read_text(encoding="utf-8")
 
+    def test_a_tag_release_body_reuses_the_reviewed_changelog_section(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        changelog = tmp_path / "CHANGELOG.md"
+        changelog.write_text(
+            "# Changelog\n\n## [Unreleased]\n\n## 0.3.0\n\n### Added\n\n"
+            "- The reviewed release note.\n\n## 0.2.0\n\n- Earlier.\n",
+            encoding="utf-8",
+        )
+        output = tmp_path / "notes.md"
+        monkeypatch.setattr(release_notes, "CHANGELOG", changelog)
+        monkeypatch.setattr(
+            release_notes,
+            "_history",
+            lambda: pytest.fail("released notes must not be rebuilt after fragments are consumed"),
+        )
+
+        assert release_notes.main(["--version", "0.3.0", "--output", str(output)]) == 0
+        assert output.read_text(encoding="utf-8") == (
+            "## 0.3.0\n\n### Added\n\n- The reviewed release note.\n"
+        )
+
     def test_releasing_folds_the_fragments_into_the_changelog_and_clears_them(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -373,6 +395,30 @@ class TestCommandLine:
         assert release_notes.main(["--version", "0.3.0", "--release"]) == 0
         assert "A new thing." in changelog.read_text(encoding="utf-8")
         assert not fragment.exists()
+
+    def test_releasing_rebases_fragment_links_for_the_root_changelog(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fragments = tmp_path / "changes"
+        write(
+            fragments,
+            "11.added.md",
+            "See [dead letters](../docs/dead-letters.md), "
+            "the [project](https://example.com), and [details](#details).\n",
+        )
+        changelog = tmp_path / "CHANGELOG.md"
+        changelog.write_text("# Changelog\n\n## [Unreleased]\n", encoding="utf-8")
+        monkeypatch.setattr(release_notes, "FRAGMENTS", fragments)
+        monkeypatch.setattr(release_notes, "CHANGELOG", changelog)
+        monkeypatch.setattr(release_notes, "_history", lambda: ())
+        monkeypatch.setattr(release_notes, "_surface_diff_against_last_release", lambda: _NO_DIFF)
+
+        assert release_notes.main(["--version", "0.3.0", "--release"]) == 0
+        released = changelog.read_text(encoding="utf-8")
+        assert "[dead letters](docs/dead-letters.md)" in released
+        assert "[dead letters](../docs/dead-letters.md)" not in released
+        assert "[project](https://example.com)" in released
+        assert "[details](#details)" in released
 
 
 class TestRepositoryFragments:

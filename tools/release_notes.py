@@ -11,12 +11,14 @@ Fragment format is in docs/releasing.md. Run `make notes` to preview.
 from __future__ import annotations
 
 import argparse
+import posixpath
 import re
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 from tools.api_surface import collect_surface
 from tools.deprecations import collect as collect_deprecations
@@ -71,6 +73,7 @@ _FILENAME = re.compile(r"^(\d+)\.([a-z]+)\.md$")
 _HEADER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 _SUBJECT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]+)\))?(?P<bang>!)?: (?P<text>.+)$")
 _ISSUE = re.compile(r"#(\d+)")
+_LINK = re.compile(r"(?P<prefix>!?\[[^]]*\]\()(?P<destination>[^)]+)(?P<suffix>\))")
 
 # Commit messages contain newlines, so the log is delimited by characters they cannot.
 _UNIT = "\x1f"
@@ -149,6 +152,27 @@ def _fields(header: str) -> dict[str, str]:
     }
 
 
+def _rebase_links(text: str, *, source: Path, target: Path) -> str:
+    """Keep local Markdown links valid when a fragment moves into the repository root."""
+    source_from_target = source.relative_to(target).as_posix()
+
+    def replace(match: re.Match[str]) -> str:
+        raw = match["destination"]
+        destination = raw.strip()
+        angled = destination.startswith("<") and destination.endswith(">")
+        value = destination[1:-1] if angled else destination
+        parsed = urlsplit(value)
+        if parsed.scheme or parsed.netloc or not parsed.path or parsed.path.startswith("/"):
+            return match.group(0)
+        rebased = posixpath.normpath(posixpath.join(source_from_target, parsed.path))
+        value = f"{rebased}{value[len(parsed.path) :]}"
+        destination = f"<{value}>" if angled else value
+        rewritten = raw.replace(raw.strip(), destination, 1)
+        return f"{match['prefix']}{rewritten}{match['suffix']}"
+
+    return _LINK.sub(replace, text)
+
+
 def _fragment(path: Path) -> Fragment:
     matched = _FILENAME.match(path.name)
     if matched is None:
@@ -161,6 +185,7 @@ def _fragment(path: Path) -> Fragment:
     header = _HEADER.match(body)
     fields = _fields(header.group(1)) if header else {}
     text = body[header.end() :].strip() if header else body.strip()
+    text = _rebase_links(text, source=path.parent, target=path.parent.parent)
     if not text:
         raise NoteError(
             f"{path.name} has no text: a fragment with nothing to say documents nothing"
@@ -174,7 +199,11 @@ def _fragment(path: Path) -> Fragment:
         kind=kind,
         text=text,
         surface=fields.get("surface"),
-        migration=fields.get("migration"),
+        migration=(
+            _rebase_links(fields["migration"], source=path.parent, target=path.parent.parent)
+            if fields.get("migration")
+            else None
+        ),
     )
 
 
@@ -310,6 +339,17 @@ def update_changelog(changelog: str, *, notes: str) -> str:
     return f"{head}{UNRELEASED}\n\n{notes.rstrip()}\n\n{_kept(tail)}"
 
 
+def released_notes(changelog: str, *, version: str) -> str | None:
+    """Return the reviewed notes already folded into the changelog for a release."""
+    heading = re.search(rf"^## {re.escape(version)}[ \t]*$", changelog, re.MULTILINE)
+    if heading is None:
+        return None
+    tail = changelog[heading.end() :].lstrip("\n")
+    boundary = _AFTER_UNRELEASED.search(tail)
+    body = tail[: boundary.start() if boundary else None].rstrip()
+    return f"## {version}\n\n{body}\n" if body else f"## {version}\n"
+
+
 def _kept(tail: str) -> str:
     """Everything after the Unreleased body: earlier releases, and the link definitions.
 
@@ -382,6 +422,12 @@ def main(argv: list[str] | None = None) -> int:
     except NoteError as err:
         sys.stderr.write(f"{err}\n")
         return 1
+
+    if args.output and not fragments:
+        reviewed = released_notes(CHANGELOG.read_text(encoding="utf-8"), version=args.version)
+        if reviewed is not None:
+            Path(args.output).write_text(reviewed, encoding="utf-8")
+            return 0
 
     commits = _history()
     problems = undocumented(commits, fragments)
