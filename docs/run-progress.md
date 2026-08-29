@@ -230,5 +230,6 @@ many runs are in flight is not a bound on anything.
   rather than replaying a partial run.
 - **Transports.** SSE and websocket helpers live in `tesserix_adk.adapters` —
   [`docs/transports.md`](transports.md).
-- **Cassettes do not record streams.** `RecordingProvider` and `ReplayingProvider` still
-  refuse `stream`; recorded streaming is #150.
+- **Provider cassettes stop at the provider boundary.** They preserve stream chunk
+  boundaries and interruptions, but do not record tool-side HTTP or a transport client's
+  reconnection behavior. See [Cassettes](cassettes.md).

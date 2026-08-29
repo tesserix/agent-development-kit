@@ -77,5 +77,9 @@ content is worse than paying full price for it, so:
   and tabular compressors return what they have rather than drop a value.
 * `estimate_tokens` is four characters to a token, used to compare a before against an
   after. Pass the provider's own counter as `count` where the ratio is reported as money.
-* Compression is not reversible here — the retrieval handle is #238 — and the interaction
-  with the frozen prefix boundary is #239.
+* `ContentRouter` by itself is lossy. Wrap it in the
+  [reversible router](reversible-compression.md) when the model must be able to redeem an
+  original through a run- and tenant-scoped handle.
+* Admission does not move a conversation's cache boundary. Use
+  [FrozenPrefix](frozen-prefix.md) to compress only newly admitted content and detect drift
+  in bytes the provider may already have cached.

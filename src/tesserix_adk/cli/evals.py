@@ -8,8 +8,9 @@ It fails closed by design. A missing baseline, one recorded on another dataset v
 a declared metric nobody measured each exit non-zero with the command that fixes them,
 because a gate that clears itself when the comparison is impossible is not a gate.
 
-This application-wired command is not part of the self-contained dispatcher. `python -m
-tesserix_adk.cli.evals` is what the reusable workflow calls.
+The installed dispatcher exposes this artifact-only operation as `tesserix-adk evals`;
+`python -m tesserix_adk.cli.evals` remains available to reusable workflows. Unlike
+`tesserix-adk eval`, it does not resolve or run an application agent.
 """
 
 from __future__ import annotations

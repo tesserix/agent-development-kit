@@ -61,6 +61,9 @@ hosted enforcement remains active.
 Only checks that run for every pull-request shape belong in the named required-status
 list. CodeQL stays enforced by the code-scanning rule, which understands when a language
 configuration applies. The unconditional CI documentation job runs `make docs-check` and
-is the documentation gate; the path-filtered Pages workflow publishes the site and is not
-a second required status. Requiring a conditional or duplicate context can strand a safe
-workflow-only or lockfile-only update even though its applicable gates passed.
+is the required documentation gate. The path-filtered `Documentation` workflow repeats a
+strict, read-only build for documentation changes on pull requests and `main`; it never
+deploys. Versioned GitHub Pages publishing occurs only from an immutable `v*` release tag
+through the `docs-publish` and `docs-deploy` jobs in `release.yml`. Requiring a conditional
+or duplicate context can strand a safe workflow-only or lockfile-only update even though
+its applicable gates passed.

@@ -68,8 +68,8 @@ Memory, tool results and anything else the agent did not author go through
 ```
 
 A forged marker inside the content is escaped, so content cannot close its own fence and
-continue as instruction. This is a boundary, not a defence: real injection classification
-is #127.
+continue as instruction. Add `InjectionGuard` when the deployment also needs classified,
+blocking detection; see [Prompt injection](prompt-injection.md).
 
 ## Terminal states
 
@@ -329,56 +329,52 @@ name and must answer to the name they are filed under, or construction fails.
 **Zero content and zero tool calls is terminal.** Asking again for the same nothing is how
 a loop wedges.
 
-## Known limitations
+## Current boundaries
+
+Hard tool allowlists and schema validation, bounded parallel dispatch, validation repair,
+provider fallback, streaming transports, approval suspension, checkpoint resume, and
+durable workflow execution are implemented as explicit opt-in surfaces. Their remaining
+boundaries are:
 
 - **`run` itself does not stream.** It returns a finished `Run`; `stream` reports the same
-  run event by event — see [`run-progress.md`](run-progress.md). Transport helpers,
-  backpressure and cancellation through an active stream are #40–#42.
-- **No durable resumption.** A `Run` serialises, but nothing resumes one mid-flight yet —
-  that is the durable orchestration epic.
-- **Tool arguments are not validated against the tool's schema before dispatch.** The
-  registry validates them; the loop does not pre-check. Hard allowlist enforcement and
-  schema validation at dispatch are #130 and #129.
-- **Tools run one at a time.** Bounded parallelism is #44.
-- **No retry or repair on a schema violation.** The run fails; bounded validation repair
-  with the error fed back is #35.
-- **No fallback to a second provider.** A retry re-sends the same request to the same
-  provider; routing a fault to another one is the gateway epic.
-- **A failed attempt's usage is only counted if the provider attached it.** `ProviderError`
-  carries no `Usage`, so tokens spent on an attempt that raised are invisible until the
-  provider protocol (#49) defines how a failed call reports what it burned.
-- **Depth is only counted where it is passed.** A caller that starts a nested run without
-  handing down the parent `RunContext` starts it at depth 0. Agent-to-agent delegation
-  inside the kit threads it automatically once the workflows epic owns the call.
-- **Repetition is exact-match only.** Two calls that differ by a whitespace-only argument
-  read as different requests. Semantic near-duplicate detection is not planned.
-- **`task_class` is refused without a router.** A runner given no router cannot resolve a
-  class, and guessing a model would attribute the run to one that never ran it. Wire a
-  router and a provider per vendor it can choose — see [`docs/routing.md`](routing.md).
-- **`ModelRequest`, `ModelResponse` and `ToolDeclaration` are provisional**, owned by the
-  runtime until the provider protocol (#49) and the tool registry (#130) land theirs.
+  run event by event with bounded backpressure and cancellation. SSE and WebSocket adapters
+  are described in [Run progress](run-progress.md) and [Transports](transports.md).
+- **A serialized `Run` is not a resume plan.** `AgentRunner.resume` needs the configured
+  checkpoint, transcript history, idempotency decisions, and lease store; the workflow path
+  needs its durable engine journal. See [Checkpointing](checkpointing.md),
+  [Suspension](suspension.md), and [Durable runs](durable-runs.md).
+- **Failed provider usage is necessarily estimated.** A provider error carries no exact
+  partial token count, so the runtime charges the prompt estimate as heuristic input burn
+  and records it on `ATTEMPT_FAILED`. Exact provider-side output before a transport failure
+  remains unknowable unless that provider reported it.
+- **Manual nesting must carry context.** A caller that starts another runner without the
+  parent `RunContext` starts a new call graph at depth zero. Kit delegation paths propagate
+  the context automatically.
+- **Repetition is exact-match only.** Two calls whose arguments differ only in whitespace
+  are different requests. Semantic near-duplicate detection is deliberately not inferred.
+- **`task_class` needs a router.** Guessing a model would attribute the run to one that
+  never ran it. Wire a router and a provider per eligible vendor; see
+  [Routing](routing.md) and [Fallback](fallback.md).
+- **Sampling is provider configuration.** `ModelRequest` does not carry temperature or
+  top-p, so deterministic deployments pin those on the provider and record the resulting
+  traffic when replay matters.
 - **A rehydrated run needs its type parameter named.** Nothing on the wire says which type
   the answer was, so `Run[TripPlan].model_validate_json` rehydrates it and a bare `Run` is
-  refused rather than handed back with the answer dropped. See
-  [`docs/typing.md`](typing.md).
-- **The budget estimate is characters over four**, not a tokeniser. Normalised accounting
-  is #55.
-- **The token is not threaded into tool or provider signatures.** `ToolRegistry.invoke`
-  and `ModelProvider.complete` take no cancellation argument, so their work is raced and
-  cancelled from outside rather than asked to stop. A tool that wants to unwind its own
-  work cooperatively needs the token on `RunContext` — that arrives with the context
-  object (#33).
+  refused rather than handed back with the answer dropped. See [Typing](typing.md).
+- **Cancellation crosses different boundaries differently.** Provider work is raced and
+  cancelled from outside the protocol. A tool receives the token through `ToolContext` and
+  may cooperate while the runtime still enforces the outer deadline.
 - **Indeterminacy is a recorded event, not a raised type.** `tool_indeterminate` is on the
-  run for a caller to branch on; there is no `ToolIndeterminateError` to catch, because
-  the run does not raise.
-- **An approval blocks the run in process.** The gate is awaited, so a run waiting on a
-  human holds its task and its memory. Suspending a run to durable storage and resuming it
-  when the decision arrives is the durable orchestration epic.
+  run for a caller to branch on; there is no `ToolIndeterminateError` to catch because the
+  run itself does not raise.
+- **Inline approval waits in process.** Configure a deferring gate and `SuspensionStore`
+  when a human decision must outlive the worker, then resume through
+  `resume_with_decision`.
 - **Hooks see text, not structure.** `HookSubject.content` is the text of the message or
-  response; non-text parts are passed through untouched and a rewrite replaces the text
-  parts wholesale. Redacting inside an image or a structured part is out of scope here.
-- **`on_terminal` cannot rewrite anything.** It is asked, and its decision is recorded, but
-  a run that has already ended has nothing left to swap and nothing left to refuse.
+  response; non-text parts pass through untouched and a rewrite replaces the text parts
+  wholesale. Redacting inside an image or structured part is out of scope here.
+- **`on_terminal` cannot rewrite anything.** Its decision is recorded, but a run that has
+  already ended has nothing left to replace or refuse.
 - **A per-run `deadline` only narrows.** Passing one later than the runner's
-  `run_seconds` ceiling changes nothing, by design — a caller cannot buy more time than
-  the deployment allows.
+  `run_seconds` ceiling changes nothing; a caller cannot buy more time than the deployment
+  allows.

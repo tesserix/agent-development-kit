@@ -63,7 +63,7 @@ def refund_quote(booking_id: str) -> RefundQuote:
 > reason it gives, and do not offer anything it did not return.
 
 The threshold now lives beside the code that charges, has a test, and refuses when it should.
-`ADK-P005` pairs with the tools epic's approval gate: a prompt is not an enforcement point,
+`ADK-P005` pairs with the runtime's approval gate: a prompt is not an enforcement point,
 and a retry of one is a second refund.
 
 ## False positives, and suppression

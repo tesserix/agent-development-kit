@@ -101,9 +101,11 @@ failures would be a way to spend past a ceiling.
 ## Deliberately not here
 
 - No health tracking or circuit breaking across runs — a fallback decides this run only.
-- No quality comparison between the primary's answer and the fallback's. That is the evals
-  epic's question, and answering it here would make every run pay for two.
-- No durable resumption across process restarts, which the workflows epic owns.
+- No quality comparison between the primary's answer and the fallback's. Measure that on a
+  versioned evaluation suite; answering it here would make every live run pay for two.
+- The in-process fallback attempt sequence is not itself a durable journal. Put model calls
+  behind the [durable workflow](durable-runs.md) activity boundary when the sequence must
+  survive a worker restart.
 
 See also [`docs/routing.md`](routing.md) for the table the chain comes from and
 [`docs/resilience.md`](resilience.md) for the per-vendor retry policy it waits on.

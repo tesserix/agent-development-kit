@@ -75,4 +75,5 @@ there is no system message, one is added.
   scratch messages after a tool result should call `shape` with the turn it knows it is on.
 * The effort vocabulary is the kit's four levels. A provider offering a token budget rather
   than a level is mapped at its own adapter; `provider_effort` returns nothing for it here.
-* Steering measures nothing. Whether the suffix actually shortened output is #242's job.
+* Steering alone measures nothing. Use [savings accounting](savings-accounting.md) with a
+  stable control holdout to label input savings as measured and output savings as estimated.

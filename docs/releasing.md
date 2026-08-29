@@ -82,6 +82,8 @@ Pushing to `main` never publishes.
 | `build` | `uv build`, `twine check --strict` on the metadata, an assertion that the artefact filename carries the tag's version, and keyless signing with a build provenance attestation over `dist/*`. See [`verifying.md`](verifying.md). |
 | `publish` | Trusted publishing to PyPI via workflow identity, behind the `pypi` environment. Runs only where the repository variable `PUBLISH_TO_PYPI` is `true`. |
 | `mirror` | The same artefacts, `sbom.cdx.json` and the attestation bundles attached to a GitHub Release, with the assembled notes as its body. A mirrored install has no attestation store to reach, so the bundles travel with the artefacts. |
+| `docs-publish` | Builds the tagged documentation with `mike`, pushes that immutable version to `gh-pages`, updates `stable` only for a stable release, and materialises the complete version history as one Pages artifact. |
+| `docs-deploy` | Deploys that artifact through the protected `github-pages` environment with only `pages: write` and an OIDC identity token. |
 | `divergence` | Fails the release if PyPI succeeded and the mirror did not. |
 | `smoke` | Downloads the *published* wheel from PyPI, verifies its attestation against this repository and `release.yml` before installing anything, then installs it in a clean virtualenv once per extra and runs `examples/getting_started.py`. Skipped with `publish`. |
 | `smoke-mirror` | The same, against the release assets a consumer resolves with `--find-links`. This is the channel that is always exercised, because it is the one that always ships. |
@@ -101,6 +103,11 @@ assert it.
 
 Pre-releases take exactly this path. A separate route for `rc` builds would be a release
 path nobody has tested by the time it matters.
+
+Documentation follows the release artifact, not the moving `main` branch. Pull requests
+and merges build the site strictly without deploying it. A stable tag adds one immutable
+version, moves the `stable` alias, and makes the root redirect there; a pre-release adds an
+explicitly labelled unstable version without replacing `stable`.
 
 ### One-time setup
 
@@ -303,6 +310,7 @@ into the run summary on every alpha.
 - The smoke job installs from PyPI only. If PyPI is slow to make a new file available it
   retries for a few minutes; a longer outage fails the job after the release has already
   happened, which is a signal to check the index rather than to re-tag.
-- Builds are not yet reproducible bit-for-bit, and artefacts are not yet signed. Signing
-  and provenance attestation are the Security & Supply Chain epic's work, and attach to
-  the `build` job when they land.
+- Builds are not yet reproducible bit-for-bit and do not carry a separate package-signing
+  format. The wheel, source archive, and SBOM do carry keyless GitHub provenance
+  attestations bound to this repository and workflow; consumers verify those before
+  installation as described in [Verifying a release](verifying.md).

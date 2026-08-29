@@ -9,6 +9,9 @@ application owns its process and deployment; the kit supplies composable primiti
 | Goal | Start here |
 |---|---|
 | Run the offline example | [Getting started](getting-started.md) |
+| Browse every implemented capability | [Capability map](capabilities.md) |
+| Use the installed project commands | [Command-line guide](cli.md) |
+| Copy an executable example | [Runnable cookbook](cookbook/index.md) |
 | Build a new custom agent | [Build a custom agent](custom-agent.md) |
 | Design the full path from source to monitored production | [Agent lifecycle and platform architecture](agent-lifecycle.md) |
 | Connect OpenAI, Anthropic, Gemini, Groq, Grok, OpenRouter, or a local model | [Provider recipes](provider-recipes.md) |
@@ -45,6 +48,9 @@ architecture](agent-lifecycle.md).
 
 ## Main references
 
+- [Capability map](capabilities.md)
+- [Command-line guide](cli.md)
+- [Runnable cookbook](cookbook/index.md)
 - [Architecture](architecture.md)
 - [Agent lifecycle and platform architecture](agent-lifecycle.md)
 - [Core primitives](primitives.md)

@@ -205,8 +205,12 @@ registry approval, canary execution, runtime controls, recovery and feedback fit
 
 ## Documentation
 
+- [Published documentation](https://tesserix.github.io/agent-development-kit/)
 - [Documentation home](docs/index.md)
 - [Getting started](docs/getting-started.md)
+- [Capability map](docs/capabilities.md)
+- [Command-line guide](docs/cli.md)
+- [Runnable cookbook](docs/cookbook/index.md)
 - [Build a custom agent](docs/custom-agent.md)
 - [End-to-end agent lifecycle](docs/agent-lifecycle.md)
 - [Provider recipes](docs/provider-recipes.md)

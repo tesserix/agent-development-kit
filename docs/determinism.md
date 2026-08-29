@@ -89,18 +89,17 @@ fails on the `hook_rewrite` event rather than passing quietly.
 
 - **Providers are recorded, tools are not.** A cassette holds provider exchanges only. Tool
   results come from the registry, so an offline test fakes the registry as it always did.
-- **Streaming is not recorded.** `stream` raises `NotImplementedError` on both the
-  recording and replaying providers until recorded streaming lands (#150).
 - **Recording is per-provider-instance, not per-process.** `RecordingProvider.cassette` is
   what *that* wrapper saw; there is no ambient recorder collecting every call in a process.
 - **A replay serves one run.** The provider tracks how much of the cassette it has served,
   so replaying a second run means constructing a second `ReplayingProvider`. Asking for
   more exchanges than were recorded is a miss, not a wrap-around.
-- **Tool calls within a turn are dispatched one at a time.** Ordering is therefore the
-  model's, and stable on replay. Bounded parallel dispatch (#44) will need normalising by
-  tool-call id rather than by arrival order.
+- **Tool effects are not made deterministic by concurrent scheduling.** Parallel-safe calls
+  may execute together, while results and recorded deltas are merged in the model's call
+  order. A tool that reads external state still needs a fake, cassette at its own boundary,
+  or an idempotent downstream contract.
 - **The fingerprint covers the request, not the sampling parameters.** `ModelRequest`
-  carries no temperature or top-p yet; when the provider protocol (#49) lands them, they
-  join the fingerprint, and cassettes recorded before that must be re-recorded.
+  carries no temperature or top-p. Pin them in provider configuration and re-record the
+  cassette when they change.
 - **Redaction is pattern-based.** It catches credential-shaped keys and values, not a
   secret that looks like ordinary prose. Review a cassette before committing it.

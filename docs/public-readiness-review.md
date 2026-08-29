@@ -1,6 +1,6 @@
 # Public-readiness review
 
-Review date: 2026-08-28. Scope: package/runtime architecture, provider boundary, official
+Review date: 2026-08-29. Scope: package/runtime architecture, provider boundary, official
 A2A integration, MCP and gateway seams, security/release controls, testing, examples, and
 the public documentation path.
 
@@ -40,7 +40,7 @@ crash recovery, subscriptions, and any push delivery it advertises.
 | Durability | Broad primitives and adapters | State, queues, checkpoints, leases, outbox, events, replay-safe workflow primitives |
 | Testing | Strong | Strict fake provider, network blocking, HTTP replay, conformance suites, isolation, evals, release gates |
 | Supply chain | Strong controls, subject to configuration | Frozen lock, dependency admissions, advisory/licence/secret scans, build provenance and trusted publishing workflows |
-| Public onboarding | Addressed in this review | Lean README, quickstart, provider recipes, integration/A2A/testing guides, strict docs build |
+| Public onboarding | Current in source | Lean README, quickstart, capability map, command-line guide, runnable cookbook, migration and interoperability guides, generated API reference, strict docs build |
 
 At audit start, `make check` passed 8,518 tests with 99.16% coverage, strict Ruff and
 mypy, import boundaries, API/event/release gates, and dependency policy. The offline
@@ -95,9 +95,8 @@ cancellation. Card security metadata remains descriptive and cannot replace enfo
   application-wired CLIs continue to accept explicit storage/build callbacks.
 - Reduce the very broad pre-1.0 public API before 1.0. Keep new experimental seams out of
   stable re-export modules until consumers need them.
-- Continue reconciling legacy deep-reference pages with implementation. The curated
-  public path is current, while older issue-era wording should not be treated as a
-  feature-status database.
+- Keep the capability map, task guides, generated API reference, runnable recipes, and
+  release-tagged Pages site synchronized as the public surface moves.
 
 ### Priority 2: ecosystem usability
 
@@ -105,10 +104,6 @@ cancellation. Card security metadata remains descriptive and cannot replace enfo
   background workers, and serverless constraints.
 - Publish a complete sample combining a model gateway, MCP, official A2A discovery,
   durable state, telemetry, and policy without embedding real infrastructure credentials.
-- Add generated API reference pages alongside the existing API-surface compatibility
-  snapshot.
-- Add migration guides from common agent frameworks after the public API is closer to
-  1.0.
 - Consider TypeScript/Java/Go clients only for cross-language protocol needs; do not copy
   the Python runtime merely for ecosystem parity.
 
@@ -160,6 +155,9 @@ the requirement, not because both projects share three initials.
 - [x] Apache-2.0 licence file
 - [x] Root contribution guide and pull-request template
 - [x] Strict local documentation build and link test
+- [x] Complete capability map and installed-command guide
+- [x] Generated API reference and public-symbol recipe coverage
+- [x] Staged migration and framework-interoperability guides
 - [x] GitHub Pages workflow in source
 - [x] GitHub Actions pinned to reviewed commit SHAs
 - [x] Repository made public
@@ -171,7 +169,9 @@ the requirement, not because both projects share three initials.
 
 ## Verification record
 
-Final verification for the Google ADK/A2A bridge on 2026-08-28 used Python 3.13.15:
+### Google ADK/A2A bridge — 2026-08-28
+
+Final verification used Python 3.13.15:
 
 - `make check`: passed lint, formatting, import-boundary, strict typing, dependency,
   admission, disclosure, API, event, replay, deprecation, release-note, documentation, and
@@ -192,6 +192,26 @@ Final verification for the Google ADK/A2A bridge on 2026-08-28 used Python 3.13.
 - The offline official HTTP round trip passed through the official client, Starlette
   route, request handler, task store, Tesserix executor, runner, and final artifact. Google
   ADK 2.8.0 accepted the same official card through its current non-legacy A2A path.
+
+### Documentation and Pages synchronization — 2026-08-29
+
+- `make docs-check`, the API-surface and generated-reference checks, and public-symbol
+  recipe coverage passed. Regression tests additionally proved that every Markdown page
+  is navigable, the command-line guide covers all eight installed commands, and the
+  release runbook names every release workflow job.
+- The rebuilt site rendered the capability map and command-line guide correctly. All 64
+  distinct external links exposed by the site and README resolved successfully.
+- Ruff, formatting, import-boundary checks, strict mypy across 557 source files, strict
+  Pyright, the repository policy/contract gates, and `uv build` passed. The complete
+  default test run passed 9,407 tests with 6 optional cases skipped and 125 intentionally
+  deselected; the all-extras A2A and Google ADK set separately passed all 51 tests.
+- The public Pages root redirects to `stable/`, whose `0.53.0` sitemap contained 189 URLs;
+  every URL returned HTTP 200. The tagged release workflow completed both documentation
+  jobs and published the exact `tesserix_adk-0.53.0-py3-none-any.whl` release asset.
+- Pages is deliberately release-tagged rather than deployed from the moving `main`
+  branch. These source updates become public with the next reviewed release tag; until
+  then the live canonical documentation remains `0.53.0`. PyPI publication remains
+  disabled, so GitHub Release assets are the supported distribution channel.
 
 These source and artifact checks do not replace the unchecked PyPI trusted-publisher and
 package-ownership actions in the launch checklist.

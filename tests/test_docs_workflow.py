@@ -17,6 +17,7 @@ RELEASE = WORKFLOWS / "release.yml"
 CI = WORKFLOWS / "ci.yml"
 MAKEFILE = ROOT / "Makefile"
 MKDOCS = ROOT / "mkdocs.yml"
+RELEASING = ROOT / "docs" / "releasing.md"
 SHA_PIN = re.compile(r"^[^@\s]+@[0-9a-f]{40}$")
 
 
@@ -95,6 +96,12 @@ def test_releases_publish_versioned_docs_and_preserve_earlier_versions() -> None
         "pages": "write",
         "id-token": "write",
     }
+
+
+def test_the_release_runbook_names_every_release_job() -> None:
+    documented = RELEASING.read_text(encoding="utf-8")
+    missing = [job for job in load_yaml(RELEASE)["jobs"] if f"`{job}`" not in documented]
+    assert missing == []
 
 
 def test_generated_api_reference_is_a_local_and_ci_drift_gate() -> None:
