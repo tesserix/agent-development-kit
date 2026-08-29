@@ -1,0 +1,5257 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Typed, provider-neutral Python infrastructure for production AI agents.">
+      
+      
+      
+        <link rel="canonical" href="https://tesserix.github.io/agent-development-kit/0.53.0/reference/cli/">
+      
+      
+        <link rel="prev" href="../testing/">
+      
+      
+        <link rel="next" href="../code_intelligence/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>CLI - Tesserix Agent Development Kit</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Tesserix Agent Development Kit" class="md-header__button md-logo" aria-label="Tesserix Agent Development Kit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tesserix Agent Development Kit
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Use dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Use dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Use light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Use light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tesserix/agent-development-kit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tesserix/agent-development-kit
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tesserix Agent Development Kit" class="md-nav__button md-logo" aria-label="Tesserix Agent Development Kit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Tesserix Agent Development Kit
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tesserix/agent-development-kit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tesserix/agent-development-kit
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Start
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Start
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../custom-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build a custom agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Complete reference agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrate an existing agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../provider-recipes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider recipes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations and gateways
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Framework interoperability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../a2a/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Official A2A
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../google-adk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google ADK bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../keeping-current/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keep agents current
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Understand
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Understand
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../primitives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core primitives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers and capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../run-loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../protocols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocols
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connect
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Connect
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-transports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP transports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agentgateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AgentGateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-cards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tesserix agent cards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../peer-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Peer discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../peer-invocation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Peer invocation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../state-adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../durable-runs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Durable runs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../idempotency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idempotency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Threat model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auto-instrumentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eval-datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../verifying/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../protocols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocol implementations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package root
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A2A
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclialiases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Aliases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclianswering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Answering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclibuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclifrontiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Frontiers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclilocalagent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.LocalAgent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclilookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Lookup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliprompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Prompts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Resumes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliwaiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Waiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovalsanswering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals.Answering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovalswaiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals.Waiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovalsmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovals_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifact_inspectresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifact_inspect.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifact_inspectmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifact_inspect.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifact_inspect_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifact_inspect_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifact_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ARTIFACT_VERSION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactheader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactHeader
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactsummary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactSummary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifacttruncatederror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactTruncatedError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactversionerror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactVersionError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactwriter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactWriter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsredacted_json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.redacted_json
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsscan_artifact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.scan_artifact
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclicardbuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.card.Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclicardmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.card.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclicard_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.card_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliconfig_commandmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.config_command.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliconfig_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.config_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidead_lettersmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.dead_letters.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidead_letters_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.dead_letters_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidescribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.describe
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcheckregistry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CheckRegistry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcheckresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CheckResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcheckstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CheckStatus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcredentialpresencecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CredentialPresenceCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctordiagnosticcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.DiagnosticCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctordoctorcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.DoctorCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctordoctorcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.DoctorContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorextrapresencecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.ExtraPresenceCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorprobeobservation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.ProbeObservation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorpythonversioncheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.PythonVersionCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctormain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctor_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runcase_error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.CASE_ERROR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runconfiguration_error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.CONFIGURATION_ERROR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runevaltarget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.EvalTarget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_rungate_failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.GATE_FAILED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runload_target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.load_target
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_run_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclievalsmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.evals.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclievals_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.evals_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclifrontier_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.frontier_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliinspectlookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.inspect.Lookup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliinspectmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.inspect.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliinspect_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.inspect_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclipromptsaliases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts.Aliases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclipromptsprompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts.Prompts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclipromptsmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliprompts_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumefrontiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.Frontiers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumeresumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.Resumes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumedescribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.describe
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumemain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumeshow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.show
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresume_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentlocalagent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.LocalAgent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agenttargetloaderror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.TargetLoadError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentload_target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.load_target
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliscaffoldmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.scaffold.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliscaffold_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.scaffold_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclisurfaceresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.surface.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclisurfacemain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.surface.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclisurface_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.surface_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitracemissing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.MISSING
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitracemisused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.MISUSED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitraceok" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.OK
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitraceunreadable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.UNREADABLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitracemain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitrace_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code_intelligence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code intelligence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experimental/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experimental
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../public-readiness-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public-readiness review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repository-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deprecations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deprecations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detailed contribution guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/tesserix/agent-development-kit/blob/main/CODE_OF_CONDUCT.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code of Conduct
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releasing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclialiases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Aliases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclianswering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Answering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclibuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclifrontiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Frontiers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclilocalagent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.LocalAgent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclilookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Lookup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliprompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Prompts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Resumes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliwaiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.Waiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovalsanswering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals.Answering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovalswaiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals.Waiting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovalsmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliapprovals_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.approvals_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifact_inspectresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifact_inspect.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifact_inspectmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifact_inspect.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifact_inspect_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifact_inspect_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifact_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ARTIFACT_VERSION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactheader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactHeader
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactsummary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactSummary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifacttruncatederror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactTruncatedError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactversionerror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactVersionError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsartifactwriter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.ArtifactWriter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsredacted_json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.redacted_json
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliartifactsscan_artifact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.artifacts.scan_artifact
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclicardbuild" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.card.Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclicardmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.card.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclicard_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.card_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliconfig_commandmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.config_command.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliconfig_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.config_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidead_lettersmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.dead_letters.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidead_letters_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.dead_letters_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidescribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.describe
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcheckregistry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CheckRegistry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcheckresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CheckResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcheckstatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CheckStatus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorcredentialpresencecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.CredentialPresenceCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctordiagnosticcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.DiagnosticCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctordoctorcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.DoctorCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctordoctorcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.DoctorContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorextrapresencecheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.ExtraPresenceCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorprobeobservation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.ProbeObservation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctorpythonversioncheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.PythonVersionCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctormain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclidoctor_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.doctor_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runcase_error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.CASE_ERROR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runconfiguration_error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.CONFIGURATION_ERROR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runevaltarget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.EvalTarget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_rungate_failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.GATE_FAILED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runload_target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.load_target
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_runmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclieval_run_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.eval_run_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclievalsmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.evals.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclievals_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.evals_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclifrontier_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.frontier_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliinspectlookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.inspect.Lookup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliinspectmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.inspect.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliinspect_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.inspect_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclipromptsaliases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts.Aliases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclipromptsprompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts.Prompts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclipromptsmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliprompts_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.prompts_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumefrontiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.Frontiers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumeresumes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.Resumes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumedescribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.describe
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumemain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresumeshow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume.show
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliresume_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.resume_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentlocalagent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.LocalAgent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agenttargetloaderror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.TargetLoadError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentload_target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.load_target
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_agentmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_agent.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclirun_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.run_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliscaffoldmain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.scaffold.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkcliscaffold_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.scaffold_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclisurfaceresolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.surface.Resolve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclisurfacemain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.surface.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclisurface_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.surface_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitracemissing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.MISSING
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitracemisused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.MISUSED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitraceok" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.OK
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitraceunreadable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.UNREADABLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitracemain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace.main
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkclitrace_main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.cli.trace_main
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- generated by tools.api_reference; do not edit -->
+
+<h1 id="cli-api">Cli API<a class="headerlink" href="#cli-api" title="Permanent link">&para;</a></h1>
+<p>Generated from the typed public surface.</p>
+<h2 id="tesserix_adkclialiases"><code>tesserix_adk.cli.Aliases</code><a class="headerlink" href="#tesserix_adkclialiases" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>Where a deployment keeps its moving labels, and what it lets an operator do to them.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Aliases</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">aliases</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Mapping[str, str]&#39;</span><span class="p">;</span> <span class="n">evaluated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">;</span> <span class="n">repoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">alias</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">to</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">expected</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">by</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclianswering"><code>tesserix_adk.cli.Answering</code><a class="headerlink" href="#tesserix_adkclianswering" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Answering</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclibuild"><code>tesserix_adk.cli.Build</code><a class="headerlink" href="#tesserix_adkclibuild" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">Build</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclifrontiers"><code>tesserix_adk.cli.Frontiers</code><a class="headerlink" href="#tesserix_adkclifrontiers" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">Frontiers</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclilocalagent"><code>tesserix_adk.cli.LocalAgent</code><a class="headerlink" href="#tesserix_adkclilocalagent" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The declaration and collaborators needed by the local-only command.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">LocalAgent</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">provider</span><span class="p">:</span> <span class="s1">&#39;ModelProvider&#39;</span><span class="p">,</span> <span class="n">approvals</span><span class="p">:</span> <span class="s1">&#39;ApprovalGate&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;AgentRunner&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclilookup"><code>tesserix_adk.cli.Lookup</code><a class="headerlink" href="#tesserix_adkclilookup" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">Lookup</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliprompts"><code>tesserix_adk.cli.Prompts</code><a class="headerlink" href="#tesserix_adkcliprompts" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>The little of a registry these commands read.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Prompts</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">alias</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;PromptDefinition&#39;</span><span class="p">;</span> <span class="n">list_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[str, ...]&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresolve"><code>tesserix_adk.cli.Resolve</code><a class="headerlink" href="#tesserix_adkcliresolve" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Resolve</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresumes"><code>tesserix_adk.cli.Resumes</code><a class="headerlink" href="#tesserix_adkcliresumes" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>What this command needs of a resumer, satisfied by <code>tesserix_adk.runtime.Resumer</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Resumes</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">worker</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ResumedRun | None&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliwaiting"><code>tesserix_adk.cli.Waiting</code><a class="headerlink" href="#tesserix_adkcliwaiting" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>Whatever can say which runs in a tenant are waiting on somebody.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Waiting</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">pending</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[SuspendedRun, ...]&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliapprovalsanswering"><code>tesserix_adk.cli.approvals.Answering</code><a class="headerlink" href="#tesserix_adkcliapprovalsanswering" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">Answering</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliapprovalswaiting"><code>tesserix_adk.cli.approvals.Waiting</code><a class="headerlink" href="#tesserix_adkcliapprovalswaiting" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>Whatever can say which runs in a tenant are waiting on somebody.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Waiting</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">pending</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[SuspendedRun, ...]&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliapprovalsmain"><code>tesserix_adk.cli.approvals.main</code><a class="headerlink" href="#tesserix_adkcliapprovalsmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>approvals</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">waiting</span><span class="p">:</span> <span class="s1">&#39;Waiting&#39;</span><span class="p">,</span> <span class="n">answering</span><span class="p">:</span> <span class="s1">&#39;Answering&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliapprovals_main"><code>tesserix_adk.cli.approvals_main</code><a class="headerlink" href="#tesserix_adkcliapprovals_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>approvals</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">approvals_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">waiting</span><span class="p">:</span> <span class="s1">&#39;Waiting&#39;</span><span class="p">,</span> <span class="n">answering</span><span class="p">:</span> <span class="s1">&#39;Answering&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifact_inspectresolve"><code>tesserix_adk.cli.artifact_inspect.Resolve</code><a class="headerlink" href="#tesserix_adkcliartifact_inspectresolve" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">Resolve</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifact_inspectmain"><code>tesserix_adk.cli.artifact_inspect.main</code><a class="headerlink" href="#tesserix_adkcliartifact_inspectmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Inspect one artefact and return a stable diagnostic exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifact_inspect_main"><code>tesserix_adk.cli.artifact_inspect_main</code><a class="headerlink" href="#tesserix_adkcliartifact_inspect_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Inspect one artefact and return a stable diagnostic exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">artifact_inspect_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsartifact_version"><code>tesserix_adk.cli.artifacts.ARTIFACT_VERSION</code><a class="headerlink" href="#tesserix_adkcliartifactsartifact_version" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">ARTIFACT_VERSION</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsartifactheader"><code>tesserix_adk.cli.artifacts.ArtifactHeader</code><a class="headerlink" href="#tesserix_adkcliartifactsartifactheader" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Identity and replay input written before the first progress event.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ArtifactHeader</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsartifactsummary"><code>tesserix_adk.cli.artifacts.ArtifactSummary</code><a class="headerlink" href="#tesserix_adkcliartifactsartifactsummary" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A complete artefact's bounded metadata and final records.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ArtifactSummary</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsartifacttruncatederror"><code>tesserix_adk.cli.artifacts.ArtifactTruncatedError</code><a class="headerlink" href="#tesserix_adkcliartifactsartifacttruncatederror" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>An artefact has no valid commit footer or ends part-way through a record.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ArtifactTruncatedError</span><span class="p">(</span><span class="n">AdkError</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsartifactversionerror"><code>tesserix_adk.cli.artifacts.ArtifactVersionError</code><a class="headerlink" href="#tesserix_adkcliartifactsartifactversionerror" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The artefact version lies outside this CLI's compatibility window.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ArtifactVersionError</span><span class="p">(</span><span class="n">AdkError</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsartifactwriter"><code>tesserix_adk.cli.artifacts.ArtifactWriter</code><a class="headerlink" href="#tesserix_adkcliartifactsartifactwriter" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Append one redacted run artefact and commit it with an integrity footer.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ArtifactWriter</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="s1">&#39;ProgressEvent&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">;</span> <span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">;</span> <span class="n">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s1">&#39;Run[OutputT]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cassette</span><span class="p">:</span> <span class="s1">&#39;Cassette | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>FileExistsError</code>, <code>OSError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsredacted_json"><code>tesserix_adk.cli.artifacts.redacted_json</code><a class="headerlink" href="#tesserix_adkcliartifactsredacted_json" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Recursively scrub strings while retaining their JSON structure for replay.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">redacted_json</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="s1">&#39;object&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;JsonValue&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliartifactsscan_artifact"><code>tesserix_adk.cli.artifacts.scan_artifact</code><a class="headerlink" href="#tesserix_adkcliartifactsscan_artifact" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Validate and stream a committed artefact.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">scan_artifact</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s1">&#39;Path&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">on_event</span><span class="p">:</span> <span class="s1">&#39;Callable[[ProgressEvent], None] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ArtifactSummary&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>ArtifactTruncatedError</code>, <code>ArtifactVersionError</code>, <code>OSError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclicardbuild"><code>tesserix_adk.cli.card.Build</code><a class="headerlink" href="#tesserix_adkclicardbuild" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">Build</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclicardmain"><code>tesserix_adk.cli.card.main</code><a class="headerlink" href="#tesserix_adkclicardmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Render or lint one agent card and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">build</span><span class="p">:</span> <span class="s1">&#39;Build&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclicard_main"><code>tesserix_adk.cli.card_main</code><a class="headerlink" href="#tesserix_adkclicard_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Render or lint one agent card and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">card_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">build</span><span class="p">:</span> <span class="s1">&#39;Build&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliconfig_commandmain"><code>tesserix_adk.cli.config_command.main</code><a class="headerlink" href="#tesserix_adkcliconfig_commandmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Resolve one configuration and show it or report every validation problem.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overrides</span><span class="p">:</span> <span class="s1">&#39;ConfigOverrides | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="s1">&#39;dict[str, str] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="s1">&#39;Path | str | None&#39;</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliconfig_main"><code>tesserix_adk.cli.config_main</code><a class="headerlink" href="#tesserix_adkcliconfig_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Resolve one configuration and show it or report every validation problem.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">config_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overrides</span><span class="p">:</span> <span class="s1">&#39;ConfigOverrides | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">env</span><span class="p">:</span> <span class="s1">&#39;dict[str, str] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="s1">&#39;Path | str | None&#39;</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidead_lettersmain"><code>tesserix_adk.cli.dead_letters.main</code><a class="headerlink" href="#tesserix_adkclidead_lettersmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>dead-letters</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">replayer</span><span class="p">:</span> <span class="s1">&#39;Replayer&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidead_letters_main"><code>tesserix_adk.cli.dead_letters_main</code><a class="headerlink" href="#tesserix_adkclidead_letters_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>dead-letters</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">dead_letters_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">replayer</span><span class="p">:</span> <span class="s1">&#39;Replayer&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidescribe"><code>tesserix_adk.cli.describe</code><a class="headerlink" href="#tesserix_adkclidescribe" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One frontier as an operator needs to read it before deciding anything.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">:</span> <span class="s1">&#39;Checkpoint&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctorcheckregistry"><code>tesserix_adk.cli.doctor.CheckRegistry</code><a class="headerlink" href="#tesserix_adkclidoctorcheckregistry" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Ordered, duplicate-safe registry for built-in and adapter-contributed checks.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CheckRegistry</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">check</span><span class="p">:</span> <span class="s1">&#39;DoctorCheck&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">;</span> <span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">offline</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[CheckResult, ...]&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctorcheckresult"><code>tesserix_adk.cli.doctor.CheckResult</code><a class="headerlink" href="#tesserix_adkclidoctorcheckresult" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A bounded diagnostic finding with one concrete suggested remediation.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CheckResult</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctorcheckstatus"><code>tesserix_adk.cli.doctor.CheckStatus</code><a class="headerlink" href="#tesserix_adkclidoctorcheckstatus" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One diagnostic's explicit outcome.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CheckStatus</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctorcredentialpresencecheck"><code>tesserix_adk.cli.doctor.CredentialPresenceCheck</code><a class="headerlink" href="#tesserix_adkclidoctorcredentialpresencecheck" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Distinguish a missing credential from one present but never print its value.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CredentialPresenceCheck</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CheckResult&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctordiagnosticcheck"><code>tesserix_adk.cli.doctor.DiagnosticCheck</code><a class="headerlink" href="#tesserix_adkclidoctordiagnosticcheck" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Adapt one provider, model, store, MCP, telemetry or clock-skew probe.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DiagnosticCheck</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CheckResult&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctordoctorcheck"><code>tesserix_adk.cli.doctor.DoctorCheck</code><a class="headerlink" href="#tesserix_adkclidoctordoctorcheck" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>A plugin diagnostic registered without changing the command implementation.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DoctorCheck</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CheckResult&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctordoctorcontext"><code>tesserix_adk.cli.doctor.DoctorContext</code><a class="headerlink" href="#tesserix_adkclidoctordoctorcontext" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Typed configuration and environment boundary available to checks.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DoctorContext</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctorextrapresencecheck"><code>tesserix_adk.cli.doctor.ExtraPresenceCheck</code><a class="headerlink" href="#tesserix_adkclidoctorextrapresencecheck" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Check an optional adapter extra without installing or changing anything.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ExtraPresenceCheck</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CheckResult&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctorprobeobservation"><code>tesserix_adk.cli.doctor.ProbeObservation</code><a class="headerlink" href="#tesserix_adkclidoctorprobeobservation" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A probe's provider-normalised result before policy marks it required.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProbeObservation</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctorpythonversioncheck"><code>tesserix_adk.cli.doctor.PythonVersionCheck</code><a class="headerlink" href="#tesserix_adkclidoctorpythonversioncheck" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Confirm the interpreter remains in this installed kit's supported range.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PythonVersionCheck</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CheckResult&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctormain"><code>tesserix_adk.cli.doctor.main</code><a class="headerlink" href="#tesserix_adkclidoctormain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run registered checks and return non-zero only for required failures.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="s1">&#39;CheckRegistry&#39;</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclidoctor_main"><code>tesserix_adk.cli.doctor_main</code><a class="headerlink" href="#tesserix_adkclidoctor_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run registered checks and return non-zero only for required failures.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">doctor_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="s1">&#39;CheckRegistry&#39;</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;DoctorContext&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_runcase_error"><code>tesserix_adk.cli.eval_run.CASE_ERROR</code><a class="headerlink" href="#tesserix_adkclieval_runcase_error" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="n">CASE_ERROR</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_runconfiguration_error"><code>tesserix_adk.cli.eval_run.CONFIGURATION_ERROR</code><a class="headerlink" href="#tesserix_adkclieval_runconfiguration_error" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="n">CONFIGURATION_ERROR</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_runevaltarget"><code>tesserix_adk.cli.eval_run.EvalTarget</code><a class="headerlink" href="#tesserix_adkclieval_runevaltarget" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Deterministic and deliberately separate live executors for one agent.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">EvalTarget</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_rungate_failed"><code>tesserix_adk.cli.eval_run.GATE_FAILED</code><a class="headerlink" href="#tesserix_adkclieval_rungate_failed" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="n">GATE_FAILED</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_runresolve"><code>tesserix_adk.cli.eval_run.Resolve</code><a class="headerlink" href="#tesserix_adkclieval_runresolve" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="n">Resolve</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_runload_target"><code>tesserix_adk.cli.eval_run.load_target</code><a class="headerlink" href="#tesserix_adkclieval_runload_target" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Import <code>module:attribute</code> as an :class:<code>EvalTarget</code> or no-argument factory.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_target</span><span class="p">(</span><span class="n">reference</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;EvalTarget&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>AttributeError</code>, <code>ConfigurationError</code>, <code>ImportError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_runmain"><code>tesserix_adk.cli.eval_run.main</code><a class="headerlink" href="#tesserix_adkclieval_runmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Execute one suite and emit a table, JSON or JUnit report.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stdin</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclieval_run_main"><code>tesserix_adk.cli.eval_run_main</code><a class="headerlink" href="#tesserix_adkclieval_run_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Execute one suite and emit a table, JSON or JUnit report.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">eval_run_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stdin</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclievalsmain"><code>tesserix_adk.cli.evals.main</code><a class="headerlink" href="#tesserix_adkclievalsmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>evals</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclievals_main"><code>tesserix_adk.cli.evals_main</code><a class="headerlink" href="#tesserix_adkclievals_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>evals</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">evals_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclifrontier_main"><code>tesserix_adk.cli.frontier_main</code><a class="headerlink" href="#tesserix_adkclifrontier_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Print a run's frontier without taking the lease or resuming anything.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">frontier_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">frontiers</span><span class="p">:</span> <span class="s1">&#39;Frontiers&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliinspectlookup"><code>tesserix_adk.cli.inspect.Lookup</code><a class="headerlink" href="#tesserix_adkcliinspectlookup" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="n">Lookup</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliinspectmain"><code>tesserix_adk.cli.inspect.main</code><a class="headerlink" href="#tesserix_adkcliinspectmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Draw one run and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lookup</span><span class="p">:</span> <span class="s1">&#39;Lookup&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliinspect_main"><code>tesserix_adk.cli.inspect_main</code><a class="headerlink" href="#tesserix_adkcliinspect_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Draw one run and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">inspect_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lookup</span><span class="p">:</span> <span class="s1">&#39;Lookup&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclipromptsaliases"><code>tesserix_adk.cli.prompts.Aliases</code><a class="headerlink" href="#tesserix_adkclipromptsaliases" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>Where a deployment keeps its moving labels, and what it lets an operator do to them.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Aliases</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">aliases</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Mapping[str, str]&#39;</span><span class="p">;</span> <span class="n">evaluated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">;</span> <span class="n">repoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">alias</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">to</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">expected</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">by</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclipromptsprompts"><code>tesserix_adk.cli.prompts.Prompts</code><a class="headerlink" href="#tesserix_adkclipromptsprompts" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>The little of a registry these commands read.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Prompts</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">alias</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;PromptDefinition&#39;</span><span class="p">;</span> <span class="n">list_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[str, ...]&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclipromptsmain"><code>tesserix_adk.cli.prompts.main</code><a class="headerlink" href="#tesserix_adkclipromptsmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>prompt</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prompts</span><span class="p">:</span> <span class="s1">&#39;Prompts&#39;</span><span class="p">,</span> <span class="n">aliases</span><span class="p">:</span> <span class="s1">&#39;Aliases&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliprompts_main"><code>tesserix_adk.cli.prompts_main</code><a class="headerlink" href="#tesserix_adkcliprompts_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Run one <code>prompt</code> command and return its exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">prompts_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">prompts</span><span class="p">:</span> <span class="s1">&#39;Prompts&#39;</span><span class="p">,</span> <span class="n">aliases</span><span class="p">:</span> <span class="s1">&#39;Aliases&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresumefrontiers"><code>tesserix_adk.cli.resume.Frontiers</code><a class="headerlink" href="#tesserix_adkcliresumefrontiers" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="n">Frontiers</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresumeresumes"><code>tesserix_adk.cli.resume.Resumes</code><a class="headerlink" href="#tesserix_adkcliresumeresumes" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>What this command needs of a resumer, satisfied by <code>tesserix_adk.runtime.Resumer</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Resumes</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">resume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">worker</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ResumedRun | None&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresumedescribe"><code>tesserix_adk.cli.resume.describe</code><a class="headerlink" href="#tesserix_adkcliresumedescribe" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One frontier as an operator needs to read it before deciding anything.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">:</span> <span class="s1">&#39;Checkpoint&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresumemain"><code>tesserix_adk.cli.resume.main</code><a class="headerlink" href="#tesserix_adkcliresumemain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Resume one run and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resumer</span><span class="p">:</span> <span class="s1">&#39;Resumes&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">worker</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;cli&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresumeshow"><code>tesserix_adk.cli.resume.show</code><a class="headerlink" href="#tesserix_adkcliresumeshow" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Print a run's frontier without taking the lease or resuming anything.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-67-1" name="__codelineno-67-1" href="#__codelineno-67-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">show</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">frontiers</span><span class="p">:</span> <span class="s1">&#39;Frontiers&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliresume_main"><code>tesserix_adk.cli.resume_main</code><a class="headerlink" href="#tesserix_adkcliresume_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Resume one run and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-68-1" name="__codelineno-68-1" href="#__codelineno-68-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">resume_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resumer</span><span class="p">:</span> <span class="s1">&#39;Resumes&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">worker</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;cli&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclirun_agentlocalagent"><code>tesserix_adk.cli.run_agent.LocalAgent</code><a class="headerlink" href="#tesserix_adkclirun_agentlocalagent" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The declaration and collaborators needed by the local-only command.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">LocalAgent</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">provider</span><span class="p">:</span> <span class="s1">&#39;ModelProvider&#39;</span><span class="p">,</span> <span class="n">approvals</span><span class="p">:</span> <span class="s1">&#39;ApprovalGate&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;AgentRunner&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclirun_agentresolve"><code>tesserix_adk.cli.run_agent.Resolve</code><a class="headerlink" href="#tesserix_adkclirun_agentresolve" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-70-1" name="__codelineno-70-1" href="#__codelineno-70-1"></a><span class="n">Resolve</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclirun_agenttargetloaderror"><code>tesserix_adk.cli.run_agent.TargetLoadError</code><a class="headerlink" href="#tesserix_adkclirun_agenttargetloaderror" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A local import reference did not resolve to a complete runnable agent.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-71-1" name="__codelineno-71-1" href="#__codelineno-71-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TargetLoadError</span><span class="p">(</span><span class="n">ConfigurationError</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclirun_agentload_target"><code>tesserix_adk.cli.run_agent.load_target</code><a class="headerlink" href="#tesserix_adkclirun_agentload_target" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Import <code>module:attribute</code> and resolve a :class:<code>LocalAgent</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-72-1" name="__codelineno-72-1" href="#__codelineno-72-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_target</span><span class="p">(</span><span class="n">reference</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">approvals</span><span class="p">:</span> <span class="s1">&#39;ApprovalGate&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;LocalAgent&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>AttributeError</code>, <code>ImportError</code>, <code>TargetLoadError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclirun_agentmain"><code>tesserix_adk.cli.run_agent.main</code><a class="headerlink" href="#tesserix_adkclirun_agentmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Stream one scoped local run and return a stable process exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-73-1" name="__codelineno-73-1" href="#__codelineno-73-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stdin</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclirun_main"><code>tesserix_adk.cli.run_main</code><a class="headerlink" href="#tesserix_adkclirun_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Stream one scoped local run and return a stable process exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">run_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stdin</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliscaffoldmain"><code>tesserix_adk.cli.scaffold.main</code><a class="headerlink" href="#tesserix_adkcliscaffoldmain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Generate one complete template set and return a stable process exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-75-1" name="__codelineno-75-1" href="#__codelineno-75-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cwd</span><span class="p">:</span> <span class="s1">&#39;Path | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkcliscaffold_main"><code>tesserix_adk.cli.scaffold_main</code><a class="headerlink" href="#tesserix_adkcliscaffold_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Generate one complete template set and return a stable process exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-76-1" name="__codelineno-76-1" href="#__codelineno-76-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">scaffold_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cwd</span><span class="p">:</span> <span class="s1">&#39;Path | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclisurfaceresolve"><code>tesserix_adk.cli.surface.Resolve</code><a class="headerlink" href="#tesserix_adkclisurfaceresolve" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Type alias.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a><span class="n">Resolve</span><span class="p">:</span> <span class="n">TypeAliasType</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclisurfacemain"><code>tesserix_adk.cli.surface.main</code><a class="headerlink" href="#tesserix_adkclisurfacemain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Print one agent's resolved tool surface and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclisurface_main"><code>tesserix_adk.cli.surface_main</code><a class="headerlink" href="#tesserix_adkclisurface_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Print one agent's resolved tool surface and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">surface_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="s1">&#39;Resolve&#39;</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclitracemissing"><code>tesserix_adk.cli.trace.MISSING</code><a class="headerlink" href="#tesserix_adkclitracemissing" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a><span class="n">MISSING</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclitracemisused"><code>tesserix_adk.cli.trace.MISUSED</code><a class="headerlink" href="#tesserix_adkclitracemisused" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-81-1" name="__codelineno-81-1" href="#__codelineno-81-1"></a><span class="n">MISUSED</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclitraceok"><code>tesserix_adk.cli.trace.OK</code><a class="headerlink" href="#tesserix_adkclitraceok" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-82-1" name="__codelineno-82-1" href="#__codelineno-82-1"></a><span class="n">OK</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclitraceunreadable"><code>tesserix_adk.cli.trace.UNREADABLE</code><a class="headerlink" href="#tesserix_adkclitraceunreadable" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a><span class="n">UNREADABLE</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclitracemain"><code>tesserix_adk.cli.trace.main</code><a class="headerlink" href="#tesserix_adkclitracemain" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Draw a recorded trace and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+<h2 id="tesserix_adkclitrace_main"><code>tesserix_adk.cli.trace_main</code><a class="headerlink" href="#tesserix_adkclitrace_main" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Draw a recorded trace and return an exit code.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">trace_main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="s1">&#39;TextIO | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/local_trace_view.py</a> — recorded diagnostics are redacted before writing.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../testing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Testing">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Testing
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../code_intelligence/" class="md-footer__link md-footer__link--next" aria-label="Next: Code intelligence">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Code intelligence
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Tesserix
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.top", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
