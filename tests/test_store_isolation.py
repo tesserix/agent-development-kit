@@ -43,7 +43,7 @@ class TestDerivingThePartition:
     def test_a_tenant_cannot_be_handed_in_positionally_on_the_way_past(self) -> None:
         """The documented way in is `current()`; a bare string is not a partition."""
         with tenant_scope(ACME), pytest.raises(TypeError):
-            Partition(RIVAL)  # type: ignore[misc]
+            Partition(RIVAL)  # type: ignore[call-arg]
 
 
 class TestKeys:
