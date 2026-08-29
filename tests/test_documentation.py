@@ -113,6 +113,13 @@ def test_framework_interop_names_each_supported_boundary() -> None:
     assert all(f"`{name}`" in text for name in expected)
 
 
+def test_readme_offers_pip_and_uv_install_paths() -> None:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "python -m pip install" in text
+    assert "uv add" in text
+    assert "import tesserix_adk" in text
+
+
 @pytest.mark.parametrize(
     "page", NAMING_SURFACES, ids=lambda path: path.relative_to(ROOT).as_posix()
 )

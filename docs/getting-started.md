@@ -1,26 +1,42 @@
 # Getting started
 
 This path proves a complete agent/tool run locally, then replaces the fake model with a
-real provider. It needs Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). The
-repository uses CPython 3.14 by default and tests the full declared 3.12–3.14 range.
+real provider. It needs Python 3.12 or newer and either standard `pip` or
+[uv](https://docs.astral.sh/uv/). The repository uses `uv` and CPython 3.14 for its own
+development while testing the full declared 3.12–3.14 range.
 
 ## 1. Install
 
-PyPI trusted publishing is not enabled yet. Use the public source checkout to learn and
-test the current API; use an exact tagged artifact for an application dependency as
-described in [Keep agents current safely](keeping-current.md).
+PyPI trusted publishing is not enabled yet. Install the exact tagged v0.53.0 wheel from
+the public GitHub Release rather than asking an index for a project that is not there.
+The distribution name uses a hyphen; the Python import uses an underscore.
+
+With `pip`:
+
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.0/tesserix_adk-0.53.0-py3-none-any.whl"
+.venv/bin/python -c "import tesserix_adk; print(tesserix_adk.__version__)"
+```
+
+With `uv`, from an application project:
+
+```bash
+uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.0/tesserix_adk-0.53.0-py3-none-any.whl"
+uv run python -c "import tesserix_adk; print(tesserix_adk.__version__)"
+```
+
+Optional integrations use the same extras with either installer. For example,
+`tesserix-adk[a2a,google-adk,mcp]` installs the official A2A, Google Agent Development
+Kit bridge, and MCP dependencies. The release workflow clean-installs every individual
+extra and `all` with `pip` before publishing succeeds.
+
+Use the public source checkout only when contributing to this repository:
 
 ```bash
 git clone https://github.com/tesserix/agent-development-kit.git
 cd agent-development-kit
 uv sync --frozen
-```
-
-Optional integrations are extras and do not enter the base environment:
-
-```bash
-uv sync --frozen --extra a2a
-uv sync --frozen --extra mcp --extra postgres --extra redis --extra temporal
 ```
 
 ## 2. Prove the offline path

@@ -21,25 +21,42 @@ the package is not yet present on PyPI.
 
 ## Pin the artifact an agent actually runs
 
-Until PyPI publication is enabled, add the wheel from a specific public GitHub Release.
-This example names the latest stable release at the time this guide was reviewed; replace
-both occurrences when a newer stable release is approved:
+Until PyPI publication is enabled, install the wheel from a specific public GitHub
+Release. This example names the latest stable release at the time this guide was reviewed;
+replace both occurrences when a newer stable release is approved.
+
+For a `uv`-managed application:
 
 ```bash
-uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.51.0/tesserix_adk-0.51.0-py3-none-any.whl"
+uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.0/tesserix_adk-0.53.0-py3-none-any.whl"
 git add pyproject.toml uv.lock
 ```
+
+For a standard virtual environment managed with `pip`:
+
+```bash
+python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.0/tesserix_adk-0.53.0-py3-none-any.whl"
+python -c "import tesserix_adk; print(tesserix_adk.__version__)"
+```
+
+Record that exact direct reference in the application's dependency declaration and commit
+the environment's hash-pinned requirements. `pip` installs packages; it does not make an
+unlocked environment reproducible by itself. Extras use normal PEP 508 syntax, for example
+`tesserix-adk[a2a,mcp] @ https://.../tesserix_adk-0.53.0-py3-none-any.whl`.
 
 After PyPI trusted publishing is enabled, use a pre-1.0 compatibility window that accepts
 patch fixes without silently accepting the next potentially breaking minor release:
 
 ```bash
-uv add "tesserix-adk~=0.51.0"
+uv add "tesserix-adk~=0.53.0"
+python -m pip install "tesserix-adk~=0.53.0"
 ```
 
-In both cases, commit `uv.lock`. CI and production then install with `uv sync --frozen`.
-The dependency declaration states what may be considered; the lock records the exact
-version and hashes that were tested.
+In the `uv` case, commit `uv.lock` and install with `uv sync --frozen`. In the `pip` case,
+commit the consuming project's resolved, hash-pinned requirements and install with
+`python -m pip install --require-hashes -r requirements.txt`. The dependency declaration
+states what may be considered; the lock records the exact version and hashes that were
+tested.
 
 ## Automate the proposal, not the decision
 
