@@ -8,7 +8,9 @@ pre-release — so the only way to land on one is to ask for it. See docs/stabil
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from packaging.version import InvalidVersion, Version
@@ -25,10 +27,12 @@ __all__ = [
     "next_base",
     "released_versions",
     "stale",
+    "tagged_versions",
 ]
 
 FIRST_RELEASE = "0.1.0"
 KEEP = 10
+ROOT = Path(__file__).resolve().parents[1]
 
 STABILITY_LEVELS = frozenset({"stable", "beta", "alpha", "experimental", "internal"})
 
@@ -49,6 +53,20 @@ def _versions(released: Iterable[str]) -> list[Version]:
 
 def _is_alpha(version: Version) -> bool:
     return version.pre is not None and version.pre[0] == "a"
+
+
+def tagged_versions() -> tuple[str, ...]:
+    """Versions released through this repository's immutable release tags."""
+    result = subprocess.run(
+        ["git", "tag", "--list", "v*"],  # noqa: S607
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        return ()
+    return tuple(line[1:] for line in result.stdout.splitlines() if line.startswith("v"))
 
 
 def next_alpha(base: str, *, released: Sequence[str]) -> str:
@@ -110,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--keep", type=int, default=KEEP, help="alphas of the open version to keep")
     args = parser.parse_args(argv)
 
-    released = released_versions()
+    released = tuple(sorted(set(released_versions()) | set(tagged_versions())))
 
     if args.retention:
         retire = stale(released=released, keep=args.keep)

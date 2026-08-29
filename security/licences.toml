@@ -30,6 +30,27 @@ installs the kit without the postgres extra and loses nothing else.
 """
 
 [[acceptance]]
+package = "psycopg-binary"
+licence = "LGPL-3.0-only"
+owner = "@sam123ben"
+reason = """
+psycopg-binary is the unmodified wheel selected by the optional postgres extra and
+bundles the libpq runtime. It is not imported by the base package or statically linked
+into this project. Redistribution must retain its licence notices; a consumer that cannot
+accept LGPL can omit the postgres extra or provide a separately reviewed adapter.
+"""
+
+[[acceptance]]
+package = "psycopg-pool"
+licence = "LGPL-3.0-only"
+owner = "@sam123ben"
+reason = """
+psycopg-pool is an unmodified component of the psycopg project used only by the optional
+postgres extra. It remains replaceable behind the kit's pool and store boundaries, and a
+consumer that cannot accept LGPL can omit that extra without affecting the base runtime.
+"""
+
+[[acceptance]]
 package = "cffi"
 licence = "MIT-0"
 owner = "@sam123ben"

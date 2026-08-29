@@ -34,17 +34,20 @@ other without an explicit bridge.
 | Custom registry | Supported through the vendor-neutral `A2ARegistry` protocol |
 | Card verification policy | Supported through a caller-supplied callback |
 | Agent-name substitution protection | Supported |
-| Serve the card over HTTP | Application responsibility |
-| Complete official A2A server/request handler | Not yet bridged |
-| Runtime-to-A2A task creation and state transitions | Not yet bridged |
-| Durable task/message/artifact persistence | Not yet bridged |
-| Task cancellation and resubscription | Not yet bridged |
-| Push-notification delivery and webhook verification | Not yet bridged |
-| Extended-card authorization endpoint | Metadata can be advertised; serving flow is not yet bridged |
+| Serve the card over HTTP | Supported through official HTTP server routes; application mounts them |
+| Official A2A `AgentExecutor` | Supported through `a2a_agent_executor` |
+| Runtime-to-A2A task creation and terminal state mapping | Supported |
+| Text input and final text/JSON artifact | Supported with byte bounds |
+| Durable task/message/artifact persistence | Deployment injects an official `TaskStore` |
+| Task cancellation | Supported with fresh principal authorization and one terminal winner |
+| Duplicate delivery, subscriptions, and resubscription | Official request handler and `TaskStore` own them |
+| Partial answer streaming and input/auth-required continuation | Not implemented by the bridge |
+| Push-notification delivery and webhook verification | Deployment responsibility |
+| Extended-card authorization endpoint | Deployment responsibility |
 
-The distinction matters: setting `streaming=True` or `push_notifications=True` on a
-card advertises a capability. It does not implement the server behavior behind that
-claim. Advertise only behavior the deployment actually provides.
+The distinction matters: setting `streaming=True` or `push_notifications=True` on a card
+advertises a capability. The bridge buffers one final artifact and does not implement push
+delivery. Advertise only behavior the deployment actually provides and tests.
 
 ## Publish an official Agent Card
 
@@ -217,26 +220,72 @@ The serving gateway or server must:
 Agent Card security metadata should be treated like OpenAPI security metadata: it tells a
 client what credential is expected, while enforcement remains server code.
 
-## Server bridge roadmap
+## Serve a Tesserix runner through official A2A
 
-Production-complete official A2A serving still needs a focused bridge that:
+The bridge implements the official SDK's `AgentExecutor`; the application still owns the
+HTTP process, authentication middleware, request handler, and task store.
 
-- maps official messages, parts, artifacts, tasks, and contexts to bounded ADK types;
-- maps `AgentRunner.stream` events to official task states without losing failures;
-- persists task ownership and versioned state under tenant isolation;
-- makes repeated sends idempotent and process restarts resumable;
-- implements cancellation races and reconnect/resubscribe behavior;
-- verifies and delivers push notifications with retry and dead-letter handling;
-- publishes only capabilities supported by that deployment;
-- runs the official conformance suite plus cross-implementation tests.
+```python
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
+from a2a.server.tasks import InMemoryTaskStore
+from starlette.applications import Starlette
+from tesserix_adk.adapters import a2a_agent_executor
 
-Until that bridge exists, use the current adapter for official discovery/client
-interoperability and place a separately implemented official A2A server or gateway in
-front of the runner. Do not describe the ADK itself as a complete official A2A server.
+executor = a2a_agent_executor(
+    runner,
+    definition,
+    resolve=resolve_principal,
+    max_input_bytes=64 * 1024,
+    max_output_bytes=1024 * 1024,
+)
+handler = DefaultRequestHandler(
+    agent_executor=executor,
+    task_store=InMemoryTaskStore(),  # local development only
+    agent_card=card,
+)
+app = Starlette(
+    routes=[
+        *create_agent_card_routes(card),
+        *create_jsonrpc_routes(
+            handler,
+            rpc_url="/a2a/trip-planner",
+            context_builder=authenticated_context_builder,
+        ),
+    ]
+)
+```
+
+`resolve_principal` is an async `A2APrincipalResolver`. It receives the official
+`RequestContext` and must return a core `Principal` derived from authenticated server or
+gateway context. It is called for execution and cancellation. A resolver failure rejects
+execution before the runner is called; cancellation by a different tenant or subject gets
+the non-enumerating official task-not-found error.
+
+The bridge accepts user-role text parts only, joins them with newlines, and applies the
+UTF-8 byte limits shown above. It maps submitted, working, completed, failed, rejected,
+and cancelled outcomes. A completed run emits exactly one final `text/plain` or
+`application/json` artifact. Internal exception text is never returned to the peer.
+
+Use an official durable, tenant-scoped `TaskStore` in production. The official handler and
+store own duplicate delivery, task lookup, stored messages and artifacts, subscriptions,
+and resubscription. Persistent task state alone cannot restart a model call killed by a
+process crash; add a durable runner or a reconciliation policy for tasks left working.
+
+The bridge does not implement partial answer streaming, input-required or auth-required
+continuation, push delivery/webhook verification, automatic workflow resumption, or an
+extended-card authorization endpoint. Those remain deployment features and must not be
+advertised until implemented and tested there.
+
+For a complete identity builder and a Google `RemoteA2aAgent` consumer, follow the
+[Google ADK bridge](google-adk.md). The offline HTTP integration test exercises the
+official client, routes, request handler, task store, executor, runner, and final artifact
+without network access.
 
 ## Related
 
 - [Integrations and gateways](integrations.md)
+- [Google ADK bridge](google-adk.md)
 - [Tesserix agent cards](agent-cards.md)
 - [Tesserix peer discovery](peer-discovery.md)
 - [Tesserix peer invocation](peer-invocation.md)

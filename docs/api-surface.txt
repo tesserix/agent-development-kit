@@ -119,7 +119,9 @@ tesserix_adk.a2a.invocation.checkable :: def checkable(schema: 'Mapping[str, Any
 tesserix_adk.a2a.invocation.conforms :: def conforms(value: 'object', schema: 'Mapping[str, Any]') -> 'str'
 tesserix_adk.adapters.A2ABearerSecurity :: class A2ABearerSecurity(AdkModel)
 tesserix_adk.adapters.A2ACardError :: class A2ACardError(AdkError)
+tesserix_adk.adapters.A2AExecutionError :: class A2AExecutionError(AdkError)
 tesserix_adk.adapters.A2AInterface :: class A2AInterface(AdkModel)
+tesserix_adk.adapters.A2APrincipalResolver :: class A2APrincipalResolver(Protocol)
 tesserix_adk.adapters.A2ARegistry :: class A2ARegistry(Protocol) {resolve(self, name: 'str') -> 'AgentCard'}
 tesserix_adk.adapters.A2ARegistryError :: class A2ARegistryError(AdkError)
 tesserix_adk.adapters.A2ASkill :: class A2ASkill(AdkModel)
@@ -250,6 +252,11 @@ tesserix_adk.adapters.PeerArguments :: class PeerArguments(object) {arguments(se
 tesserix_adk.adapters.PgvectorIndex :: class PgvectorIndex(object) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'; verify(self) -> 'None'}
 tesserix_adk.adapters.PgvectorMemoryStore :: class PgvectorMemoryStore(object) {erase(self, scope: 'MemoryScope') -> 'ErasureReceipt'; index(self, scope: 'MemoryScope', record: 'MemoryRecord') -> 'None'; search(self, scope: 'MemoryScope', query: 'MemoryQuery') -> 'tuple[MemoryHit, ...]'; verify(self) -> 'None'}
 tesserix_adk.adapters.PgvectorSettings :: class PgvectorSettings(PostgresStoreSettings)
+tesserix_adk.adapters.PortableAgentManifest :: class PortableAgentManifest(AdkModel) {to_dict(self) -> 'dict[str, object]'}
+tesserix_adk.adapters.PortableExportError :: class PortableExportError(ConfigurationError)
+tesserix_adk.adapters.PortableExportOptions :: class PortableExportOptions(dict)
+tesserix_adk.adapters.PortableReference :: class PortableReference(AdkModel) {rendered(self) -> 'dict[str, str]'}
+tesserix_adk.adapters.PortableRuntime :: class PortableRuntime(AdkModel) {rendered(self) -> 'dict[str, object]'}
 tesserix_adk.adapters.PostgresAuditSettings :: class PostgresAuditSettings(PostgresStoreSettings)
 tesserix_adk.adapters.PostgresAuditSink :: class PostgresAuditSink(object) {append(self, event: 'AuditEvent') -> 'AuditEvent'; pseudonymise(self, *, tenant: 'str', subject: 'str') -> 'int'; records(self, *, tenant: 'str', since: 'float' = 0.0, until: 'float | None' = None, decision: 'AuditDecision | None' = None) -> 'tuple[AuditEvent, ...]'; verify(self) -> 'None'}
 tesserix_adk.adapters.PostgresCeilingLedger :: class PostgresCeilingLedger(object) {commit(self, idempotency_key: 'str') -> 'Hold | None'; committed(self, *, tenant: 'str', action_class: 'str', window_seconds: 'float') -> 'Decimal'; reap(self) -> 'int'; release(self, idempotency_key: 'str') -> 'None'; reserve(self, *, tenant: 'str', action_class: 'str', ceiling: 'Ceiling', amount: 'Decimal', idempotency_key: 'str') -> 'Hold'; verify(self) -> 'None'}
@@ -309,13 +316,17 @@ tesserix_adk.adapters.WebSocketLike :: class WebSocketLike(Protocol) {close(self
 tesserix_adk.adapters.WebhookApprovals :: class WebhookApprovals(object) {deliver(self, record: 'ApprovalRecord') -> 'ApprovalDecision | None'}
 tesserix_adk.adapters.a2a.A2ABearerSecurity :: class A2ABearerSecurity(AdkModel)
 tesserix_adk.adapters.a2a.A2ACardError :: class A2ACardError(AdkError)
+tesserix_adk.adapters.a2a.A2AExecutionError :: class A2AExecutionError(AdkError)
 tesserix_adk.adapters.a2a.A2AInterface :: class A2AInterface(AdkModel)
+tesserix_adk.adapters.a2a.A2APrincipalResolver :: class A2APrincipalResolver(Protocol)
 tesserix_adk.adapters.a2a.A2ARegistry :: class A2ARegistry(Protocol) {resolve(self, name: 'str') -> 'AgentCard'}
 tesserix_adk.adapters.a2a.A2ARegistryError :: class A2ARegistryError(AdkError)
 tesserix_adk.adapters.a2a.A2ASkill :: class A2ASkill(AdkModel)
+tesserix_adk.adapters.a2a.a2a_agent_executor :: def a2a_agent_executor(runner: 'AgentRunner', definition: 'AgentDefinition[OutputT]', *, resolve: 'A2APrincipalResolver', max_input_bytes: 'int' = 65536, max_output_bytes: 'int' = 1048576) -> 'AgentExecutor'
 tesserix_adk.adapters.a2a.a2a_card_for :: def a2a_card_for(definition: 'AgentDefinition[OutputT]', *, description: 'str', provider_url: 'str', interfaces: 'Iterable[A2AInterface]', skills: 'Iterable[A2ASkill]', documentation_url: 'str' = '', default_input_modes: 'Sequence[str]' = ('text/plain',), default_output_modes: 'Sequence[str]' = ('text/plain',), streaming: 'bool' = False, push_notifications: 'bool' = False, extended_agent_card: 'bool' = False, security: 'A2ABearerSecurity | None' = None) -> 'AgentCard'
 tesserix_adk.adapters.a2a.a2a_client_factory :: def a2a_client_factory(*, protocol_bindings: 'Iterable[str]' = ('JSONRPC',), transports: 'Mapping[str, TransportProducer] | None' = None, streaming: 'bool' = True, polling: 'bool' = False, accepted_output_modes: 'Iterable[str]' = (), use_client_preference: 'bool' = False) -> 'ClientFactory'
 tesserix_adk.adapters.a2a.a2a_client_from_registry :: def a2a_client_from_registry(registry: 'A2ARegistry', name: 'str', *, factory: 'ClientFactory', interceptors: 'Sequence[ClientCallInterceptor]' = (), verify: 'Callable[[AgentCard], None] | None' = None) -> 'Client'
+tesserix_adk.adapters.a2a_agent_executor :: def a2a_agent_executor(runner: 'AgentRunner', definition: 'AgentDefinition[OutputT]', *, resolve: 'A2APrincipalResolver', max_input_bytes: 'int' = 65536, max_output_bytes: 'int' = 1048576) -> 'AgentExecutor'
 tesserix_adk.adapters.a2a_card_for :: def a2a_card_for(definition: 'AgentDefinition[OutputT]', *, description: 'str', provider_url: 'str', interfaces: 'Iterable[A2AInterface]', skills: 'Iterable[A2ASkill]', documentation_url: 'str' = '', default_input_modes: 'Sequence[str]' = ('text/plain',), default_output_modes: 'Sequence[str]' = ('text/plain',), streaming: 'bool' = False, push_notifications: 'bool' = False, extended_agent_card: 'bool' = False, security: 'A2ABearerSecurity | None' = None) -> 'AgentCard'
 tesserix_adk.adapters.a2a_client_factory :: def a2a_client_factory(*, protocol_bindings: 'Iterable[str]' = ('JSONRPC',), transports: 'Mapping[str, TransportProducer] | None' = None, streaming: 'bool' = True, polling: 'bool' = False, accepted_output_modes: 'Iterable[str]' = (), use_client_preference: 'bool' = False) -> 'ClientFactory'
 tesserix_adk.adapters.a2a_client_from_registry :: def a2a_client_from_registry(registry: 'A2ARegistry', name: 'str', *, factory: 'ClientFactory', interceptors: 'Sequence[ClientCallInterceptor]' = (), verify: 'Callable[[AgentCard], None] | None' = None) -> 'Client'
@@ -356,6 +367,7 @@ tesserix_adk.adapters.checkpoints.PostgresCheckpointStore :: class PostgresCheck
 tesserix_adk.adapters.checkpoints.PostgresLeaseStore :: class PostgresLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
 tesserix_adk.adapters.checkpoints.RedisCheckpointStore :: class RedisCheckpointStore(object) {forget(self, run_id: 'str', *, tenant: 'str') -> 'None'; latest(self, run_id: 'str', *, tenant: 'str') -> 'Checkpoint | None'; put(self, checkpoint: 'Checkpoint') -> 'None'}
 tesserix_adk.adapters.checkpoints.RedisLeaseStore :: class RedisLeaseStore(object) {acquire(self, run_id: 'str', *, tenant: 'str', holder: 'str', ttl_seconds: 'float') -> 'RunLease'; held(self, run_id: 'str', *, tenant: 'str') -> 'RunLease | None'; release(self, lease: 'RunLease') -> 'None'; renew(self, lease: 'RunLease', *, ttl_seconds: 'float') -> 'RunLease'}
+tesserix_adk.adapters.container_runtime :: def container_runtime(*, image: 'str', protocol: "Literal['a2a', 'http']" = 'a2a', port: 'int' = 8080, path: 'str' = '/a2a/v1', health_path: 'str' = '/healthz') -> 'PortableRuntime'
 tesserix_adk.adapters.dead_letters.DeadLetterQuery :: class DeadLetterQuery(AdkModel) {matches(self, record: 'DeadLetterRecord') -> 'bool'}
 tesserix_adk.adapters.dead_letters.DeadLetterRecord :: class DeadLetterRecord(AdkModel) {inspected(self) -> 'dict[str, str]'}
 tesserix_adk.adapters.dead_letters.DeadLetterStats :: class DeadLetterStats(object)
@@ -372,7 +384,15 @@ tesserix_adk.adapters.dead_letters.UNKNOWN_TENANT :: UNKNOWN_TENANT: str
 tesserix_adk.adapters.dedupe_key :: def dedupe_key(*, group: 'str', event: 'EventEnvelope') -> 'str'
 tesserix_adk.adapters.eventing.payload_of :: def payload_of(event: 'ProgressEvent') -> 'EventPayload | None'
 tesserix_adk.adapters.eventing.publishing :: def publishing(stream: 'RunStream[OutputT]', eventing: 'Eventing') -> 'AsyncIterator[ProgressEvent]'
+tesserix_adk.adapters.export_a2a_agent :: def export_a2a_agent(card: 'Mapping[str, object] | object', *, namespace: 'str', runtime: 'PortableRuntime', framework: 'str' = 'a2a', visibility: "Literal['private', 'internal', 'public']" = 'private') -> 'PortableAgentManifest'
+tesserix_adk.adapters.export_google_adk_agent :: def export_google_adk_agent(agent: 'object', **kwargs: 'Unpack[PortableExportOptions]') -> 'PortableAgentManifest'
+tesserix_adk.adapters.export_langgraph_agent :: def export_langgraph_agent(graph: 'object', **kwargs: 'Unpack[PortableExportOptions]') -> 'PortableAgentManifest'
+tesserix_adk.adapters.export_oci_agent :: def export_oci_agent(*, name: 'str', version: 'str', namespace: 'str', image: 'str', protocol: "Literal['a2a', 'http']" = 'a2a', port: 'int' = 8080, path: 'str' = '/a2a/v1', health_path: 'str' = '/healthz', visibility: "Literal['private', 'internal', 'public']" = 'private') -> 'PortableAgentManifest'
+tesserix_adk.adapters.export_openai_agent :: def export_openai_agent(agent: 'object', **kwargs: 'Unpack[PortableExportOptions]') -> 'PortableAgentManifest'
+tesserix_adk.adapters.export_tesserix_agent :: def export_tesserix_agent(definition: 'AgentDefinition[OutputT]', *, namespace: 'str', runtime: 'PortableRuntime', model_provider: 'str' = '', tool_versions: 'Mapping[str, str] | None' = None, skills: 'Iterable[PortableReference]' = (), mcp_servers: 'Iterable[PortableReference]' = (), prompts: 'Iterable[PortableReference]' = (), description: 'str' = '', include_system_prompt: 'bool' = False, visibility: "Literal['private', 'internal', 'public']" = 'private', labels: 'Mapping[str, str] | None' = None) -> 'PortableAgentManifest'
 tesserix_adk.adapters.fingerprint :: def fingerprint(descriptor: 'McpToolDescriptor') -> 'str'
+tesserix_adk.adapters.google_adk.google_adk_remote_agent :: def google_adk_remote_agent(*, name: 'str', agent_card: 'AgentCard | str', description: 'str' = '', timeout_seconds: 'float' = 60.0) -> 'RemoteA2aAgent'
+tesserix_adk.adapters.google_adk_remote_agent :: def google_adk_remote_agent(*, name: 'str', agent_card: 'AgentCard | str', description: 'str' = '', timeout_seconds: 'float' = 60.0) -> 'RemoteA2aAgent'
 tesserix_adk.adapters.graft.GraftMcpBackend :: class GraftMcpBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.graft.GraftSubprocessBackend :: class GraftSubprocessBackend(object) {execute(self, request: 'CodeContextRequest') -> 'CodeContextResult'}
 tesserix_adk.adapters.grants.DEFAULT_GRANT_TABLES :: DEFAULT_GRANT_TABLES: GrantTables
@@ -502,9 +522,23 @@ tesserix_adk.adapters.pgvector.DEFAULT_CHUNK_TABLES :: DEFAULT_CHUNK_TABLES: Chu
 tesserix_adk.adapters.pgvector.EXPECTED_CHUNK_SCHEMA :: EXPECTED_CHUNK_SCHEMA: str
 tesserix_adk.adapters.pgvector.PgvectorIndex :: class PgvectorIndex(object) {search(self, query: 'IndexQuery') -> 'Sequence[Hit]'; supports(self, branch: 'Branch') -> 'bool'; verify(self) -> 'None'}
 tesserix_adk.adapters.pgvector.PgvectorSettings :: class PgvectorSettings(PostgresStoreSettings)
+tesserix_adk.adapters.portable.PortableAgentManifest :: class PortableAgentManifest(AdkModel) {to_dict(self) -> 'dict[str, object]'}
+tesserix_adk.adapters.portable.PortableExportError :: class PortableExportError(ConfigurationError)
+tesserix_adk.adapters.portable.PortableExportOptions :: class PortableExportOptions(dict)
+tesserix_adk.adapters.portable.PortableReference :: class PortableReference(AdkModel) {rendered(self) -> 'dict[str, str]'}
+tesserix_adk.adapters.portable.PortableRuntime :: class PortableRuntime(AdkModel) {rendered(self) -> 'dict[str, object]'}
+tesserix_adk.adapters.portable.container_runtime :: def container_runtime(*, image: 'str', protocol: "Literal['a2a', 'http']" = 'a2a', port: 'int' = 8080, path: 'str' = '/a2a/v1', health_path: 'str' = '/healthz') -> 'PortableRuntime'
+tesserix_adk.adapters.portable.export_a2a_agent :: def export_a2a_agent(card: 'Mapping[str, object] | object', *, namespace: 'str', runtime: 'PortableRuntime', framework: 'str' = 'a2a', visibility: "Literal['private', 'internal', 'public']" = 'private') -> 'PortableAgentManifest'
+tesserix_adk.adapters.portable.export_google_adk_agent :: def export_google_adk_agent(agent: 'object', **kwargs: 'Unpack[PortableExportOptions]') -> 'PortableAgentManifest'
+tesserix_adk.adapters.portable.export_langgraph_agent :: def export_langgraph_agent(graph: 'object', **kwargs: 'Unpack[PortableExportOptions]') -> 'PortableAgentManifest'
+tesserix_adk.adapters.portable.export_oci_agent :: def export_oci_agent(*, name: 'str', version: 'str', namespace: 'str', image: 'str', protocol: "Literal['a2a', 'http']" = 'a2a', port: 'int' = 8080, path: 'str' = '/a2a/v1', health_path: 'str' = '/healthz', visibility: "Literal['private', 'internal', 'public']" = 'private') -> 'PortableAgentManifest'
+tesserix_adk.adapters.portable.export_openai_agent :: def export_openai_agent(agent: 'object', **kwargs: 'Unpack[PortableExportOptions]') -> 'PortableAgentManifest'
+tesserix_adk.adapters.portable.export_tesserix_agent :: def export_tesserix_agent(definition: 'AgentDefinition[OutputT]', *, namespace: 'str', runtime: 'PortableRuntime', model_provider: 'str' = '', tool_versions: 'Mapping[str, str] | None' = None, skills: 'Iterable[PortableReference]' = (), mcp_servers: 'Iterable[PortableReference]' = (), prompts: 'Iterable[PortableReference]' = (), description: 'str' = '', include_system_prompt: 'bool' = False, visibility: "Literal['private', 'internal', 'public']" = 'private', labels: 'Mapping[str, str] | None' = None) -> 'PortableAgentManifest'
+tesserix_adk.adapters.portable.remote_runtime :: def remote_runtime(*, url: 'str', credential_ref: 'str', protocol: "Literal['a2a', 'http']" = 'a2a', port: 'int | None' = None, path: 'str' = '', health_path: 'str' = '') -> 'PortableRuntime'
 tesserix_adk.adapters.published :: def published(tool: 'Tool[Any, Any]') -> 'McpToolDescriptor'
 tesserix_adk.adapters.publishing :: def publishing(stream: 'RunStream[OutputT]', eventing: 'Eventing') -> 'AsyncIterator[ProgressEvent]'
 tesserix_adk.adapters.redacted :: def redacted(result: 'GatewayToolResult', *, secrets: 'Iterable[str]' = ()) -> 'GatewayToolResult'
+tesserix_adk.adapters.remote_runtime :: def remote_runtime(*, url: 'str', credential_ref: 'str', protocol: "Literal['a2a', 'http']" = 'a2a', port: 'int | None' = None, path: 'str' = '', health_path: 'str' = '') -> 'PortableRuntime'
 tesserix_adk.adapters.sql_state.DEFAULT_TABLES :: DEFAULT_TABLES: StateTables
 tesserix_adk.adapters.sql_state.EXPECTED_SCHEMA :: EXPECTED_SCHEMA: str
 tesserix_adk.adapters.sql_state.PostgresStateStore :: class PostgresStateStore(object) {bound(self, session: 'SqlSession') -> 'PostgresStateStore'; delete_run(self, key: 'StateKey') -> 'None'; delete_session(self, key: 'StateKey', *, cascade: 'bool' = False) -> 'None'; get_run(self, key: 'StateKey') -> 'RunRecord | None'; get_session(self, key: 'StateKey') -> 'SessionRecord | None'; list_runs(self, query: 'StateQuery') -> 'StatePage'; patch_run(self, key: 'StateKey', delta: 'StateDelta') -> 'RunRecord'; put_run(self, record: 'RunRecord') -> 'RunRecord'; put_session(self, record: 'SessionRecord') -> 'SessionRecord'; verify(self) -> 'None'}

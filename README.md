@@ -129,6 +129,7 @@ Install only what the application uses. From a source checkout, select extras ex
 
 ```bash
 uv sync --frozen --extra a2a
+uv sync --frozen --extra google-adk
 uv sync --frozen --extra mcp
 uv sync --frozen --extra redis --extra postgres --extra temporal
 ```
@@ -141,15 +142,17 @@ moving `main` branch.
 |---|---|
 | Model gateway | Base URL, endpoint-path presets, protected auth headers, custom metadata headers, and injectable HTTP transport |
 | MCP | Client/server surfaces, stdio and HTTP transports, scoped credentials, resilience, and AgentGateway routing |
-| Official A2A 1.x | Official Agent Cards, client factories, registry resolution, and custom gateway transport bindings through `tesserix-adk[a2a]` |
+| Official A2A 1.x | Official Agent Cards, clients, registries, custom gateway bindings, and an `AgentRunner` server bridge through `tesserix-adk[a2a]` |
+| Google ADK | A non-legacy Google `RemoteA2aAgent` for a Tesserix official A2A endpoint through `tesserix-adk[google-adk]` |
 | Tesserix peer protocol | Typed discovery, delegation, invocation, trust containment, and peer tools under `tesserix_adk.a2a` |
 | State and durability | Redis, PostgreSQL, pgvector, Temporal-facing workflow primitives, NATS JetStream patterns, checkpoints, leases, outbox, and replay controls |
 
-Official A2A support currently covers discovery metadata and client construction. It does
-**not** yet provide a complete official A2A server/task bridge, persistence, cancellation,
-subscriptions, or push-notification delivery. Agent Card security metadata describes the
-contract; the serving gateway must still authenticate and authorize every operation. See
-[Official A2A interoperability](docs/a2a.md).
+Official A2A support includes a bounded task executor, verified principal binding, final
+artifacts, and cancellation. The application still mounts the official request handler
+and routes, injects a tenant-scoped `TaskStore`, and owns authentication, persistence,
+subscriptions, crash recovery, and push delivery. Agent Card security metadata describes
+a contract; it does not enforce one. See [Official A2A interoperability](docs/a2a.md) and
+the [Google ADK bridge](docs/google-adk.md).
 
 ## Reliability model
 
@@ -176,10 +179,12 @@ Read [Architecture](docs/architecture.md), [Security](SECURITY.md), and the
 - [Provider recipes](docs/provider-recipes.md)
 - [Integrations and gateways](docs/integrations.md)
 - [Official A2A interoperability](docs/a2a.md)
+- [Google ADK bridge](docs/google-adk.md)
 - [Agent architecture escalation ladder](docs/escalation-ladder.md)
 - [Testing](docs/testing.md)
 - [Keep agents current safely](docs/keeping-current.md)
 - [Repository governance](docs/repository-governance.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Contributing](CONTRIBUTING.md)
 
 The package is currently pre-1.0. Stability is declared per subpackage in
@@ -191,6 +196,7 @@ the Python APIs and self-contained commands such as
 
 Google also publishes an Agent Development Kit. The distinct distribution name is
 `tesserix-adk` and the import namespace is `tesserix_adk`; references to “Tesserix ADK” in
-this repository mean this project, not Google's ADK.
+this repository mean this project, not Google's ADK. They can interoperate through the
+[official A2A bridge](docs/google-adk.md).
 
 Licensed under [Apache License 2.0](LICENSE).

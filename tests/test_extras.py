@@ -7,6 +7,7 @@ never heard of — into a message naming the extra and the install command.
 """
 
 import ast
+import importlib
 import subprocess
 import sys
 import tomllib
@@ -16,6 +17,7 @@ from types import ModuleType
 import pytest
 from packaging.requirements import Requirement
 
+from tesserix_adk.adapters import google_adk_remote_agent
 from tesserix_adk.core import AdkError, MissingExtraError, require_extra
 from tests.ci_config import pyproject
 
@@ -26,12 +28,21 @@ SRC = ROOT / "src" / "tesserix_adk"
 # floor reaches 3.13 — see security/admissions/typing-extensions.toml.
 BASE_REQUIREMENTS = {"pydantic", "httpx", "opentelemetry-api", "typing-extensions"}
 
-INTEGRATION_EXTRAS = {"a2a", "mcp", "temporal", "graphiti", "redis", "postgres"}
+INTEGRATION_EXTRAS = {
+    "a2a",
+    "google-adk",
+    "mcp",
+    "temporal",
+    "graphiti",
+    "redis",
+    "postgres",
+}
 
 # The importable name each extra provides, so the footprint test can prove that a base
 # install of the kit reaches none of them.
 EXTRA_TOP_LEVEL_MODULES = {
     "a2a": "a2a",
+    "google-adk": "google",
     "mcp": "mcp",
     "temporal": "temporalio",
     "graphiti": "graphiti_core",
@@ -75,6 +86,12 @@ def test_no_integration_sdk_appears_in_the_base_requirements() -> None:
 
 def test_the_declared_extras_are_the_agreed_set() -> None:
     assert set(_extras()) == INTEGRATION_EXTRAS | {"all"}
+
+
+def test_the_a2a_extra_includes_the_official_http_server_runtime() -> None:
+    requirement = Requirement(_extras()["a2a"][0])
+    assert requirement.name == "a2a-sdk"
+    assert requirement.extras == {"http-server"}
 
 
 def test_every_extra_requirement_declares_a_floor() -> None:
@@ -178,6 +195,27 @@ def test_a_missing_extra_is_catchable_as_either_an_adk_error_or_an_import_error(
     assert isinstance(error, AdkError)
     assert isinstance(error, ImportError)
     assert error.name == "redis.asyncio"
+
+
+def test_the_google_adk_bridge_names_the_exact_extra_when_it_is_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    imported = importlib.import_module
+
+    def without_google_adk(name: str) -> ModuleType:
+        if name == "google.adk":
+            raise ModuleNotFoundError("No module named 'google'", name="google")
+        return imported(name)
+
+    monkeypatch.setattr(importlib, "import_module", without_google_adk)
+    with pytest.raises(MissingExtraError) as caught:
+        google_adk_remote_agent(
+            name="remote",
+            agent_card="https://agents.example.test/.well-known/agent-card.json",
+        )
+
+    assert caught.value.extra == "google-adk"
+    assert caught.value.install_command == "uv add 'tesserix-adk[google-adk]'"
 
 
 def test_a_broken_dependency_inside_an_installed_package_is_not_reported_as_a_missing_extra(

@@ -220,7 +220,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        extra: [none, a2a, mcp, temporal, graphiti, redis, postgres, all]
+        extra: [none, a2a, google-adk, mcp, temporal, graphiti, redis, postgres, all]
     permissions:
       contents: read
       attestations: read
@@ -265,7 +265,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        extra: [none, a2a, mcp, temporal, graphiti, redis, postgres, all]
+        extra: [none, a2a, google-adk, mcp, temporal, graphiti, redis, postgres, all]
     permissions:
       contents: read
       attestations: read

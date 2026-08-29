@@ -6,22 +6,23 @@ the public documentation path.
 
 ## Executive decision
 
-The repository is suitable for public technical review after the repository settings and
-documentation deployment steps below are completed. The core library is substantially
-implemented and heavily gated; it is not a planning-only repository.
+The repository and documentation site are public and suitable for technical review. The
+core library is substantially implemented and heavily gated; it is not a planning-only
+repository. Branch, tag, security, Pages, and CODEOWNERS settings remain hosted controls
+that maintainers must periodically audit for drift.
 
 It should be presented as a **pre-1.0 production-oriented library**, not as:
 
 - a hosted agent platform;
 - a drop-in replacement for another product named ADK;
-- a complete official A2A server;
+- a turnkey, process-owning official A2A deployment;
 - a universal adapter for every model API;
 - a substitute for gateway authentication, infrastructure isolation, or operations.
 
 Production adoption should be approved per subpackage and integration. The official A2A
-adapter is ready for cards, clients, registries, and custom bindings, but a complete
-server/task bridge remains a launch dependency for products that want to serve A2A
-directly from `AgentRunner`.
+adapter now includes an `AgentRunner` executor bridge and Google ADK interoperability,
+while the embedding service still owns HTTP hosting, authentication, durable task state,
+crash recovery, subscriptions, and any push delivery it advertises.
 
 ## What is strong today
 
@@ -35,7 +36,7 @@ directly from `AgentRunner`.
 | Tenant boundary | Strong library controls; infrastructure still matters | Required tenant per run, ambient scoped context, propagation contract, store/isolation tests |
 | MCP | Broad alpha integration | Clients, servers, transports, credential context, resilience, surface pinning, AgentGateway routing |
 | Tesserix peer protocol | Broad alpha integration | Typed discovery, delegation, invocation, trust containment, registry caching |
-| Official A2A | Partial by design | Official 1.x cards and clients, registry/custom transport seams; no full server/task bridge |
+| Official A2A | Server bridge ready with deployment-owned operations | Official 1.x cards, clients, registry/custom transport seams, bounded runner executor, cancellation, HTTP round trip, and Google ADK 2.8 card compatibility |
 | Durability | Broad primitives and adapters | State, queues, checkpoints, leases, outbox, events, replay-safe workflow primitives |
 | Testing | Strong | Strict fake provider, network blocking, HTTP replay, conformance suites, isolation, evals, release gates |
 | Supply chain | Strong controls, subject to configuration | Frozen lock, dependency admissions, advisory/licence/secret scans, build provenance and trusted publishing workflows |
@@ -48,34 +49,33 @@ review's changes is recorded at the end of this page.
 
 ## Gaps that must stay explicit
 
-### Priority 0: required before claiming complete official A2A serving
+### Priority 0: required before claiming a turnkey official A2A deployment
 
-1. Implement the official request/server boundary and task state machine.
-2. Persist task, context, message, and artifact ownership under tenant isolation.
-3. Bridge runtime progress, terminal failures, cancellation, reconnect, and resubscribe.
-4. Implement signed push notifications, callback validation, retries, and dead letters.
-5. Enforce authentication and object-level authorization on every operation.
-6. Run official conformance and cross-implementation tests against at least two external
-   A2A implementations.
+1. Inject a durable, tenant-scoped official `TaskStore` and reconcile tasks left working
+   after a process crash.
+2. Authenticate every route and authorize task, context, message, artifact, subscription,
+   and cancellation objects in server/gateway context.
+3. Add signed push notifications, callback validation, retries, and dead letters only if
+   the deployment advertises push support.
+4. Run deployment-specific conformance and fault tests against its selected gateway,
+   task store, and at least one additional external A2A implementation.
 
-The current card's security metadata is descriptive. It does not enforce any of these
-controls.
+The bridge now maps bounded text requests, final artifacts, terminal failures, and
+cancellation. Card security metadata remains descriptive and cannot replace enforcement.
 
 ### Priority 0: required for the public GitHub launch
 
-1. Make the repository public through GitHub settings.
-2. Set the description, homepage, topics, social preview, and default branch protection.
-3. Enable GitHub Pages with **GitHub Actions** as the source and confirm the documentation
-   workflow's first deployment.
-4. Enable private vulnerability reporting, secret scanning, push protection, Dependabot
-   alerts, and code scanning where the organization plan permits them.
-5. Configure required checks and require reviewed pull requests for `main`.
-6. Verify the PyPI project, trusted publisher, release environments, and package ownership
+1. Keep the public repository description, homepage, topics, social preview, and default
+   branch protection current.
+2. Keep GitHub Pages on **GitHub Actions** and monitor documentation deployments.
+3. Keep private vulnerability reporting, secret scanning, push protection, Dependabot
+   alerts, and code scanning enabled where the organization plan permits them.
+4. Audit required checks and reviewed-pull-request enforcement for `main` after workflow
+   or ownership changes.
+5. Verify the PyPI project, trusted publisher, release environments, and package ownership
    are suitable for public contributors.
-7. Choose an organization-owned private contact for conduct reports before adding a
-   Contributor Covenant enforcement contact.
-
-These are repository or organization mutations and cannot be completed from source code.
+6. Keep the organization-owned `support@tesserix.app` conduct-reporting rota private,
+   monitored, and current.
 
 ### Priority 1: reliability and adaptability
 
@@ -165,40 +165,33 @@ the requirement, not because both projects share three initials.
 - [x] Repository made public
 - [x] Pages source enabled and deployed
 - [x] Public security settings verified
-- [ ] Organization-owned conduct-report contact chosen
+- [x] Organization-owned conduct-report contact chosen and published privately
 - [ ] PyPI/trusted-publisher ownership verified
-- [ ] First external clean-room onboarding completed
+- [x] First external clean-room onboarding completed
 
 ## Verification record
 
-Final verification on 2026-08-28 used Python 3.13.15:
+Final verification for the Google ADK/A2A bridge on 2026-08-28 used Python 3.13.15:
 
-- `make check`: passed all lint, formatting, import-boundary, strict typing, dependency,
-  API, event, replay, release, documentation, and test gates; 9,126 tests passed, 2 were
-  skipped, 125 were deselected by the coverage profile, and total coverage was 99.07%.
-- `make audit`, `make secrets`, and `make licences`: passed with no locked advisories,
-  credential-shaped values, or licence-policy violations.
-- `uv lock --check`: passed for the 134-package resolved development graph.
-- `uv build`: produced the source archive and universal Python wheel successfully. The
-  artifacts contain the Apache-2.0 licence, project metadata, typed-package marker, A2A
-  adapter, and module CLI; the source archive also contains the public README.
-- The exact wheel was installed with its `a2a` extra into a clean virtual environment.
-  Root imports, the offline getting-started tool loop, fake-transport calls through Groq,
-  xAI/Grok, and OpenRouter presets, and official A2A 1.x card serialization, custom
-  registry verification, and custom gateway-binding selection all passed without network
-  credentials.
+- `make check`: passed lint, formatting, import-boundary, strict typing, dependency,
+  admission, disclosure, API, event, replay, deprecation, release-note, documentation, and
+  complete test gates; 9,148 tests passed, 2 were skipped, 125 were deselected by the
+  coverage profile, and total coverage was 98.97%.
+- `make audit`, `make secrets`, `make licences`, `make deps`, and `make admissions-check`
+  passed with no locked advisories, credential-shaped values, licence-policy violations,
+  dependency-policy violations, or unrecorded consumer dependencies.
+- `uv lock --check` passed for the 153-package all-extras development graph. The inventory
+  now follows dependency-selected extras, so the official A2A HTTP server and psycopg
+  binary/pool packages carry their true profiles and package-specific licence decisions.
+- `uv build` produced the source archive and universal Python wheel. The wheel contains
+  the typed-package marker, A2A executor, and Google ADK helper; the source archive also
+  contains the Code of Conduct.
+- A fresh public clone of commit `0ae26f0` passed `uv sync --frozen --extra google-adk`,
+  the offline Google ADK/A2A example, all 11 focused bridge tests, and `uv build` without
+  relying on the development worktree.
+- The offline official HTTP round trip passed through the official client, Starlette
+  route, request handler, task store, Tesserix executor, runner, and final artifact. Google
+  ADK 2.8.0 accepted the same official card through its current non-legacy A2A path.
 
-Hosted verification on 2026-08-28 confirmed:
-
-- the repository is public with its documentation URL, description, and discovery topics;
-- the GitHub Pages workflow deployed successfully and the HTTPS page returned HTTP 200;
-- Security, CodeQL Python, CodeQL Actions, dependency graph, and documentation checks
-  completed successfully on the public commit;
-- secret scanning, push protection, Dependabot security updates, private vulnerability
-  reporting, read-only default workflow tokens, full-SHA action pinning, and the action
-  publisher allowlist are enabled; and
-- active branch and tag rulesets require reviewed, code-owned pull requests for `main`
-  with no direct-push bypass and restrict release-tag creation to repository admins.
-
-These source, artifact, and hosted checks do not replace the unchecked organization,
-PyPI, or external clean-room actions in the launch checklist.
+These source and artifact checks do not replace the unchecked PyPI trusted-publisher and
+package-ownership actions in the launch checklist.

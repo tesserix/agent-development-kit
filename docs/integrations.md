@@ -8,7 +8,8 @@ gateway SDK, or vendor model object.
 
 | Extra | Adds | Use it for |
 |---|---|---|
-| `a2a` | Official `a2a-sdk` | Official A2A Agent Cards and clients |
+| `a2a` | Official `a2a-sdk[http-server]` | Official A2A Agent Cards, clients, and server bridge |
+| `google-adk` | Google ADK with A2A support | Consume Tesserix A2A agents from Google ADK |
 | `mcp` | MCP SDK and JSON Schema validation | MCP clients, servers, and gateway routing |
 | `temporal` | Temporal Python SDK | Durable workflow-engine integration |
 | `graphiti` | Graphiti core | Temporal graph memory |
@@ -17,7 +18,7 @@ gateway SDK, or vendor model object.
 | `all` | Union of every extra above | Integration development and compatibility testing |
 
 ```bash
-uv sync --frozen --extra a2a --extra mcp --extra postgres --extra redis --extra temporal
+uv sync --frozen --extra google-adk --extra mcp --extra postgres --extra redis --extra temporal
 ```
 
 That command prepares a source checkout. Applications should add only the required extra
@@ -74,11 +75,27 @@ Install `tesserix-adk[a2a]` to use the official A2A SDK types. The adapter suppo
 - official client construction and transport negotiation;
 - custom gateway transports registered through the official client factory;
 - a vendor-neutral `A2ARegistry.resolve(name)` protocol;
-- an optional card-verification callback and agent-name substitution protection.
+- an optional card-verification callback and agent-name substitution protection;
+- an official `AgentExecutor` backed by `AgentRunner` with bounded text input and output;
+- verified principal binding for execution and cancellation;
+- submitted, working, completed, failed, rejected, and cancelled task mapping.
 
-The adapter does not yet turn `AgentRunner` into a complete official A2A server or bridge
-the full task lifecycle. See [Official A2A interoperability](a2a.md) for the exact support
-matrix and security responsibilities.
+The application mounts the official request handler and routes and injects the official
+`TaskStore`; the adapter does not take over the process or persistence. See
+[Official A2A interoperability](a2a.md) for the exact support matrix and security
+responsibilities.
+
+## Google ADK
+
+Install `tesserix-adk[google-adk]` to create Google ADK 2.8's current non-legacy
+`RemoteA2aAgent` from a Tesserix official card or card URL. This is an A2A boundary, not a
+model-provider coupling: the served Tesserix runner can continue using Groq, xAI/Grok,
+OpenRouter, Gemini, OpenAI, Anthropic, a local model, or any other conforming provider.
+
+The helper stores no token. Configure Google-side credentials and request interceptors in
+Google ADK, authenticate the server or gateway independently, and resolve only a verified
+core `Principal` into the Tesserix runner. Follow the [Google ADK bridge](google-adk.md)
+for the complete server and client sequence, limitations, and failure behavior.
 
 ## Tesserix typed peer protocol
 
@@ -146,6 +163,7 @@ Prefer the narrowest existing protocol:
 | State/checkpoint/lease/queue backend | Corresponding protocol and conformance suite |
 | Official A2A registry | `A2ARegistry` |
 | Official A2A gateway binding | Official SDK `TransportProducer` through `a2a_client_factory` |
+| Official A2A server execution | `A2APrincipalResolver` plus `a2a_agent_executor` |
 | Tesserix peer transport | `PeerTransport` or `StreamingPeerTransport` |
 | MCP route | `McpTransport` or AgentGateway configuration |
 

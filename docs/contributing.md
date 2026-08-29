@@ -1,5 +1,10 @@
 # Contributing
 
+All participation follows the
+[Code of Conduct](https://github.com/tesserix/agent-development-kit/blob/main/CODE_OF_CONDUCT.md).
+Report conduct incidents privately through the organization-owned channel named there,
+not in a public issue.
+
 ## Toolchain
 
 `uv` is the only resolver. The version is pinned in `pyproject.toml`
@@ -87,18 +92,19 @@ is a kit teams copy snippets out of instead of installing.
 
 | Extra | Installs | Import name |
 |---|---|---|
-| `a2a` | `a2a-sdk` | `a2a` |
+| `a2a` | `a2a-sdk[http-server]` | `a2a` |
+| `google-adk` | `google-adk[a2a]` | `google` |
 | `mcp` | `mcp` | `mcp` |
 | `temporal` | `temporalio` | `temporalio` |
 | `graphiti` | `graphiti-core` | `graphiti_core` |
 | `redis` | `redis` | `redis` |
 | `postgres` | `psycopg[binary,pool]` | `psycopg` |
-| `all` | the six above, as a self-reference | — |
+| `all` | the seven above, as a self-reference | — |
 
 `tests/test_extras.py` enforces the rule from both ends: the base requirement set is
 exactly those three, the locked base graph stays under a transitive package ceiling, and
 importing every module in the kit in a fresh interpreter must leave `sys.modules` free of
-all six SDKs — asserted that way so it holds in the `all` leg too, where the wheels are
+all seven SDKs — asserted that way so it holds in the `all` leg too, where the wheels are
 installed but must still go untouched.
 
 Each extra also gets its own CI leg, so an accidental unconditional import of `redis`
@@ -122,7 +128,7 @@ consumer to install something they already have would waste their afternoon.
 Two rules the tests hold that are easy to reason past:
 
 - `all` is a pure union
-  (`tesserix-adk[a2a,graphiti,mcp,postgres,redis,temporal]`). Listing
+  (`tesserix-adk[a2a,google-adk,graphiti,mcp,postgres,redis,temporal]`). Listing
   the packages directly lets `all` quietly become the only tested combination.
 - Extras gate *integrations*. They may never gate anything the kit promises
   unconditionally — redaction and budget enforcement are not opt-in, so `core`,
