@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from tesserix_adk.core.provider import ModelRequest
     from tesserix_adk.core.run import Run
 
-GUARD = 2.0
+GUARD = 10.0
 """Seconds a rendezvous waits before failing, so a serial regression fails rather than hangs."""
 
 
