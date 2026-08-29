@@ -165,7 +165,9 @@ frameworks so an existing agent can migrate incrementally.
 - Test matrix across supported Python versions; no network in unit tests.
 - Semantic versioning with a documented deprecation policy — this is a library other
   products depend on, so breaking changes have real cost.
-- Published to GitHub Packages / PyPI as `tesserix-adk` with optional extras per integration.
+- Published today as immutable, attested GitHub Release artifacts named `tesserix-adk`,
+  with optional extras per integration. PyPI uses the same artifacts after the protected
+  trusted publisher is enabled; GitHub Packages has no Python package registry.
 - Security: dependency and secret scanning, SBOM, signed releases, and a pinned lockfile.
 
 ## First consumer

@@ -67,9 +67,10 @@ class AgentDefinition(AdkModel, Generic[OutputT]):  # noqa: UP046 — the parame
         owner: Who answers for it.
         evaluation_suite: The suite this agent is checked against. Required: an agent
             nobody evaluates is an agent whose regressions are found by its users.
-        instructions_ref: Where the instructions came from, where a registry holds them
-            (#56). The text still lives on `agent.instructions`; this names its source so a
-            past run can be traced back to the entry, not just to the string.
+        instructions_ref: Optional source identifier for instructions managed outside the
+            built-in prompt registry. `PromptDefinition.instruct` records a concrete
+            `PromptRef` on the agent and run; this field lets another registry preserve its
+            own locator without resolving content inside the definition.
         memory_policy: The named memory policy this agent runs under. `None` means no
             memory, which is the safe reading rather than an unstated default.
         output_schema: The JSON schema of the answer shape. Derived from

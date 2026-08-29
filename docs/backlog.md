@@ -1,18 +1,27 @@
 # Backlog conventions
 
-Same model as the other tesserix planning repositories (`tesserix/hms`, `tesserix/TripBaba`):
-every work item is a GitHub issue in this repository written to one engineering-story
-template, classified by labels, and tracked on a single org-level project board.
+Every work item is a GitHub issue in this repository, classified by labels and optionally
+tracked on the organization project board. Public contributors choose the focused bug or
+feature form; maintainers can use the detailed engineering-story template for planned work
+that needs acceptance criteria, failure cases, and operational evidence.
 
-**Board:** [Agent Development Kit](https://github.com/orgs/tesserix/projects/14) (private).
+**Maintainer board:** organization project 14 (private). Board access is not required to
+report, discuss, or contribute to a public issue, so the public documentation does not link
+to the access-controlled view.
 
-## Issue template
+## Issue forms and story template
 
-All issues use [`.github/ISSUE_TEMPLATE/engineering-story.md`](https://github.com/tesserix/agent-development-kit/blob/main/.github/ISSUE_TEMPLATE/engineering-story.md):
-Situation → Task (story + in/out of scope) → Acceptance Criteria (primary, failure, edge
-cases) → Engineering Guardrails → Result → PR Evidence → Definition of Done → Exceptions.
+- [Bug report](https://github.com/tesserix/agent-development-kit/issues/new?template=bug.yml)
+  asks for an exact version, sanitized reproduction, expected behavior, and environment.
+- [Feature request](https://github.com/tesserix/agent-development-kit/issues/new?template=feature.yml)
+  starts with the user outcome, public contract, alternatives, compatibility, and failure
+  behavior.
+- [Engineering story](https://github.com/tesserix/agent-development-kit/blob/main/.github/ISSUE_TEMPLATE/engineering-story.md)
+  expands maintainer-planned work into Situation → Task → Acceptance Criteria → Engineering
+  Guardrails → Result → PR Evidence → Definition of Done → Exceptions.
 
-Because this is a **library other products depend on**, two rules apply beyond the usual:
+Because this is a **library other products depend on**, two rules apply to every relevant
+issue regardless of the form used:
 
 - **The failure scenario is mandatory and must be real** — provider outage or timeout, schema
   violation, tool raising, budget exceeded, cancellation mid-run, a retry causing a duplicate

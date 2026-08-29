@@ -12,11 +12,20 @@ from tools.policy_pages import SECURITY_PAGE, render_security
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
+MKDOCS = ROOT / "mkdocs.yml"
+CHANGELOG = ROOT / "CHANGELOG.md"
 FRAMEWORK_INTEROP = DOCS / "framework-interop.md"
 DOCS_MARKDOWN = tuple(sorted(DOCS.rglob("*.md")))
 MARKDOWN = tuple(sorted((*ROOT.glob("*.md"), *DOCS_MARKDOWN)))
 LINK = re.compile(r"\[[^]]*\]\(([^)]+)\)")
+NAV_LINK = re.compile(r"^\s*-\s+[^:]+:\s+([^\s]+\.md)\s*$", re.MULTILINE)
+RELEASE_VERSION = re.compile(r"(?<![\d.])v?(\d+\.\d+\.\d+)(?![\d.])")
 REPOSITORY_BLOB = "https://github.com/tesserix/agent-development-kit/blob/main/"
+RELEASE_INSTALL_PAGES = (
+    ROOT / "README.md",
+    DOCS / "getting-started.md",
+    DOCS / "keeping-current.md",
+)
 NAMING_SURFACES = (
     ROOT / "README.md",
     DOCS / "agent-lifecycle.md",
@@ -55,6 +64,28 @@ def local_links(path: Path) -> list[tuple[str, Path]]:
 def test_every_local_documentation_link_has_a_target(page: Path) -> None:
     broken = [raw for raw, target in local_links(page) if not target.exists()]
     assert broken == []
+
+
+def test_every_documentation_page_is_reachable_from_the_navigation() -> None:
+    navigation = MKDOCS.read_text(encoding="utf-8")
+    reachable = {(DOCS / target).resolve() for target in NAV_LINK.findall(navigation)}
+    pending = list(reachable)
+
+    while pending:
+        page = pending.pop()
+        if not page.exists():
+            continue
+        for _raw, target in local_links(page):
+            if target.suffix == ".md" and target.is_relative_to(DOCS) and target not in reachable:
+                reachable.add(target)
+                pending.append(target)
+
+    orphaned = [
+        page.relative_to(ROOT).as_posix()
+        for page in DOCS_MARKDOWN
+        if page.resolve() not in reachable
+    ]
+    assert orphaned == []
 
 
 @pytest.mark.parametrize("page", DOCS_MARKDOWN, ids=lambda path: path.relative_to(ROOT).as_posix())
@@ -118,6 +149,17 @@ def test_readme_offers_pip_and_uv_install_paths() -> None:
     assert "python -m pip install" in text
     assert "uv add" in text
     assert "import tesserix_adk" in text
+
+
+def test_release_install_examples_follow_the_latest_changelog_version() -> None:
+    changelog = CHANGELOG.read_text(encoding="utf-8")
+    latest = re.search(r"^## (\d+\.\d+\.\d+)$", changelog, re.MULTILINE)
+    assert latest is not None
+    expected = latest.group(1)
+
+    for page in RELEASE_INSTALL_PAGES:
+        versions = set(RELEASE_VERSION.findall(page.read_text(encoding="utf-8")))
+        assert versions == {expected}, page
 
 
 @pytest.mark.parametrize(

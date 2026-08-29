@@ -1,9 +1,10 @@
 # Running an agent as a durable workflow
 
-A run that takes minutes to hours lives in one process today. A pod roll, an OOM kill or a
-scale-down loses it, and the choices are to start from zero — paying for every model call a
-second time, and re-applying every tool call — or to hand-roll durable wiring, which is how
-two teams end up with two different answers to the same problem.
+An ordinary in-process `AgentRunner` run lives in one process unless checkpointing is
+configured. A pod roll, an OOM kill, or a scale-down otherwise loses the active work.
+`AgentWorkflow` is the durable path for runs that take minutes to hours: it makes model and
+tool calls replayable activities so a replacement worker does not pay for completed work or
+repeat an effect.
 
 `AgentWorkflow` drives the same loop as the in-process runtime, with one difference: it
 performs no I/O. Model calls and tool calls are the only execution points, and each one is
@@ -74,7 +75,8 @@ backups, and the durable engine itself.
 * **Token streaming is not available on the workflow path.** An activity returns once. A run
   that needs tokens as they arrive stays in process; `STREAMING_UNSUPPORTED` says so rather
   than the kit degrading quietly.
-* Replay-safety enforcement and the CI guard that catches non-deterministic workflow code are
-  a separate concern, as is compensation of partially applied work.
+* Replay-safety checks and compensation are separate package surfaces rather than implicit
+  `AgentWorkflow` behavior. Run the [replay-safety gate](replay-safety.md) in CI and declare
+  [compensation](compensation.md) for effects that need it.
 * The journal is held by the workflow object. Persisting it is the engine's job — under
   Temporal that is the event history, and under a test it is the object itself.

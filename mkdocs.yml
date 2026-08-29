@@ -36,6 +36,9 @@ nav:
   - Home: index.md
   - Start:
       - Getting started: getting-started.md
+      - Capability map: capabilities.md
+      - Command line: cli.md
+      - Runnable cookbook: cookbook/index.md
       - Build a custom agent: custom-agent.md
       - Agent lifecycle: agent-lifecycle.md
       - Complete reference agents: reference-agents.md

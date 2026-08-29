@@ -100,6 +100,7 @@ visible hole rather than a hidden one: `Attribution.unknowns` names it.
 
 - Reconstructing an `Agent` with a typed answer out of JSON needs the Python class; the
   stored definition names the schema but cannot rebuild the type.
-- The prompt registry itself is #56. `instructions_ref` names an entry; the text still
-  lives on `agent.instructions`.
+- `PromptDefinition.instruct` resolves a concrete prompt version onto the agent and run.
+  `instructions_ref` remains an optional locator for definitions sourced from another
+  registry; it does not resolve or fetch prompt text by itself.
 - There is no YAML or UI authoring surface. The typed object comes first.

@@ -59,9 +59,9 @@ class StopReason(StrEnum):
 class ToolDeclaration(AdkModel):
     """A tool as the model is told about it.
 
-    Provisional until the Tools epic lands a registry type (#130). It carries the JSON
-    Schema as data so that a declaration can be hashed into the prompt version and diffed
-    in review.
+    The tool registry derives this provider-boundary value from a validated tool. It keeps
+    the JSON Schema as data so a declaration can be hashed into the prompt version, diffed
+    in review, and translated without exposing the callable to a provider adapter.
 
     Args:
         name: What the model calls it.
