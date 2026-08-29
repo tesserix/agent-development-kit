@@ -12,6 +12,7 @@ classifiers = [
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Typing :: Typed",
 ]
 # Floors only. A speculative upper bound turns an upgrade the consuming product chose
@@ -207,6 +208,9 @@ markers = [
 # A warning the kit emits and nobody sees is a breakage already scheduled for a consumer.
 filterwarnings = [
   "error",
+  # google-genai 2.20.0 imports Python's private typing alias on 3.14. Remove this exact
+  # exception when https://github.com/googleapis/python-genai/issues/1640 is released.
+  "ignore:^'_UnionGenericAlias' is deprecated and slated for removal in Python 3\\.17$:DeprecationWarning:google\\.genai\\.types$",
   # pytest-asyncio installs a fresh event loop after every async test and never closes it.
   # Which test is running when the collector finalises one is chance, so as an error it
   # fails whichever test happened to allocate at the wrong moment.

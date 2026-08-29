@@ -40,6 +40,10 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ### Changed
 
+- Stable CPython 3.14 is now a required compatibility target and the default development
+  and release-smoke interpreter. The public floor remains Python 3.12, and free-threaded
+  3.14t stays advisory until the dependency graph and runtime concurrency contracts support
+  it fully.
 - The installed command and public interop prose use the unambiguous Tesserix Agent
   Development Kit and Google Agent Development Kit names. The ambiguous global `adk`
   command is not installed.

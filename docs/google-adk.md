@@ -31,10 +31,15 @@ reviewed tag as described in [Keep agents current safely](keeping-current.md); d
 depend on the moving `main` branch.
 
 The tested compatibility range is Google Agent Development Kit `>=2.8,<3`. The lockfile
-currently verifies 2.8.0 with `a2a-sdk` 1.1.2 on Python 3.12 and 3.13. The dedicated
-`google-adk` CI leg installs the extra independently, so an upstream 2.x incompatibility
-fails before release. A 3.x major remains closed until that suite and a public API review
-pass.
+currently verifies 2.8.0 with `a2a-sdk` 1.1.2 on the default CPython 3.14 runtime; the core
+compatibility matrix spans Python 3.12 through 3.14. The dedicated `google-adk` CI leg
+installs the extra independently, so an upstream 2.x incompatibility fails before release.
+A 3.x major remains closed until that suite and a public API review pass.
+
+Google GenAI 2.20.0 emits one import-time Python 3.14 deprecation from a private typing
+alias ([upstream issue 1640](https://github.com/googleapis/python-genai/issues/1640)). The
+test policy ignores only that exact warning and module until Google releases the fix; every
+other dependency and application deprecation remains fatal.
 
 ## Try the offline assembly
 

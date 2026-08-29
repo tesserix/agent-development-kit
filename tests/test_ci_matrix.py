@@ -8,10 +8,11 @@ from typing import Any
 
 import pytest
 
-from tests.ci_config import ci_jobs, ci_run_steps, pyproject, supported_minors
+from tests.ci_config import ROOT, ci_jobs, ci_run_steps, pyproject, supported_minors
 
 FAST_LANE = "test-fast"
 FULL_MATRIX = "test-matrix"
+TYPING = "typing-conformance"
 EXTRAS = "test-extras"
 ADVISORY = "test-advisory"
 NOTES = "release-notes"
@@ -25,6 +26,24 @@ def _matrix(job: str) -> dict[str, list[str]]:
 
 def test_the_full_matrix_covers_every_supported_minor() -> None:
     assert _matrix(FULL_MATRIX)["python-version"] == supported_minors()
+
+
+def test_typing_conformance_covers_every_supported_minor() -> None:
+    assert _matrix(TYPING)["python-version"] == supported_minors()
+
+
+def test_python_314_is_a_supported_release_target() -> None:
+    assert "3.14" in supported_minors()
+
+
+def test_the_default_development_python_is_the_newest_supported_minor() -> None:
+    selected = (ROOT / ".python-version").read_text(encoding="utf-8").strip()
+    assert selected == supported_minors()[-1]
+
+
+def test_local_sync_installs_integrations_required_by_the_quality_gate() -> None:
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    assert "\tuv sync --frozen --all-groups --all-extras\n" in makefile
 
 
 def test_the_fast_lane_runs_the_oldest_and_newest_supported_minors() -> None:
@@ -46,6 +65,11 @@ def test_the_full_matrix_does_not_stop_at_the_first_failing_leg() -> None:
 def test_the_advisory_leg_cannot_block_a_merge() -> None:
     """Pre-release and free-threaded interpreters are information, not a gate."""
     assert ci_jobs()[ADVISORY]["continue-on-error"] is True
+
+
+def test_supported_stable_minors_are_not_advisory() -> None:
+    advisory = set(_matrix(ADVISORY)["python-version"])
+    assert advisory.isdisjoint(supported_minors())
 
 
 def test_the_full_matrix_does_not_run_on_every_pull_request() -> None:

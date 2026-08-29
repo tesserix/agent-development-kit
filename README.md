@@ -35,8 +35,10 @@ networking, identity, and data.
 
 ## Five-minute start
 
-Python 3.12 or newer is required. PyPI trusted publishing is not enabled yet, so use the
-public source checkout for the current API rather than an unresolved package-index name:
+Python 3.12 or newer is required. Development and release verification use CPython 3.14,
+while CI keeps every declared minor from 3.12 through 3.14 compatible.
+PyPI trusted publishing is not enabled yet, so use the public source checkout for the
+current API rather than an unresolved package-index name:
 
 ```bash
 git clone https://github.com/tesserix/agent-development-kit.git

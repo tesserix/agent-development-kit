@@ -8,14 +8,15 @@ not in a public issue.
 ## Toolchain
 
 `uv` is the only resolver. The version is pinned in `pyproject.toml`
-(`[tool.uv] required-version`) and in CI, and the interpreter is pinned by
-`.python-version`, so a local resolution and a CI resolution produce the same
-dependency set. Do not use `pip`, `poetry` or `pip-tools` against this repository —
-they will resolve a different graph and the resulting failure will be attributed to
-whatever changed last rather than to the resolver.
+(`[tool.uv] required-version`) and in CI, and `.python-version` pins CPython 3.14 for local
+development and release tooling, so local and CI resolution produce the same dependency
+set. The published package keeps its Python 3.12 floor; required CI covers every declared
+minor through 3.14. Do not use `pip`, `poetry` or `pip-tools` against this repository — they
+will resolve a different graph and the resulting failure will be attributed to whatever
+changed last rather than to the resolver.
 
 ```bash
-make sync        # install the frozen dependency set
+make sync        # install the frozen contributor set, including integrations
 make check       # lint, typecheck, coverage — everything CI runs
 ```
 
@@ -244,10 +245,10 @@ production rather than in CI.
 
 | Lane | When | What |
 |------|------|------|
-| `test-fast` | every push and PR | Supported minors × Linux and macOS |
-| `test-matrix` | after merge, and on demand | Every supported minor |
-| `test-extras` | every push and PR | Bare install, each extra alone, and the union |
-| `test-advisory` | every push and PR, never blocking | 3.14 and 3.14t (free-threaded) |
+| `test-fast` | every push and PR | Oldest/newest supported minors (3.12/3.14) × Linux and macOS |
+| `test-matrix` | after merge, and on demand | Every supported minor from 3.12 through 3.14 |
+| `test-extras` | every push and PR | Bare install, each extra alone, and the union on 3.14 |
+| `test-advisory` | every push and PR, never blocking | 3.14t (free-threaded) |
 
 Supported minors come from the trove classifiers in `pyproject.toml`, and
 `tests/test_ci_matrix.py` fails when the matrix and the classifiers disagree in

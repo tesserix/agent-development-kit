@@ -171,17 +171,20 @@ def schema_for(
 def annotations_of(target: Callable[..., Any]) -> dict[str, Any]:
     """Resolve a callable's annotations, including those of a callable object's `__call__`.
 
-    `get_type_hints` refuses anything that is not a module, class, method or function, so
-    an instance with a `__call__` — the usual way to write a tool that holds a client —
-    would otherwise have no annotations at all rather than the ones it plainly declares.
+    Older Python versions make `get_type_hints` refuse a callable instance, while 3.14
+    returns an empty mapping. In both cases the annotations belong to the instance's
+    `__call__` method — the usual way to write a tool that holds a client.
 
     Raises:
         NameError: If an annotation names something that cannot be resolved.
     """
     try:
-        return get_type_hints(target, include_extras=True)
+        declared = get_type_hints(target, include_extras=True)
     except TypeError:
-        return get_type_hints(type(target).__call__, include_extras=True)
+        declared = {}
+    if declared or inspect.isroutine(target) or isinstance(target, type):
+        return declared
+    return get_type_hints(type(target).__call__, include_extras=True)
 
 
 def schema_hash(schema: Mapping[str, Any]) -> str:

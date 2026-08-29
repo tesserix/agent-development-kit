@@ -1,7 +1,8 @@
 # Getting started
 
 This path proves a complete agent/tool run locally, then replaces the fake model with a
-real provider. It needs Python 3.12 or newer and [uv](https://docs.astral.sh/uv/).
+real provider. It needs Python 3.12 or newer and [uv](https://docs.astral.sh/uv/). The
+repository uses CPython 3.14 by default and tests the full declared 3.12–3.14 range.
 
 ## 1. Install
 

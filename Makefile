@@ -4,8 +4,8 @@
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
 
-sync: ## Install the frozen dependency set
-	uv sync --frozen --all-groups
+sync: ## Install the frozen contributor dependency set, including integrations
+	uv sync --frozen --all-groups --all-extras
 
 lock: ## Regenerate uv.lock after editing pyproject.toml
 	uv lock
