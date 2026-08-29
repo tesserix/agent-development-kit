@@ -1,0 +1,64 @@
+name: Feature request
+description: Propose a scoped ADK capability or integration
+title: "[Feature]: "
+labels: [enhancement]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user outcome and boundary first. Provider, gateway, MCP, and A2A
+        proposals should name the wire contract and what happens when it fails.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and user outcome
+      description: Who is blocked today, and what should become possible?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core runtime
+        - Model provider or gateway
+        - Official A2A
+        - MCP
+        - Tools or guardrails
+        - State or durability
+        - Testing or evaluation
+        - Documentation or packaging
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Proposed contract
+      description: Describe public types, capabilities, trust boundaries, and failure behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include existing adapters or composition patterns that almost solve it.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Compatibility and verification
+      description: Name providers, protocol versions, conformance suites, or examples needed.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Scope checks
+      options:
+        - label: I searched existing issues, documentation, and the public API surface.
+          required: true
+        - label: The proposal keeps vendor SDK types behind an adapter boundary.
+          required: true
+        - label: The proposal does not require secrets or customer data in this issue.
+          required: true

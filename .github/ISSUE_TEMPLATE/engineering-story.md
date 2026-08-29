@@ -3,6 +3,7 @@ name: Engineering Story
 about: Standard template for all engineering work items
 title: "[Component or Service] Clear description of the required outcome"
 labels: []
+assignees: []
 ---
 
 ## Situation

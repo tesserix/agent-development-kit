@@ -84,7 +84,9 @@ def telemetry_sees_less_than_a_checkpoint() -> None:
     config = ProviderConfig(
         endpoint="https://llm.court.internal", api_key=SecretStr("a-fixture-not-a-credential")
     )
-    print(f"secret:   {telemetry_dump(config)['api_key']}")  # noqa: T201
+    if telemetry_dump(config)["api_key"] != "**********":
+        raise RuntimeError("telemetry redaction contract failed")
+    print("secret:   **********")  # noqa: T201
 
 
 def the_environment_is_the_one_edge_without_types() -> None:

@@ -1,0 +1,72 @@
+name: Bug report
+description: Report reproducible incorrect or unsafe ADK behaviour
+title: "[Bug]: "
+labels: [bug]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Tesserix ADK. Remove credentials, customer data,
+        private endpoints, and proprietary prompts from every field and reproduction.
+  - type: input
+    id: version
+    attributes:
+      label: ADK version or commit
+      description: Use the exact tag, locked version, or full commit SHA.
+      placeholder: v0.51.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core runtime
+        - Model provider or gateway
+        - Official A2A
+        - MCP
+        - Tools or guardrails
+        - State or durability
+        - Testing or evaluation
+        - Documentation or packaging
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behaviour
+      description: Include the complete sanitized error and what the agent did.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Prefer an offline fake provider or transport and the smallest runnable code.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Python, OS, provider protocol, model, gateway, and optional extras.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I searched existing issues and release notes.
+          required: true
+        - label: I removed secrets, personal data, customer content, and private endpoints.
+          required: true
+        - label: This is not a security vulnerability requiring private reporting.
+          required: true

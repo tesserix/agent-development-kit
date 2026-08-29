@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/tesserix/agent-development-kit/security/advisories/new
+    about: Do not disclose vulnerabilities, credentials, or exploit details in a public issue.
+  - name: Read the documentation
+    url: https://tesserix.github.io/agent-development-kit/
+    about: Start with onboarding, provider, integration, A2A, testing, and upgrade guides.

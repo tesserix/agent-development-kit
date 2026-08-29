@@ -10,6 +10,7 @@ cutting off what is still in flight.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from typing import Any
 
 import httpx
@@ -17,7 +18,7 @@ import pytest
 
 from tesserix_adk.core import Message, ModelRequest, TextPart
 from tesserix_adk.core.errors import PoolExhaustedError, ProviderTimeoutError
-from tesserix_adk.models.pool import ClientPool, PoolConfig
+from tesserix_adk.models.pool import ClientPool, PoolConfig, digest_of
 from tesserix_adk.models.providers import OpenAIProvider
 from tesserix_adk.testing import FakeClock, HttpCassette, HttpReplay
 from tesserix_adk.testing.http_cassette import HttpExchange
@@ -33,6 +34,13 @@ def transport(handler: Any = None) -> httpx.MockTransport:
 def pool(**overrides: Any) -> ClientPool:
     fields: dict[str, Any] = {"config": PoolConfig(), "transport": transport()}
     return ClientPool(**{**fields, **overrides})
+
+
+def test_a_pool_key_is_not_an_unkeyed_hash_of_the_credential() -> None:
+    credential = "synthetic-low-entropy-fixture"
+    guessable = hashlib.sha256(credential.encode()).hexdigest()[:16]
+
+    assert digest_of(credential) != guessable
 
 
 class TestReuseAcrossRuns:
