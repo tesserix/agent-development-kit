@@ -83,6 +83,7 @@ from tesserix_adk.runtime.estimate import (
     approval_for,
     calibrate,
     estimate_run,
+    estimate_run_typed,
     refuse_unaffordable,
 )
 from tesserix_adk.runtime.handoff import (
@@ -168,7 +169,13 @@ from tesserix_adk.runtime.retry import RetryPlan
 from tesserix_adk.runtime.spend import budgeted_stream
 from tesserix_adk.runtime.state import MemoryStateStore
 from tesserix_adk.runtime.structured import OutputContract, unwrap_fenced
-from tesserix_adk.runtime.supervisor import DelegationResult, Roster, Specialist, Supervisor
+from tesserix_adk.runtime.supervisor import (
+    AddressableSubagent,
+    DelegationResult,
+    Roster,
+    Specialist,
+    Supervisor,
+)
 from tesserix_adk.runtime.suspension import (
     ApprovalDeferred,
     DeferringGate,
@@ -183,6 +190,7 @@ __all__ = [
     "PROMPT_LAYERS",
     "TIMEOUT_IDENTITY",
     "ActivityAttempts",
+    "AddressableSubagent",
     "AgentPlanner",
     "AgentRunner",
     "Aggregate",
@@ -325,6 +333,7 @@ __all__ = [
     "decode_progress",
     "drive",
     "estimate_run",
+    "estimate_run_typed",
     "fan_out",
     "fingerprint_of",
     "handed_back",

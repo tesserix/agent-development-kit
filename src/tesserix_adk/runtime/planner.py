@@ -324,7 +324,13 @@ class AgentPlanner:
 
     __slots__ = ("_agent", "_delegation", "_runner")
 
-    def __init__(self, runner: AgentRunner, agent: Agent[Plan], *, delegation: Delegation) -> None:
+    def __init__(
+        self,
+        runner: AgentRunner,
+        agent: Agent[Plan],
+        *,
+        delegation: Delegation,
+    ) -> None:
         if agent.tools:
             raise ConfigurationError(
                 f"{agent.name} holds {', '.join(agent.tools)}, so it could dispatch what it "

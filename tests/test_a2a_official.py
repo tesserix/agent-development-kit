@@ -20,7 +20,7 @@ from tesserix_adk.adapters import (
     a2a_client_factory,
     a2a_client_from_registry,
 )
-from tesserix_adk.core import Agent, AgentDefinition, Owner
+from tesserix_adk.core import Agent, AgentDefinition, Owner, TaskClass
 
 if TYPE_CHECKING:
     from a2a.client import ClientConfig
@@ -34,7 +34,7 @@ def definition(name: str = "trip-planner") -> AgentDefinition[Any]:
             name=name,
             version="2.1.0",
             instructions="Plan travel without exposing this private instruction.",
-            task_class="planning",
+            task_class=TaskClass("planning"),
             free_text=True,
             scopes=("trips:read",),
         ),

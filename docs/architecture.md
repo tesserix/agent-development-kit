@@ -4,6 +4,10 @@ How `tesserix-adk` is layered, and why the layers sit where they do. Read
 [`design-brief.md`](design-brief.md) first — the eight rules there are the reason
 this shape exists.
 
+For the larger control-plane, execution-plane and tool-plane design from agent source
+through evaluations, registry approval, canary, runtime, monitoring and feedback, see
+[Agent lifecycle and platform architecture](agent-lifecycle.md).
+
 ---
 
 ## 1. The layers

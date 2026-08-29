@@ -14,6 +14,18 @@ from tesserix_adk.adapters.a2a import (
     a2a_client_factory,
     a2a_client_from_registry,
 )
+from tesserix_adk.adapters.agent_exports import (
+    ExportDescriptorDriftError,
+    ExportedA2AAgent,
+    ExportedAgentResult,
+    ExportedAgentTool,
+    ExportErrorCode,
+    ExportErrorEnvelope,
+    ExportInvocation,
+    export_as_a2a,
+    export_as_mcp_tool,
+    export_as_tool,
+)
 from tesserix_adk.adapters.agentgateway import McpStreamableHttpTransport, agent_gateway_tools
 from tesserix_adk.adapters.approvals import (
     DEFAULT_APPROVAL_SUBJECT,
@@ -70,7 +82,22 @@ from tesserix_adk.adapters.dead_letters import (
     ReplayReport,
 )
 from tesserix_adk.adapters.eventing import payload_of, publishing
-from tesserix_adk.adapters.google_adk import google_adk_remote_agent
+from tesserix_adk.adapters.foreign_agents import (
+    ForeignAgentContext,
+    ForeignAgentReply,
+    WrappedAgentPolicy,
+    WrappedSubagent,
+    wrap_agent_as_subagent,
+    wrap_agent_as_tool,
+)
+from tesserix_adk.adapters.google_adk import (
+    GOOGLE_ADK_CONTEXT_KEY,
+    GoogleAdkAgentInvoker,
+    google_adk_remote_agent,
+    import_google_adk_tool,
+    import_google_adk_toolset,
+    wrap_google_adk_agent,
+)
 from tesserix_adk.adapters.graft import GraftMcpBackend, GraftSubprocessBackend
 from tesserix_adk.adapters.grants import (
     DEFAULT_GRANT_TABLES,
@@ -106,6 +133,13 @@ from tesserix_adk.adapters.idempotent_events import (
     DEFAULT_MAX_ATTEMPTS,
     IdempotentConsumer,
     dedupe_key,
+)
+from tesserix_adk.adapters.interop import (
+    ForeignTool,
+    ToolImportPolicy,
+    ToolTranslationError,
+    import_tool,
+    import_toolset,
 )
 from tesserix_adk.adapters.isolation import (
     ADAPTER_GUARANTEES,
@@ -316,6 +350,7 @@ __all__ = [
     "EXPECTED_OUTBOX_SCHEMA",
     "EXPECTED_SCHEMA",
     "EXTRACTION_INSTRUCTION",
+    "GOOGLE_ADK_CONTEXT_KEY",
     "GRANT_SCHEMA_VERSION",
     "IN_FLIGHT",
     "MAX_NAME_LENGTH",
@@ -355,12 +390,23 @@ __all__ = [
     "EntityExtractor",
     "ErasureCheck",
     "ErasureSweep",
+    "ExportDescriptorDriftError",
+    "ExportErrorCode",
+    "ExportErrorEnvelope",
+    "ExportInvocation",
+    "ExportedA2AAgent",
+    "ExportedAgentResult",
+    "ExportedAgentTool",
     "ExportedSession",
     "ExtractedEdge",
     "ExtractedNode",
     "ExtractedSubgraph",
     "ExtractionCharge",
     "ExtractionMeter",
+    "ForeignAgentContext",
+    "ForeignAgentReply",
+    "ForeignTool",
+    "GoogleAdkAgentInvoker",
     "GraftMcpBackend",
     "GraftSubprocessBackend",
     "GrantTables",
@@ -467,12 +513,16 @@ __all__ = [
     "SurfaceEntry",
     "SurfacePin",
     "TenantAuthority",
+    "ToolImportPolicy",
     "ToolSurface",
+    "ToolTranslationError",
     "TransportAuthorizationError",
     "TransportSession",
     "WebSocketBridge",
     "WebSocketLike",
     "WebhookApprovals",
+    "WrappedAgentPolicy",
+    "WrappedSubagent",
     "a2a_agent_executor",
     "a2a_card_for",
     "a2a_client_factory",
@@ -483,6 +533,9 @@ __all__ = [
     "container_runtime",
     "dedupe_key",
     "export_a2a_agent",
+    "export_as_a2a",
+    "export_as_mcp_tool",
+    "export_as_tool",
     "export_google_adk_agent",
     "export_langgraph_agent",
     "export_oci_agent",
@@ -490,6 +543,10 @@ __all__ = [
     "export_tesserix_agent",
     "fingerprint",
     "google_adk_remote_agent",
+    "import_google_adk_tool",
+    "import_google_adk_toolset",
+    "import_tool",
+    "import_toolset",
     "namespaced",
     "open_graphiti",
     "partitioned",
@@ -503,4 +560,7 @@ __all__ = [
     "subject_for",
     "transport_for",
     "wire_payload",
+    "wrap_agent_as_subagent",
+    "wrap_agent_as_tool",
+    "wrap_google_adk_agent",
 ]

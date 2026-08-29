@@ -20,7 +20,7 @@ from tesserix_adk.a2a import (
     card_for,
 )
 from tesserix_adk.cli import card_main
-from tesserix_adk.core import Agent, AgentDefinition, Owner
+from tesserix_adk.core import Agent, AgentDefinition, Owner, TaskClass
 from tesserix_adk.core.config import ConcurrencyConfig, DeadlineConfig
 from tesserix_adk.tools import tool
 
@@ -81,7 +81,7 @@ def _definition() -> AgentDefinition[Any]:
         version="2.1.0",
         instructions="Book the trip.",
         free_text=True,
-        task_class="planning",
+        task_class=TaskClass("planning"),
         tools=(
             "card_price_leg",
             "card_refund",

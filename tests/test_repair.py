@@ -71,7 +71,10 @@ def runner(*responses: ModelResponse, **overrides: object) -> AgentRunner:
     return AgentRunner(**{**fields, **overrides})  # type: ignore[arg-type]
 
 
-async def start[OutputT: BaseModel](runner_: AgentRunner, agent_: Agent[OutputT]) -> Run[OutputT]:
+async def start[OutputT: BaseModel](
+    runner_: AgentRunner,
+    agent_: Agent[OutputT],
+) -> Run[OutputT]:
     return await runner_.run(agent_, "plan a trip", tenant="acme", run_id="run_1")
 
 

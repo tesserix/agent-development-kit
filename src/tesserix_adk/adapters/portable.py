@@ -269,7 +269,12 @@ def export_tesserix_agent(
     visibility: Literal["private", "internal", "public"] = "private",
     labels: Mapping[str, str] | None = None,
 ) -> PortableAgentManifest:
-    """Export a reviewed Tesserix definition without silently moving dependencies."""
+    """Export a reviewed Tesserix definition without silently moving dependencies.
+
+    Raises:
+        PortableExportError: A declared tool lacks a pinned version, an undeclared tool
+            is supplied, or a fixed model has no provider identity.
+    """
     agent = definition.agent
     tool_versions = tool_versions or {}
     declared_tools = set(agent.tools)
@@ -333,7 +338,12 @@ def export_a2a_agent(
     framework: str = "a2a",
     visibility: Literal["private", "internal", "public"] = "private",
 ) -> PortableAgentManifest:
-    """Export a generic or official A2A card as a runnable Registry Agent."""
+    """Export a generic or official A2A card as a runnable Registry Agent.
+
+    Raises:
+        PortableExportError: Required card identity is absent or its skills are not a
+            list-shaped collection.
+    """
     public = _as_mapping(card)
     name = _text(public.get("name") or public.get("agent"), "A2A card name")
     version = _text(public.get("version"), "A2A card version")

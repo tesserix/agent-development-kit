@@ -1,4 +1,4 @@
-"""`adk prompt` — see what changed in a prompt, and put it back.
+"""`tesserix-adk prompt` — inspect and restore prompt versions.
 
 When behaviour changes after a release the first question is whether the prompt changed and
 how to undo it. Answering that today means reading a code diff across repositories with no
@@ -11,8 +11,8 @@ digest — optionally as the model would receive it. `rollback` repoints an alia
 earlier immutable version, refusing a target the current call sites cannot render, and
 recording who did it and from where. `list` and `show` say what exists.
 
-No third-party argument parser and no console-script entry point: a kit that installs a
-global `adk` binary fights with whatever the consumer already ships. Where prompts and
+This application-wired command is not part of the self-contained dispatcher. Applications
+may expose it under the project-qualified command. Where prompts and
 aliases are kept is the deployment's business, so it supplies both and this supplies the
 diffing, the safety checks and the exit codes.
 """
@@ -332,7 +332,9 @@ def _write(writer: TextIO, payload: Mapping[str, object], text: str, machine: bo
 
 def _parser() -> argparse.ArgumentParser:
     """The `prompt` command line."""
-    parser = argparse.ArgumentParser(prog="adk prompt", description="inspect and revert prompts")
+    parser = argparse.ArgumentParser(
+        prog="tesserix-adk prompt", description="inspect and revert prompts"
+    )
     commands = parser.add_subparsers(dest="command", required=True)
 
     for name, what in (

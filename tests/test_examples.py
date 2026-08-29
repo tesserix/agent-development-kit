@@ -6,6 +6,7 @@ working tree, so a broken example fails at review instead of after the release.
 
 from __future__ import annotations
 
+import ast
 import subprocess
 import sys
 from pathlib import Path
@@ -45,6 +46,20 @@ def test_the_getting_started_example_runs_a_custom_agent_through_the_public_surf
         cwd=ROOT,
     )
     assert result.returncode == 0, result.stderr
-    assert "agent: weather-agent" in result.stdout
-    assert "tool: Melbourne is 21°C and clear" in result.stdout
-    assert "answer: Pack a light jacket." in result.stdout
+    assert "trace: 0 run_started" in result.stdout
+    assert "tool_call_started" in result.stdout
+    assert "run_completed" in result.stdout
+    assert "suggestion='Pack a light jacket.'" in result.stdout
+
+
+def test_the_getting_started_application_stays_roughly_twenty_statements() -> None:
+    """The first page must stay small even when imports and docstrings become verbose."""
+    source = (EXAMPLES / "getting_started.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    application = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.stmt)
+        and not isinstance(node, (ast.Import, ast.ImportFrom, ast.Expr, ast.Pass))
+    ]
+    assert len(application) <= 24

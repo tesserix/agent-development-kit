@@ -26,6 +26,7 @@ from tesserix_adk.core.errors import SchemaViolationError
 
 __all__ = [
     "AdkModel",
+    "InputT",
     "NoOutput",
     "OutputT",
     "Sensitive",
@@ -68,9 +69,11 @@ class NoOutput(AdkModel):
     """
 
 
-# PEP 696 defaults, so an agent that declares no answer type needs no annotation and every
-# existing bare `Run` annotation still reads. Inline syntax for this is 3.13; the floor is
-# 3.12, so it comes from typing_extensions until that moves. See docs/typing.md.
+# PEP 696 defaults, so an agent that declares no boundary types needs no annotation and
+# every existing bare `Agent` or `Run` annotation still reads. Inline syntax for this is
+# 3.13; the floor is 3.12, so it comes from typing_extensions until that moves. See
+# docs/typing.md.
+InputT = TypeVar("InputT", bound=str | BaseModel, default=str)
 OutputT = TypeVar("OutputT", bound=BaseModel, default=NoOutput)
 
 

@@ -37,8 +37,12 @@ nav:
   - Start:
       - Getting started: getting-started.md
       - Build a custom agent: custom-agent.md
+      - Agent lifecycle: agent-lifecycle.md
+      - Complete reference agents: reference-agents.md
+      - Migrate an existing agent: migration.md
       - Provider recipes: provider-recipes.md
       - Integrations and gateways: integrations.md
+      - Framework interoperability: framework-interop.md
       - Official A2A: a2a.md
       - Google ADK bridge: google-adk.md
       - Testing: testing.md
@@ -69,16 +73,44 @@ nav:
       - Observability: auto-instrumentation.md
       - Evaluation datasets: eval-datasets.md
       - Release verification: verifying.md
+  - API reference:
+      - Overview: reference/index.md
+      - Protocol implementations: reference/protocols.md
+      - Package root: reference/root.md
+      - Core: reference/core.md
+      - Runtime: reference/runtime.md
+      - Models: reference/models.md
+      - Tools: reference/tools.md
+      - Guardrails: reference/guardrails.md
+      - Memory: reference/memory.md
+      - RAG: reference/rag.md
+      - Workflows: reference/workflows.md
+      - Evaluations: reference/evals.md
+      - A2A: reference/a2a.md
+      - MCP: reference/mcp.md
+      - Adapters: reference/adapters.md
+      - Observability: reference/observability.md
+      - Testing: reference/testing.md
+      - CLI: reference/cli.md
+      - Code intelligence: reference/code_intelligence.md
+      - Experimental: reference/experimental.md
   - Project:
       - Public-readiness review: public-readiness-review.md
       - Repository governance: repository-governance.md
       - Stability: stability.md
+      - Versioning: versioning.md
+      - Deprecations: deprecations.md
+      - Security policy: security-policy.md
       - Detailed contribution guide: contributing.md
       - Code of Conduct: https://github.com/tesserix/agent-development-kit/blob/main/CODE_OF_CONDUCT.md
       - Releasing: releasing.md
 
 plugins:
   - search
+
+extra:
+  version:
+    provider: mike
 
 markdown_extensions:
   - admonition
@@ -91,7 +123,9 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: .
+      check_paths: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

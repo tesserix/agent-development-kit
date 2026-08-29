@@ -62,6 +62,13 @@ Cancellation is both checked before each activity and *raced against* the one in
 streaming completion nobody is listening to still consumes tokens and still bills. Pass the
 runtime's `CancellationToken` as `token`.
 
+## Deployment boundary
+
+Worker charts and Temporal namespace provisioning live in `tesserix-k8s`, not here. This
+repository defines the replay-safe activity and journal contracts; the organisation's
+cluster chart repository owns workload identity, network policy, scaling, probes, secrets,
+backups, and the durable engine itself.
+
 ## Known limitations
 
 * **Token streaming is not available on the workflow path.** An activity returns once. A run
@@ -69,6 +76,5 @@ runtime's `CancellationToken` as `token`.
   than the kit degrading quietly.
 * Replay-safety enforcement and the CI guard that catches non-deterministic workflow code are
   a separate concern, as is compensation of partially applied work.
-* Worker charts and Temporal namespace provisioning live in `tesserix-k8s`, not here.
 * The journal is held by the workflow object. Persisting it is the engine's job — under
   Temporal that is the event history, and under a test it is the object itself.

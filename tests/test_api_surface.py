@@ -135,6 +135,11 @@ def test_a_type_alias_is_described_by_its_members_not_as_a_function() -> None:
     assert collect_surface([module]) == {"tesserix_adk.memory.Kind": described}
 
 
+def test_vendor_names_in_a_closed_string_alias_are_values_not_type_leaks() -> None:
+    surface = {"tesserix_adk.core.Provider": "Provider = typing.Literal['openai', 'anthropic']"}
+    assert find_leaks(surface) == []
+
+
 def test_a_name_promised_but_absent_is_not_recorded_as_surface() -> None:
     """`__all__` can outrun the code during a refactor; the snapshot must not lie."""
     module = _module("tesserix_adk.memory", __all__=["gone"])

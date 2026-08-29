@@ -63,6 +63,8 @@ class Credential:
         if found is None or not found.strip():
             raise ConfigurationError(
                 f"{self.variable} is not set. Provider keys come from the environment or "
-                f"an injected secret provider, never from a config file in the repository."
+                f"an injected secret provider, never from a config file in the repository. "
+                "For a credential-free offline run, use "
+                "tesserix_adk.testing.FakeModelProvider as shown in Getting started."
             )
         return found

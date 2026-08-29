@@ -16,6 +16,34 @@ run = await runner.run(definition, "what does page 12 say?", tenant="acme")
 
 Worked through with no network: `examples/agent_definition.py`.
 
+For a structured application request, use the separately named definition and runner
+surface so the stable `Agent[OutputT]` meaning does not change:
+
+```python
+from tesserix_adk.core import Owner, TypedAgent, TypedAgentDefinition
+
+
+typed_definition = TypedAgentDefinition.declared_typed(
+    agent=TypedAgent(
+        name="clerk",
+        instructions=text,
+        model="llama-3.1-8b",
+        input_type=Query,
+        output_type=CitedAnswer,
+    ),
+    owner=Owner(team="search", contact="search@example.gov", service="aequitas-search"),
+    evaluation_suite="suites/clerk.yaml",
+    known_tools=registry.names(),
+)
+run = await runner.run_typed(
+    typed_definition,
+    Query(question="what does page 12 say?"),
+    tenant="acme",
+)
+```
+
+`TypedAgentDefinition` includes the input JSON Schema in its content-derived revision.
+
 ## Why the agent alone is not enough
 
 An agent constructed inline is an agent whose model policy, tool allowlist, limits and

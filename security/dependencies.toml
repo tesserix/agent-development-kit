@@ -106,3 +106,17 @@ Remove when 1.0 ships and the graphiti extra's suite is green against it, in a c
 that also states whether the floor moves.
 """
 owner = "@sam123ben"
+
+[[cap]]
+package = "google-adk"
+cap = "3"
+incompatibility = """
+The interop shim targets Google Agent Development Kit 2.x FunctionTool, BaseAgent and
+official A2A surfaces. A 3.x major may change those contracts and cannot be claimed until
+the shim's offline compatibility suite passes against it.
+"""
+trigger = """
+Raise or remove this cap after the google-adk extras leg passes against 3.x and its public
+interop changes are reviewed and documented.
+"""
+owner = "@sam123ben"

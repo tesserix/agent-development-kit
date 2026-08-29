@@ -1,0 +1,187 @@
+format = 1
+
+[[route]]
+id = "agent"
+prefix = "tesserix_adk.Agent"
+recipe = "examples/getting_started.py"
+page = "docs/cookbook/index.md"
+rule = "structured output and scoped tenant context"
+
+[[route]]
+id = "tool"
+prefix = "tesserix_adk.tools.Tool"
+recipe = "examples/tools.py"
+page = "docs/cookbook/index.md"
+rule = "validated arguments before dispatch"
+
+[[route]]
+id = "allowlist"
+prefix = "tesserix_adk.tools.ToolRegistry"
+recipe = "examples/tool_allowlist.py"
+page = "docs/cookbook/index.md"
+rule = "tools are unavailable until explicitly allowed"
+
+[[route]]
+id = "memory-working"
+prefix = "tesserix_adk.memory.MemoryKind.WORKING"
+recipe = "examples/memory.py"
+page = "docs/cookbook/index.md"
+rule = "working memory is short-lived and tenant scoped"
+
+[[route]]
+id = "memory-profile"
+prefix = "tesserix_adk.memory.MemoryKind.PROFILE"
+recipe = "examples/memory.py"
+page = "docs/cookbook/index.md"
+rule = "profile memory has an erasure path"
+
+[[route]]
+id = "memory-episodic"
+prefix = "tesserix_adk.memory.MemoryKind.EPISODIC"
+recipe = "examples/memory.py"
+page = "docs/cookbook/index.md"
+rule = "episodic memory carries time and provenance"
+
+[[route]]
+id = "memory-semantic"
+prefix = "tesserix_adk.memory.MemoryKind.SEMANTIC"
+recipe = "examples/memory.py"
+page = "docs/cookbook/index.md"
+rule = "semantic memory remains untrusted retrieved data"
+
+[[route]]
+id = "guardrails"
+prefix = "tesserix_adk.guardrails"
+recipe = "examples/guardrails.py"
+page = "docs/cookbook/index.md"
+rule = "ordered checks fail closed"
+
+[[route]]
+id = "budget"
+prefix = "tesserix_adk.core.Budget"
+recipe = "examples/budget.py"
+page = "docs/cookbook/index.md"
+rule = "ceilings are enforced before dispatch"
+
+[[route]]
+id = "mcp-client"
+prefix = "tesserix_adk.adapters.McpClient"
+recipe = "examples/mcp_client.py"
+page = "docs/cookbook/index.md"
+rule = "remote tool content enters through a trust boundary"
+extra = "mcp"
+
+[[route]]
+id = "mcp-server"
+prefix = "tesserix_adk.adapters.McpServer"
+recipe = "examples/mcp_server.py"
+page = "docs/cookbook/index.md"
+rule = "server calls derive identity at the boundary"
+extra = "mcp"
+
+[[route]]
+id = "peer"
+prefix = "tesserix_adk.a2a"
+recipe = "examples/peer_invocation.py"
+page = "docs/cookbook/index.md"
+rule = "delegated authority only narrows"
+
+[[route]]
+id = "retrieval"
+prefix = "tesserix_adk.rag"
+recipe = "examples/retrieval.py"
+page = "docs/cookbook/index.md"
+rule = "retrieved instructions are data, never policy"
+
+[[route]]
+id = "workflow"
+prefix = "tesserix_adk.workflows"
+recipe = "examples/durable_run.py"
+page = "docs/cookbook/index.md"
+rule = "durable effects are replay-safe and idempotent"
+extra = "temporal"
+
+[[route]]
+id = "evals"
+prefix = "tesserix_adk.evals"
+recipe = "examples/eval_suite.py"
+page = "docs/cookbook/index.md"
+rule = "quality gates use typed outcomes rather than plausible prose"
+
+[[route]]
+id = "package-adapters"
+prefix = "tesserix_adk.adapters"
+recipe = "examples/transports.py"
+page = "docs/cookbook/index.md"
+rule = "integration boundaries validate and propagate context"
+
+[[route]]
+id = "package-cli"
+prefix = "tesserix_adk.cli"
+recipe = "examples/local_trace_view.py"
+page = "docs/cookbook/index.md"
+rule = "recorded diagnostics are redacted before writing"
+
+[[route]]
+id = "package-code-intelligence"
+prefix = "tesserix_adk.code_intelligence"
+recipe = "examples/code_intelligence.py"
+page = "docs/cookbook/index.md"
+rule = "source evidence carries provenance"
+
+[[route]]
+id = "package-core"
+prefix = "tesserix_adk.core"
+recipe = "examples/typed_primitives.py"
+page = "docs/cookbook/index.md"
+rule = "boundary values are typed and closed"
+
+[[route]]
+id = "package-mcp"
+prefix = "tesserix_adk.mcp"
+recipe = "examples/mcp_auth_context.py"
+page = "docs/cookbook/index.md"
+rule = "MCP identity is verified rather than accepted from payload metadata"
+extra = "mcp"
+
+[[route]]
+id = "package-models"
+prefix = "tesserix_adk.models"
+recipe = "examples/providers.py"
+page = "docs/cookbook/index.md"
+rule = "providers are substitutable behind declared capabilities"
+
+[[route]]
+id = "package-observability"
+prefix = "tesserix_adk.observability"
+recipe = "examples/auto_instrumentation.py"
+page = "docs/cookbook/index.md"
+rule = "telemetry is attributed and redacted"
+
+[[route]]
+id = "package-runtime"
+prefix = "tesserix_adk.runtime"
+recipe = "examples/run_loop.py"
+page = "docs/cookbook/index.md"
+rule = "all effects converge on the runtime boundary"
+
+[[route]]
+id = "package-testing"
+prefix = "tesserix_adk.testing"
+recipe = "examples/fake_model_provider.py"
+page = "docs/cookbook/index.md"
+rule = "tests use deterministic fakes with no network"
+
+[[route]]
+id = "package-tools"
+prefix = "tesserix_adk.tools"
+recipe = "examples/tools.py"
+page = "docs/cookbook/index.md"
+rule = "tools validate before side effects"
+
+[[route]]
+id = "root"
+prefix = "tesserix_adk"
+recipe = "examples/getting_started.py"
+page = "docs/cookbook/index.md"
+rule = "the public starting point is typed and fail closed"

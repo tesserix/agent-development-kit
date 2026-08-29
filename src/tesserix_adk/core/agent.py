@@ -15,10 +15,11 @@ decisions behind these types are in `docs/primitives.md`.
 
 from __future__ import annotations
 
+import json
 from enum import StrEnum
-from typing import Generic, Self
+from typing import Generic, Self, cast
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from tesserix_adk.core.budget import BudgetLimits  # noqa: TC001 — pydantic needs it at runtime
 from tesserix_adk.core.capabilities import CapabilitySet  # noqa: TC001
@@ -31,10 +32,11 @@ from tesserix_adk.core.config import (  # noqa: TC001
 )
 
 # Runtime import, not type-checking only: pydantic resolves the annotation at class creation.
-from tesserix_adk.core.models import AdkModel, OutputT
+from tesserix_adk.core.errors import SchemaViolationError
+from tesserix_adk.core.models import AdkModel, InputT, OutputT
 from tesserix_adk.core.prompts import PromptRef  # noqa: TC001
 
-__all__ = ["Agent", "ToolFailurePolicy"]
+__all__ = ["Agent", "ToolFailurePolicy", "TypedAgent"]
 
 
 class ToolFailurePolicy(StrEnum):
@@ -49,7 +51,7 @@ class ToolFailurePolicy(StrEnum):
     FAIL_RUN = "fail_run"
 
 
-class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax cannot carry the parameter's default before 3.13
+class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — the parameter carries a default
     """A declarative description of an agent.
 
     Args:
@@ -205,3 +207,43 @@ class Agent(AdkModel, Generic[OutputT]):  # noqa: UP046 — PEP 695 syntax canno
                 f"A retry policy for a tool the agent cannot call protects nothing"
             )
         return self
+
+
+class TypedAgent(Agent[OutputT], Generic[InputT, OutputT]):  # noqa: UP046
+    """An agent with an application input type in addition to its output type.
+
+    `Agent[OutputT]` remains the stable string-input contract. Use this additive type
+    with `AgentRunner.run_typed` or `AgentRunner.stream_typed` when an application hands
+    the runtime a Pydantic model instead of text.
+    """
+
+    input_type: type[InputT] = Field(default=cast("type[InputT]", str), exclude=True)
+
+    @model_validator(mode="after")
+    def _input_is_a_supported_boundary(self) -> Self:
+        declared = self.input_type
+        if declared is not str and not issubclass(declared, BaseModel):
+            raise ValueError("input_type must be str or a Pydantic BaseModel subclass")
+        return self
+
+    def render_input(self, value: InputT) -> str:
+        """Validate and deterministically render one application input."""
+        if not isinstance(value, self.input_type):
+            expected = self.input_type.__name__
+            actual = type(value).__name__
+            problem = f"expected {expected}, got {actual}"
+            raise SchemaViolationError(
+                f"{expected} rejected the agent input — {problem}",
+                model=expected,
+                paths=("",),
+                problems={"": problem},
+                payload=value,
+            )
+        if isinstance(value, str):
+            return value
+        return json.dumps(
+            value.model_dump(mode="json", by_alias=True, exclude_none=False, round_trip=True),
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )

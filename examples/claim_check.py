@@ -14,6 +14,7 @@ from tesserix_adk.core import (
     ClaimCheckPolicy,
     ClaimTicket,
     ModelCapabilities,
+    NoOutput,
     TextPart,
     ToolCall,
     Usage,
@@ -113,7 +114,7 @@ async def inside_a_run() -> None:
         tools=registry.view(allow=("read_contract", "fetch_result"), agent="counsel"),
         claim_check=ClaimCheck(store=store),
     )
-    agent: Agent[None] = Agent(
+    agent: Agent[NoOutput] = Agent(
         name="counsel",
         instructions="Answer from the contract.",
         free_text=True,

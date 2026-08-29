@@ -37,7 +37,7 @@ from tesserix_adk.runtime.prompt import assemble_prompt
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
-    from tesserix_adk.core import Agent
+    from tesserix_adk.core import Agent, TypedAgent
     from tesserix_adk.core.protocols import ModelProvider
     from tesserix_adk.runtime.prompt import ToolDeclaration
 
@@ -56,6 +56,7 @@ __all__ = [
     "approval_for",
     "calibrate",
     "estimate_run",
+    "estimate_run_typed",
     "refuse_unaffordable",
 ]
 
@@ -362,6 +363,28 @@ def estimate_run[OutputT: BaseModel](
         output_tokens_high=high.output_tokens,
         assumptions=assumptions,
         confidence=_confidence(seen, point),
+    )
+
+
+def estimate_run_typed[InputT: str | BaseModel, OutputT: BaseModel](
+    agent: TypedAgent[InputT, OutputT],
+    user_input: InputT,
+    *,
+    provider: ModelProvider,
+    pricing: Pricer,
+    history: RunHistory | None = None,
+    tools: Iterable[ToolDeclaration] = (),
+    allow_unknown: bool = False,
+) -> CostEstimate:
+    """Estimate a structured-input agent through the stable text estimator."""
+    return estimate_run(
+        agent,
+        agent.render_input(user_input),
+        provider=provider,
+        pricing=pricing,
+        history=history,
+        tools=tools,
+        allow_unknown=allow_unknown,
     )
 
 

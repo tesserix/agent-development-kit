@@ -15,6 +15,38 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
   digest-pinned OCI runtime, LangGraph, Google ADK, or the OpenAI Agents SDK without
   importing third-party frameworks. The additive public surface is stable within v1;
   exporters reject floating images, dependency versions, and inline secret material.
+- Structured application inputs are additive through `TypedAgent[InputT, OutputT]`,
+  `TypedAgentDefinition`, `run_typed`/`stream_typed` and their sync variants, with strict
+  Pydantic validation and serializable input schemas. Released `Agent[OutputT]`,
+  `AgentDefinition[OutputT]` and string-input runner contracts remain unchanged and are
+  checked by strict mypy, strict Pyright and the release compatibility gate.
+- Framework-neutral interoperability can import foreign tools/toolsets with JSON Schema
+  admission and policy, wrap foreign agents as typed tools or supervisor specialists, and
+  export Tesserix agents as OpenAI-compatible functions, authenticated MCP tools or
+  official A2A executors. Tenant/user/scopes, W3C trace context, cancellation, lineage and
+  shared budgets remain explicit at every crossing.
+- Google Agent Development Kit 2.x interop imports real `FunctionTool` definitions through
+  the generic registry boundary, wraps `BaseAgent` instances through an application-owned
+  invoker, and retains the existing non-legacy official A2A bridge. The optional dependency
+  is tested in the reviewed `>=2.8,<3` range and fails with the exact missing-extra command.
+- Self-contained `tesserix-adk` commands now scaffold agents/tools, validate configuration,
+  diagnose provider setup, run local agents, execute evaluation gates and inspect redacted
+  artifacts. Reference research, booking and durable agents are executable in CI.
+- GitHub Pages now includes a source-to-production lifecycle with control, execution and
+  tool planes; evaluation and security gates; registry/canary/release flow; MCP/A2A and
+  gateway boundaries; warm-pool, ephemeral Job, Temporal and generated-code sandbox
+  responsibilities; and a five-stage reversible migration guide with explicit escape
+  hatches and ADR 0004.
+
+### Changed
+
+- The installed command and public interop prose use the unambiguous Tesserix Agent
+  Development Kit and Google Agent Development Kit names. The ambiguous global `adk`
+  command is not installed.
+- API reference, runnable-recipe coverage and public-surface snapshots now include the new
+  typed config, CLI, interop, wrapped-agent, export and addressable-subagent contracts. All
+  remain alpha except the additive core configuration/type contracts, which follow the
+  existing beta compatibility policy.
 
 ## 0.52.0
 

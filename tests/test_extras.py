@@ -17,8 +17,12 @@ from types import ModuleType
 import pytest
 from packaging.requirements import Requirement
 
-from tesserix_adk.adapters import google_adk_remote_agent
-from tesserix_adk.core import AdkError, MissingExtraError, require_extra
+from tesserix_adk.adapters import (
+    ToolImportPolicy,
+    google_adk_remote_agent,
+    import_google_adk_tool,
+)
+from tesserix_adk.core import AdkError, Idempotency, MissingExtraError, require_extra
 from tests.ci_config import pyproject
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -203,7 +207,7 @@ def test_the_google_adk_bridge_names_the_exact_extra_when_it_is_absent(
     imported = importlib.import_module
 
     def without_google_adk(name: str) -> ModuleType:
-        if name == "google.adk":
+        if name == "google.adk" or name.startswith("google.adk."):
             raise ModuleNotFoundError("No module named 'google'", name="google")
         return imported(name)
 
@@ -216,6 +220,15 @@ def test_the_google_adk_bridge_names_the_exact_extra_when_it_is_absent(
 
     assert caught.value.extra == "google-adk"
     assert caught.value.install_command == "uv add 'tesserix-adk[google-adk]'"
+
+    with pytest.raises(MissingExtraError) as tool_extra:
+        import_google_adk_tool(
+            object(),
+            policy=ToolImportPolicy(idempotency=Idempotency.READ_ONLY),
+        )
+
+    assert tool_extra.value.extra == "google-adk"
+    assert tool_extra.value.install_command == "uv add 'tesserix-adk[google-adk]'"
 
 
 def test_a_broken_dependency_inside_an_installed_package_is_not_reported_as_a_missing_extra(

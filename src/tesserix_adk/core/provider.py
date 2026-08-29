@@ -14,14 +14,29 @@ change to it shows up in a pull request's diff and follows `docs/versioning.md`.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import Field
 
 from tesserix_adk.core.models import AdkModel, Sensitive
 from tesserix_adk.core.primitives import Message, ToolCall, Usage
 
-__all__ = ["ModelRequest", "ModelResponse", "StopReason", "ToolDeclaration"]
+__all__ = ["ModelRequest", "ModelResponse", "ProviderName", "StopReason", "ToolDeclaration"]
+
+ProviderName = Literal[
+    "anthropic",
+    "gemini",
+    "grok",
+    "groq",
+    "llama.cpp",
+    "ollama",
+    "openai",
+    "openai-compatible",
+    "openrouter",
+    "tgi",
+    "vllm",
+    "xai",
+]
 
 
 class StopReason(StrEnum):

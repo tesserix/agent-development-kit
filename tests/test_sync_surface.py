@@ -18,8 +18,9 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from pydantic import BaseModel
 
-from tesserix_adk.core import Agent, RunState, ToolCall, Usage
+from tesserix_adk.core import Agent, NoOutput, RunState, ToolCall, TypedAgent, Usage
 from tesserix_adk.core.errors import EventLoopStalledError, RunningLoopError, WorkersBusyError
 from tesserix_adk.runtime import AgentRunner, CancellationToken, ModelResponse
 from tesserix_adk.runtime.blocking import (
@@ -36,6 +37,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 LOOKUP = ToolCall(id="c1", name="lookup", arguments={"q": "kyoto"})
+
+
+class TripRequest(BaseModel):
+    destination: str
 
 
 def agent(**overrides: object) -> Agent:
@@ -114,6 +119,24 @@ class TestOneAgentFromEitherSurface:
         )
 
         assert run.state is RunState.COMPLETED
+
+    async def test_structured_input_uses_the_same_sync_and_stream_surfaces(self) -> None:
+        typed: TypedAgent[TripRequest, NoOutput] = TypedAgent(
+            name="typed-planner",
+            instructions="Plan trips.",
+            model="claude-sonnet-5",
+            input_type=TripRequest,
+            free_text=True,
+        )
+        request = TripRequest(destination="Kyoto")
+
+        run = await asyncio.to_thread(lambda: plain().run_typed_sync(typed, request, tenant="acme"))
+        events = await asyncio.to_thread(
+            lambda: plain().stream_typed_sync(typed, request, tenant="acme")
+        )
+
+        assert run.state is RunState.COMPLETED
+        assert events[-1].kind == "run_completed"
 
 
 class TestCalledFromInsideARunningLoop:

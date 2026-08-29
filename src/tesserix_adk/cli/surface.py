@@ -1,4 +1,4 @@
-"""`adk surface` — the tools an agent actually has, and where each of them came from.
+"""`tesserix-adk surface` — the tools an agent has and where each came from.
 
 When an agent calls a tool nobody expected it to have, the question is which server put it
 there and under what name. Reading the servers' own tool lists does not answer it: the
@@ -6,8 +6,8 @@ answer is what discovery resolved, after allowlists, prefixes and sanitisation. 
 resolved surface is printed, and `--pin` prints it in the form that gets committed next to
 the agent, which is what makes a later change to a server an error rather than a surprise.
 
-No third-party argument parser and no console-script entry point: a kit that installs a
-global `adk` binary fights with whatever the consumer already ships. Where the servers are
+This application-wired command is not part of the self-contained dispatcher. Applications
+may expose it under the project-qualified command. Where the servers are
 and how they are reached is the deployment's business, so it supplies the resolution and
 this supplies the rendering and the exit codes.
 """
@@ -64,7 +64,8 @@ async def main(argv: Sequence[str], *, resolve: Resolve, out: TextIO | None = No
 def _parser() -> argparse.ArgumentParser:
     """The `surface` command line."""
     parser = argparse.ArgumentParser(
-        prog="adk surface", description="show the tools an agent resolved, and from where"
+        prog="tesserix-adk surface",
+        description="show the tools an agent resolved, and from where",
     )
     parser.add_argument("--server", default="", help="only what this server contributed")
     parser.add_argument(

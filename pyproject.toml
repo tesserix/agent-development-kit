@@ -24,15 +24,18 @@ dependencies = [
   "typing-extensions>=4.12",
 ]
 
+[project.scripts]
+tesserix-adk = "tesserix_adk.cli.__main__:main"
+
 # Provider and store SDKs may only ever appear here, never in [project] dependencies:
 # a small agent must stay a small dependency. `all` is a pure union of the others so it
 # cannot become the only tested path. See docs/contributing.md.
 [project.optional-dependencies]
 a2a = ["a2a-sdk[http-server]>=1.1.2"]
-google-adk = ["google-adk[a2a]>=2.8"]
+google-adk = ["google-adk[a2a]>=2.8,<3"]
 mcp = ["mcp>=1.9", "jsonschema>=4.23"]
 temporal = ["temporalio>=1.9"]
-# The one recorded cap: below 1.0 the version number promises nothing.
+# Recorded compatibility caps are justified in security/dependencies.toml.
 graphiti = ["graphiti-core>=0.14,<1"]
 redis = ["redis>=5.2"]
 postgres = ["psycopg[binary,pool]>=3.2"]
@@ -67,6 +70,7 @@ default-groups = ["dev", "test"]
 dev = [
   "ruff>=0.14,<0.15",
   "mypy>=1.18,<2",
+  "pyright>=1.1.408,<2",
   "import-linter>=2.3,<3",
   "pre-commit>=4,<5",
   # tools/downstream.py parses a JUnit report written by another repository's CI.
@@ -87,7 +91,10 @@ test = [
   "jsonschema>=4.23,<5",
   "types-jsonschema>=4.23,<5",
 ]
-docs = ["mkdocs-material>=9.5,<10"]
+docs = [
+  "mike>=2.1,<3",
+  "mkdocs-material>=9.5,<10",
+]
 
 [tool.ruff]
 line-length = 100
@@ -180,6 +187,11 @@ warn_unreachable = true
 disallow_any_unimported = true
 enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code"]
 files = ["src", "tests", "tools"]
+
+[tool.pyright]
+include = ["tests/typing_conformance.py"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

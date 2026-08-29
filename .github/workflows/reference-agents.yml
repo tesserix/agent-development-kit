@@ -1,0 +1,84 @@
+name: manual-reference-agents
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_live:
+        description: I approve one cost-bounded live model call
+        required: true
+        type: boolean
+        default: false
+      provider:
+        description: Provider holding the protected environment credential
+        required: true
+        type: choice
+        options: [openai, anthropic, gemini, groq, grok, openrouter]
+        default: openrouter
+      model:
+        description: Exact provider model identifier and capability target
+        required: true
+        type: string
+        default: openai/gpt-4o-mini
+      max_input_tokens:
+        description: Hard input-token ceiling
+        required: true
+        type: number
+        default: 512
+      max_output_tokens:
+        description: Hard output-token ceiling
+        required: true
+        type: number
+        default: 64
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reference-agents-live
+  cancel-in-progress: false
+
+env:
+  UV_VERSION: "0.12.1"
+
+jobs:
+  offline:
+    name: deterministic reference-agent regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: uv run pytest -q tests/test_reference_agents.py
+
+  live:
+    name: one protected live provider call
+    runs-on: ubuntu-latest
+    needs: offline
+    if: ${{ inputs.confirm_live }}
+    environment: reference-agents-live
+    env:
+      ADK_PROVIDER_API_KEY: ${{ secrets.REFERENCE_PROVIDER_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - name: bounded live call
+        env:
+          ADK_LIVE_PROVIDER: ${{ inputs.provider }}
+          ADK_LIVE_MODEL: ${{ inputs.model }}
+          ADK_LIVE_MAX_INPUT: ${{ inputs.max_input_tokens }}
+          ADK_LIVE_MAX_OUTPUT: ${{ inputs.max_output_tokens }}
+        run: >-
+          uv run python examples/reference_live_provider.py
+          --live
+          --provider "$ADK_LIVE_PROVIDER"
+          --model "$ADK_LIVE_MODEL"
+          --api-key-variable ADK_PROVIDER_API_KEY
+          --max-input-tokens "$ADK_LIVE_MAX_INPUT"
+          --max-output-tokens "$ADK_LIVE_MAX_OUTPUT"

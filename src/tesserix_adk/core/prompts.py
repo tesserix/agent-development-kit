@@ -24,11 +24,11 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 from pydantic import Field
 
 from tesserix_adk.core.errors import PromptNotFoundError, PromptRejectedError
-from tesserix_adk.core.models import AdkModel, OutputT
+from tesserix_adk.core.models import AdkModel, InputT, OutputT
 from tesserix_adk.core.redaction import looks_sensitive
 
 if TYPE_CHECKING:
-    from tesserix_adk.core.agent import Agent
+    from tesserix_adk.core.agent import Agent, TypedAgent
 
 __all__ = [
     "FilePromptRegistry",
@@ -152,6 +152,10 @@ class PromptDefinition(AdkModel):
             so the runtime carries it onto the run and every model-call span without the
             project wiring anything.
         """
+        return agent.model_copy(update={"instructions": self.body, "prompt": self.ref})
+
+    def instruct_typed(self, agent: TypedAgent[InputT, OutputT]) -> TypedAgent[InputT, OutputT]:
+        """Apply this prompt while preserving a typed agent's input contract."""
         return agent.model_copy(update={"instructions": self.body, "prompt": self.ref})
 
 

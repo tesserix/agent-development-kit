@@ -15,6 +15,7 @@ from tesserix_adk.core import (
     ApprovalDecision,
     ApprovalRecord,
     ModelCapabilities,
+    NoOutput,
     RunEventKind,
     ToolCall,
     Usage,
@@ -118,7 +119,7 @@ async def denied() -> None:
         tools=registry.view(allow=("wire_funds", "issue_refund"), agent="planner"),
         approvals=Desk(),
     )
-    agent: Agent[str] = Agent(
+    agent: Agent[NoOutput] = Agent(
         name="planner",
         instructions="Settle the booking.",
         free_text=True,

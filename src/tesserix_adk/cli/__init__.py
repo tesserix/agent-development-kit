@@ -2,9 +2,13 @@
 
 from tesserix_adk.cli.approvals import Answering, Waiting
 from tesserix_adk.cli.approvals import main as approvals_main
+from tesserix_adk.cli.artifact_inspect import main as artifact_inspect_main
 from tesserix_adk.cli.card import Build
 from tesserix_adk.cli.card import main as card_main
+from tesserix_adk.cli.config_command import main as config_main
 from tesserix_adk.cli.dead_letters import main as dead_letters_main
+from tesserix_adk.cli.doctor import main as doctor_main
+from tesserix_adk.cli.eval_run import main as eval_run_main
 from tesserix_adk.cli.evals import main as evals_main
 from tesserix_adk.cli.inspect import Lookup
 from tesserix_adk.cli.inspect import main as inspect_main
@@ -13,6 +17,9 @@ from tesserix_adk.cli.prompts import main as prompts_main
 from tesserix_adk.cli.resume import Frontiers, Resumes, describe
 from tesserix_adk.cli.resume import main as resume_main
 from tesserix_adk.cli.resume import show as frontier_main
+from tesserix_adk.cli.run_agent import LocalAgent
+from tesserix_adk.cli.run_agent import main as run_main
+from tesserix_adk.cli.scaffold import main as scaffold_main
 from tesserix_adk.cli.surface import Resolve
 from tesserix_adk.cli.surface import main as surface_main
 from tesserix_adk.cli.trace import main as trace_main
@@ -22,20 +29,27 @@ __all__ = [
     "Answering",
     "Build",
     "Frontiers",
+    "LocalAgent",
     "Lookup",
     "Prompts",
     "Resolve",
     "Resumes",
     "Waiting",
     "approvals_main",
+    "artifact_inspect_main",
     "card_main",
+    "config_main",
     "dead_letters_main",
     "describe",
+    "doctor_main",
+    "eval_run_main",
     "evals_main",
     "frontier_main",
     "inspect_main",
     "prompts_main",
     "resume_main",
+    "run_main",
+    "scaffold_main",
     "surface_main",
     "trace_main",
 ]

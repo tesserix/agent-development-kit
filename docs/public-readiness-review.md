@@ -91,8 +91,8 @@ cancellation. Card security metadata remains descriptive and cannot replace enfo
   staleness, checkpoint recovery, and trace loss.
 - Add a standard signed-card verifier or document the one trust service every deployment
   must use.
-- Decide whether to publish a unified console entry point. The current module CLIs work,
-  but the package intentionally installs no global `adk` binary.
+- Keep the project-qualified `tesserix-adk` dispatcher limited to self-contained commands;
+  application-wired CLIs continue to accept explicit storage/build callbacks.
 - Reduce the very broad pre-1.0 public API before 1.0. Keep new experimental seams out of
   stable re-export modules until consumers need them.
 - Continue reconciling legacy deep-reference pages with implementation. The curated

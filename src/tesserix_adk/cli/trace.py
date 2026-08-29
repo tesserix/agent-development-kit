@@ -1,4 +1,4 @@
-"""`adk trace` — read a recorded run, including one that arrived with a bug report.
+"""`tesserix-adk trace` — read a recorded run, including one from a bug report.
 
 A trace attached to a report is often the only account of a failure nobody can reproduce.
 Reading it should not require standing up a collector, so this takes the file and draws it.
@@ -73,7 +73,7 @@ def main(argv: Sequence[str], *, out: TextIO | None = None) -> int:
 
 def _parser() -> argparse.ArgumentParser:
     """The `trace` command line."""
-    parser = argparse.ArgumentParser(prog="adk trace", description="draw a recorded run")
+    parser = argparse.ArgumentParser(prog="tesserix-adk trace", description="draw a recorded run")
     parser.add_argument("path", help="the trace file to read")
     parser.add_argument("--depth", type=int, default=None, help="how many levels to show")
     parser.add_argument(

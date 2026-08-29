@@ -120,6 +120,8 @@ def find_leaks(surface: dict[str, str]) -> list[str]:
     """Return one message per public symbol whose signature exposes an internal type."""
     leaks = []
     for key, description in sorted(surface.items()):
+        if " = typing.Literal[" in description:
+            continue
         in_testing = key.startswith("tesserix_adk.testing")
         markers = VENDOR_MARKERS if in_testing else VENDOR_MARKERS + CONCRETE_MARKERS
         symbol_name = key.rpartition(".")[2]

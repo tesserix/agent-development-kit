@@ -1,14 +1,15 @@
-"""`adk run --resume` — carry a checkpointed run on from an operator's terminal.
+"""`tesserix-adk run --resume` — continue a checkpointed run.
 
 The run that has been sitting on an approval for two days is usually resumed by an on-call
 engineer, not by the service that started it, and what they need first is the answer to
 "is this safe to carry on": which iteration it stopped at, what it is waiting for, and
-whether anything outstanding cannot be decided. That summary is `describe`, and `adk inspect`
+whether anything outstanding cannot be decided. That summary is `describe`, and
+`tesserix-adk inspect`
 prints the same one off the same frontier, so the operator who looks before resuming and the
 command that resumes are never reading two different things.
 
-No third-party argument parser and no console-script entry point, for the same reason as
-the rest of the CLI: a kit that installs a global `adk` binary fights with whatever the
+This application-wired command is not part of the self-contained dispatcher. Applications
+may expose it under the project-qualified command, which avoids collisions with other
 consumer already ships.
 """
 
@@ -127,7 +128,7 @@ async def main(
 async def show(argv: Sequence[str], *, frontiers: Frontiers, out: TextIO | None = None) -> int:
     """Print a run's frontier without taking the lease or resuming anything.
 
-    What `adk inspect` calls for a run that has not finished. Reading a frontier is not
+    What `tesserix-adk inspect` calls for a run that has not finished. Reading a frontier is not
     resuming one, so this takes no lease and cannot refuse an operator who only wants to look.
 
     Returns:
@@ -150,7 +151,7 @@ async def show(argv: Sequence[str], *, frontiers: Frontiers, out: TextIO | None 
 def _parser(*, resuming: bool = True) -> argparse.ArgumentParser:
     """The `run --resume` command line, and the read-only half of it."""
     parser = argparse.ArgumentParser(
-        prog="adk run" if resuming else "adk inspect",
+        prog="tesserix-adk run" if resuming else "tesserix-adk inspect",
         description="carry a checkpointed run on" if resuming else "show a run's frontier",
     )
     if resuming:

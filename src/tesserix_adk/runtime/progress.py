@@ -298,7 +298,7 @@ def decode_progress(payload: Mapping[str, object]) -> ProgressEvent | None:
     if variant is None:
         return None
     try:
-        return variant.model_validate(dict(payload))
+        return variant.model_validate_json(json.dumps(dict(payload), default=str))
     except ValidationError as broken:
         raise ValueError(f"a {kind} event did not decode: {broken}") from broken
 
