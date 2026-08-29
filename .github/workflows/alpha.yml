@@ -46,6 +46,7 @@ jobs:
     if: needs.whether.outputs.alpha == 'true'
     runs-on: ubuntu-latest
     outputs:
+      alpha: ${{ steps.recheck.outputs.alpha }}
       version: ${{ steps.version.outputs.version }}
     permissions:
       contents: read
@@ -58,27 +59,45 @@ jobs:
         # hatch-vcs derives the version from the tag, so the history has to be there.
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+      # A release tag can appear while the full gates are running. Recheck on this
+      # job's checkout so that race ends as a successful no-op, not a false alpha.
+      - id: recheck
+        run: |
+          if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+            echo "alpha=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "alpha=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.recheck.outputs.alpha == 'true'
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-      - run: uv sync --frozen --all-groups
-      - id: version
+      - if: steps.recheck.outputs.alpha == 'true'
+        run: uv sync --frozen --all-groups
+      - if: steps.recheck.outputs.alpha == 'true'
+        id: version
         run: echo "version=$(uv run python -m tools.alpha)" >> "$GITHUB_OUTPUT"
       # Tagged locally and never pushed: the tag is how hatch-vcs sees the version, but
       # an alpha is not a release and should not appear in the repository's tag list.
-      - run: git tag "v$VERSION"
+      - if: steps.recheck.outputs.alpha == 'true'
+        run: git tag "v$VERSION"
         env:
           VERSION: ${{ steps.version.outputs.version }}
-      - run: uv build
-      - run: uvx twine check --strict dist/*
-      - run: ls dist | grep -q "tesserix_adk-$VERSION"
+      - if: steps.recheck.outputs.alpha == 'true'
+        run: uv build
+      - if: steps.recheck.outputs.alpha == 'true'
+        run: uvx twine check --strict dist/*
+      - if: steps.recheck.outputs.alpha == 'true'
+        run: ls dist | grep -q "tesserix_adk-$VERSION"
         env:
           VERSION: ${{ steps.version.outputs.version }}
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+      - if: steps.recheck.outputs.alpha == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: dist/*
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - if: steps.recheck.outputs.alpha == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: alpha-dist
           path: dist/
@@ -88,7 +107,7 @@ jobs:
     needs: build
     # Waits for the one-time trusted-publisher setup in docs/releasing.md. The build above
     # still runs on every merge, so the alpha is proven publishable either way.
-    if: vars.PUBLISH_ALPHAS == 'true'
+    if: needs.build.outputs.alpha == 'true' && vars.PUBLISH_ALPHAS == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -107,7 +126,7 @@ jobs:
   downstream:
     name: earliest consumer
     needs: [build, publish]
-    if: vars.DOWNSTREAM_REPO != ''
+    if: needs.build.outputs.alpha == 'true' && vars.DOWNSTREAM_REPO != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read

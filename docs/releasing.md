@@ -78,7 +78,7 @@ Pushing to `main` never publishes.
 | `guard` | The tag matches the documented format, points at a commit on `main`, and names a version the index does not already hold. Nothing irreversible has happened yet. |
 | `gates` | The full CI workflow — the same one pull requests run, called rather than copied. |
 | `sbom` | Checks every licence in the graph against the policy, then builds `sbom.cdx.json` from the lock at this tag and diffs it against the previous release. See [`security.md`](security.md). |
-| `notes` | Assembles the release body from the repository, appends the dependency diff, and fails if any change in the range has nothing describing it to a consumer. |
+| `notes` | Reuses the exact version section already reviewed in `CHANGELOG.md` and appends the dependency diff. It never rebuilds released notes after their fragments have been consumed. |
 | `build` | `uv build`, `twine check --strict` on the metadata, an assertion that the artefact filename carries the tag's version, and keyless signing with a build provenance attestation over `dist/*`. See [`verifying.md`](verifying.md). |
 | `publish` | Trusted publishing to PyPI via workflow identity, behind the `pypi` environment. Runs only where the repository variable `PUBLISH_TO_PYPI` is `true`. |
 | `mirror` | The same artefacts, `sbom.cdx.json` and the attestation bundles attached to a GitHub Release, with the assembled notes as its body. A mirrored install has no attestation store to reach, so the bundles travel with the artefacts. |
@@ -144,6 +144,11 @@ Two things block a release outright:
 Both are checked on every pull request by the `release-notes` job, which also renders the
 notes into the run summary so reviewers see the consumer-facing wording before the tag —
 not after it. `make notes` does the same locally.
+
+`make release` folds that reviewed text into the versioned changelog section before it
+deletes the consumed fragments. The tag workflow uses that section verbatim for the
+GitHub Release body, so publication cannot silently regenerate different notes from the
+post-release tree.
 
 A change spanning several subpackages appears once, attributed to the surface named in
 its fragment, rather than once per commit. Changes under `tesserix_adk.experimental` are
