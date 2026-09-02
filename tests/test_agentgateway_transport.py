@@ -24,7 +24,7 @@ class _Session:
 
     def __init__(self, read: object, write: object, **kwargs: object) -> None:
         del read, write, kwargs
-        self.initialized = False
+        self.discovered = False
 
     async def __aenter__(self) -> _Session:
         return self
@@ -32,11 +32,11 @@ class _Session:
     async def __aexit__(self, *args: object) -> None:
         del args
 
-    async def initialize(self) -> None:
-        self.initialized = True
+    async def discover(self) -> None:
+        self.discovered = True
 
     async def list_tools(self, cursor: str | None = None) -> object:
-        assert self.initialized
+        assert self.discovered
         return _Dumped(self.pages[cursor])
 
     async def call_tool(
@@ -47,7 +47,7 @@ class _Session:
         *,
         meta: dict[str, object] | None = None,
     ) -> object:
-        assert self.initialized
+        assert self.discovered
         self.calls.append((name, arguments, read_timeout_seconds, meta))
         return _Dumped(self.result)
 
@@ -103,7 +103,7 @@ def _install_fake_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "mcp.client.streamable_http", streamable)
 
 
-async def test_streamable_http_transport_initializes_and_removes_vendor_types(
+async def test_streamable_http_transport_discovers_without_legacy_initialization(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _install_fake_mcp(monkeypatch)

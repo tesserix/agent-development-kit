@@ -56,8 +56,12 @@ compatible releases installable and lets CI reveal an upstream break.
 
 [[floor]]
 package = "mcp"
-floor = "1.9"
-reason = "Oldest release with the 1.x server and client surface the mcp extra targets."
+floor = "2.1.1"
+reason = """
+First official SDK release tested with MCP 2026-07-28 stateless `server/discover`.
+Earlier releases either use the initialization handshake or predate the final stateless
+wire contract required by the AgentGateway transport.
+"""
 
 [[floor]]
 package = "jsonschema"
@@ -118,5 +122,19 @@ the shim's offline compatibility suite passes against it.
 trigger = """
 Raise or remove this cap after the google-adk extras leg passes against 3.x and its public
 interop changes are reviewed and documented.
+"""
+owner = "@sam123ben"
+
+[[cap]]
+package = "mcp"
+cap = "3"
+incompatibility = """
+The AgentGateway adapter targets the official MCP SDK 2.x `ClientSession.discover`,
+Streamable HTTP context-manager, pagination, and tool-result contracts. A 3.x major may
+change those boundaries and cannot be claimed until the transport suite passes against it.
+"""
+trigger = """
+Raise or remove this cap after the MCP extra and AgentGateway transport suites pass against
+3.x and its stateless protocol behavior has been reviewed.
 """
 owner = "@sam123ben"

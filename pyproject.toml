@@ -34,7 +34,7 @@ tesserix-adk = "tesserix_adk.cli.__main__:main"
 [project.optional-dependencies]
 a2a = ["a2a-sdk[http-server]>=1.1.2"]
 google-adk = ["google-adk[a2a]>=2.8,<3"]
-mcp = ["mcp>=1.9", "jsonschema>=4.23"]
+mcp = ["mcp>=2.1.1,<3", "jsonschema>=4.23"]
 temporal = ["temporalio>=1.9"]
 # Recorded compatibility caps are justified in security/dependencies.toml.
 graphiti = ["graphiti-core>=0.14,<1"]

@@ -19,6 +19,11 @@ The client speaks to an `McpSession`, which is a protocol: `initialize`, `list_t
 `call_tool`, `close`. Transports implement it, tests implement it in process, and
 adopting a server therefore says nothing about how that server is reached.
 
+The production `McpStreamableHttpTransport` uses the official SDK's stateless
+`server/discover` path for MCP `2026-07-28`; it never performs the legacy initialization
+handshake or depends on an MCP session ID. The `McpSession.initialize()` member above is a
+transport-neutral compatibility abstraction, not the production HTTP wire sequence.
+
 ## Declare a server
 
 Install the optional integration in a source checkout first:

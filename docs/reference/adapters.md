@@ -1758,7 +1758,7 @@ class McpSession(Protocol) {call_tool(self, name: 'str', arguments: 'Mapping[str
 
 **Stability:** `alpha`
 
-Open one bounded official-SDK MCP session for each gateway operation.
+Open one bounded official-SDK MCP connection for each gateway operation.
 
 ```python
 class McpStreamableHttpTransport(object) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
@@ -3368,7 +3368,7 @@ def agent_gateway_tools(routed: 'AgentGatewayTools') -> 'tuple[Tool[..., JsonVal
 
 **Stability:** `alpha`
 
-Open one bounded official-SDK MCP session for each gateway operation.
+Open one bounded official-SDK MCP connection for each gateway operation.
 
 ```python
 class McpStreamableHttpTransport(object) {call_tool(self, *, endpoint: 'str', tool: 'str', arguments: 'Mapping[str, JsonValue]', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int') -> 'GatewayToolResult'; list_tools(self, *, endpoint: 'str', headers: 'Mapping[str, str]', meta: 'Mapping[str, str]', timeout_seconds: 'float', max_result_bytes: 'int', max_tools: 'int') -> 'tuple[McpToolDescriptor, ...]'}
