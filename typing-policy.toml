@@ -816,3 +816,34 @@ values are whatever JSON holds.
 """
 owner = "@sam123ben"
 review_by = 2027-08-21
+
+[[any]]
+symbol = "tesserix_adk.core.recording.RunRecorder"
+kind = "variadic"
+reason = """
+Records a `Run[Any]`: one process default recorder sees every agent's runs, whose declared
+output types differ, so the protocol cannot name one of them. A recorder reads events,
+usage and state, never the output.
+"""
+owner = "@sam123ben"
+review_by = 2027-09-03
+
+[[any]]
+symbol = "tesserix_adk.observability.otlp.OtlpRecorder"
+kind = "variadic"
+reason = """
+Implements `RunRecorder`, so it takes the same `Run[Any]`. Spans are built from events,
+usage and state; the output is never read.
+"""
+owner = "@sam123ben"
+review_by = 2027-09-03
+
+[[any]]
+symbol = "tesserix_adk.observability.otlp.build_spans"
+kind = "variadic"
+reason = """
+Shapes a `Run[Any]` into spans for the recorder above; the output type has no bearing on
+the trace and is never read.
+"""
+owner = "@sam123ben"
+review_by = 2027-09-03

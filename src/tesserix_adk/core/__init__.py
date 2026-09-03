@@ -498,6 +498,13 @@ from tesserix_adk.core.queue import (
     WorkQueue,
     WorkState,
 )
+from tesserix_adk.core.recording import (
+    RunRecorder,
+    bound_session,
+    current_session,
+    default_recorder,
+    install_default_recorder,
+)
 from tesserix_adk.core.redaction import (
     MASK,
     SENSITIVE_SHAPES,
@@ -944,6 +951,7 @@ __all__ = [
     "RunLease",
     "RunLeaseError",
     "RunRecord",
+    "RunRecorder",
     "RunSpan",
     "RunStarted",
     "RunState",
@@ -1066,6 +1074,7 @@ __all__ = [
     "arguments_digest",
     "arriving",
     "bound",
+    "bound_session",
     "canonical",
     "canonical_json",
     "carried",
@@ -1073,8 +1082,10 @@ __all__ = [
     "compatibility_breaks",
     "current_policy",
     "current_principal",
+    "current_session",
     "current_tenant",
     "deduplicate",
+    "default_recorder",
     "deprecate",
     "deprecations",
     "digest_of_arguments",
@@ -1086,6 +1097,7 @@ __all__ = [
     "header_of",
     "idempotency_key",
     "in_payload",
+    "install_default_recorder",
     "legal_transitions",
     "lint_directory",
     "lint_prompt",

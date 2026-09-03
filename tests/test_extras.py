@@ -40,6 +40,7 @@ INTEGRATION_EXTRAS = {
     "graphiti",
     "redis",
     "postgres",
+    "otlp",
 }
 
 # The importable name each extra provides, so the footprint test can prove that a base
@@ -52,6 +53,7 @@ EXTRA_TOP_LEVEL_MODULES = {
     "graphiti": "graphiti_core",
     "redis": "redis",
     "postgres": "psycopg",
+    "otlp": "opentelemetry.sdk",
 }
 
 # Distinct packages a base install resolves to, counted from uv.lock. Every one of these

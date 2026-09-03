@@ -12,14 +12,14 @@ See [stability](../stability.md), [deprecations](../deprecations.md), and [secur
 | [Adapters](adapters.md) | 506 |
 | [Cli](cli.md) | 86 |
 | [Code Intelligence](code_intelligence.md) | 20 |
-| [Core](core.md) | 1065 |
+| [Core](core.md) | 1075 |
 | [Evals](evals.md) | 144 |
 | [Experimental](experimental.md) | — |
 | [Guardrails](guardrails.md) | 24 |
 | [Mcp](mcp.md) | 38 |
 | [Memory](memory.md) | 158 |
 | [Models](models.md) | 184 |
-| [Observability](observability.md) | 216 |
+| [Observability](observability.md) | 230 |
 | [Rag](rag.md) | 130 |
 | [Root](root.md) | 6 |
 | [Runtime](runtime.md) | 327 |

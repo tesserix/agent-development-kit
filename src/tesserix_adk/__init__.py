@@ -3,6 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from tesserix_adk.core import Agent, TypedAgent
+from tesserix_adk.observability.otlp import install_from_env
 from tesserix_adk.runtime import AgentRunner
 from tesserix_adk.tools import ToolRegistry, tool
 
@@ -12,3 +13,5 @@ try:
     __version__ = version("tesserix-adk")
 except PackageNotFoundError:  # pragma: no cover — only when running from an uninstalled tree
     __version__ = "0.0.0"
+
+install_from_env()

@@ -95,6 +95,7 @@ from tesserix_adk.core import (
     RunEvent,
     RunEventKind,
     RunGrant,
+    RunRecorder,
     RunState,
     SchemaViolationError,
     ScopedLimits,
@@ -120,6 +121,7 @@ from tesserix_adk.core import (
     Usage,
     current_principal,
     deduplicate,
+    default_recorder,
     fallback_eligible,
     idempotency_key,
     most_restrictive,
@@ -210,6 +212,10 @@ _TRUNCATION_MARKER = "\n[truncated]"
 # Instrumentation is on unless a deployment turns it off, because a stall nobody measures
 # is charged to whichever request happened to be next rather than to what caused it.
 _WATCHING = LoopMonitor()
+
+# Whatever `install_default_recorder` set, looked up per run so a recorder installed after
+# the runner was built still sees its runs.
+_INSTALLED_RECORDER = cast("RunRecorder", object())
 
 # A cancelled coroutine needs a loop turn or two to unwind; only then is the grace window
 # the honest measure of whether it is going to stop at all.
@@ -433,6 +439,10 @@ class AgentRunner:
         monitor: How a tool that blocks the event loop is caught. Defaults to a
             `LoopMonitor` with its own defaults; `None` turns the instrumentation off,
             which is a decision to take the tail latency rather than attribute it.
+        recorder: Where every terminal run is handed once the loop is done with it. By
+            default the process-wide recorder from `install_default_recorder`, which is
+            how a deployment turns tracing on without touching agent code; `None` records
+            nowhere. A recorder that raises costs a trace, never the run.
         max_iterations: How many model calls one run may make before it is capped.
         max_tool_attempts: How many retries one tool may consume across a whole run. A
             dependency failing transiently on every call would otherwise spend the
@@ -476,6 +486,7 @@ class AgentRunner:
         jitter: Random | None = None,
         clock: Clock | None = None,
         monitor: LoopMonitor | None = _WATCHING,
+        recorder: RunRecorder | None = _INSTALLED_RECORDER,
         ids: IdFactory | None = None,
         max_iterations: int = _DEFAULT_MAX_ITERATIONS,
         max_tool_result_chars: int = _DEFAULT_MAX_TOOL_RESULT_CHARS,
@@ -524,6 +535,8 @@ class AgentRunner:
         self._jitter = jitter
         self._clock: Clock = clock or SystemClock()
         self._monitor = monitor
+        self._recorder = recorder
+        self.recording_failures = 0
         self._ids: IdFactory = ids or _random_id
         self._max_iterations = max_iterations
         self._max_tool_result_chars = max_tool_result_chars
@@ -1907,7 +1920,19 @@ class AgentRunner:
         run = await self._notify(run, agent, state, bounds)
         run = self._to_compensate(run, agent, state)
         recorded = run.record_event(self._event(RunEventKind.TERMINATED, detail=detail))
-        return recorded.transition_to(state, at=self._clock.now())
+        ended = recorded.transition_to(state, at=self._clock.now())
+        self._record_run(ended)
+        return ended
+
+    def _record_run(self, run: Run[Any]) -> None:
+        """Hand the finished run to the recorder. Its failure is counted, never raised."""
+        recorder = default_recorder() if self._recorder is _INSTALLED_RECORDER else self._recorder
+        if recorder is None:
+            return
+        try:
+            recorder.record(run)
+        except Exception:
+            self.recording_failures += 1
 
     def _to_compensate(self, run: Run[Any], agent: Agent[Any], state: RunState) -> Run[Any]:
         """Name the side effects that outlived the run, so somebody can undo them.

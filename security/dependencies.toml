@@ -82,6 +82,19 @@ floor = "0.14"
 reason = "Oldest release with the episode API the graph memory adapter targets."
 
 [[floor]]
+package = "opentelemetry-sdk"
+floor = "1.36"
+reason = """
+Same line as opentelemetry-api at the point the otlp extra was added. The recorder builds
+`ReadableSpan` objects directly, and that constructor signature is what the floor pins.
+"""
+
+[[floor]]
+package = "opentelemetry-exporter-otlp-proto-http"
+floor = "1.36"
+reason = "Must match the sdk floor; the exporter and sdk ship as one release train."
+
+[[floor]]
 package = "redis"
 floor = "5.2"
 reason = "Oldest release with the asyncio client surface the redis adapter targets."

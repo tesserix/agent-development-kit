@@ -40,7 +40,8 @@ temporal = ["temporalio>=1.9"]
 graphiti = ["graphiti-core>=0.14,<1"]
 redis = ["redis>=5.2"]
 postgres = ["psycopg[binary,pool]>=3.2"]
-all = ["tesserix-adk[a2a,google-adk,graphiti,mcp,postgres,redis,temporal]"]
+otlp = ["opentelemetry-sdk>=1.36", "opentelemetry-exporter-otlp-proto-http>=1.36"]
+all = ["tesserix-adk[a2a,google-adk,graphiti,mcp,otlp,postgres,redis,temporal]"]
 
 [project.urls]
 Homepage = "https://github.com/tesserix/agent-development-kit"
