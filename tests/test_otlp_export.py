@@ -7,7 +7,11 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+
+pytest.importorskip("opentelemetry.sdk")
+pytest.importorskip("opentelemetry.exporter.otlp.proto.http")
+
+from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult  # noqa: E402
 from pydantic import ValidationError
 
 from tesserix_adk.core import (
