@@ -28,28 +28,28 @@ replace both occurrences when a newer stable release is approved.
 For a `uv`-managed application:
 
 ```bash
-uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.1/tesserix_adk-0.53.1-py3-none-any.whl"
+uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.0/tesserix_adk-0.54.0-py3-none-any.whl"
 git add pyproject.toml uv.lock
 ```
 
 For a standard virtual environment managed with `pip`:
 
 ```bash
-python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.1/tesserix_adk-0.53.1-py3-none-any.whl"
+python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.0/tesserix_adk-0.54.0-py3-none-any.whl"
 python -c "import tesserix_adk; print(tesserix_adk.__version__)"
 ```
 
 Record that exact direct reference in the application's dependency declaration and commit
 the environment's hash-pinned requirements. `pip` installs packages; it does not make an
 unlocked environment reproducible by itself. Extras use normal PEP 508 syntax, for example
-`tesserix-adk[a2a,mcp] @ https://.../tesserix_adk-0.53.1-py3-none-any.whl`.
+`tesserix-adk[a2a,mcp] @ https://.../tesserix_adk-0.54.0-py3-none-any.whl`.
 
 After PyPI trusted publishing is enabled, use a pre-1.0 compatibility window that accepts
 patch fixes without silently accepting the next potentially breaking minor release:
 
 ```bash
-uv add "tesserix-adk~=0.53.1"
-python -m pip install "tesserix-adk~=0.53.1"
+uv add "tesserix-adk~=0.54.0"
+python -m pip install "tesserix-adk~=0.54.0"
 ```
 
 In the `uv` case, commit `uv.lock` and install with `uv sync --frozen`. In the `pip` case,
