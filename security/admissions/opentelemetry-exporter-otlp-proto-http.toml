@@ -1,0 +1,17 @@
+package = "opentelemetry-exporter-otlp-proto-http"
+profile = "extra:otlp"
+decided = 2026-09-03
+owner = "@sam123ben"
+need = "Ship run traces over OTLP/HTTP to the in-cluster collector, or directly to Langfuse."
+alternatives = '''
+The gRPC exporter was the other candidate. HTTP was chosen because it needs no grpcio
+build, works through the same ingress as everything else and is what Langfuse accepts
+directly. Any other exporter can still be passed to `OtlpRecorder` by the caller.
+'''
+maintenance = "Active: released in step with opentelemetry-sdk."
+licence = "Apache-2.0"
+transitive = 4
+native_build = false
+security_history = "No unfixed advisories."
+review_by = 2027-09-03
+notes = "Brings opentelemetry-proto, opentelemetry-exporter-otlp-proto-common, protobuf and requests, all already in the inventory through other extras."

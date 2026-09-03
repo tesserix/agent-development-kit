@@ -1,0 +1,18 @@
+package = "opentelemetry-sdk"
+profile = "extra:otlp"
+decided = 2026-09-03
+owner = "@sam123ben"
+need = "Build finished runs into spans and queue them behind a batch processor for export."
+alternatives = '''
+Hand-rolling OTLP protobuf from the run record was the alternative. It was rejected
+because the SDK's batch processor already gives bounded queueing, drop-on-full and
+timeout semantics that every consumer would otherwise reimplement. The SDK stays behind
+an extra: the base install still carries only the API package and exports nothing.
+'''
+maintenance = "Active: CNCF project, released in step with opentelemetry-api."
+licence = "Apache-2.0"
+transitive = 2
+native_build = false
+security_history = "No unfixed advisories."
+review_by = 2027-09-03
+notes = "Also reached through the google-adk extra, which already carried it transitively."

@@ -4666,6 +4666,20 @@ class RunRecord(AdkModel) {scrubbed(self) -> 'Self'}
 
 **Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
 
+## `tesserix_adk.core.RunRecorder`
+
+**Stability:** `beta` · **Kind:** `Protocol`
+
+What the runtime hands every terminal run to.
+
+```python
+class RunRecorder(Protocol) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
 ## `tesserix_adk.core.RunSpan`
 
 **Stability:** `beta`
@@ -6920,6 +6934,20 @@ def bound(call: 'Callable[ArgsT, ResultT]') -> 'Callable[ArgsT, ResultT]'
 
 **Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
 
+## `tesserix_adk.core.bound_session`
+
+**Stability:** `beta`
+
+Attach a conversation or job id to every run recorded inside the block.
+
+```python
+def bound_session(session_id: 'str | None') -> 'Iterator[None]'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
 ## `tesserix_adk.core.budget.BudgetDecision`
 
 **Stability:** `beta`
@@ -8166,6 +8194,20 @@ def current_principal(*, where: 'str' = 'current_principal') -> 'Principal'
 
 **Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
 
+## `tesserix_adk.core.current_session`
+
+**Stability:** `beta`
+
+The session bound to this context, or None outside any.
+
+```python
+def current_session() -> 'str | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
 ## `tesserix_adk.core.current_tenant`
 
 **Stability:** `beta`
@@ -8188,6 +8230,20 @@ Drop repeated calls, keeping the first of each id.
 
 ```python
 def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
+## `tesserix_adk.core.default_recorder`
+
+**Stability:** `beta`
+
+The process-wide recorder, or None when nothing was installed.
+
+```python
+def default_recorder() -> 'RunRecorder | None'
 ```
 
 **Typed errors:** None declared.
@@ -11414,6 +11470,20 @@ def screen(text: 'str', *, instructions: 'str' = '') -> 'tuple[InjectionSignal, 
 
 **Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
 
+## `tesserix_adk.core.install_default_recorder`
+
+**Stability:** `beta`
+
+Set the recorder every runner without its own uses. Returns the one it replaced.
+
+```python
+def install_default_recorder(recorder: 'RunRecorder | None') -> 'RunRecorder | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
 ## `tesserix_adk.core.instrumentation.Instrumentation`
 
 **Stability:** `beta`
@@ -13385,6 +13455,76 @@ def read_envelope(raw: 'str | bytes') -> 'EventEnvelope'
 ```
 
 **Typed errors:** `UnknownEventTypeError`, `UnsupportedEventVersionError`
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
+## `tesserix_adk.core.recording.RunRecorder`
+
+**Stability:** `beta` · **Kind:** `Protocol`
+
+What the runtime hands every terminal run to.
+
+```python
+class RunRecorder(Protocol) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
+## `tesserix_adk.core.recording.bound_session`
+
+**Stability:** `beta`
+
+Attach a conversation or job id to every run recorded inside the block.
+
+```python
+def bound_session(session_id: 'str | None') -> 'Iterator[None]'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
+## `tesserix_adk.core.recording.current_session`
+
+**Stability:** `beta`
+
+The session bound to this context, or None outside any.
+
+```python
+def current_session() -> 'str | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
+## `tesserix_adk.core.recording.default_recorder`
+
+**Stability:** `beta`
+
+The process-wide recorder, or None when nothing was installed.
+
+```python
+def default_recorder() -> 'RunRecorder | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
+
+## `tesserix_adk.core.recording.install_default_recorder`
+
+**Stability:** `beta`
+
+Set the recorder every runner without its own uses. Returns the one it replaced.
+
+```python
+def install_default_recorder(recorder: 'RunRecorder | None') -> 'RunRecorder | None'
+```
+
+**Typed errors:** None declared.
 
 **Runnable recipe:** [examples/typed_primitives.py](../cookbook/index.md) — boundary values are typed and closed.
 

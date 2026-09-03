@@ -1063,6 +1063,7 @@ tesserix_adk.core.RunGrant :: class RunGrant(AdkModel)
 tesserix_adk.core.RunLease :: class RunLease(AdkModel) {held_at(self, now: 'float') -> 'bool'; superseded_by(self, other: 'RunLease') -> 'bool'}
 tesserix_adk.core.RunLeaseError :: class RunLeaseError(AdkError)
 tesserix_adk.core.RunRecord :: class RunRecord(AdkModel) {scrubbed(self) -> 'Self'}
+tesserix_adk.core.RunRecorder :: class RunRecorder(Protocol) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
 tesserix_adk.core.RunSpan :: class RunSpan(Span)
 tesserix_adk.core.RunStarted :: class RunStarted(EventPayload)
 tesserix_adk.core.RunState :: class RunState(StrEnum)
@@ -1224,6 +1225,7 @@ tesserix_adk.core.autonomy.InMemoryGrants :: class InMemoryGrants(object) {all_g
 tesserix_adk.core.autonomy.RESERVED_ACTION_CLASS :: RESERVED_ACTION_CLASS: str
 tesserix_adk.core.autonomy.Revocation :: class Revocation(AdkModel) {covers(self, grant: 'AutonomyGrant') -> 'bool'}
 tesserix_adk.core.bound :: def bound(call: 'Callable[ArgsT, ResultT]') -> 'Callable[ArgsT, ResultT]'
+tesserix_adk.core.bound_session :: def bound_session(session_id: 'str | None') -> 'Iterator[None]'
 tesserix_adk.core.budget.BudgetDecision :: class BudgetDecision(AdkModel) {as_error(self) -> 'BudgetExceededError'}
 tesserix_adk.core.budget.BudgetLimits :: class BudgetLimits(AdkModel) {filled(self) -> 'Self'}
 tesserix_adk.core.budget.BudgetScope :: class BudgetScope(StrEnum)
@@ -1313,8 +1315,10 @@ tesserix_adk.core.credentials.ExpiringCredential :: class ExpiringCredential(Cal
 tesserix_adk.core.credentials.ExpiringCredentialSource :: class ExpiringCredentialSource(Protocol) {for_tool(self, *, identity: 'AgentIdentity', audience: 'str', needs: 'Iterable[str]', run_id: 'str', agent_version: 'str' = Ellipsis) -> 'ExpiringCredential'}
 tesserix_adk.core.current_policy :: def current_policy(*, where: 'str' = 'current_policy') -> 'TenantPolicy'
 tesserix_adk.core.current_principal :: def current_principal(*, where: 'str' = 'current_principal') -> 'Principal'
+tesserix_adk.core.current_session :: def current_session() -> 'str | None'
 tesserix_adk.core.current_tenant :: def current_tenant(*, where: 'str' = 'current_tenant') -> 'TenantContext'
 tesserix_adk.core.deduplicate :: def deduplicate(calls: 'list[ToolCall]') -> 'tuple[ToolCall, ...]'
+tesserix_adk.core.default_recorder :: def default_recorder() -> 'RunRecorder | None'
 tesserix_adk.core.definition.AgentDefinition :: class AgentDefinition(AdkModel, Generic)
 tesserix_adk.core.definition.Owner :: class Owner(AdkModel)
 tesserix_adk.core.definition.TypedAgentDefinition :: class TypedAgentDefinition(AgentDefinition, Generic)
@@ -1545,6 +1549,7 @@ tesserix_adk.core.in_payload :: def in_payload(context: 'TenantContext', payload
 tesserix_adk.core.injection.InjectionSignal :: class InjectionSignal(AdkModel)
 tesserix_adk.core.injection.SignalKind :: class SignalKind(StrEnum)
 tesserix_adk.core.injection.screen :: def screen(text: 'str', *, instructions: 'str' = '') -> 'tuple[InjectionSignal, ...]'
+tesserix_adk.core.install_default_recorder :: def install_default_recorder(recorder: 'RunRecorder | None') -> 'RunRecorder | None'
 tesserix_adk.core.instrumentation.Instrumentation :: class Instrumentation(object) {run(self, run_id: 'str', **attributes: 'str') -> 'Iterator[RunSpan]'; step(self, kind: 'SpanKind', name: 'str', *, attempt: 'int' = 1, **attributes: 'str') -> 'Iterator[Span]'}
 tesserix_adk.core.instrumentation.Recording :: class Recording(object) {exported(self, run_id: 'str') -> 'dict[str, str]'}
 tesserix_adk.core.instrumentation.RunSpan :: class RunSpan(Span)
@@ -1686,6 +1691,11 @@ tesserix_adk.core.queue.WorkQueue :: class WorkQueue(Protocol) {adopt(self, *, w
 tesserix_adk.core.queue.WorkState :: class WorkState(StrEnum)
 tesserix_adk.core.reach :: def reach(result: 'BaseModel', path: 'str') -> 'object'
 tesserix_adk.core.read_envelope :: def read_envelope(raw: 'str | bytes') -> 'EventEnvelope'
+tesserix_adk.core.recording.RunRecorder :: class RunRecorder(Protocol) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
+tesserix_adk.core.recording.bound_session :: def bound_session(session_id: 'str | None') -> 'Iterator[None]'
+tesserix_adk.core.recording.current_session :: def current_session() -> 'str | None'
+tesserix_adk.core.recording.default_recorder :: def default_recorder() -> 'RunRecorder | None'
+tesserix_adk.core.recording.install_default_recorder :: def install_default_recorder(recorder: 'RunRecorder | None') -> 'RunRecorder | None'
 tesserix_adk.core.redact :: def redact(text: 'str', *, tenant: 'str', detectors: 'Sequence[PIIDetector]' = (PatternDetector('card'), PatternDetector('email'), PatternDetector('iban'), PatternDetector('bearer_token'), PatternDetector('api_key'), PatternDetector('national_id'), PatternDetector('passport'), PatternDetector('phone')), threshold: 'float' = 0.6, allow: 'Iterable[str]' = ()) -> 'Redacted'
 tesserix_adk.core.redaction.MASK :: MASK: str
 tesserix_adk.core.redaction.SENSITIVE_SHAPES :: SENSITIVE_SHAPES: tuple
@@ -2362,6 +2372,7 @@ tesserix_adk.observability.Cardinality :: class Cardinality(StrEnum)
 tesserix_adk.observability.DENIED_KEYS :: DENIED_KEYS: frozenset
 tesserix_adk.observability.DROPPED :: DROPPED: str
 tesserix_adk.observability.Dimensions :: class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] | None') -> 'str'; of(self, record: 'SpendRecord') -> 'dict[str, str]'}
+tesserix_adk.observability.ENV_PREFIX :: ENV_PREFIX: str
 tesserix_adk.observability.ExportedEvent :: class ExportedEvent(AdkModel)
 tesserix_adk.observability.ExportedSpan :: class ExportedSpan(AdkModel)
 tesserix_adk.observability.FILE_VERSION :: FILE_VERSION: str
@@ -2388,6 +2399,8 @@ tesserix_adk.observability.ModelRate :: class ModelRate(AdkModel) {of(self, *, i
 tesserix_adk.observability.NODE_SPAN :: NODE_SPAN: str
 tesserix_adk.observability.Node :: class Node(AdkModel) {in_currency(self, currency: 'str') -> 'Cost | None'}
 tesserix_adk.observability.ORPHAN :: ORPHAN: str
+tesserix_adk.observability.OtlpRecorder :: class OtlpRecorder(object) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
+tesserix_adk.observability.OtlpSettings :: class OtlpSettings(AdkModel)
 tesserix_adk.observability.Outcome :: class Outcome(StrEnum)
 tesserix_adk.observability.PAYLOAD_ATTRIBUTES :: PAYLOAD_ATTRIBUTES: frozenset
 tesserix_adk.observability.Pattern :: class Pattern(StrEnum)
@@ -2446,6 +2459,7 @@ tesserix_adk.observability.attribution.attributes_of :: def attributes_of(record
 tesserix_adk.observability.attribution.spend_of :: def spend_of(run: 'Run[OutputT]') -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.attribution.totals_by :: def totals_by(records: 'Iterable[SpendRecord]', *by: 'str') -> 'dict[tuple[str, ...], Totals]'
 tesserix_adk.observability.attribution.totals_of :: def totals_of(group: 'Sequence[SpendRecord]') -> 'Totals'
+tesserix_adk.observability.build_spans :: def build_spans(run: 'Run[Any]', *, settings: 'OtlpSettings', session_id: 'str | None' = None, resource: 'Resource | None' = None) -> 'tuple[ReadableSpan, ...]'
 tesserix_adk.observability.by_tenant :: def by_tenant(runs: 'Iterable[ShapedRun]', *, policy: 'HoldoutPolicy', minimum: 'int' = 30) -> 'dict[str, SavingsReport]'
 tesserix_adk.observability.conforms :: def conforms(attributes: 'Mapping[str, str]') -> 'None'
 tesserix_adk.observability.convention.AttributeSet :: class AttributeSet(AdkModel) {metric_dimensions(self) -> 'dict[str, str]'; rendered(self) -> 'dict[str, str]'}
@@ -2474,6 +2488,7 @@ tesserix_adk.observability.export.RedactingSpanProcessor :: class RedactingSpanP
 tesserix_adk.observability.export.RedactionPolicy :: class RedactionPolicy(AdkModel)
 tesserix_adk.observability.export.RedactionStats :: class RedactionStats(object)
 tesserix_adk.observability.export.SpanEvent :: class SpanEvent(AdkModel)
+tesserix_adk.observability.install_from_env :: def install_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
 tesserix_adk.observability.joined :: def joined(headers: 'Mapping[str, str]', *, run_id: 'str', sampled: 'bool' = True) -> 'tuple[W3CContext, Link | None]'
 tesserix_adk.observability.latency.CACHE_HIT_RATIO :: CACHE_HIT_RATIO: str
 tesserix_adk.observability.latency.CacheHits :: class CacheHits(AdkModel)
@@ -2500,6 +2515,13 @@ tesserix_adk.observability.metrics.INPUT_TOKENS :: INPUT_TOKENS: str
 tesserix_adk.observability.metrics.Meter :: class Meter(Protocol) {count(self, name: 'str', value: 'float', **dimensions: 'str') -> 'None'}
 tesserix_adk.observability.metrics.TOKENS :: TOKENS: str
 tesserix_adk.observability.node_of :: def node_of(run: 'Run[OutputT]', context: 'TraceContext') -> 'Node'
+tesserix_adk.observability.otlp.ENV_PREFIX :: ENV_PREFIX: str
+tesserix_adk.observability.otlp.OtlpRecorder :: class OtlpRecorder(object) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
+tesserix_adk.observability.otlp.OtlpSettings :: class OtlpSettings(AdkModel)
+tesserix_adk.observability.otlp.build_spans :: def build_spans(run: 'Run[Any]', *, settings: 'OtlpSettings', session_id: 'str | None' = None, resource: 'Resource | None' = None) -> 'tuple[ReadableSpan, ...]'
+tesserix_adk.observability.otlp.install_from_env :: def install_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
+tesserix_adk.observability.otlp.recorder_from_env :: def recorder_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
+tesserix_adk.observability.otlp.resource_for :: def resource_for(settings: 'OtlpSettings') -> 'Resource'
 tesserix_adk.observability.peer_node :: def peer_node(context: 'TraceContext', *, usage: 'Usage | None' = None, cost: 'Cost | None' = None, rate: 'Rate | None' = None, started_at: 'float | None' = None, ended_at: 'float | None' = None) -> 'Node'
 tesserix_adk.observability.propagation.CORRELATION :: CORRELATION: str
 tesserix_adk.observability.propagation.Link :: class Link(AdkModel) {rendered(self) -> 'dict[str, str]'}
@@ -2515,11 +2537,13 @@ tesserix_adk.observability.propagation.span_id_of :: def span_id_of(run_id: 'str
 tesserix_adk.observability.propagation.trace_id_of :: def trace_id_of(run_id: 'str') -> 'str'
 tesserix_adk.observability.record_spend :: def record_spend(run: 'Run[OutputT]', *, tracer: 'Tracer | None' = None, meter: 'Meter | None' = None, dimensions: 'Dimensions | None' = None, redactor: 'Redactor | None' = None, extra: 'Mapping[str, str] | None' = None, sampled: 'bool' = True) -> 'tuple[SpendRecord, ...]'
 tesserix_adk.observability.record_tree :: def record_tree(assembled: 'RunTree', *, tracer: 'Tracer | None' = None, meter: 'Meter | None' = None, dimensions: 'Dimensions | None' = None, redactor: 'Redactor | None' = None, extra: 'Mapping[str, str] | None' = None, sampled: 'bool' = True) -> 'tuple[Node, ...]'
+tesserix_adk.observability.recorder_from_env :: def recorder_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
 tesserix_adk.observability.redaction.MASK :: MASK: str
 tesserix_adk.observability.redaction.Redaction :: class Redaction(AdkModel)
 tesserix_adk.observability.redaction.Redactor :: class Redactor(object) {scrub(self, attributes: 'Mapping[str, str]') -> 'tuple[dict[str, str], Redaction]'}
 tesserix_adk.observability.render :: def render(assembled: 'RunTree') -> 'str'
 tesserix_adk.observability.rendered :: def rendered(nodes: 'Sequence[TraceNode]', *, depth: 'int | None' = None, only: 'Sequence[str]' = ()) -> 'str'
+tesserix_adk.observability.resource_for :: def resource_for(settings: 'OtlpSettings') -> 'Resource'
 tesserix_adk.observability.savings.Arm :: class Arm(StrEnum)
 tesserix_adk.observability.savings.Basis :: class Basis(StrEnum)
 tesserix_adk.observability.savings.Figure :: class Figure(AdkModel) {label(self) -> 'str'}

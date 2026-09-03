@@ -270,6 +270,20 @@ class Dimensions(AdkModel) {bucket(self, value: 'str', allowed: 'frozenset[str] 
 
 **Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
 
+## `tesserix_adk.observability.ENV_PREFIX`
+
+**Stability:** `alpha`
+
+str(object='') -> str str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+```python
+ENV_PREFIX: str
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
 ## `tesserix_adk.observability.ExportedEvent`
 
 **Stability:** `alpha`
@@ -628,6 +642,34 @@ str(object='') -> str str(bytes_or_buffer[, encoding[, errors]]) -> str
 
 ```python
 ORPHAN: str
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.OtlpRecorder`
+
+**Stability:** `alpha`
+
+Queue a run's spans behind a batch processor so export latency never reaches the caller.
+
+```python
+class OtlpRecorder(object) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.OtlpSettings`
+
+**Stability:** `alpha`
+
+Where AI traces go and how they are labelled.
+
+```python
+class OtlpSettings(AdkModel)
 ```
 
 **Typed errors:** None declared.
@@ -1446,6 +1488,20 @@ def totals_of(group: 'Sequence[SpendRecord]') -> 'Totals'
 
 **Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
 
+## `tesserix_adk.observability.build_spans`
+
+**Stability:** `alpha`
+
+One root agent span plus a child per generation, tool call and notable event.
+
+```python
+def build_spans(run: 'Run[Any]', *, settings: 'OtlpSettings', session_id: 'str | None' = None, resource: 'Resource | None' = None) -> 'tuple[ReadableSpan, ...]'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
 ## `tesserix_adk.observability.by_tenant`
 
 **Stability:** `alpha`
@@ -1838,6 +1894,20 @@ class SpanEvent(AdkModel)
 
 **Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
 
+## `tesserix_adk.observability.install_from_env`
+
+**Stability:** `alpha`
+
+Make the environment's recorder the process default, if the environment names one.
+
+```python
+def install_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
 ## `tesserix_adk.observability.joined`
 
 **Stability:** `alpha`
@@ -2202,6 +2272,104 @@ def node_of(run: 'Run[OutputT]', context: 'TraceContext') -> 'Node'
 
 **Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
 
+## `tesserix_adk.observability.otlp.ENV_PREFIX`
+
+**Stability:** `alpha`
+
+str(object='') -> str str(bytes_or_buffer[, encoding[, errors]]) -> str
+
+```python
+ENV_PREFIX: str
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.otlp.OtlpRecorder`
+
+**Stability:** `alpha`
+
+Queue a run's spans behind a batch processor so export latency never reaches the caller.
+
+```python
+class OtlpRecorder(object) {record(self, run: 'Run[Any]') -> 'None'; shutdown(self) -> 'None'}
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.otlp.OtlpSettings`
+
+**Stability:** `alpha`
+
+Where AI traces go and how they are labelled.
+
+```python
+class OtlpSettings(AdkModel)
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.otlp.build_spans`
+
+**Stability:** `alpha`
+
+One root agent span plus a child per generation, tool call and notable event.
+
+```python
+def build_spans(run: 'Run[Any]', *, settings: 'OtlpSettings', session_id: 'str | None' = None, resource: 'Resource | None' = None) -> 'tuple[ReadableSpan, ...]'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.otlp.install_from_env`
+
+**Stability:** `alpha`
+
+Make the environment's recorder the process default, if the environment names one.
+
+```python
+def install_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.otlp.recorder_from_env`
+
+**Stability:** `alpha`
+
+An `OtlpRecorder` for `AGENT_TELEMETRY_*`, or None when no endpoint is set.
+
+```python
+def recorder_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.otlp.resource_for`
+
+**Stability:** `alpha`
+
+The resource every span carries. Product routing keys on `service.namespace`.
+
+```python
+def resource_for(settings: 'OtlpSettings') -> 'Resource'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
 ## `tesserix_adk.observability.peer_node`
 
 **Stability:** `alpha`
@@ -2412,6 +2580,20 @@ def record_tree(assembled: 'RunTree', *, tracer: 'Tracer | None' = None, meter: 
 
 **Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
 
+## `tesserix_adk.observability.recorder_from_env`
+
+**Stability:** `alpha`
+
+An `OtlpRecorder` for `AGENT_TELEMETRY_*`, or None when no endpoint is set.
+
+```python
+def recorder_from_env(environ: 'Mapping[str, str] | None' = None) -> 'RunRecorder | None'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
 ## `tesserix_adk.observability.redaction.MASK`
 
 **Stability:** `alpha`
@@ -2476,6 +2658,20 @@ Draw a trace for a person to read.
 
 ```python
 def rendered(nodes: 'Sequence[TraceNode]', *, depth: 'int | None' = None, only: 'Sequence[str]' = ()) -> 'str'
+```
+
+**Typed errors:** None declared.
+
+**Runnable recipe:** [examples/auto_instrumentation.py](../cookbook/index.md) — telemetry is attributed and redacted.
+
+## `tesserix_adk.observability.resource_for`
+
+**Stability:** `alpha`
+
+The resource every span carries. Product routing keys on `service.namespace`.
+
+```python
+def resource_for(settings: 'OtlpSettings') -> 'Resource'
 ```
 
 **Typed errors:** None declared.

@@ -87,6 +87,37 @@ serialisation and no lock. The budget is under 10µs per span on a modern laptop
 `examples/auto_instrumentation.py` measures it and prints what it got. The exporter runs
 once per run, outside the work being measured.
 
+## Shipping every run to a collector
+
+Set `AGENT_TELEMETRY_ENDPOINT` and every `AgentRunner` in the process records each
+finished run as one OTLP trace, without any wiring in agent code. The kit installs an
+`OtlpRecorder` as the process default when it is imported; a runner constructed with an
+explicit `recorder=` uses that instead, and `recorder=None` opts out.
+
+The trace is shaped for Langfuse: one `agent` root span named after the agent, one
+`generation` child per model call, one `tool` child per tool call, and a point `event`
+for anything the run loop flagged. Ids are derived from the run id, so a replayed run
+upserts its trace and a score attaches to exactly one. Message content never leaves the
+process; details are scrubbed with the same patterns as the audit log. `service.namespace`
+carries the product, which is what a collector routes on.
+
+| Variable | Meaning |
+|---|---|
+| `AGENT_TELEMETRY_ENDPOINT` | OTLP/HTTP traces URL. Unset means off. |
+| `AGENT_TELEMETRY_PRODUCT` | Product this process belongs to. Required when on. |
+| `AGENT_TELEMETRY_SERVICE_NAME` | Deployable name. Defaults to the product. |
+| `AGENT_TELEMETRY_ENVIRONMENT` | Deployment environment. Default `prod`. |
+| `AGENT_TELEMETRY_RELEASE` | Build identity, becomes `service.version`. |
+| `AGENT_TELEMETRY_PUBLIC_KEY` / `_SECRET_KEY` | Basic-auth pair for sending straight to Langfuse instead of through a collector. |
+| `AGENT_TELEMETRY_QUEUE_SIZE` | Spans held before new ones drop. Default 4096. |
+| `AGENT_TELEMETRY_FLUSH_INTERVAL_SECONDS` | Queue drain period. Default 2. |
+| `AGENT_TELEMETRY_TIMEOUT_SECONDS` | Per-export deadline. Default 10. |
+
+Export is queued behind a batch processor and fails open: a collector outage costs
+traces, never answers. `AgentRunner.recording_failures` counts runs the recorder could
+not take. Install the transport with the `otlp` extra. `bound_session(id)` groups the runs
+inside it under one Langfuse session.
+
 ## Related
 
 - [Cost attribution](cost-attribution.md) — the counters that accompany these spans.
