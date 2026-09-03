@@ -39,8 +39,8 @@ class _Dumpable(Protocol):
 
 
 class _ClientSession(Protocol):
-    async def initialize(self) -> object:
-        """Negotiate the MCP session."""
+    async def discover(self) -> object:
+        """Discover the modern stateless MCP surface."""
 
     async def list_tools(self, cursor: str | None = None) -> _Dumpable:
         """Return one page of tools."""
@@ -63,7 +63,7 @@ type _StreamableClient = Callable[
 
 
 class McpStreamableHttpTransport:
-    """Open one bounded official-SDK MCP session for each gateway operation."""
+    """Open one bounded official-SDK MCP connection for each gateway operation."""
 
     async def list_tools(
         self,
@@ -75,7 +75,7 @@ class McpStreamableHttpTransport:
         max_result_bytes: int,
         max_tools: int,
     ) -> tuple[McpToolDescriptor, ...]:
-        """Initialize a routed server and return all of its MCP tool pages."""
+        """Discover a routed server and return all of its MCP tool pages."""
         del meta
         async with asyncio.timeout(timeout_seconds):
             async with self._session(
@@ -138,7 +138,7 @@ class McpStreamableHttpTransport:
         timeout_seconds: float,
         max_result_bytes: int,
     ) -> GatewayToolResult:
-        """Initialize a routed server and call one tool through the official SDK."""
+        """Discover a routed server and call one tool through the official SDK."""
         async with asyncio.timeout(timeout_seconds):
             async with self._session(
                 endpoint=endpoint, headers=headers, timeout_seconds=timeout_seconds
@@ -157,7 +157,7 @@ class McpStreamableHttpTransport:
     async def _session(
         self, *, endpoint: str, headers: Mapping[str, str], timeout_seconds: float
     ) -> AsyncIterator[_ClientSession]:
-        """Open and initialize one SDK session without ambient proxies or redirects."""
+        """Open one stateless SDK connection without ambient proxies or redirects."""
         mcp = require_extra("mcp", "mcp")
         streamable_module = require_extra("mcp", "mcp.client.streamable_http")
         session_factory = cast("_SessionFactory", mcp.ClientSession)
@@ -175,7 +175,7 @@ class McpStreamableHttpTransport:
                 read, write, read_timeout_seconds=timedelta(seconds=timeout_seconds)
             ) as session,
         ):
-            await session.initialize()
+            await session.discover()
             yield session
 
 

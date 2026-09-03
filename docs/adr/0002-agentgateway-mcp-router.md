@@ -26,12 +26,19 @@ The ADK provides a first-class AgentGateway MCP router with these boundaries:
 - trusted descriptions, required scopes, and approval policy come from ADK configuration,
   never from an MCP server's untrusted annotations;
 - credentials are minted per discovery or tool call and narrowed to the run, route, and
-  tool; session leases remain keyed by server, tenant, and subject;
+  tool; authorization leases remain keyed by server, tenant, and subject and are not MCP
+  transport sessions;
 - discovery is pinned into one immutable tool set for a run, with a default ceiling of 40;
 - arguments and responses are bounded, gateway responses remain untrusted tool results,
   and an MCP error becomes a typed ADK failure;
 - the optional `mcp` extra owns the Streamable HTTP transport. The router itself speaks a
   small protocol so tests and alternate transports do not import vendor types.
+
+As of MCP `2026-07-28`, every AgentGateway operation first uses the official SDK's
+`server/discover` path and then sends self-contained requests. It does not call legacy
+`initialize`, does not retain `Mcp-Session-Id`, and may reach a different healthy backend
+replica on the next operation. The in-process `McpSession.initialize()` abstraction remains
+for transport-neutral and legacy compatibility tests; it is not the production HTTP path.
 
 When AgentGateway is down, discovery and calls fail closed with a typed error. There is no
 direct-to-backend fallback because that would bypass the single-egress policy. When the
@@ -57,4 +64,6 @@ bounded MCP session per operation initially; pooling can be added behind the tra
 protocol without changing the public router or weakening tenant leases.
 
 The change is additive. Rollback means removing the router from consumer composition; the
-existing MCP authorization API and direct transports continue to work unchanged.
+existing MCP authorization API and direct transports continue to work unchanged. Rolling
+the transport back to handshake-era MCP is not an approved production rollback because it
+would restore session affinity and pod-loss coupling.
