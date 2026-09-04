@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/tesserix/agent-development-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/tesserix/agent-development-kit/actions/workflows/ci.yml)
 [![Security](https://github.com/tesserix/agent-development-kit/actions/workflows/security.yml/badge.svg)](https://github.com/tesserix/agent-development-kit/actions/workflows/security.yml)
+[![Release](https://img.shields.io/github/v/release/tesserix/agent-development-kit)](https://github.com/tesserix/agent-development-kit/releases/latest)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Apache--2.0](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
