@@ -8,6 +8,40 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.54.0
+
+### Added
+
+- **observability**: record every run to an OTLP collector by default (#310)
+- use stateless MCP discovery (#308)
+
+### Public API surface
+
+- Added: `tesserix_adk.core.RunRecorder`
+- Added: `tesserix_adk.core.bound_session`
+- Added: `tesserix_adk.core.current_session`
+- Added: `tesserix_adk.core.default_recorder`
+- Added: `tesserix_adk.core.install_default_recorder`
+- Added: `tesserix_adk.core.recording.RunRecorder`
+- Added: `tesserix_adk.core.recording.bound_session`
+- Added: `tesserix_adk.core.recording.current_session`
+- Added: `tesserix_adk.core.recording.default_recorder`
+- Added: `tesserix_adk.core.recording.install_default_recorder`
+- Added: `tesserix_adk.observability.ENV_PREFIX`
+- Added: `tesserix_adk.observability.OtlpRecorder`
+- Added: `tesserix_adk.observability.OtlpSettings`
+- Added: `tesserix_adk.observability.build_spans`
+- Added: `tesserix_adk.observability.install_from_env`
+- Added: `tesserix_adk.observability.otlp.ENV_PREFIX`
+- Added: `tesserix_adk.observability.otlp.OtlpRecorder`
+- Added: `tesserix_adk.observability.otlp.OtlpSettings`
+- Added: `tesserix_adk.observability.otlp.build_spans`
+- Added: `tesserix_adk.observability.otlp.install_from_env`
+- Added: `tesserix_adk.observability.otlp.recorder_from_env`
+- Added: `tesserix_adk.observability.otlp.resource_for`
+- Added: `tesserix_adk.observability.recorder_from_env`
+- Added: `tesserix_adk.observability.resource_for`
+
 ## 0.53.1
 
 No consumer-visible changes.

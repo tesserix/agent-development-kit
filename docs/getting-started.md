@@ -7,7 +7,7 @@ development while testing the full declared 3.12–3.14 range.
 
 ## 1. Install
 
-PyPI trusted publishing is not enabled yet. Install the exact tagged v0.53.1 wheel from
+PyPI trusted publishing is not enabled yet. Install the exact tagged v0.54.0 wheel from
 the public GitHub Release rather than asking an index for a project that is not there.
 The distribution name uses a hyphen; the Python import uses an underscore.
 
@@ -15,14 +15,14 @@ With `pip`:
 
 ```bash
 python -m venv .venv
-.venv/bin/python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.1/tesserix_adk-0.53.1-py3-none-any.whl"
+.venv/bin/python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.0/tesserix_adk-0.54.0-py3-none-any.whl"
 .venv/bin/python -c "import tesserix_adk; print(tesserix_adk.__version__)"
 ```
 
 With `uv`, from an application project:
 
 ```bash
-uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.53.1/tesserix_adk-0.53.1-py3-none-any.whl"
+uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.0/tesserix_adk-0.54.0-py3-none-any.whl"
 uv run python -c "import tesserix_adk; print(tesserix_adk.__version__)"
 ```
 
