@@ -1,0 +1,4924 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Typed, provider-neutral Python infrastructure for production AI agents.">
+      
+      
+      
+        <link rel="canonical" href="https://tesserix.github.io/agent-development-kit/0.54.0/reference/workflows/">
+      
+      
+        <link rel="prev" href="../rag/">
+      
+      
+        <link rel="next" href="../evals/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Workflows - Tesserix Agent Development Kit</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#workflows-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Tesserix Agent Development Kit" class="md-header__button md-logo" aria-label="Tesserix Agent Development Kit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tesserix Agent Development Kit
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Workflows
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Use dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Use dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Use light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Use light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tesserix/agent-development-kit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tesserix/agent-development-kit
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tesserix Agent Development Kit" class="md-nav__button md-logo" aria-label="Tesserix Agent Development Kit" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Tesserix Agent Development Kit
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tesserix/agent-development-kit" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tesserix/agent-development-kit
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../cookbook/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Start
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Start
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../capabilities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Capability map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../custom-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build a custom agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Complete reference agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrate an existing agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../provider-recipes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider recipes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations and gateways
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../framework-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Framework interoperability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../a2a/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Official A2A
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../google-adk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Google ADK bridge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../keeping-current/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keep agents current
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Understand
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Understand
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../primitives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core primitives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers and capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../run-loop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run loop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tenancy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../protocols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocols
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connect
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Connect
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp-transports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP transports
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agentgateway/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AgentGateway
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agent-cards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tesserix agent cards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../peer-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Peer discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../peer-invocation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Peer invocation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../state-adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../durable-runs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Durable runs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operate
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operate
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resilience/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reliability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../idempotency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idempotency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Threat model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auto-instrumentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../eval-datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation datasets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../verifying/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../protocols/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Protocol implementations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package root
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsactivities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Activities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsactivitycontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ActivityContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsagentworkflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.AgentWorkflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Cancellation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensatingactivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.CompensatingActivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Compensations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Continuation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationpolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ContinuationPolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdefault_continuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.DEFAULT_CONTINUATION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.DeterministicIds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsjournal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Journal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsmodelcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ModelCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsmodelcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ModelCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspayload_limit_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.PAYLOAD_LIMIT_BYTES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Patches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsrules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.RULES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsrecordedhistory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.RecordedHistory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayfinding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ReplayFinding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ReplayReport
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayrule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ReplayRule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsstreaming_unsupported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.STREAMING_UNSUPPORTED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowssaga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Saga
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowstoolcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ToolCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowstoolcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ToolCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsworkflow_marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.WORKFLOW_MARKER
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsworkflowclock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.WorkflowClock
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsworkflowstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.WorkflowState
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsactivity_policy_for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.activity_policy_for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsassert_replays" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.assert_replays
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsattempts_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.attempts_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensating_activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensating_activity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationcompensatingactivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.CompensatingActivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationcompensations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.Compensations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationsaga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.Saga
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationcompensating_activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.compensating_activity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationcontinuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.Continuation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationcontinuationpolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.ContinuationPolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationdefault_continuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.DEFAULT_CONTINUATION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationcontinued" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.continued
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinued" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continued
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicdeterministicids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.DeterministicIds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicpatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.Patches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicworkflowclock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.WorkflowClock
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicstable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.stable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableactivities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.Activities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableactivitycontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ActivityContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableagentworkflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.AgentWorkflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablecancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.Cancellation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablejournal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.Journal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablemodelcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ModelCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablemodelcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ModelCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablepayload_limit_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.PAYLOAD_LIMIT_BYTES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablestreaming_unsupported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.STREAMING_UNSUPPORTED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurabletoolcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ToolCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurabletoolcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ToolCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableworkflowstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.WorkflowState
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsguard_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.guard_source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspoliciesactivity_policy_for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policies.activity_policy_for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspoliciesattempts_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policies.attempts_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspoliciespolicy_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policies.policy_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspolicy_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policy_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayrules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.RULES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayrecordedhistory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.RecordedHistory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreplayfinding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.ReplayFinding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreplayreport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.ReplayReport
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreplayrule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.ReplayRule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayworkflow_marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.WORKFLOW_MARKER
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayassert_replays" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.assert_replays
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayguard_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.guard_source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsstable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.stable
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../a2a/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A2A
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code_intelligence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code intelligence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experimental/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experimental
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../public-readiness-review/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Public-readiness review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../repository-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deprecations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deprecations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detailed contribution guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/tesserix/agent-development-kit/blob/main/CODE_OF_CONDUCT.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code of Conduct
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releasing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsactivities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Activities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsactivitycontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ActivityContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsagentworkflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.AgentWorkflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Cancellation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensatingactivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.CompensatingActivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Compensations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Continuation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationpolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ContinuationPolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdefault_continuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.DEFAULT_CONTINUATION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.DeterministicIds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsjournal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Journal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsmodelcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ModelCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsmodelcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ModelCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspayload_limit_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.PAYLOAD_LIMIT_BYTES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Patches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsrules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.RULES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsrecordedhistory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.RecordedHistory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayfinding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ReplayFinding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ReplayReport
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayrule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ReplayRule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsstreaming_unsupported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.STREAMING_UNSUPPORTED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowssaga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.Saga
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowstoolcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ToolCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowstoolcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.ToolCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsworkflow_marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.WORKFLOW_MARKER
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsworkflowclock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.WorkflowClock
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsworkflowstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.WorkflowState
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsactivity_policy_for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.activity_policy_for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsassert_replays" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.assert_replays
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsattempts_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.attempts_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensating_activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensating_activity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationcompensatingactivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.CompensatingActivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationcompensations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.Compensations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationsaga" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.Saga
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscompensationcompensating_activity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.compensation.compensating_activity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationcontinuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.Continuation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationcontinuationpolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.ContinuationPolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationdefault_continuation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.DEFAULT_CONTINUATION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinuationcontinued" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continuation.continued
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowscontinued" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.continued
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicdeterministicids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.DeterministicIds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicpatches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.Patches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicworkflowclock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.WorkflowClock
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdeterministicstable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.deterministic.stable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableactivities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.Activities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableactivitycontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ActivityContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableagentworkflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.AgentWorkflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablecancellation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.Cancellation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablejournal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.Journal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablemodelcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ModelCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablemodelcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ModelCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablepayload_limit_bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.PAYLOAD_LIMIT_BYTES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurablestreaming_unsupported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.STREAMING_UNSUPPORTED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurabletoolcallinput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ToolCallInput
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurabletoolcallresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.ToolCallResult
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsdurableworkflowstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.durable.WorkflowState
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsguard_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.guard_source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspoliciesactivity_policy_for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policies.activity_policy_for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspoliciesattempts_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policies.attempts_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspoliciespolicy_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policies.policy_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowspolicy_for_tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.policy_for_tool
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayrules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.RULES
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayrecordedhistory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.RecordedHistory
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreplayfinding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.ReplayFinding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreplayreport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.ReplayReport
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayreplayrule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.ReplayRule
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayworkflow_marker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.WORKFLOW_MARKER
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayassert_replays" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.assert_replays
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayguard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.guard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsreplayguard_source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.replay.guard_source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tesserix_adkworkflowsstable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tesserix_adk.workflows.stable
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- generated by tools.api_reference; do not edit -->
+
+<h1 id="workflows-api">Workflows API<a class="headerlink" href="#workflows-api" title="Permanent link">&para;</a></h1>
+<p>Generated from the typed public surface.</p>
+<h2 id="tesserix_adkworkflowsactivities"><code>tesserix_adk.workflows.Activities</code><a class="headerlink" href="#tesserix_adkworkflowsactivities" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>The two execution points. Everything else on the workflow path is arithmetic.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Activities</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">model_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="s1">&#39;ModelCallInput&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ModelCallResult&#39;</span><span class="p">;</span> <span class="n">tool_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="s1">&#39;ToolCallInput&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ToolCallResult&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsactivitycontext"><code>tesserix_adk.workflows.ActivityContext</code><a class="headerlink" href="#tesserix_adkworkflowsactivitycontext" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Who an activity is acting for, carried on every input rather than looked up.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ActivityContext</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsagentworkflow"><code>tesserix_adk.workflows.AgentWorkflow</code><a class="headerlink" href="#tesserix_adkworkflowsagentworkflow" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The run loop, on the workflow path.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">AgentWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="s1">&#39;WorkflowState&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;ActivityContext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;WorkflowState&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscancellation"><code>tesserix_adk.workflows.Cancellation</code><a class="headerlink" href="#tesserix_adkworkflowscancellation" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>What the workflow needs of a cancellation token, satisfied by the runtime's own.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Cancellation</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">raise_if_cancelled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">;</span> <span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscompensatingactivity"><code>tesserix_adk.workflows.CompensatingActivity</code><a class="headerlink" href="#tesserix_adkworkflowscompensatingactivity" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One reversal, bound to the name of the forward tool it takes back.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CompensatingActivity</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">compensate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="s1">&#39;Applied&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscompensations"><code>tesserix_adk.workflows.Compensations</code><a class="headerlink" href="#tesserix_adkworkflowscompensations" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Which reversal belongs to which forward tool.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Compensations</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">irreversible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;bool&#39;</span><span class="p">;</span> <span class="n">of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CompensatingActivity | None&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscontinuation"><code>tesserix_adk.workflows.Continuation</code><a class="headerlink" href="#tesserix_adkworkflowscontinuation" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What crosses from one execution to the next, and nothing else.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Continuation</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscontinuationpolicy"><code>tesserix_adk.workflows.ContinuationPolicy</code><a class="headerlink" href="#tesserix_adkworkflowscontinuationpolicy" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>When an execution has run long enough to be worth starting again.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ContinuationPolicy</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">due</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">journal</span><span class="p">:</span> <span class="s1">&#39;Journal&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">history_bytes</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;bool&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdefault_continuation"><code>tesserix_adk.workflows.DEFAULT_CONTINUATION</code><a class="headerlink" href="#tesserix_adkworkflowsdefault_continuation" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>When an execution has run long enough to be worth starting again.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">DEFAULT_CONTINUATION</span><span class="p">:</span> <span class="n">ContinuationPolicy</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdeterministicids"><code>tesserix_adk.workflows.DeterministicIds</code><a class="headerlink" href="#tesserix_adkworkflowsdeterministicids" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Ids derived from the run and the call's position, never from randomness.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DeterministicIds</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[str, DeterministicIds]&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsjournal"><code>tesserix_adk.workflows.Journal</code><a class="headerlink" href="#tesserix_adkworkflowsjournal" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What is already done, by step id.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Journal</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">with_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="s1">&#39;ModelCallResult&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Journal&#39;</span><span class="p">;</span> <span class="n">with_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="s1">&#39;ToolCallResult&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Journal&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsmodelcallinput"><code>tesserix_adk.workflows.ModelCallInput</code><a class="headerlink" href="#tesserix_adkworkflowsmodelcallinput" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One model call, as the activity receives it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ModelCallInput</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsmodelcallresult"><code>tesserix_adk.workflows.ModelCallResult</code><a class="headerlink" href="#tesserix_adkworkflowsmodelcallresult" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What a model activity returned.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ModelCallResult</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowspayload_limit_bytes"><code>tesserix_adk.workflows.PAYLOAD_LIMIT_BYTES</code><a class="headerlink" href="#tesserix_adkworkflowspayload_limit_bytes" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">PAYLOAD_LIMIT_BYTES</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowspatches"><code>tesserix_adk.workflows.Patches</code><a class="headerlink" href="#tesserix_adkworkflowspatches" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Which changes in the workflow's logic this history already knows about.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Patches</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">applied</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;bool&#39;</span><span class="p">;</span> <span class="n">applying</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Patches&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsrules"><code>tesserix_adk.workflows.RULES</code><a class="headerlink" href="#tesserix_adkworkflowsrules" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Built-in immutable sequence.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">RULES</span><span class="p">:</span> <span class="nb">tuple</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsrecordedhistory"><code>tesserix_adk.workflows.RecordedHistory</code><a class="headerlink" href="#tesserix_adkworkflowsrecordedhistory" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A run's command sequence, committed as a fixture and replayed in CI.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">RecordedHistory</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayfinding"><code>tesserix_adk.workflows.ReplayFinding</code><a class="headerlink" href="#tesserix_adkworkflowsreplayfinding" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One refusal, where it is, and what to do about it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReplayFinding</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayreport"><code>tesserix_adk.workflows.ReplayReport</code><a class="headerlink" href="#tesserix_adkworkflowsreplayreport" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What the guard found across everything it read.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReplayReport</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayrule"><code>tesserix_adk.workflows.ReplayRule</code><a class="headerlink" href="#tesserix_adkworkflowsreplayrule" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One thing that cannot happen on a workflow path.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReplayRule</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsstreaming_unsupported"><code>tesserix_adk.workflows.STREAMING_UNSUPPORTED</code><a class="headerlink" href="#tesserix_adkworkflowsstreaming_unsupported" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>str(object='') -&gt; str str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">STREAMING_UNSUPPORTED</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowssaga"><code>tesserix_adk.workflows.Saga</code><a class="headerlink" href="#tesserix_adkworkflowssaga" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A scope whose applied work comes back off when something inside it fails.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Saga</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">call</span><span class="p">:</span> <span class="s1">&#39;Callable[[], Awaitable[str]]&#39;</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="s1">&#39;Mapping[str, JsonValue] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">branch</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">approved</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">;</span> <span class="n">unwind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cause</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">branch</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CompensatedFailure | CompensationIncomplete&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowstoolcallinput"><code>tesserix_adk.workflows.ToolCallInput</code><a class="headerlink" href="#tesserix_adkworkflowstoolcallinput" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One tool call, as the activity receives it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ToolCallInput</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowstoolcallresult"><code>tesserix_adk.workflows.ToolCallResult</code><a class="headerlink" href="#tesserix_adkworkflowstoolcallresult" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What a tool activity returned.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ToolCallResult</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsworkflow_marker"><code>tesserix_adk.workflows.WORKFLOW_MARKER</code><a class="headerlink" href="#tesserix_adkworkflowsworkflow_marker" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>str(object='') -&gt; str str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">WORKFLOW_MARKER</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsworkflowclock"><code>tesserix_adk.workflows.WorkflowClock</code><a class="headerlink" href="#tesserix_adkworkflowsworkflowclock" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Time as the run recorded it, not as the worker's clock reads it now.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">WorkflowClock</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">advanced</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seconds</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;WorkflowClock&#39;</span><span class="p">;</span> <span class="n">now</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;float&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsworkflowstate"><code>tesserix_adk.workflows.WorkflowState</code><a class="headerlink" href="#tesserix_adkworkflowsworkflowstate" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Everything the workflow decides, and nothing it fetches.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">WorkflowState</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsactivity_policy_for"><code>tesserix_adk.workflows.activity_policy_for</code><a class="headerlink" href="#tesserix_adkworkflowsactivity_policy_for" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The policy for one activity, narrowed by a declared timeout.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">activity_policy_for</span><span class="p">(</span><span class="n">activity_class</span><span class="p">:</span> <span class="s1">&#39;ActivityClass&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="s1">&#39;float | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="s1">&#39;ActivityPolicy | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ActivityPolicy&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsassert_replays"><code>tesserix_adk.workflows.assert_replays</code><a class="headerlink" href="#tesserix_adkworkflowsassert_replays" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Check that the current code issues the commands the history recorded.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">assert_replays</span><span class="p">(</span><span class="n">history</span><span class="p">:</span> <span class="s1">&#39;RecordedHistory&#39;</span><span class="p">,</span> <span class="n">commands</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>NonDeterminismError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsattempts_for_tool"><code>tesserix_adk.workflows.attempts_for_tool</code><a class="headerlink" href="#tesserix_adkworkflowsattempts_for_tool" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>How many attempts this tool gets, from what it declared about repeating it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">attempts_for_tool</span><span class="p">(</span><span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;Tool[Any, Any]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keyed</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="s1">&#39;ActivityPolicy | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscompensating_activity"><code>tesserix_adk.workflows.compensating_activity</code><a class="headerlink" href="#tesserix_adkworkflowscompensating_activity" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Pair a reversal with the forward tool it undoes.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compensating_activity</span><span class="p">(</span><span class="n">forward</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">irreversible</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Callable[[Callable[[Applied], Awaitable[str]]], CompensatingActivity]&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscompensationcompensatingactivity"><code>tesserix_adk.workflows.compensation.CompensatingActivity</code><a class="headerlink" href="#tesserix_adkworkflowscompensationcompensatingactivity" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One reversal, bound to the name of the forward tool it takes back.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CompensatingActivity</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">compensate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="s1">&#39;Applied&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscompensationcompensations"><code>tesserix_adk.workflows.compensation.Compensations</code><a class="headerlink" href="#tesserix_adkworkflowscompensationcompensations" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Which reversal belongs to which forward tool.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Compensations</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">irreversible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;bool&#39;</span><span class="p">;</span> <span class="n">of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CompensatingActivity | None&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscompensationsaga"><code>tesserix_adk.workflows.compensation.Saga</code><a class="headerlink" href="#tesserix_adkworkflowscompensationsaga" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A scope whose applied work comes back off when something inside it fails.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Saga</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">call</span><span class="p">:</span> <span class="s1">&#39;Callable[[], Awaitable[str]]&#39;</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="s1">&#39;Mapping[str, JsonValue] | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">branch</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">approved</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">;</span> <span class="n">unwind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cause</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">branch</span><span class="p">:</span> <span class="s1">&#39;str | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;CompensatedFailure | CompensationIncomplete&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscompensationcompensating_activity"><code>tesserix_adk.workflows.compensation.compensating_activity</code><a class="headerlink" href="#tesserix_adkworkflowscompensationcompensating_activity" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Pair a reversal with the forward tool it undoes.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compensating_activity</span><span class="p">(</span><span class="n">forward</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">irreversible</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Callable[[Callable[[Applied], Awaitable[str]]], CompensatingActivity]&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscontinuationcontinuation"><code>tesserix_adk.workflows.continuation.Continuation</code><a class="headerlink" href="#tesserix_adkworkflowscontinuationcontinuation" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What crosses from one execution to the next, and nothing else.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Continuation</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscontinuationcontinuationpolicy"><code>tesserix_adk.workflows.continuation.ContinuationPolicy</code><a class="headerlink" href="#tesserix_adkworkflowscontinuationcontinuationpolicy" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>When an execution has run long enough to be worth starting again.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ContinuationPolicy</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">due</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">journal</span><span class="p">:</span> <span class="s1">&#39;Journal&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">history_bytes</span><span class="p">:</span> <span class="s1">&#39;int&#39;</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;bool&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscontinuationdefault_continuation"><code>tesserix_adk.workflows.continuation.DEFAULT_CONTINUATION</code><a class="headerlink" href="#tesserix_adkworkflowscontinuationdefault_continuation" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>When an execution has run long enough to be worth starting again.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="n">DEFAULT_CONTINUATION</span><span class="p">:</span> <span class="n">ContinuationPolicy</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscontinuationcontinued"><code>tesserix_adk.workflows.continuation.continued</code><a class="headerlink" href="#tesserix_adkworkflowscontinuationcontinued" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Build the frontier a fresh execution starts from.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">continued</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="s1">&#39;WorkflowState&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">agent_name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">scopes</span><span class="p">:</span> <span class="s1">&#39;tuple[str, ...]&#39;</span> <span class="o">=</span> <span class="p">())</span> <span class="o">-&gt;</span> <span class="s1">&#39;Continuation&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>ConfigurationError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowscontinued"><code>tesserix_adk.workflows.continued</code><a class="headerlink" href="#tesserix_adkworkflowscontinued" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Build the frontier a fresh execution starts from.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">continued</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="s1">&#39;WorkflowState&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tenant</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">agent_name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">scopes</span><span class="p">:</span> <span class="s1">&#39;tuple[str, ...]&#39;</span> <span class="o">=</span> <span class="p">())</span> <span class="o">-&gt;</span> <span class="s1">&#39;Continuation&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>ConfigurationError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdeterministicdeterministicids"><code>tesserix_adk.workflows.deterministic.DeterministicIds</code><a class="headerlink" href="#tesserix_adkworkflowsdeterministicdeterministicids" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Ids derived from the run and the call's position, never from randomness.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DeterministicIds</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[str, DeterministicIds]&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdeterministicpatches"><code>tesserix_adk.workflows.deterministic.Patches</code><a class="headerlink" href="#tesserix_adkworkflowsdeterministicpatches" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Which changes in the workflow's logic this history already knows about.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Patches</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">applied</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;bool&#39;</span><span class="p">;</span> <span class="n">applying</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Patches&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdeterministicworkflowclock"><code>tesserix_adk.workflows.deterministic.WorkflowClock</code><a class="headerlink" href="#tesserix_adkworkflowsdeterministicworkflowclock" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Time as the run recorded it, not as the worker's clock reads it now.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">WorkflowClock</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">advanced</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seconds</span><span class="p">:</span> <span class="s1">&#39;float&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;WorkflowClock&#39;</span><span class="p">;</span> <span class="n">now</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;float&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdeterministicstable"><code>tesserix_adk.workflows.deterministic.stable</code><a class="headerlink" href="#tesserix_adkworkflowsdeterministicstable" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Return a registry's entries in an order that cannot change between executions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">stable</span><span class="p">(</span><span class="n">registry</span><span class="p">:</span> <span class="s1">&#39;Mapping[str, ValueT]&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[tuple[str, ValueT], ...]&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurableactivities"><code>tesserix_adk.workflows.durable.Activities</code><a class="headerlink" href="#tesserix_adkworkflowsdurableactivities" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>The two execution points. Everything else on the workflow path is arithmetic.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Activities</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">model_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="s1">&#39;ModelCallInput&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ModelCallResult&#39;</span><span class="p">;</span> <span class="n">tool_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="s1">&#39;ToolCallInput&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ToolCallResult&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurableactivitycontext"><code>tesserix_adk.workflows.durable.ActivityContext</code><a class="headerlink" href="#tesserix_adkworkflowsdurableactivitycontext" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Who an activity is acting for, carried on every input rather than looked up.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ActivityContext</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurableagentworkflow"><code>tesserix_adk.workflows.durable.AgentWorkflow</code><a class="headerlink" href="#tesserix_adkworkflowsdurableagentworkflow" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The run loop, on the workflow path.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">AgentWorkflow</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span> <span class="p">{</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="s1">&#39;WorkflowState&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;ActivityContext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;WorkflowState&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurablecancellation"><code>tesserix_adk.workflows.durable.Cancellation</code><a class="headerlink" href="#tesserix_adkworkflowsdurablecancellation" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code> · <strong>Kind:</strong> <code>Protocol</code></p>
+<p>What the workflow needs of a cancellation token, satisfied by the runtime's own.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Cancellation</span><span class="p">(</span><span class="n">Protocol</span><span class="p">)</span> <span class="p">{</span><span class="n">raise_if_cancelled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span><span class="p">;</span> <span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurablejournal"><code>tesserix_adk.workflows.durable.Journal</code><a class="headerlink" href="#tesserix_adkworkflowsdurablejournal" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What is already done, by step id.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Journal</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">with_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="s1">&#39;ModelCallResult&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Journal&#39;</span><span class="p">;</span> <span class="n">with_tool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="s1">&#39;ToolCallResult&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Journal&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurablemodelcallinput"><code>tesserix_adk.workflows.durable.ModelCallInput</code><a class="headerlink" href="#tesserix_adkworkflowsdurablemodelcallinput" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One model call, as the activity receives it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ModelCallInput</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurablemodelcallresult"><code>tesserix_adk.workflows.durable.ModelCallResult</code><a class="headerlink" href="#tesserix_adkworkflowsdurablemodelcallresult" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What a model activity returned.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ModelCallResult</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurablepayload_limit_bytes"><code>tesserix_adk.workflows.durable.PAYLOAD_LIMIT_BYTES</code><a class="headerlink" href="#tesserix_adkworkflowsdurablepayload_limit_bytes" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>int([x]) -&gt; integer int(x, base=10) -&gt; integer</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="n">PAYLOAD_LIMIT_BYTES</span><span class="p">:</span> <span class="nb">int</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurablestreaming_unsupported"><code>tesserix_adk.workflows.durable.STREAMING_UNSUPPORTED</code><a class="headerlink" href="#tesserix_adkworkflowsdurablestreaming_unsupported" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>str(object='') -&gt; str str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="n">STREAMING_UNSUPPORTED</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurabletoolcallinput"><code>tesserix_adk.workflows.durable.ToolCallInput</code><a class="headerlink" href="#tesserix_adkworkflowsdurabletoolcallinput" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One tool call, as the activity receives it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ToolCallInput</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurabletoolcallresult"><code>tesserix_adk.workflows.durable.ToolCallResult</code><a class="headerlink" href="#tesserix_adkworkflowsdurabletoolcallresult" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What a tool activity returned.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ToolCallResult</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsdurableworkflowstate"><code>tesserix_adk.workflows.durable.WorkflowState</code><a class="headerlink" href="#tesserix_adkworkflowsdurableworkflowstate" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Everything the workflow decides, and nothing it fetches.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">WorkflowState</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsguard"><code>tesserix_adk.workflows.guard</code><a class="headerlink" href="#tesserix_adkworkflowsguard" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Read every Python file under <code>paths</code> and report what cannot replay.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">guard</span><span class="p">(</span><span class="n">paths</span><span class="p">:</span> <span class="s1">&#39;Iterable[Path]&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ReplayReport&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsguard_source"><code>tesserix_adk.workflows.guard_source</code><a class="headerlink" href="#tesserix_adkworkflowsguard_source" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Read one module and return what cannot replay.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">guard_source</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[ReplayFinding, ...]&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>SyntaxError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowspoliciesactivity_policy_for"><code>tesserix_adk.workflows.policies.activity_policy_for</code><a class="headerlink" href="#tesserix_adkworkflowspoliciesactivity_policy_for" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The policy for one activity, narrowed by a declared timeout.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">activity_policy_for</span><span class="p">(</span><span class="n">activity_class</span><span class="p">:</span> <span class="s1">&#39;ActivityClass&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="s1">&#39;float | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="s1">&#39;ActivityPolicy | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ActivityPolicy&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowspoliciesattempts_for_tool"><code>tesserix_adk.workflows.policies.attempts_for_tool</code><a class="headerlink" href="#tesserix_adkworkflowspoliciesattempts_for_tool" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>How many attempts this tool gets, from what it declared about repeating it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">attempts_for_tool</span><span class="p">(</span><span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;Tool[Any, Any]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">keyed</span><span class="p">:</span> <span class="s1">&#39;bool&#39;</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="s1">&#39;ActivityPolicy | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;int&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowspoliciespolicy_for_tool"><code>tesserix_adk.workflows.policies.policy_for_tool</code><a class="headerlink" href="#tesserix_adkworkflowspoliciespolicy_for_tool" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The policy for a tool activity, taking the tool's own declared timeout.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">policy_for_tool</span><span class="p">(</span><span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;Tool[Any, Any]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="s1">&#39;ActivityPolicy | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ActivityPolicy&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowspolicy_for_tool"><code>tesserix_adk.workflows.policy_for_tool</code><a class="headerlink" href="#tesserix_adkworkflowspolicy_for_tool" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>The policy for a tool activity, taking the tool's own declared timeout.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">policy_for_tool</span><span class="p">(</span><span class="n">tool</span><span class="p">:</span> <span class="s1">&#39;Tool[Any, Any]&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">base</span><span class="p">:</span> <span class="s1">&#39;ActivityPolicy | None&#39;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ActivityPolicy&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayrules"><code>tesserix_adk.workflows.replay.RULES</code><a class="headerlink" href="#tesserix_adkworkflowsreplayrules" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Built-in immutable sequence.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a><span class="n">RULES</span><span class="p">:</span> <span class="nb">tuple</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayrecordedhistory"><code>tesserix_adk.workflows.replay.RecordedHistory</code><a class="headerlink" href="#tesserix_adkworkflowsreplayrecordedhistory" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>A run's command sequence, committed as a fixture and replayed in CI.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">RecordedHistory</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayreplayfinding"><code>tesserix_adk.workflows.replay.ReplayFinding</code><a class="headerlink" href="#tesserix_adkworkflowsreplayreplayfinding" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One refusal, where it is, and what to do about it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReplayFinding</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayreplayreport"><code>tesserix_adk.workflows.replay.ReplayReport</code><a class="headerlink" href="#tesserix_adkworkflowsreplayreplayreport" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>What the guard found across everything it read.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReplayReport</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span> <span class="p">{</span><span class="n">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;str&#39;</span><span class="p">}</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayreplayrule"><code>tesserix_adk.workflows.replay.ReplayRule</code><a class="headerlink" href="#tesserix_adkworkflowsreplayreplayrule" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>One thing that cannot happen on a workflow path.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReplayRule</span><span class="p">(</span><span class="n">AdkModel</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayworkflow_marker"><code>tesserix_adk.workflows.replay.WORKFLOW_MARKER</code><a class="headerlink" href="#tesserix_adkworkflowsreplayworkflow_marker" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>str(object='') -&gt; str str(bytes_or_buffer[, encoding[, errors]]) -&gt; str</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-67-1" name="__codelineno-67-1" href="#__codelineno-67-1"></a><span class="n">WORKFLOW_MARKER</span><span class="p">:</span> <span class="nb">str</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayassert_replays"><code>tesserix_adk.workflows.replay.assert_replays</code><a class="headerlink" href="#tesserix_adkworkflowsreplayassert_replays" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Check that the current code issues the commands the history recorded.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-68-1" name="__codelineno-68-1" href="#__codelineno-68-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">assert_replays</span><span class="p">(</span><span class="n">history</span><span class="p">:</span> <span class="s1">&#39;RecordedHistory&#39;</span><span class="p">,</span> <span class="n">commands</span><span class="p">:</span> <span class="s1">&#39;Sequence[str]&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;None&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>NonDeterminismError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayguard"><code>tesserix_adk.workflows.replay.guard</code><a class="headerlink" href="#tesserix_adkworkflowsreplayguard" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Read every Python file under <code>paths</code> and report what cannot replay.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">guard</span><span class="p">(</span><span class="n">paths</span><span class="p">:</span> <span class="s1">&#39;Iterable[Path]&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ReplayReport&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsreplayguard_source"><code>tesserix_adk.workflows.replay.guard_source</code><a class="headerlink" href="#tesserix_adkworkflowsreplayguard_source" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Read one module and return what cannot replay.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-70-1" name="__codelineno-70-1" href="#__codelineno-70-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">guard_source</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="s1">&#39;str&#39;</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[ReplayFinding, ...]&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> <code>SyntaxError</code></p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+<h2 id="tesserix_adkworkflowsstable"><code>tesserix_adk.workflows.stable</code><a class="headerlink" href="#tesserix_adkworkflowsstable" title="Permanent link">&para;</a></h2>
+<p><strong>Stability:</strong> <code>alpha</code></p>
+<p>Return a registry's entries in an order that cannot change between executions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-71-1" name="__codelineno-71-1" href="#__codelineno-71-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">stable</span><span class="p">(</span><span class="n">registry</span><span class="p">:</span> <span class="s1">&#39;Mapping[str, ValueT]&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;tuple[tuple[str, ValueT], ...]&#39;</span>
+</code></pre></div>
+<p><strong>Typed errors:</strong> None declared.</p>
+<p><strong>Runnable recipe:</strong> <a href="../../cookbook/">examples/durable_run.py</a> — durable effects are replay-safe and idempotent. Install <code>tesserix-adk[temporal]</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../rag/" class="md-footer__link md-footer__link--prev" aria-label="Previous: RAG">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                RAG
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../evals/" class="md-footer__link md-footer__link--next" aria-label="Next: Evaluations">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Evaluations
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Tesserix
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.top", "search.highlight", "search.suggest"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
