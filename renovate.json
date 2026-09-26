@@ -1,4 +1,50 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>tesserix/renovate-config"]
+  "extends": [
+    "github>tesserix/renovate-config"
+  ],
+  "enabledManagers": [
+    "pep621",
+    "github-actions"
+  ],
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "timezone": "Australia/Sydney",
+  "labels": [
+    "dependencies"
+  ],
+  "automerge": false,
+  "packageRules": [
+    {
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "python minor and patch updates"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "actions minor and patch updates"
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": null
+    }
+  ]
 }
