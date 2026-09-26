@@ -54,7 +54,7 @@ async def main() -> None:
 
     for tenant in ("acme", "globex"):
         held = await secrets.resolve(settings.api_key_ref.for_tenant(tenant))
-        print(f"{tenant} resolves to: {held}")  # noqa: T201
+        print(f"{tenant}: secret resolved")  # noqa: T201
         expected = ENVIRONMENT[f"{tenant.upper()}_OPENAI_KEY"]
         delivered = held.get_secret_value() == expected
         print(f"  delivered only at provider boundary: {delivered}")  # noqa: T201
