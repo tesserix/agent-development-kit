@@ -722,3 +722,80 @@ class TestDiscoveryOverATransport:
             await transport.request("initialize", {}, timeout_seconds=5.0)
 
         await transport.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("streaming", [False, True])
+async def test_http_session_header_is_replayed_after_initialization(streaming: bool) -> None:
+    observed: list[tuple[str, str | None, str | None]] = []
+
+    def endpoint(request: httpx.Request) -> httpx.Response:
+        method = json.loads(request.content)["method"]
+        observed.append(
+            (
+                method,
+                request.headers.get("mcp-session-id"),
+                request.headers.get("mcp-protocol-version"),
+            )
+        )
+        response = _json_rpc(request)
+        if method == "initialize":
+            if streaming:
+                response = httpx.Response(
+                    200,
+                    text=f"event: message\ndata: {json.dumps(response.json())}\n\n",
+                    headers={"content-type": "text/event-stream"},
+                )
+            response.headers["Mcp-Session-Id"] = "server-session-123"
+        return response
+
+    transport = _http(endpoint)
+    session = TransportSession(transport, config=_endpoint())
+    await session.initialize()
+    await session.list_tools()
+    await transport.close()
+    assert observed == [
+        ("initialize", None, None),
+        ("notifications/initialized", "server-session-123", "2025-06-18"),
+        ("tools/list", "server-session-123", "2025-06-18"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_http_reinitialize_does_not_reuse_a_previous_session() -> None:
+    initialized = 0
+    sessions: list[str | None] = []
+
+    def endpoint(request: httpx.Request) -> httpx.Response:
+        nonlocal initialized
+        response = _json_rpc(request)
+        if json.loads(request.content)["method"] == "initialize":
+            initialized += 1
+            assert "mcp-session-id" not in request.headers
+            if initialized == 1:
+                response.headers["mcp-session-id"] = "first-session"
+        else:
+            sessions.append(request.headers.get("mcp-session-id"))
+        return response
+
+    transport = _http(endpoint)
+    session = TransportSession(transport, config=_endpoint())
+    await session.initialize()
+    await session.initialize()
+    await session.list_tools()
+    await transport.close()
+    assert sessions == ["first-session", None, None]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("session_id", ["", "contains space", "x" * 1025, "control\x00byte"])
+async def test_http_refuses_invalid_session_metadata(session_id: str) -> None:
+    def endpoint(request: httpx.Request) -> httpx.Response:
+        response = _json_rpc(request)
+        response.headers["mcp-session-id"] = session_id
+        return response
+
+    transport = _http(endpoint)
+    with pytest.raises(McpTransportError, match="invalid MCP session metadata"):
+        await TransportSession(transport, config=_endpoint()).initialize()
+    await transport.close()
