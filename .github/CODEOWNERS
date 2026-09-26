@@ -1,6 +1,6 @@
 # Code owners — auto-requested for review on every pull request.
-# The main-branch ruleset requires code-owner approval before merging and has no bypass
-# actors. Ownership grants review responsibility, not permission to push to main.
+# The main-branch ruleset requires code-owner approval with an administrator PR bypass.
+# Ownership grants review responsibility, not permission to push to main.
 
 * @sam123ben @mahesh-sangawar
 
@@ -11,3 +11,5 @@
 /security/ @sam123ben @mahesh-sangawar
 /.github/ @sam123ben @mahesh-sangawar
 /SECURITY.md @sam123ben @mahesh-sangawar
+
+/renovate.json @sam123ben @mahesh-sangawar

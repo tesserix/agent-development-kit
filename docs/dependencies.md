@@ -69,7 +69,8 @@ of it, not the ends.
 
 ## Cadence
 
-`.github/dependabot.yml` checks the `uv` and `github-actions` ecosystems every Monday.
+`renovate.json` extends the shared Tesserix preset and checks Python (`pep621`,
+including `uv.lock`) and `github-actions` every Monday before 6am Australia/Sydney.
 A pinned action ages exactly like a pinned package and nothing else moves it.
 
 Routine minor and patch updates arrive **grouped into one pull request** per ecosystem.
@@ -154,25 +155,20 @@ they are never in a consumer's resolution and carry the maintainer's own bar ins
 
 ## Review
 
-`pyproject.toml`, `uv.lock`, `security/` and `.github/dependabot.yml` have a named owner
+`pyproject.toml`, `uv.lock`, `security/` and `renovate.json` have a named owner
 in `.github/CODEOWNERS`. Unowned update pull requests accumulate until somebody merges
 the pile without reading it, which is the failure the weekly cadence was supposed to
 prevent.
 
 ## Known limitations
 
-- **Dependabot cannot update `uv.lock` while `required-version` excludes its bundled uv.**
-  `pyproject.toml` pins `required-version = ">=0.12,<0.13"`; the hosted updater currently
-  runs uv 0.11.31 and reports `tool_version_not_supported` for every locked package, so
-  the `uv` ecosystem opens manifest-only pull requests and its run is red. The pin stays:
-  dropping it would let a different uv rewrite the lock and take reproducibility with it.
-  Until the updater ships uv 0.12, locked-package updates are done on the weekly rota by
-  hand — `uv lock --upgrade`, run the suite, open the change with the `dependencies`
-  label. The `github-actions` ecosystem is unaffected.
-- **A label Dependabot is told to apply must already exist on the repository.** A label
-  named in `.github/dependabot.yml` that does not exist is dropped silently, and a
-  dependency pull request without the `dependencies` label never starts the full matrix.
-  `dependencies` and `actions` exist; adding a third means creating it first.
+- **Renovate must be installed and allowed to run for this repository.** Configuration
+  alone does not enable the hosted app. Until its dashboard confirms successful runs,
+  locked-package updates stay on the weekly manual rota: `uv lock --upgrade`, run the
+  suite, and open a pull request labelled `dependencies`.
+- **The dependency label must exist on the repository.** The `dependencies` label
+  starts the full supported Python matrix; it is required for automated and manual
+  update pull requests. Automatic merging is disabled; majors stay outside routine groups.
 - **The committed inventory describes the committed lock, and nothing else.** The
   `lowest declared versions resolve and pass` job re-resolves the lock on purpose, so the
   two graphs differ by design and that job skips the inventory assertions. A floor that

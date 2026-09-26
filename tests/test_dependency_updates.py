@@ -7,44 +7,53 @@ approved. Both failure modes are configuration, so both are asserted here.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
-from tests.ci_config import CI, ROOT, ci_jobs, ci_run_steps, load_yaml, triggers
+from tests.ci_config import CI, ROOT, ci_jobs, ci_run_steps, triggers
 
-DEPENDABOT = ROOT / ".github" / "dependabot.yml"
+RENOVATE = ROOT / "renovate.json"
 CODEOWNERS = ROOT / ".github" / "CODEOWNERS"
 DOCS = ROOT / "docs" / "dependencies.md"
 POLICY_JOB = "dependency-policy"
 FULL_MATRIX = "test-matrix"
 
 
-def _ecosystem(name: str) -> dict[str, Any]:
-    updates: list[dict[str, Any]] = load_yaml(DEPENDABOT)["updates"]
-    return next(entry for entry in updates if entry["package-ecosystem"] == name)
+def _config() -> dict[str, Any]:
+    config: dict[str, Any] = json.loads(RENOVATE.read_text(encoding="utf-8"))
+    return config
 
 
 class TestCadence:
     def test_python_dependencies_are_checked_on_a_fixed_cadence(self) -> None:
-        assert _ecosystem("uv")["schedule"]["interval"] == "weekly"
+        config = _config()
+        assert "pep621" in config["enabledManagers"]
+        assert config["schedule"] == ["before 6am on monday"]
+        assert config["timezone"] == "Australia/Sydney"
 
     def test_the_actions_the_workflows_pin_are_updated_too(self) -> None:
-        """A pinned action ages exactly like a pinned package, and nothing else moves it."""
-        assert _ecosystem("github-actions")["schedule"]["interval"] == "weekly"
+        assert "github-actions" in _config()["enabledManagers"]
 
 
 class TestGrouping:
     def test_routine_updates_arrive_as_one_change(self) -> None:
-        """Forty separate pull requests are not reviewed, they are approved."""
-        groups = _ecosystem("uv")["groups"]
-        assert groups, "routine updates must be grouped"
+        for manager in ("pep621", "github-actions"):
+            groups = [
+                rule
+                for rule in _config()["packageRules"]
+                if manager in rule.get("matchManagers", []) and rule.get("groupName")
+            ]
+            assert len(groups) == 1
+            assert set(groups[0]["matchUpdateTypes"]) == {"minor", "patch", "pin", "digest"}
 
     def test_a_major_upgrade_is_not_folded_into_the_batch(self) -> None:
-        """A provider SDK major needs its own migration note, not a line in a batch."""
-        for group in _ecosystem("uv")["groups"].values():
-            assert "major" not in group["update-types"]
+        rules = _config()["packageRules"]
+        assert rules[-1]["matchUpdateTypes"] == ["major"]
+        assert rules[-1]["groupName"] is None
+        assert not _config()["automerge"]
 
     def test_a_dependency_change_is_labelled_so_the_full_gates_can_find_it(self) -> None:
-        assert "dependencies" in _ecosystem("uv")["labels"]
+        assert "dependencies" in _config()["labels"]
 
 
 class TestWhatMustPassBeforeMerge:
