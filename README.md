@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/tesserix/agent-development-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/tesserix/agent-development-kit/actions/workflows/ci.yml)
 [![Security](https://github.com/tesserix/agent-development-kit/actions/workflows/security.yml/badge.svg)](https://github.com/tesserix/agent-development-kit/actions/workflows/security.yml)
+[![Release](https://img.shields.io/github/v/release/tesserix/agent-development-kit)](https://github.com/tesserix/agent-development-kit/releases/latest)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Apache--2.0](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
@@ -38,13 +39,13 @@ networking, identity, and data.
 Python 3.12 or newer is required. Development and release verification use CPython 3.14,
 while CI keeps every declared minor from 3.12 through 3.14 compatible.
 PyPI trusted publishing is not enabled yet, so install the exact wheel from the public
-v0.54.0 release. Standard `pip` and `uv` install the same distribution.
+v0.54.1 release. Standard `pip` and `uv` install the same distribution.
 
 With `pip`, create an isolated environment and import the underscore-named Python package:
 
 ```bash
 python -m venv .venv
-.venv/bin/python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.0/tesserix_adk-0.54.0-py3-none-any.whl"
+.venv/bin/python -m pip install "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.1/tesserix_adk-0.54.1-py3-none-any.whl"
 .venv/bin/python -c "import tesserix_adk; print(tesserix_adk.__version__)"
 ```
 
@@ -52,7 +53,7 @@ With `uv`, add the same immutable wheel to an application project and commit the
 lockfile:
 
 ```bash
-uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.0/tesserix_adk-0.54.0-py3-none-any.whl"
+uv add "tesserix-adk @ https://github.com/tesserix/agent-development-kit/releases/download/v0.54.1/tesserix_adk-0.54.1-py3-none-any.whl"
 uv run python -c "import tesserix_adk; print(tesserix_adk.__version__)"
 ```
 
