@@ -401,6 +401,8 @@ class HttpTransport:
         self._gate = asyncio.Semaphore(config.max_in_flight)
         self._next = 0
         self._closed = False
+        self._session_id: str | None = None
+        self._protocol_version: str | None = None
 
     @property
     def healthy(self) -> bool:
@@ -463,6 +465,8 @@ class HttpTransport:
         if self._closed:
             return
         self._closed = True
+        self._session_id = None
+        self._protocol_version = None
         if self._owned:
             await self._client.aclose()
 
@@ -510,12 +514,25 @@ class HttpTransport:
         self, message: dict[str, JsonValue], *, headers: Mapping[str, str], answered: bool
     ) -> dict[str, Any]:
         """Post once and read at most one message back."""
+        wire_headers = {
+            key: value
+            for key, value in headers.items()
+            if key.lower() not in {"mcp-session-id", "mcp-protocol-version"}
+        }
+        if message.get("method") == "initialize":
+            self._session_id = None
+            self._protocol_version = None
+        else:
+            if self._session_id is not None:
+                wire_headers["mcp-session-id"] = self._session_id
+            if self._protocol_version is not None:
+                wire_headers["mcp-protocol-version"] = self._protocol_version
         request = self._client.build_request(
             "POST",
             self._config.endpoint,
             json=message,
             headers={
-                **headers,
+                **wire_headers,
                 "accept": "application/json, text/event-stream",
                 "content-type": "application/json",
             },
@@ -526,6 +543,21 @@ class HttpTransport:
             if not answered:
                 return {}
             payload = await self._body(response)
+            if message.get("method") == "initialize" and isinstance(payload.get("result"), dict):
+                session_id = response.headers.get("mcp-session-id")
+                version = payload["result"].get("protocolVersion")
+                for value in (session_id, version):
+                    if value is not None and (
+                        not isinstance(value, str)
+                        or not value
+                        or len(value) > 1024
+                        or any(not 0x21 <= ord(character) <= 0x7E for character in value)
+                    ):
+                        raise self._failure(
+                            "invalid MCP session metadata", McpTransportReason.PROTOCOL
+                        )
+                self._session_id = session_id
+                self._protocol_version = version
         finally:
             await response.aclose()
         return payload

@@ -8,6 +8,12 @@ the stability decision behind it. The `api-surface` CI job stays red until it do
 
 ## [Unreleased]
 
+## 0.54.1
+
+### Fixed
+
+- **mcp**: preserve negotiated HTTP session headers
+
 ## 0.54.0
 
 ### Added
